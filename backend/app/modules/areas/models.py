@@ -41,5 +41,9 @@ class Area(Document):
     assigned_user_ids: List[PydanticObjectId] = Field(default_factory=list)
     assigned_users: List[dict] = Field(default_factory=list) # For UI enrichment
 
+    # Dynamic fields assigned at runtime
+    owner_name: Optional[str] = None
+    manager_name: Optional[str] = None
+
     class Settings:
         name = "srm_areas"

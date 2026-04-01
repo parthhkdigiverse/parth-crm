@@ -41,8 +41,11 @@ class Bill(Document):
     verified_at: Optional[datetime] = None
 
     # Description
-    service_description: Optional[str] = "Harikrushn DigiVerse LLP Software – Annual Subscription"
+    service_description: Optional[str] = None
     billing_month: Optional[str] = None
+
+    # Dynamically attached fields for frontend UI
+    creator_name: Optional[str] = None
 
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

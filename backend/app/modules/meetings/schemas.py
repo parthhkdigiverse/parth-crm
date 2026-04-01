@@ -13,21 +13,21 @@ class MeetingSummaryBase(BaseModel):
     content: str
     date: typing.Optional[datetime.datetime] = None
     client_id: typing.Optional[PydanticObjectId] = None
-    meeting_type: typing.Optional[MeetingType] = MeetingType.IN_PERSON
+    meeting_type: typing.Optional[str] = "In-Person"
 
 
 class MeetingSummaryCreate(BaseModel):
     title: str
     content: str
     date: typing.Optional[datetime.datetime] = None
-    meeting_type: typing.Optional[MeetingType] = MeetingType.IN_PERSON
+    meeting_type: typing.Optional[str] = "In-Person"
     status: typing.Optional[GlobalTaskStatus] = GlobalTaskStatus.OPEN
     host_id: typing.Optional[PydanticObjectId] = None
     attendee_ids: typing.Optional[list[int]] = []
     client_id: typing.Optional[PydanticObjectId] = None
     target_type: typing.Optional[str] = "CLIENT" # CLIENT, ALL_STAFF, ROLE_BASED
     target_role: typing.Optional[str] = None
-    priority: typing.Optional[str] = "MEDIUM"
+    priority: typing.Any = None
 
 
 class MeetingSummaryUpdateBase(BaseModel):
@@ -35,7 +35,7 @@ class MeetingSummaryUpdateBase(BaseModel):
     content: typing.Optional[str] = None
     date: typing.Optional[datetime.datetime] = None
     status: typing.Optional[GlobalTaskStatus] = None
-    meeting_type: typing.Optional[MeetingType] = None
+    meeting_type: typing.Optional[str] = None
     meet_link: typing.Optional[str] = None
 
 
@@ -60,4 +60,4 @@ class MeetingSummaryRead(MeetingSummaryBase):
     todo_id: typing.Optional[PydanticObjectId] = None
     host_id: typing.Optional[PydanticObjectId] = None
     attendee_ids: typing.Optional[list[int]] = []
-    priority: typing.Optional[str] = "MEDIUM"
+    priority: typing.Any = None

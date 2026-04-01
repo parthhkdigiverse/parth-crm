@@ -8,6 +8,7 @@ from app.modules.shops.schemas import ShopCreate, ShopUpdate
 from app.modules.clients.models import Client
 from app.modules.users.models import User
 from app.modules.notifications.models import Notification
+from app.modules.areas.models import Area
 from typing import Dict, Any, Optional
 import logging
 
@@ -46,14 +47,14 @@ class ShopService:
 
     @staticmethod
     async def get_shop(shop_id: PydanticObjectId):
-        shop = await Shop.find_one(Shop.id == shop_id, Shop.is_deleted == False)
+        shop = await Shop.find_one(Shop.id == shop_id, Shop.is_deleted != True)
         if not shop:
             raise HTTPException(status_code=404, detail="Shop not found")
         return shop
 
     @staticmethod
     async def list_shops(current_user: User, skip: int = 0, limit: int = 100, pipeline_stage: MasterPipelineStage = None, owner_id: PydanticObjectId = None, exclude_leads: bool = False):
-        query = Shop.find(Shop.is_deleted == False)
+        query = Shop.find(Shop.is_deleted != True)
         
         if pipeline_stage:
             query = query.find(Shop.pipeline_stage == pipeline_stage)
@@ -74,36 +75,48 @@ class ShopService:
 
         results = await query.skip(skip).limit(limit).to_list()
         
+        all_users = await User.find_all().to_list()
+        user_map = {str(u.id): u.name for u in all_users if u.id}
+        
         # Sequential enrichment for Shop attributes (NoSQL replacement for joins)
         for shop in results:
             # 1. Owner Name
             if shop.owner_id:
-                owner = await User.get(shop.owner_id)
-                shop.owner_name = owner.name if owner else "Unknown"
+                shop.owner_name = user_map.get(str(shop.owner_id), "Unassigned")
+            else:
+                shop.owner_name = "Unassigned"
             
             # 2. PM Name (using explicit project_manager_name field)
             if shop.project_manager_id:
-                pm = await User.get(shop.project_manager_id)
-                shop.project_manager_name = pm.name if pm else "Unknown PM"
+                shop.project_manager_name = user_map.get(str(shop.project_manager_id), "Unassigned")
                 shop.pm_name = shop.project_manager_name
                 shop.assigned_pm_name = shop.project_manager_name
+            else:
+                shop.project_manager_name = "Unassigned"
+                shop.pm_name = "Unassigned"
+                shop.assigned_pm_name = "Unassigned"
 
             # 3. Created By Name
             if shop.created_by_id:
-                creator = await User.get(shop.created_by_id)
-                shop.created_by_name = creator.name if creator else "System"
+                shop.created_by_name = user_map.get(str(shop.created_by_id), "System")
+            else:
+                shop.created_by_name = "System"
 
             # 4. Map assigned users for frontend UI
             shop.assigned_users = [
-                {"id": str(uid), "name": "User", "role": "STAFF"} # Basic mapping
-                for uid in getattr(shop, 'assigned_user_ids', [])
+                {
+                    "id": str(uid), 
+                    "name": user_map.get(str(uid), "Unknown"), 
+                    "role": "STAFF"
+                }
+                for uid in getattr(shop, 'assigned_user_ids', []) if uid
             ]
             
         return results
 
     @staticmethod
     async def list_kanban_shops(owner_id: PydanticObjectId = None, source: str = None):
-        query = Shop.find(Shop.is_deleted == False)
+        query = Shop.find(Shop.is_deleted != True)
         
         if owner_id:
             from beanie.operators import Or
@@ -127,17 +140,27 @@ class ShopService:
             "MAINTENANCE": []
         }
         
+        all_areas = await Area.find_all().to_list()
+        area_map = {str(a.id): a.name for a in all_areas if a.id}
+        
+        all_users = await User.find_all().to_list()
+        user_map = {str(u.id): u.name for u in all_users if u.id}
+        
         for shop in results:
             shop_data = shop.model_dump()
             shop_data["id"] = shop.id
-            shop_data["owner_name"] = None
-            shop_data["area_name"] = getattr(shop, "area_name", None)
+            shop_data["owner_name"] = user_map.get(str(shop.owner_id), "Unassigned") if shop.owner_id else "Unassigned"
+            shop_data["area_name"] = area_map.get(str(shop.area_id), "No Area Assigned") if shop.area_id else "No Area Assigned"
             shop_data["last_visitor_name"] = getattr(shop, "last_visitor_name", None)
             shop_data["last_visit_status"] = None # Needs visit lookup
             
             shop_data["assigned_users"] = [
-                {"id": str(uid), "name": "User", "role": "STAFF"} 
-                for uid in getattr(shop, 'assigned_user_ids', [])
+                {
+                    "id": str(uid), 
+                    "name": user_map.get(str(uid), "Unknown"), 
+                    "role": "STAFF"
+                } 
+                for uid in getattr(shop, 'assigned_user_ids', []) if uid
             ]
             
             stage_val = str(shop.pipeline_stage.value) if hasattr(shop.pipeline_stage, "value") else str(shop.pipeline_stage)
@@ -232,16 +255,23 @@ class ShopService:
 
         results = await query.to_list()
         
+        all_users = await User.find_all().to_list()
+        user_map = {str(u.id): u.name for u in all_users if u.id}
+        
         shops = []
         for shop in results:
             shop_data = shop.model_dump()
             shop_data["id"] = shop.id
-            shop_data["owner_name"] = None
+            shop_data["owner_name"] = user_map.get(str(shop.owner_id), "Unassigned") if shop.owner_id else "Unassigned"
             shop_data["area_name"] = shop.area_name
-            shop_data["created_by_name"] = None
+            shop_data["created_by_name"] = "System"
             shop_data["assigned_users"] = [
-                {"id": str(uid), "name": "User", "role": "STAFF"} 
-                for uid in getattr(shop, 'assigned_user_ids', [])
+                {
+                    "id": str(uid), 
+                    "name": user_map.get(str(uid), "Unknown"), 
+                    "role": "STAFF"
+                } 
+                for uid in getattr(shop, 'assigned_user_ids', []) if uid
             ]
             shops.append(shop_data)
         return shops
@@ -357,7 +387,7 @@ class ShopService:
     @staticmethod
     async def assign_pm(shop_id: PydanticObjectId, body, current_user: User):
         from app.modules.users.models import UserRole
-        shop = await Shop.find_one(Shop.id == shop_id, Shop.is_deleted == False)
+        shop = await Shop.find_one(Shop.id == shop_id, Shop.is_deleted != True)
         if not shop:
             raise HTTPException(status_code=404, detail="Shop not found")
 
@@ -396,7 +426,7 @@ class ShopService:
         from app.modules.projects.models import Project
         import random
         
-        shop = await Shop.find_one(Shop.id == shop_id, Shop.is_deleted == False)
+        shop = await Shop.find_one(Shop.id == shop_id, Shop.is_deleted != True)
         if not shop:
             raise HTTPException(status_code=404, detail="Shop not found")
 
@@ -413,7 +443,7 @@ class ShopService:
         for pm in pms:
             active_shops_count = await Shop.find(
                 Shop.project_manager_id == pm.id,
-                Shop.is_deleted == False,
+                Shop.is_deleted != True,
                 {"pipeline_stage": {"$in": [MasterPipelineStage.LEAD.value, MasterPipelineStage.PITCHING.value]}}
             ).count()
             
@@ -470,7 +500,7 @@ class ShopService:
         for pm in pms:
             active_shops_count = await Shop.find(
                 Shop.project_manager_id == pm.id,
-                Shop.is_archived == False,
+                Shop.is_archived != True,
                 {"pipeline_stage": {"$in": [MasterPipelineStage.LEAD.value, MasterPipelineStage.PITCHING.value]}}
             ).count()
             
@@ -499,7 +529,7 @@ class ShopService:
         from app.modules.timetable.models import TimetableEvent
         from datetime import timedelta
 
-        shop = await Shop.find_one(Shop.id == shop_id, Shop.is_deleted == False)
+        shop = await Shop.find_one(Shop.id == shop_id, Shop.is_deleted != True)
         if not shop:
             raise HTTPException(status_code=404, detail="Shop not found")
 
@@ -592,7 +622,7 @@ class ShopService:
         from app.modules.clients.models import Client as ClientModel
 
         query = Shop.find(
-            Shop.is_deleted == False,
+            Shop.is_deleted != True,
             Shop.project_manager_id != None
         )
 
@@ -602,22 +632,36 @@ class ShopService:
 
         results = await query.sort(-Shop.id).to_list()
         shops = []
+        
+        all_areas = await Area.find_all().to_list()
+        area_map = {str(a.id): a.name for a in all_areas if a.id}
+        
+        all_users = await User.find_all().to_list()
+        user_map = {str(u.id): u.name for u in all_users if u.id}
+        
         for shop in results:
             shop_data = shop.model_dump()
             shop_data["id"] = shop.id
-            shop_data["owner_name"] = None # Will be enriched if needed
-            shop_data["area_name"] = shop.area_name
-            shop_data["project_manager_name"] = shop.project_manager_name
-            shop_data["assigned_pm_name"] = shop.project_manager_name
-            shop_data["created_by_name"] = None
-            shop_data["scheduled_by_name"] = None
-            shop_data["archived_by_name"] = None
-            shop_data["last_visitor_name"] = None
+            shop_data["owner_name"] = user_map.get(str(shop.owner_id), "Unassigned") if shop.owner_id else "Unassigned"
+            shop_data["area_name"] = area_map.get(str(shop.area_id), "No Area Assigned") if shop.area_id else "No Area Assigned"
+            
+            pm_name = user_map.get(str(shop.project_manager_id), "Unassigned") if shop.project_manager_id else "Unassigned"
+            shop_data["project_manager_name"] = pm_name
+            shop_data["assigned_pm_name"] = pm_name
+            
+            shop_data["created_by_name"] = "System"
+            shop_data["scheduled_by_name"] = "System"
+            shop_data["archived_by_name"] = "System"
+            shop_data["last_visitor_name"] = getattr(shop, "last_visitor_name", None)
             
             # Map assigned owners for frontend UI
             shop_data["assigned_users"] = [
-                {"id": str(uid), "name": "User", "role": "STAFF"} # Simplified enrichment
-                for uid in getattr(shop, 'assigned_user_ids', [])
+                {
+                    "id": str(uid), 
+                    "name": user_map.get(str(uid), "Unknown"), 
+                    "role": "STAFF"
+                }
+                for uid in getattr(shop, 'assigned_user_ids', []) if uid
             ]
             shops.append(shop_data)
         return shops

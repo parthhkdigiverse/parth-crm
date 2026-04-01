@@ -11,7 +11,8 @@ from app.core.enums import GlobalTaskStatus
 # from app.modules.todos.models import TodoPriority
 
 class MeetingType(str, enum.Enum):
-    IN_PERSON   = "In-Person"
+    IN_PERSON_FRIENDLY   = "In-Person"
+    IN_PERSON_LEGACY     = "IN_PERSON"
     GOOGLE_MEET_FRIENDLY = "Google Meet"
     VIRTUAL_FRIENDLY     = "Virtual"
     
@@ -25,13 +26,13 @@ class MeetingSummary(Document):
     date: dt.datetime = Field(default_factory=lambda: dt.datetime.now(UTC))
 
     status: GlobalTaskStatus = GlobalTaskStatus.OPEN
-    meeting_type: MeetingType = MeetingType.IN_PERSON
+    meeting_type: Optional[str] = "In-Person"
     meet_link: Optional[str] = None
 
     # Google Calendar / AI pipeline
     calendar_event_id: Optional[str] = None
     transcript: Optional[str] = None
-    ai_summary: Optional[Dict[str, Any]] = None
+    ai_summary: Optional[Any] = None
 
     cancellation_reason: Optional[str] = None
     
@@ -47,7 +48,7 @@ class MeetingSummary(Document):
     reminder_sent: bool = False
     
     # Priority for Timetable pinning (using string fallback if enum is tricky to import initially)
-    priority: str = "MEDIUM"
+    priority: Any = None
 
     class Settings:
         name = "srm_meeting_summaries"

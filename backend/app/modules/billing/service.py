@@ -19,6 +19,7 @@ import hashlib
 from urllib.parse import quote
 import json
 import io
+import re
 
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
@@ -251,15 +252,14 @@ class BillingService:
             ]
             
         if search:
-            import re
-            pattern = re.compile(f".*{re.escape(search.strip())}.*", re.IGNORECASE)
+            search_str = f".*{re.escape(search.strip())}.*"
             search_clause = {
                 "$or": [
-                    {"invoice_number": pattern},
-                    {"invoice_client_name": pattern},
-                    {"invoice_client_phone": pattern}
+                    {"invoice_number": {"$regex": search_str, "$options": "i"}},
+                    {"invoice_client_name": {"$regex": search_str, "$options": "i"}},
+                    {"invoice_client_phone": {"$regex": search_str, "$options": "i"}}
                 ]
-            }
+            }   
             if "$or" in filters:
                 filters = {"$and": [filters, search_clause]}
             else:

@@ -13,6 +13,7 @@ class Feedback(Document):
     rating: int # Sales Person Rating
     comments: Optional[str] = None
     agent_name: Optional[str] = None
+    agent_role: Optional[str] = None
     referral_code: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     is_deleted: bool = False

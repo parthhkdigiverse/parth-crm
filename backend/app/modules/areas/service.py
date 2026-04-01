@@ -16,44 +16,56 @@ class AreaService:
 
     async def get_areas(self, current_user: User, skip: int = 0, limit: int = 100):
         # Base query: non-archived areas
-        find_query = Area.find(Area.is_archived == False)
+        find_query = Area.find(Area.is_archived != True)
 
         if current_user.role == "ADMIN":
             areas = await find_query.skip(skip).limit(limit).to_list()
         else:
             # Sales/Telesales: Check many-to-many replacement (list of ObjectIds)
             areas = await Area.find(
-                Area.is_archived == False,
+                Area.is_archived != True,
                 In(Area.assigned_user_ids, [current_user.id])
             ).skip(skip).limit(limit).to_list()
+
+        all_users = await User.find_all().to_list()
+        user_map = {str(u.id): u for u in all_users if u.id}
 
         import asyncio
         async def enrich_area(area):
             # Count only active (non-deleted, non-archived) shops for the main view
-            area.shops_count = await Shop.find(Shop.area_id == area.id, Shop.is_deleted == False, Shop.is_archived == False).count()
+            area.shops_count = await Shop.find(Shop.area_id == area.id, Shop.is_deleted != True, Shop.is_archived != True).count()
             
             # Populate creator name
-            if area.created_by_id:
-                creator = await User.get(area.created_by_id)
-                area.created_by_name = creator.name if creator else None
-            else:
-                area.created_by_name = None
+            area.created_by_name = user_map.get(str(area.created_by_id)).name if area.created_by_id and str(area.created_by_id) in user_map else "System"
 
             # Populate archived by name
             if area.is_archived and area.archived_by_id:
-                archived_by = await User.get(area.archived_by_id)
-                area.archived_by_name = archived_by.name if archived_by else None
+                area.archived_by_name = user_map.get(str(area.archived_by_id)).name if str(area.archived_by_id) in user_map else "System"
             else:
                 area.archived_by_name = None
+                
+            # Dynamic fields for UI
+            area.owner_name = user_map.get(str(area.assigned_user_id)).name if getattr(area, 'assigned_user_id', None) and str(area.assigned_user_id) in user_map else "Unassigned"
+            area.manager_name = "Unassigned" # Area doesn't inherently have a manager yet
 
             # Populate assigned users list for UI dropdowns/tables
             assigned_users = []
             if area.assigned_user_ids:
-                users = await User.find(In(User.id, area.assigned_user_ids)).to_list()
-                assigned_users = [
-                    {"id": str(u.id), "name": u.name, "role": u.role.value if hasattr(u.role, 'value') else str(u.role)} 
-                    for u in users
-                ]
+                for uid in area.assigned_user_ids:
+                    str_uid = str(uid)
+                    if str_uid in user_map:
+                        u = user_map[str_uid]
+                        assigned_users.append({
+                            "id": str_uid,
+                            "name": u.name,
+                            "role": u.role.value if hasattr(u.role, 'value') else str(u.role)
+                        })
+                    else:
+                        assigned_users.append({
+                            "id": str_uid,
+                            "name": "Unknown",
+                            "role": "STAFF"
+                        })
             area.assigned_users = assigned_users
             return area
 
@@ -82,7 +94,7 @@ class AreaService:
         
         await area.save()
         
-        area.shops_count = await Shop.find(Shop.area_id == area.id, Shop.is_deleted == False, Shop.is_archived == False).count()
+        area.shops_count = await Shop.find(Shop.area_id == area.id, Shop.is_deleted != True, Shop.is_archived != True).count()
         if area.archived_by_id:
             archived_by = await User.get(area.archived_by_id)
             area.archived_by_name = archived_by.name if archived_by else None
@@ -132,7 +144,7 @@ class AreaService:
             setattr(area, field, value)
         await area.save()
         
-        area.shops_count = await Shop.find(Shop.area_id == area.id, Shop.is_deleted == False, Shop.is_archived == False).count()
+        area.shops_count = await Shop.find(Shop.area_id == area.id, Shop.is_deleted != True, Shop.is_archived != True).count()
         
         if area.archived_by_id:
             archived_by = await User.get(area.archived_by_id)
@@ -213,7 +225,7 @@ class AreaService:
         
         await area.save()
         
-        area.shops_count = await Shop.find(Shop.area_id == area.id, Shop.is_deleted == False, Shop.is_archived == False).count()
+        area.shops_count = await Shop.find(Shop.area_id == area.id, Shop.is_deleted != True, Shop.is_archived != True).count()
         
         if area.archived_by_id:
             archived_by = await User.get(area.archived_by_id)
@@ -263,30 +275,41 @@ class AreaService:
                 )
             ).to_list()
 
+        all_users = await User.find_all().to_list()
+        user_map = {str(u.id): u for u in all_users if u.id}
+
         import asyncio
         async def enrich_archived_area(area):
             # For archived areas, we count all shops (they will all be archived anyway)
             area.shops_count = await Shop.find(Shop.area_id == area.id).count()
 
             if area.archived_by_id:
-                archived_by = await User.get(area.archived_by_id)
-                area.archived_by_name = archived_by.name if archived_by else None
+                area.archived_by_name = user_map.get(str(area.archived_by_id)).name if str(area.archived_by_id) in user_map else "System"
             else:
                 area.archived_by_name = None
 
-            if area.created_by_id:
-                creator = await User.get(area.created_by_id)
-                area.created_by_name = creator.name if creator else None
-            else:
-                area.created_by_name = None
+            area.created_by_name = user_map.get(str(area.created_by_id)).name if area.created_by_id and str(area.created_by_id) in user_map else "System"
+
+            area.owner_name = user_map.get(str(area.assigned_user_id)).name if getattr(area, 'assigned_user_id', None) and str(area.assigned_user_id) in user_map else "Unassigned"
+            area.manager_name = "Unassigned"
 
             assigned_users = []
             if area.assigned_user_ids:
-                users = await User.find(In(User.id, area.assigned_user_ids)).to_list()
-                assigned_users = [
-                    {"id": str(u.id), "name": u.name, "role": u.role.value if hasattr(u.role, 'value') else str(u.role)} 
-                    for u in users
-                ]
+                for uid in area.assigned_user_ids:
+                    str_uid = str(uid)
+                    if str_uid in user_map:
+                        u = user_map[str_uid]
+                        assigned_users.append({
+                            "id": str_uid,
+                            "name": u.name,
+                            "role": u.role.value if hasattr(u.role, 'value') else str(u.role)
+                        })
+                    else:
+                        assigned_users.append({
+                            "id": str_uid,
+                            "name": "Unknown",
+                            "role": "STAFF"
+                        })
             area.assigned_users = assigned_users
             return area
 
@@ -310,7 +333,7 @@ class AreaService:
             {"$set": {"is_archived": False, "archived_by_id": None}}
         )
         
-        area.shops_count = await Shop.find(Shop.area_id == area.id, Shop.is_deleted == False, Shop.is_archived == False).count()
+        area.shops_count = await Shop.find(Shop.area_id == area.id, Shop.is_deleted != True, Shop.is_archived != True).count()
         area.archived_by_name = None
         
         assigned_users = []

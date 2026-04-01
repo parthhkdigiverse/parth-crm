@@ -1,4 +1,5 @@
 import typing
+from typing import Optional
 import datetime
 from pydantic import field_validator
 from beanie import PydanticObjectId
@@ -68,18 +69,17 @@ class BillRead(MongoBaseSchema):
     whatsapp_sent: bool
     is_archived: bool = False
 
-    service_description: str | None = None
-    billing_month: str | None = None
+    service_description: Optional[str] = None
+    billing_month: Optional[str] = None
 
     shop_name: str | None = None
     client_name: str | None = None
-    creator_name: str | None = None
+    creator_name: Optional[str] = None
 
     created_by_id: PydanticObjectId | None = None
     verified_by_id: PydanticObjectId | None = None
     verified_at: datetime.datetime | None = None
     created_at: datetime.datetime
-
 
 class BillingWorkflowResolveRequest(MongoBaseSchema):
     payment_type: typing.Literal["BUSINESS_ACCOUNT", "PERSONAL_ACCOUNT", "CASH"]
