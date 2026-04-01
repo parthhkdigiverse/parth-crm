@@ -8,6 +8,8 @@ class SystemSettings(Document):
     access_policy: Dict[str, Any] = Field(default_factory=dict)
     policy_version: int = 1
     delete_policy: Optional[str] = "SOFT"
+    payslip_email: Optional[str] = "hrmangukiya3494@gmail.com"
+    payslip_phone: Optional[str] = "8866005029"
 
     class Settings:
         name = "srm_system_settings"

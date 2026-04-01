@@ -39,6 +39,15 @@ async def update_settings(
     if settings_in.access_policy is not None:
         settings_obj.access_policy = settings_in.access_policy
     
+    if settings_in.delete_policy is not None:
+        settings_obj.delete_policy = settings_in.delete_policy
+    
+    if settings_in.payslip_email is not None:
+        settings_obj.payslip_email = settings_in.payslip_email
+    
+    if settings_in.payslip_phone is not None:
+        settings_obj.payslip_phone = settings_in.payslip_phone
+    
     await settings_obj.save()
     return settings_obj
 

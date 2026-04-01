@@ -239,6 +239,8 @@ class SalaryService:
         if not slip: raise HTTPException(status_code=404, detail="Salary slip not found")
 
         user = await User.get(slip.user_id)
+        from app.modules.settings.models import SystemSettings
+        settings = await SystemSettings.find_one()
         
         # Logo Embedding
         logo_data_uri = ""
@@ -281,7 +283,14 @@ class SalaryService:
                 <tr><td class="label">Paid Leaves</td><td>{slip.paid_leaves}</td><td class="label">Unpaid Leaves</td><td>{slip.unpaid_leaves}</td></tr>
             </table>
             <div class="total-bar">Net Salary Payable: ₹{slip.final_salary:,.2f}</div>
-            <div style="margin-top: 40px; text-align: center; font-size: 10px; color: #999;">
+            
+            <div style="margin-top: 30px; padding: 15px; border-top: 1px dashed #ddd; font-size: 12px; color: #666;">
+                <div style="font-weight: bold; margin-bottom: 5px;">Company Contact for Queries:</div>
+                <div>Email: {settings.payslip_email if settings else "hrmangukiya3494@gmail.com"}</div>
+                <div>Phone: {settings.payslip_phone if settings else "8866005029"}</div>
+            </div>
+
+            <div style="margin-top: 20px; text-align: center; font-size: 10px; color: #999;">
                 Computer generated document. No signature required.
             </div>
         </body>
