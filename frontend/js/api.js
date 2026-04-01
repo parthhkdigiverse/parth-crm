@@ -644,6 +644,9 @@ class ApiClient {
     static async generateInvoicePaymentQR(data) {
         return this.request('/billing/generate-qr', { method: 'POST', body: data });
     }
+    static async checkPaymentStatus(txnId) {
+        return this.request(`/billing/check-payment-status/${txnId}`);
+    }
 
 
     // ─── Projects ────────────────────────────────────────────

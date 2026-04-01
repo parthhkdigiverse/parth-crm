@@ -5,7 +5,52 @@
     <link rel="icon" type="image/x-icon" href="/frontend/favicon.ico">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Billing & Invoices — SRM AI SETU</title>
+    <title>Billing & Invoices | SRM AI SETU</title>
+    <style>
+        @keyframes pulse-soft {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .payment-hub-card {
+            border-radius: 24px !important;
+            border: 1px solid rgba(226, 232, 240, 0.8) !important;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02) !important;
+            background: #ffffff !important;
+        }
+        .btn-pay-now {
+            background: var(--accent-gradient) !important;
+            border: none !important;
+            color: white !important;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+        .btn-pay-now:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3) !important;
+        }
+        .status-monitor-box {
+            background: #f8faff !important;
+            border: 1px dashed #cbd5e1 !important;
+            border-radius: 16px !important;
+        }
+        .status-pulse {
+            animation: pulse-soft 2s infinite ease-in-out;
+        }
+        .hub-title {
+            font-family: 'Outfit', sans-serif !important;
+            font-weight: 700 !important;
+            color: #1e293b !important;
+            letter-spacing: -0.01em;
+        }
+        .hub-badge {
+            background: #eff6ff !important;
+            color: #2563eb !important;
+            font-weight: 600 !important;
+            font-size: 11px !important;
+            letter-spacing: 0.02em;
+            padding: 6px 12px !important;
+        }
+    </style>
     <link rel="stylesheet" href="/frontend/css/bootstrap.min.css">
     <link rel="stylesheet" href="/frontend/css/bootstrap-icons.min.css">
     <link rel="stylesheet" href="/frontend/css/theme.css?v=20260321">
@@ -459,7 +504,7 @@
                         <div style="font-size:11px;opacity:0.7;font-weight:600;letter-spacing:0.5px;margin-bottom:4px;">INVOICE AMOUNT</div>
                         <div class="d-flex align-items-center gap-2">
                             <span style="font-size:1.3rem;font-weight:800;">₹</span>
-                            <input type="number" id="c-amount" value="12000" readonly style="background:transparent;border:none;outline:none;color:#fff;font-size:1.5rem;font-weight:900;width:140px;letter-spacing:-1px;cursor:not-allowed;">
+                            <input type="number" id="c-amount" value="12000" oninput="updateAmountPreview(this.value)" style="background:transparent;border:none;outline:none;color:#fff;font-size:1.5rem;font-weight:900;width:140px;letter-spacing:-1px;">
                         </div>
                     </div>
                     <div class="ms-auto text-end">
@@ -1135,64 +1180,297 @@
                 : `No GST · Total ₹${fmtMoney(total)}`;
 
             if (pt === 'CASH') {
-                // Cash: no QR needed
                 document.getElementById('step2-confirm-btn').innerHTML = '<i class="bi bi-check-circle me-2"></i>Cash Received — Create Invoice';
                 document.getElementById('p2-qr-zone').innerHTML = `
-            <div style="padding:20px 0;">
-                <div style="font-size:3rem;color:#16a34a;"><i class="bi bi-cash-coin"></i></div>
-                <div class="fw-bold mt-2" style="color:var(--text-main);">Cash Payment</div>
-                <div class="small text-muted mt-1">No QR needed. Collect cash from client and proceed.</div>
-            </div>`;
-                wizardQRData = { requires_qr: false, total_amount: total, base_amount: amt, gst_amount: gstAmt };
+                <div style="padding:40px 0; text-align:center;">
+                    <div style="font-size:4rem;color:#10b981; margin-bottom:15px;"><i class="bi bi-cash-stack"></i></div>
+                    <div class="fw-bold h5 mb-2" style="color:var(--text-main);">Cash Payment Mode</div>
+                    <div class="text-muted small mx-auto" style="max-width:300px;">Please collect physical cash from the client. Once received, click below to generate the invoice.</div>
+                </div>`;
+                wizardQRData = { payment_type: 'CASH', total_amount: total, base_amount: amt, gst_amount: gstAmt };
                 document.getElementById('createModal').querySelector('.modal-box').style.width = '680px';
                 return;
             }
 
-            document.getElementById('step2-confirm-btn').innerHTML = '<i class="bi bi-check-circle me-2"></i>Payment Done — Create Invoice';
-            document.getElementById('p2-qr-zone').innerHTML = '<div class="text-muted small"><span class="spinner-border spinner-border-sm me-2"></span>Generating payment QR...</div>';
+            document.getElementById('step2-confirm-btn').innerHTML = '<i class="bi bi-check-circle me-2"></i>Verify & Create Invoice';
+            document.getElementById('step2-confirm-btn').onclick = () => verifyAndProceedToStep3();
+            document.getElementById('p2-qr-zone').innerHTML = `
+            <div class="text-center py-5">
+                <div class="spinner-grow text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
+                <div class="mt-3 text-muted">Securing payment link...</div>
+            </div>`;
 
-                try {
-                    wizardQRData = await ApiClient.generateInvoicePaymentQR({
-                        payment_type: pt, gst_type: gt, amount: total, phone: phone,
-                    });
-                    const qr = wizardQRData;
-                    let qrHtml = '';
-                    
-                    if (qr.type === 'gateway' && qr.pay_url) {
-                        qrHtml = `
-                        <div style="width:100%; height:550px; border-radius:12px; overflow:hidden; border:1.5px solid var(--border); background:#fff;">
-                            <iframe src="${qr.pay_url}" style="width:100%; height:100%; border:none;" allow="payment"></iframe>
+            try {
+                wizardQRData = await ApiClient.generateInvoicePaymentQR({
+                    payment_type: pt, gst_type: gt, amount: total, phone: phone,
+                    origin: window.location.origin
+                });
+                
+                const qr = wizardQRData;
+                let hubHtml = '';
+
+                if (qr.type === 'gateway') {
+                    // Modern Gateway Hub - Premium Refined
+                    hubHtml = `
+                    <div class="payment-hub-container" style="padding: 10px 0;">
+                        <div class="card border-0 payment-hub-card overflow-hidden">
+                            <div class="card-body p-4 p-md-5 text-center">
+                                <div class="mb-4">
+                                    <span class="badge rounded-pill hub-badge border border-primary-subtle text-uppercase d-inline-flex align-items-center">
+                                        <i class="bi bi-shield-check me-2"></i> Secure Gateway
+                                    </span>
+                                </div>
+                                <h2 class="hub-title mb-2">Payment Link Ready</h2>
+                                <p class="text-muted small mb-5 px-3">Share this link with your client or complete the payment directly from this device.</p>
+                                
+                                <div class="d-grid gap-3 mb-5">
+                                    <a href="${qr.pay_url}" target="_blank" class="btn btn-pay-now btn-lg py-3 d-flex align-items-center justify-content-center" style="border-radius: 14px; font-size: 1.1rem;">
+                                        <i class="bi bi-wallet2 me-2"></i> Pay Now
+                                    </a>
+                                    
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <button onclick="copyToClipboard('${qr.pay_url}', 'Payment link copied!')" class="btn btn-light w-100 py-2 border" style="border-radius: 12px; font-weight:600; color:#475569;">
+                                                <i class="bi bi-link-45deg me-1"></i> Copy Link
+                                            </button>
+                                        </div>
+                                        <div class="col-6">
+                                            <button onclick="sharePaymentLink('${qr.pay_url}', 'Invoice Payment Link')" class="btn btn-light w-100 py-2 border" style="border-radius: 12px; font-weight:600; color:#475569;">
+                                                <i class="bi bi-share me-1"></i> Share
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div id="payment-status-monitor" class="status-monitor-box p-4">
+                                    <div class="d-flex align-items-center justify-content-center text-primary mb-2 status-pulse">
+                                        <div class="spinner-border spinner-border-sm me-2 border-2" role="status" style="width:1.2rem; height:1.2rem;"></div>
+                                        <span class="fw-bold" style="font-size:0.9rem;">Monitoring for Payment</span>
+                                    </div>
+                                    <div class="text-muted mb-3" style="font-size: 12px;">The system is checking automatically. Once payment is confirmed, we'll advance you to the final step.</div>
+                                    <button onclick="manualCheckStatus('${qr.transaction_id}')" class="btn btn-sm btn-link text-primary p-0 d-inline-flex align-items-center" style="text-decoration: none; font-weight: 700;">
+                                        <i class="bi bi-arrow-clockwise me-1"></i> Check Manually
+                                    </button>
+                                </div>
+                                <div id="p2-error-zone" class="mt-3" style="display:none;">
+                                    <div class="alert alert-danger border-0 rounded-4 py-2 px-3 small d-flex align-items-center justify-content-center">
+                                        <i class="bi bi-info-circle-fill me-2"></i>
+                                        <span>Payment not detected. Please pay first.</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-light p-3 text-center" style="font-size: 11px; color: #64748b; border-top: 1px solid #f1f5f9; letter-spacing: 0.05em;">
+                                <span class="text-muted">TRANSACTION ID:</span> <span class="fw-bold">${qr.transaction_id}</span>
+                            </div>
                         </div>
-                        <div class="mt-2 small text-muted"><i class="bi bi-shield-lock-fill text-success me-1"></i>Secure Transaction via PhonePe Gateway</div>`;
-                        // Expand modal for gateway
-                        document.getElementById('createModal').querySelector('.modal-box').style.width = '900px';
-                        document.getElementById('createModal').querySelector('.modal-box').style.maxWidth = '95vw';
-                    } else if (qr.qr_image_url || qr.static_qr_url || qr.qr_image_b64) {
-                        const src = qr.qr_image_b64 || qr.qr_image_url || qr.static_qr_url;
-                        qrHtml = `<div>
-                    <img src="${src}" alt="Payment QR" style="width:200px;height:200px;object-fit:contain;border-radius:12px;border:2px solid #e2e8f0;background:#fff;padding:4px;">
-                    <div class="fw-bold mt-2" style="font-size:0.9rem;color:var(--text-main);">${qr.upi_name || 'UPI Payment'}</div>
-                    ${qr.upi_id ? `<div class="small text-muted">UPI: ${qr.upi_id}</div>` : ''}
-                    ${qr.dynamic_upi_link ? `<div class="mt-2"><a href="${qr.dynamic_upi_link}" class="btn btn-sm btn-outline-primary rounded-pill px-3" style="font-size:11px;"><i class="bi bi-phone me-1"></i>Pay via App</a></div>` : ''}
+                    </div>`;
+                    
+                    // Start Polling
+                    startPaymentPolling(qr.transaction_id);
+                } else {
+                    // Modern Static QR Hub (Personal/Other) - Premium Refined
+                    const qrSrc = qr.qr_image_url || qr.static_qr_url || '';
+                    hubHtml = `
+                    <div class="payment-hub-container" style="padding: 10px 0;">
+                        <div class="card border-0 payment-hub-card overflow-hidden">
+                            <div class="card-body p-4 p-md-5 text-center">
+                                <div class="mb-4">
+                                    <span class="badge rounded-pill hub-badge border border-success-subtle text-uppercase d-inline-flex align-items-center" style="background:#f0fdf4 !important; color:#16a34a !important;">
+                                        <i class="bi bi-qr-code-scan me-2"></i> UPI Payment
+                                    </span>
+                                </div>
+
+                                <h2 class="hub-title mb-4">Scan to Pay</h2>
+
+                                <div class="qr-wrapper mb-5 p-3 bg-white rounded-5 shadow-sm d-inline-block border">
+                                    ${qrSrc ? `<img src="${qrSrc}" alt="QR" style="width:180px; height:180px; object-fit:contain;">` : 
+                                    `<div class="d-flex align-items-center justify-content-center bg-light rounded" style="width:180px; height:180px; color:#cbd5e1;"><i class="bi bi-upc-scan" style="font-size:4rem;"></i></div>`}
+                                </div>
+
+                                <div class="mb-5">
+                                    <div class="small text-muted mb-2 text-uppercase fw-bold" style="font-size:10px; letter-spacing:0.1em;">UPI ID / Account</div>
+                                    <div class="px-3 py-3 rounded-4 border bg-light d-inline-flex align-items-center gap-3 w-100 justify-content-between">
+                                        <code class="text-primary fw-bold" style="font-size: 1rem;">${qr.upi_id || 'Not Configured'}</code>
+                                        <button onclick="copyToClipboard('${qr.upi_id}', 'UPI ID copied!')" class="btn btn-sm btn-white border shadow-sm rounded-circle p-2" style="width:32px; height:32px; line-height:1;">
+                                            <i class="bi bi-clipboard"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="d-grid gap-3">
+                                    <a href="${qr.dynamic_upi_link}" class="btn btn-pay-now btn-lg py-3 rounded-4 shadow-sm" style="font-size:1rem;">
+                                        <i class="bi bi-phone me-2"></i> Pay via Mobile App
+                                    </a>
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <button onclick="copyToClipboard('${qr.dynamic_upi_link}', 'Link copied!')" class="btn btn-light w-100 py-2 border rounded-3" style="font-size: 0.9rem; font-weight:600;">
+                                                <i class="bi bi-link-45deg me-1"></i> Copy Link
+                                            </button>
+                                        </div>
+                                        <div class="col-6">
+                                            <button onclick="sharePaymentLink('${qr.dynamic_upi_link}', 'Personal Payment')" class="btn btn-light w-100 py-2 border rounded-3" style="font-size: 0.9rem; font-weight:600;">
+                                                <i class="bi bi-share me-1"></i> Share
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+                }
+                
+                document.getElementById('p2-qr-zone').innerHTML = hubHtml;
+                document.getElementById('createModal').querySelector('.modal-box').style.width = '550px';
+
+            } catch (e) {
+                document.getElementById('p2-qr-zone').innerHTML = `
+                <div class="alert alert-danger border-0 rounded-4 p-4 text-center mt-3">
+                    <div class="h1 mb-3"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                    <div class="fw-bold mb-1">Generation Failed</div>
+                    <div class="small">${e.data?.detail || e.message || 'Check your billing settings.'}</div>
+                    <button onclick="goToStep1()" class="btn btn-link text-danger mt-3 small p-0">Go back and check details</button>
                 </div>`;
-                    } else if (qr.upi_id) {
-                        qrHtml = `<div style="padding:16px 0;">
-                    <div style="font-size:2.5rem;color:#6366f1;"><i class="bi bi-upc-scan"></i></div>
-                    <div class="fw-bold mt-2">${qr.upi_name || 'UPI ID'}</div>
-                    <div class="mt-1" style="font-family:monospace;font-size:1rem;color:#2e5b82;background:#eff6ff;padding:6px 12px;border-radius:8px;display:inline-block;">${qr.upi_id}</div>
-                    <div class="small text-muted mt-2">Client can pay using any UPI app.</div>
-                </div>`;
-                    } else {
-                        qrHtml = `<div style="padding:16px;"><div class="text-warning"><i class="bi bi-exclamation-triangle me-1"></i>No QR/UPI configured. Configure in Settings → Billing.</div></div>`;
-                    }
-                    document.getElementById('p2-qr-zone').innerHTML = qrHtml;
-                } catch (e) {
-                document.getElementById('p2-qr-zone').innerHTML = `<div class="text-danger small"><i class="bi bi-exclamation-triangle me-1"></i>${e.data?.detail || e.message || 'Failed to load QR'}</div>`;
                 wizardQRData = null;
             }
         }
 
+        // ── Status Polling Logic ────────────────────────────────────────────────────────
+        let pollingInterval = null;
+        function startPaymentPolling(txnId) {
+            if (pollingInterval) clearInterval(pollingInterval);
+            pollingInterval = setInterval(async () => {
+                await checkStatusAction(txnId, true);
+            }, 6000); // Check every 6 seconds
+        }
+
+        async function manualCheckStatus(txnId) {
+            const monitor = document.getElementById('payment-status-monitor');
+            if (monitor) monitor.style.opacity = '0.5';
+            await checkStatusAction(txnId, false);
+            if (monitor) monitor.style.opacity = '1';
+        }
+
+        async function checkStatusAction(txnId, silent = true) {
+            try {
+                const status = await ApiClient.checkPaymentStatus(txnId);
+                // PhonesPe SUCCESS code is "PAYMENT_SUCCESS"
+                if (status.code === 'PAYMENT_SUCCESS') {
+                    clearInterval(pollingInterval);
+                    pollingInterval = null;
+                    
+                    // Update wizardQRData with success info
+                    wizardQRData.payment_gateway_status = 'SUCCESS';
+                    
+                    // UI Polish
+                    const monitor = document.getElementById('payment-status-monitor');
+                    if (monitor) {
+                        monitor.className = 'status-monitor-box p-4 bg-success-light text-success border border-success-subtle';
+                        monitor.style.borderStyle = 'solid';
+                        monitor.innerHTML = `
+                        <div class="d-flex align-items-center justify-content-center fw-bold" style="font-size: 1.1rem;">
+                            <i class="bi bi-check-circle-fill me-2" style="font-size: 1.4rem;"></i>
+                            <span>SUCCESS VERIFIED!</span>
+                        </div>
+                        <div class="small mt-1" style="font-size:11px;">Generating your official invoice now...</div>`;
+                    }
+                    
+                    showToast('Payment verified successfully!', 'success');
+                    
+                    // Auto-advance to Step 3
+                    setTimeout(() => goToStep3(), 1500);
+                } else if (!silent) {
+                    showToast(`Status: ${status.state || 'Pending payment'}`, 'info');
+                }
+            } catch (e) {
+                if (!silent) showToast('Failed to reach payment server', 'error');
+            }
+        }
+
+        function copyToClipboard(text, msg) {
+            if (!text) return;
+            navigator.clipboard.writeText(text).then(() => {
+                showToast(msg || 'Copied!', 'success');
+            }).catch(() => {
+                // Fallback for older browsers
+                const el = document.createElement('textarea');
+                el.value = text;
+                document.body.appendChild(el);
+                el.select();
+                document.execCommand('copy');
+                document.body.removeChild(el);
+                showToast(msg || 'Copied!', 'success');
+            });
+        }
+
+        async function verifyAndProceedToStep3() {
+            if (!wizardQRData) return;
+
+            const btn = document.getElementById('step2-confirm-btn');
+            const originalHtml = btn.innerHTML;
+            const errorZone = document.getElementById('p2-error-zone');
+            
+            if (errorZone) errorZone.style.display = 'none';
+
+            // 1. CASH CASE
+            if (wizardQRData.payment_type === 'CASH') {
+                goToStep3();
+                return;
+            }
+
+            // 2. PERSONAL ACCOUNT CASE (Manual Verification)
+            if (wizardQRData.payment_type === 'PERSONAL_ACCOUNT') {
+                if (confirm('Did you manually verify that the client has paid via UPI/QR?')) {
+                    goToStep3();
+                } else {
+                    showToast('Please verify payment before proceeding.', 'info');
+                }
+                return;
+            }
+
+            // 3. GATEWAY / BUSINESS CASE (API Verification)
+            if (wizardQRData.type === 'gateway' || wizardQRData.transaction_id) {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verifying...';
+                
+                try {
+                    const status = await ApiClient.checkPaymentStatus(wizardQRData.transaction_id);
+                    if (status.code === 'PAYMENT_SUCCESS') {
+                        wizardQRData.payment_gateway_status = 'SUCCESS';
+                        showToast('Payment confirmed!', 'success');
+                        goToStep3();
+                    } else {
+                        if (errorZone) {
+                            errorZone.style.display = 'block';
+                            errorZone.querySelector('span').textContent = status.state || 'Payment not detected. Please pay first.';
+                        }
+                        showToast('Payment not verified yet.', 'warning');
+                    }
+                } catch (e) {
+                    showToast('Server verification failed.', 'error');
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                }
+            }
+        }
+
+        function sharePaymentLink(url, title) {
+            if (navigator.share) {
+                navigator.share({
+                    title: title || 'Payment Link',
+                    text: 'Hi, please complete the payment using this secure link:',
+                    url: url
+                }).catch(err => console.log('Share failed:', err));
+            } else {
+                copyToClipboard(url, 'Link copied! Share it now.');
+            }
+        }
+
         function goToStep1() { 
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+            }
             _setWizardStep(1); 
             document.getElementById('createModal').querySelector('.modal-box').style.width = '680px';
         }
@@ -1211,6 +1489,12 @@
             const ptLabel = { BUSINESS_ACCOUNT: 'Business Bank Account', PERSONAL_ACCOUNT: 'Personal Bank Account', CASH: 'Cash' }[pt] || pt;
             const gtLabel = gt === 'WITH_GST' ? 'With GST 18%' : 'Without GST';
             const total = wizardQRData?.total_amount || (gt === 'WITH_GST' ? Math.round(amt * 1.18 * 100) / 100 : amt);
+            
+            // If we have a success polling interval, clear it now since we're leaving Step 2
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+            }
 
             document.getElementById('p3-preview-body').innerHTML = `
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;">
@@ -1251,6 +1535,8 @@
                     gst_type: gt,
                     amount: amt,
                     shop_id: autoConvertShopId ? parseInt(autoConvertShopId) : null,
+                    transaction_id: wizardQRData?.transaction_id || null,
+                    payment_gateway_status: wizardQRData?.payment_gateway_status || null
                 });
 
                 showToast('Invoice generated! Admin has been notified for review.', 'success');

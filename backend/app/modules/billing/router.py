@@ -187,7 +187,15 @@ async def generate_payment_qr(
         gst_type=gst_type,
         amount=amount,
         phone=phone,
+        origin=payload.get("origin")
     )
+
+@router.get("/check-payment-status/{txn_id}")
+async def check_payment_status(
+    txn_id: str,
+    current_user: User = Depends(staff_access),
+) -> Any:
+    return await BillingService().check_phonepe_payment_status(txn_id)
 
 @router.post("/phonepe-callback")
 async def phonepe_payment_callback(

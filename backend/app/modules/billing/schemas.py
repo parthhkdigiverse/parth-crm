@@ -22,6 +22,8 @@ class BillCreate(MongoBaseSchema):
     gst_type: typing.Literal["WITH_GST", "WITHOUT_GST"]
     service_description: str | None = "Harikrushn DigiVerse LLP Software – Annual Subscription"
     billing_month: str # e.g. "Feb 2026"
+    transaction_id: str | None = None
+    payment_gateway_status: str | None = None
 
     @field_validator('invoice_client_name')
     @classmethod
@@ -71,6 +73,8 @@ class BillRead(MongoBaseSchema):
 
     service_description: Optional[str] = None
     billing_month: Optional[str] = None
+    transaction_id: Optional[str] = None
+    payment_gateway_status: Optional[str] = None
 
     shop_name: str | None = None
     client_name: str | None = None

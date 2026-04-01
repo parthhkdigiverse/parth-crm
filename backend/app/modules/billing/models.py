@@ -33,6 +33,8 @@ class Bill(Document):
     invoice_status: str = "DRAFT"
     status: str = "PENDING"
     invoice_number: Optional[str] = None
+    transaction_id: Optional[str] = None
+    payment_gateway_status: Optional[str] = None
     whatsapp_sent: bool = False
 
     # Audit

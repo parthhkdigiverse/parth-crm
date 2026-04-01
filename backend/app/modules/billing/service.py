@@ -46,29 +46,109 @@ class BillingService:
             new_setting = AppSetting(key=key, value=value)
             await new_setting.insert()
 
+    async def _get_highest_sequence(self, prefix: str, year: int, sync_website: bool = False) -> int:
+        """
+        Finds the highest sequence number (NNN) from invoice_number strings (Prefix/YYYY/NNN).
+        If sync_website is True, it also checks the 'website_payment' collection.
+        """
+        max_seq = 0
+        regex = f"^{prefix}/{year}/"
+
+        # 1. Check CRM Bills (srm_bills)
+        last_bill = await Bill.get_pymongo_collection().find_one(
+            {"invoice_number": {"$regex": regex}, "is_deleted": False},
+            sort=[("invoice_number", -1)]
+        )
+        if last_bill and last_bill.get("invoice_number"):
+            try:
+                # Extract NNN from "Prefix/YYYY/NNN"
+                parts = last_bill["invoice_number"].split("/")
+                if len(parts) == 3:
+                    max_seq = max(max_seq, int(parts[2]))
+            except (ValueError, IndexError):
+                pass
+
+        # 2. Check Website Payments (website_payment) if required
+        if sync_website:
+            # We look for successful payments that have an invoice-like string
+            # Since the field name is slightly uncertain, we check common ones or use a regex on values if possible.
+            # However, usually it's 'invoice_no' or 'invoice_number'.
+            website_coll = Bill.get_settings().database["website_payment"]
+            
+            # Potential field names: invoice_number, invoice_no, invoice_string
+            possible_fields = ["invoice_number", "invoice_no", "invoice_string"]
+            
+            # We'll use an $or query to find the latest in ANY of these fields that matches the pattern
+            or_filters = [{f: {"$regex": regex}} for f in possible_fields]
+            
+            # Only count 'succeeded' payments as per user requirement
+            last_site_payment = await website_coll.find_one(
+                {"$and": [{"status": {"$in": ["succeeded", "SUCCESS", "PAID"]}}, {"$or": or_filters}]},
+                sort=[("_id", -1)] # Use _id desc to find the most recent successful one
+            )
+            
+            if last_site_payment:
+                # Find which field matched
+                for f in possible_fields:
+                    val = last_site_payment.get(f)
+                    if val and isinstance(val, str) and "/" in val:
+                        try:
+                            parts = val.split("/")
+                            if len(parts) == 3:
+                                max_seq = max(max_seq, int(parts[2]))
+                        except (ValueError, IndexError):
+                            continue
+
+        return max_seq
+
     async def _next_invoice_number(self, gst_type: str) -> tuple[str, str, int]:
         year = datetime.datetime.now(UTC).year
         if gst_type == "WITHOUT_GST":
             seq_key = "invoice_seq_without_gst"
             series = "PINV"
             prefix = "PInv"
+            sync_website = False
         else:
             seq_key = "invoice_seq_with_gst"
             series = "INV"
             prefix = "Inv"
+            sync_website = True
 
+        # Determine the next sequence
+        # We check both the AppSetting (as a baseline) and the actual collections (for sync)
         start_str = await self._get_setting(seq_key, "1")
-        start = int(start_str or "1")
-        current = max(start, 1)
+        setting_start = int(start_str or "1")
+        
+        # Get the actual max from DB collections
+        db_max = await self._get_highest_sequence(prefix, year, sync_website=sync_website)
+        
+        # The 'current' one we will assign is max(setting, db_max) + 1 if db_max exists
+        # If no entries exist, we start from setting_start (usually 1)
+        if db_max == 0:
+            current = max(setting_start, 1)
+        else:
+            current = max(setting_start, db_max + 1)
 
         while True:
             invoice_number = f"{prefix}/{year}/{current:03d}"
             exists = await Bill.find_one(Bill.invoice_number == invoice_number)
             if not exists:
-                break
+                # Also check website_payment just in case to be 100% sure of uniqueness
+                if sync_website:
+                    website_coll = Bill.get_settings().database["website_payment"]
+                    site_exists = await website_coll.find_one({
+                        "$or": [
+                            {"invoice_number": invoice_number},
+                            {"invoice_no": invoice_number}
+                        ]
+                    })
+                    if not site_exists:
+                        break
+                else:
+                    break
             current += 1
 
-        # Persist the next sequence pointer
+        # Persist the next sequence pointer for responsiveness (avoiding full table scans every time)
         await self._set_setting(seq_key, str(current + 1))
         return invoice_number, series, current
 
@@ -161,7 +241,12 @@ class BillingService:
             "company_name": mapping.get("company_name") or "Harikrushn DigiVerse LLP",
             "company_address": mapping.get("company_address") or "Surat, Gujarat, India",
             "company_phone": mapping.get("company_phone") or "+91 8866005029",
-            "company_email": mapping.get("company_email") or "hetrmangukiya@gmail.com"
+            "company_email": mapping.get("company_email") or "hetrmangukiya@gmail.com",
+            # Additional keys for frontend
+            "business_payment_upi_id": mapping.get("business_payment_upi_id") or "",
+            "business_payment_qr_image_url": mapping.get("business_payment_qr_image_url") or "",
+            "personal_payment_upi_id": mapping.get("personal_payment_upi_id") or "",
+            "personal_payment_qr_image_url": mapping.get("personal_payment_qr_image_url") or "",
         }
 
     async def get_workflow_options(self, current_user: User) -> dict:
@@ -238,6 +323,8 @@ class BillingService:
             invoice_number=invoice_number,
             invoice_status="PENDING_VERIFICATION",
             status="PENDING",
+            transaction_id=bill_in.transaction_id,
+            payment_gateway_status=bill_in.payment_gateway_status,
             created_by_id=current_user.id,
         )
         await db_bill.insert()
@@ -359,25 +446,31 @@ class BillingService:
         await bill.save()
         return bill
 
-    async def generate_payment_qr_for_new_invoice(
-        self, payment_type: str, gst_type: str, amount: float, phone: str
-    ) -> Dict[str, Any]:
-        """
-        Step 2 of Wizard: Generates either a static QR (Personal) or 
-        a dynamic PhonePe Pay Page link (Business).
-        """
-        if amount <= 0:
-            raise HTTPException(status_code=400, detail="Amount must be > 0")
-
-        # 1. PhonePe Business Account (Dynamic Gateway)
+    async def generate_payment_qr_for_new_invoice(self, payment_type: str, gst_type: str, amount: float, phone: str = "9999999999", origin: str = None) -> dict:
+        # Check if banking details configured
+        is_configured = False
+        upi_id = ""
+        upi_name = ""
+        qr_image_url = ""
+        
         if payment_type == "BUSINESS_ACCOUNT":
             txn_id = f"T{datetime.datetime.now().strftime('%y%m%d%H%M%S')}{uuid.uuid4().hex[:4].upper()}"
             paise_amount = int(round(amount * 100))
             
-            # Use placeholders/settings for base URLs
-            base_url = settings.PHONEPE_CALLBACK_BASE_URL or "http://localhost:8000"
-            if not base_url.startswith("http"): base_url = f"https://{base_url}"
-            
+            # Robust URL detection: If frontend sends 'origin', use it as the base for redirect
+            base_url = origin or settings.PHONEPE_CALLBACK_BASE_URL
+            if not base_url:
+                # Fallback for local development if nothing is provided
+                base_url = f"http://localhost:{settings.SRM_PORT if hasattr(settings, 'SRM_PORT') else 8000}"
+                dummy_callback = "https://webhook.site/dummy-phonepe-callback"
+            else:
+                if not base_url.startswith("http"): base_url = f"https://{base_url}"
+                # If it's a localhost origin, use a dummy callback for the simulator cloud
+                if "localhost" in base_url or "127.0.0.1" in base_url:
+                    dummy_callback = "https://webhook.site/dummy-phonepe-callback"
+                else:
+                    dummy_callback = f"{base_url}/api/billing/phonepe-callback"
+
             payload = {
                 "merchantId": settings.PHONEPE_MERCHANT_ID,
                 "merchantTransactionId": txn_id,
@@ -385,7 +478,7 @@ class BillingService:
                 "amount": paise_amount,
                 "redirectUrl": f"{base_url}/frontend/template/billing.html",
                 "redirectMode": "REDIRECT",
-                "callbackUrl": f"{base_url}/api/billing/phonepe-callback",
+                "callbackUrl": dummy_callback,
                 "mobileNumber": phone[-10:],
                 "paymentInstrument": {"type": "PAY_PAGE"}
             }
@@ -435,14 +528,18 @@ class BillingService:
                 print(f"[PhonePe Error] {e}")
                 raise HTTPException(status_code=502, detail=f"Payment Gateway unreachable: {str(e)}")
 
-        # 2. Static QR Fallback (Personal or Other)
+        # 2. Static QR & Shared Link fallback
         defaults = await self.get_invoice_defaults()
-        upi_id = defaults.get("payment_upi_id") or ""
-        qr_url = defaults.get("payment_qr_image_url") or ""
         
-        # Build a raw UPI dynamic link if we have an ID
-        # upi://pay?pa=ID&pn=NAME&am=AMT&cu=INR
-        clean_upi = upi_id.split('?')[0]  # strip any existing params
+        # Decide which settings to use
+        is_business = (payment_type == "BUSINESS_ACCOUNT")
+        prefix = "business_" if is_business else "personal_"
+        
+        upi_id = defaults.get(f"{prefix}payment_upi_id") or defaults.get("payment_upi_id") or ""
+        qr_url = defaults.get(f"{prefix}payment_qr_image_url") or defaults.get("payment_qr_image_url") or ""
+        
+        # dynamic_upi: upi://pay?pa=ID&pn=NAME&am=AMT&cu=INR
+        clean_upi = upi_id.split('?')[0]
         name_encoded = quote("Harikrushn DigiVerse")
         dynamic_upi = f"upi://pay?pa={clean_upi}&pn={name_encoded}&am={amount}&cu=INR"
         
@@ -453,3 +550,120 @@ class BillingService:
             "dynamic_upi_link": dynamic_upi,
             "amount": amount
         }
+
+    async def check_phonepe_payment_status(self, txn_id: str) -> Dict[str, Any]:
+        """
+        Polls PhonePe for transaction status.
+        """
+        merchant_id = settings.PHONEPE_MERCHANT_ID
+        salt_key = settings.PHONEPE_SALT_KEY
+        salt_idx = settings.PHONEPE_SALT_INDEX
+        
+        # Endpoint: /pg/v1/status/{merchantId}/{merchantTransactionId}
+        endpoint = f"/pg/v1/status/{merchant_id}/{txn_id}"
+        
+        # Signature: SHA256(endpoint + saltKey) + "###" + saltIndex
+        hash_raw = f"{endpoint}{salt_key}"
+        hash_hex = hashlib.sha256(hash_raw.encode()).hexdigest()
+        x_verify = f"{hash_hex}###{salt_idx}"
+        
+        pp_env = settings.PHONEPE_ENV or "sandbox"
+        base_api = settings.PHONEPE_BASE_URL or "https://api-preprod.phonepe.com/apis/pg-sandbox"
+        if pp_env == "production":
+            base_api = "https://api.phonepe.com/apis/hermes"
+            
+        full_url = f"{base_api}{endpoint}"
+        
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.get(
+                    full_url,
+                    headers={"Content-Type": "application/json", "X-VERIFY": x_verify, "X-MERCHANT-ID": merchant_id},
+                )
+                data = resp.json()
+                
+            # data structure: {success: bool, code: str, message: str, data: {merchantTransactionId, state, ...}}
+            # PhonePe SUCCESS code is usually "PAYMENT_SUCCESS"
+            return {
+                "success": data.get("success", False),
+                "code": data.get("code", "UNKNOWN"),
+                "message": data.get("message", "Request failed"),
+                "txn_id": txn_id,
+                "state": data.get("data", {}).get("state", "UNKNOWN")
+            }
+        except Exception as e:
+            print(f"[PhonePe Status Error] {e}")
+            raise HTTPException(status_code=502, detail=f"Failed to fetch payment status: {str(e)}")
+
+    async def get_invoice_actions(self, bill: Bill, current_user: User) -> Dict[str, Any]:
+        can_verify = await self._can_verify(current_user) and bill.invoice_status == "PENDING_VERIFICATION"
+        can_send = await self._can_send(current_user) and bill.invoice_status in {"VERIFIED", "SENT"}
+        
+        can_archive = self._can_archive_invoice(current_user, bill) and not bill.is_archived
+        can_unarchive = self._can_archive_invoice(current_user, bill) and bill.is_archived
+        can_delete = (current_user.role == UserRole.ADMIN) and bill.is_archived
+
+        allowed_verifier_roles = list(await self._allowed_verifier_roles())
+        
+        return {
+            "can_verify": can_verify,
+            "can_send_whatsapp": can_send,
+            "can_archive": can_archive,
+            "can_unarchive": can_unarchive,
+            "can_delete_archived": can_delete,
+            "allowed_verifier_roles": allowed_verifier_roles
+        }
+
+    async def save_invoice_settings(self, payload: dict) -> dict:
+        for key, value in payload.items():
+            if value is not None:
+                await self._set_setting(key, str(value))
+        return {"status": "success"}
+
+    async def check_whatsapp_health(self, current_user: User) -> dict:
+        # Placeholder for real WhatsApp health logic
+        return {"status": "healthy", "service": "whatsapp", "timestamp": datetime.datetime.now(UTC).isoformat()}
+
+    async def unarchive_invoice(self, bill_id: PydanticObjectId, current_user: User) -> Bill:
+        bill = await self.get_bill(bill_id)
+        if not bill: raise HTTPException(status_code=404, detail="Not Found")
+        bill.is_archived = False
+        await bill.save()
+        return bill
+
+    async def archive_invoices_bulk(self, ids: List[PydanticObjectId], current_user: User) -> dict:
+        await Bill.get_pymongo_collection().update_many(
+            {"_id": {"$in": ids}},
+            {"$set": {"is_archived": True, "archived_by_id": current_user.id}}
+        )
+        return {"status": "success", "count": len(ids)}
+
+    async def delete_archived_invoice(self, bill_id: PydanticObjectId, current_user: User) -> dict:
+        if current_user.role != UserRole.ADMIN:
+            raise HTTPException(status_code=403, detail="Permission Denied")
+        bill = await self.get_bill(bill_id)
+        if not bill: raise HTTPException(status_code=404, detail="Not Found")
+        if not bill.is_archived:
+            raise HTTPException(status_code=400, detail="Only archived invoices can be deleted")
+        
+        bill.is_deleted = True
+        await bill.save()
+        return {"status": "success"}
+
+    async def delete_archived_invoices_bulk(self, ids: List[PydanticObjectId], current_user: User) -> dict:
+        if current_user.role != UserRole.ADMIN:
+            raise HTTPException(status_code=403, detail="Permission Denied")
+        
+        await Bill.get_pymongo_collection().update_many(
+            {"_id": {"$in": ids}, "is_archived": True},
+            {"$set": {"is_deleted": True}}
+        )
+        return {"status": "success", "count": len(ids)}
+
+    async def force_sent(self, bill_id: PydanticObjectId, current_user: User) -> Bill:
+        bill = await self.get_bill(bill_id)
+        if not bill: raise HTTPException(status_code=404, detail="Not Found")
+        bill.invoice_status = "SENT"
+        bill.whatsapp_sent = True
+        await bill.save()
+        return bill

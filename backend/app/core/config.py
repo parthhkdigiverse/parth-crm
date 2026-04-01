@@ -39,7 +39,8 @@ class Settings(BaseSettings):
     
     SRM_HOST: str = "0.0.0.0"
     SRM_PORT: int = 8080
-    API_BASE_URL: str = "https://dev-srm.hkdigiskill.com/api"
+    # API_BASE_URL: str = "https://dev-srm.hkdigiskill.com/api"
+    API_BASE_URL: str = ""
 
 
 
