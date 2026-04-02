@@ -60,12 +60,40 @@ class FeedbackService:
             
         return feedbacks
 
-    async def get_client_feedbacks(self, client_id: PydanticObjectId):
-        feedbacks = await Feedback.find(Feedback.client_id == client_id).to_list()
+    async def get_client_feedbacks(self, client_id: PydanticObjectId, skip: int = 0, limit: Optional[int] = None):
+        query = Feedback.find(Feedback.client_id == client_id).sort("-created_at").skip(skip)
+        if limit is not None:
+            query = query.limit(limit)
+        feedbacks = await query.to_list()
         return await self._attach_roles(feedbacks)
 
-    async def get_all_client_feedbacks(self):
-        feedbacks = await Feedback.find_all().sort("-created_at").to_list()
+    async def get_all_client_feedbacks(self, skip: int = 0, limit: Optional[int] = None):
+        query = Feedback.find_all().sort("-created_at").skip(skip)
+        if limit is not None:
+            query = query.limit(limit)
+        feedbacks = await query.to_list()
+        return await self._attach_roles(feedbacks)
+
+    async def get_feedbacks(self, current_user: User, skip: int = 0, limit: Optional[int] = None) -> List[Feedback]:
+        """List feedbacks. PMs see only their assigned feedbacks."""
+        if current_user.role == UserRole.ADMIN:
+            return await self.get_all_client_feedbacks(skip, limit)
+        
+        # Non-admins: only see feedbacks for clients they own or manage
+        from app.modules.clients.models import Client as ClientModel
+        raw_client_ids = await ClientModel.get_pymongo_collection().distinct("_id", {
+            "$or": [
+                {"pm_id": current_user.id},
+                {"owner_id": current_user.id},
+                {"referred_by_id": current_user.id}
+            ]
+        })
+        client_ids = [PydanticObjectId(cid) for cid in raw_client_ids if cid]
+        
+        query = Feedback.find(In(Feedback.client_id, client_ids)).sort("-created_at").skip(skip)
+        if limit is not None:
+            query = query.limit(limit)
+        feedbacks = await query.to_list()
         return await self._attach_roles(feedbacks)
 
     async def create_user_feedback(self, user_id: PydanticObjectId, feedback_in: UserFeedbackCreate) -> UserFeedback:

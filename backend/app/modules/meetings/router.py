@@ -34,6 +34,8 @@ PM_SCOPED_ROLES = {UserRole.PROJECT_MANAGER, UserRole.PROJECT_MANAGER_AND_SALES}
 
 @global_router.get("/", response_model=List[MeetingSummaryRead])
 async def read_all_meetings(
+    skip: int = 0,
+    limit: Optional[int] = None,
     client_id: Optional[PydanticObjectId] = None,
     meeting_type: Optional[str] = None,
     status: Optional[str] = None,
@@ -68,7 +70,10 @@ async def read_all_meetings(
     if date_filter:
         find_query["date"] = date_filter
     
-    return await MeetingSummary.find(find_query).sort("-date").to_list()
+    query = MeetingSummary.find(find_query).sort("-date").skip(skip)
+    if limit is not None:
+        query = query.limit(limit)
+    return await query.to_list()
 
 @global_router.post("/", response_model=MeetingSummaryRead)
 async def create_meeting_global(

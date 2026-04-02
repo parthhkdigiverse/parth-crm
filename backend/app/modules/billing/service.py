@@ -46,111 +46,83 @@ class BillingService:
             new_setting = AppSetting(key=key, value=value)
             await new_setting.insert()
 
-    async def _get_highest_sequence(self, prefix: str, year: int, sync_website: bool = False) -> int:
+    async def _get_website_max_seq(self, prefix: str, year: int) -> int:
         """
-        Finds the highest sequence number (NNN) from invoice_number strings (Prefix/YYYY/NNN).
-        If sync_website is True, it also checks the 'website_payment' collection.
+        Returns the highest sequence number used in website_payment for Prefix/YYYY/NNN.
+        Only counts SUCCESS/succeeded payments to avoid counting failed attempts.
         """
-        max_seq = 0
         regex = f"^{prefix}/{year}/"
-
-        # 1. Check CRM Bills (srm_bills)
-        last_bill = await Bill.get_pymongo_collection().find_one(
-            {"invoice_number": {"$regex": regex}, "is_deleted": False},
-            sort=[("invoice_number", -1)]
+        website_max = 0
+        website_coll = Bill.get_pymongo_collection().database["website_payment"]
+        
+        # Check 'invoice' (as seen in Compass) and 'invoice_no' (just in case)
+        possible_fields = ["invoice", "invoice_no", "invoice_number"]
+        
+        # We look for successful payments specifically with 'SUCCESS' status
+        or_filters = [{f: {"$regex": regex}} for f in possible_fields]
+        last_site = await website_coll.find_one(
+            {"$and": [{"status": "SUCCESS"}, {"$or": or_filters}]},
+            sort=[("_id", -1)]
         )
-        if last_bill and last_bill.get("invoice_number"):
-            try:
-                # Extract NNN from "Prefix/YYYY/NNN"
-                parts = last_bill["invoice_number"].split("/")
-                if len(parts) == 3:
-                    max_seq = max(max_seq, int(parts[2]))
-            except (ValueError, IndexError):
-                pass
-
-        # 2. Check Website Payments (website_payment) if required
-        if sync_website:
-            # We look for successful payments that have an invoice-like string
-            # Since the field name is slightly uncertain, we check common ones or use a regex on values if possible.
-            # However, usually it's 'invoice_no' or 'invoice_number'.
-            website_coll = Bill.get_pymongo_collection().database["website_payment"]
-            
-            # Potential field names: invoice_number, invoice_no, invoice_string
-            possible_fields = ["invoice_number", "invoice_no", "invoice_string"]
-            
-            # We'll use an $or query to find the latest in ANY of these fields that matches the pattern
-            or_filters = [{f: {"$regex": regex}} for f in possible_fields]
-            
-            # Only count 'succeeded' payments as per user requirement
-            last_site_payment = await website_coll.find_one(
-                {"$and": [{"status": {"$in": ["succeeded", "SUCCESS", "PAID"]}}, {"$or": or_filters}]},
-                sort=[("_id", -1)] # Use _id desc to find the most recent successful one
-            )
-            
-            if last_site_payment:
-                # Find which field matched
-                for f in possible_fields:
-                    val = last_site_payment.get(f)
-                    if val and isinstance(val, str) and "/" in val:
-                        try:
-                            parts = val.split("/")
-                            if len(parts) == 3:
-                                max_seq = max(max_seq, int(parts[2]))
-                        except (ValueError, IndexError):
-                            continue
-
-        return max_seq
+        
+        if last_site:
+            for f in possible_fields:
+                val = last_site.get(f)
+                if val and isinstance(val, str) and "/" in val:
+                    try:
+                        parts = val.split("/")
+                        if len(parts) == 3:
+                            website_max = max(website_max, int(parts[2]))
+                    except (ValueError, IndexError):
+                        continue
+        return website_max
 
     async def _next_invoice_number(self, gst_type: str) -> tuple[str, str, int]:
-        year = datetime.datetime.now(UTC).year
+        # --- Year: use settings override or fall back to system year ---
+        year_str = await self._get_setting("invoice_year", "")
+        try:
+            year = int(year_str) if year_str else datetime.datetime.now(UTC).year
+        except ValueError:
+            year = datetime.datetime.now(UTC).year
+
         if gst_type == "WITHOUT_GST":
             seq_key = "invoice_seq_without_gst"
-            series = "PINV"
-            prefix = "PInv"
-            sync_website = False
+            series  = "PINV"
+            prefix  = "PInv"
         else:
             seq_key = "invoice_seq_with_gst"
-            series = "INV"
-            prefix = "Inv"
-            sync_website = True
+            series  = "INV"
+            prefix  = "Inv"
 
-        # Determine the next sequence
-        # We check both the AppSetting (as a baseline) and the actual collections (for sync)
-        start_str = await self._get_setting(seq_key, "1")
-        setting_start = int(start_str or "1")
-        
-        # Get the actual max from DB collections
-        db_max = await self._get_highest_sequence(prefix, year, sync_website=sync_website)
-        
-        # The 'current' one we will assign is max(setting, db_max) + 1 if db_max exists
-        # If no entries exist, we start from setting_start (usually 1)
-        if db_max == 0:
-            current = max(setting_start, 1)
-        else:
-            current = max(setting_start, db_max + 1)
+        # settings = srm_bills_max + 1 (always kept in sync after each issue)
+        # website_payment may have higher numbers from website invoices → check that too
+        start_str   = await self._get_setting(seq_key, "1")
+        setting_val = max(int(start_str or "1"), 1)
+        website_max = await self._get_website_max_seq(prefix, year)
 
+        # Next = max of both sources
+        current = max(setting_val, website_max + 1) if website_max >= setting_val else setting_val
+
+        # Bump past any exact remaining conflict in website_payment
+        website_coll = Bill.get_pymongo_collection().database["website_payment"]
         while True:
             invoice_number = f"{prefix}/{year}/{current:03d}"
-            exists = await Bill.find_one(Bill.invoice_number == invoice_number)
-            if not exists:
-                # Also check website_payment just in case to be 100% sure of uniqueness
-                if sync_website:
-                    website_coll = Bill.get_pymongo_collection().database["website_payment"]
-                    site_exists = await website_coll.find_one({
-                        "$or": [
-                            {"invoice_number": invoice_number},
-                            {"invoice_no": invoice_number}
-                        ]
-                    })
-                    if not site_exists:
-                        break
-                else:
-                    break
+            site_exists = await website_coll.find_one({
+                "$or": [
+                    {"invoice_number": invoice_number},
+                    {"invoice_no": invoice_number}
+                ]
+            })
+            if not site_exists:
+                break
             current += 1
 
-        # Persist the next sequence pointer for responsiveness (avoiding full table scans every time)
+        invoice_number = f"{prefix}/{year}/{current:03d}"
+
+        # Keep settings in sync: write issued+1 back
         await self._set_setting(seq_key, str(current + 1))
         return invoice_number, series, current
+
 
     def _current_role_name(self, current_user: User) -> str:
         return current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
@@ -219,6 +191,7 @@ class BillingService:
             "payment_upi_id", "payment_account_name", "payment_qr_image_url", "payment_bank_name", "payment_account_number", "payment_ifsc", "payment_branch",
             "company_name", "company_address", "company_header_image_details", "company_phone", "company_email", "company_gstin", "company_pan", "company_cin", "company_cst_code",
             "invoice_header_bg", "invoice_seq_with_gst", "invoice_seq_without_gst", "invoice_verifier_roles", "invoice_sender_roles", "invoice_creator_roles", "whatsapp_invoice_caption",
+            "invoice_year",
         ]
         rows = await AppSetting.get_pymongo_collection().find({"key": {"$in": keys}}).to_list(length=None)
         mapping = {r["key"]: r["value"] for r in rows}
@@ -230,6 +203,14 @@ class BillingService:
         def _to_int(v: str | None, fb: int) -> int:
             try: return int(v) if v not in (None, "") else fb
             except: return fb
+
+        import datetime as _dt
+        current_system_year = _dt.datetime.now().year
+        year_val = mapping.get("invoice_year")
+        try:
+            resolved_year = int(year_val) if year_val else current_system_year
+        except (ValueError, TypeError):
+            resolved_year = current_system_year
 
         return {
             "invoice_default_amount": _to_float(mapping.get("invoice_default_amount"), 12000),
@@ -247,7 +228,12 @@ class BillingService:
             "business_payment_qr_image_url": mapping.get("business_payment_qr_image_url") or "",
             "personal_payment_upi_id": mapping.get("personal_payment_upi_id") or "",
             "personal_payment_qr_image_url": mapping.get("personal_payment_qr_image_url") or "",
+            # Invoice year & sequence settings (returned so settings page can display them)
+            "invoice_year": resolved_year,
+            "invoice_seq_with_gst": _to_int(mapping.get("invoice_seq_with_gst"), 1),
+            "invoice_seq_without_gst": _to_int(mapping.get("invoice_seq_without_gst"), 1),
         }
+
 
     async def get_workflow_options(self, current_user: User) -> dict:
         settings_defaults = await self.get_invoice_defaults()
@@ -335,8 +321,12 @@ class BillingService:
         if not bill or bill.is_deleted: return None
         return bill
 
-    async def get_all_bills(self, current_user: User, skip: int = 0, limit: int = 200, search: str = None, **kwargs):
-        """Refined bill retrieval with dynamic aggregation of frontend filters."""
+    async def get_all_bills(self, current_user: User, skip: int = 0, limit: Optional[int] = None, search: str = None, **kwargs):
+        """Refined bill retrieval with dynamic aggregation of frontend filters.
+        
+        When `limit` is None (the default), ALL matching records are returned.
+        When `limit` is an integer, only that many records are returned.
+        """
         filters: Dict[str, Any] = {"is_deleted": False}
         
         # RBAC: Non-admins only see their own or non-archived bills
@@ -377,7 +367,12 @@ class BillingService:
             val = kwargs["archived"]
             filters["is_archived"] = str(val).lower() == "true"
 
-        bills = await Bill.find(filters).sort("-created_at").skip(skip).limit(limit).to_list()
+        # Build query — only apply limit when explicitly provided
+        query = Bill.find(filters).sort("-created_at").skip(skip)
+        if limit is not None:
+            query = query.limit(limit)
+        bills = await query.to_list()
+
         res = []
         for b in bills:
             d = b.model_dump()
@@ -464,7 +459,16 @@ class BillingService:
                 base_url = f"http://localhost:{settings.SRM_PORT if hasattr(settings, 'SRM_PORT') else 8000}"
                 dummy_callback = "https://webhook.site/dummy-phonepe-callback"
             else:
-                if not base_url.startswith("http"): base_url = f"https://{base_url}"
+                if not base_url.startswith("http"):
+                    # Local development helper: default to http for localhost/127.0.0.1
+                    if "localhost" in base_url or "127.0.0.1" in base_url:
+                        base_url = f"http://{base_url}"
+                    else:
+                        base_url = f"https://{base_url}"
+                
+                # Ensure no trailing slash in base_url
+                base_url = base_url.rstrip("/")
+
                 # If it's a localhost origin, use a dummy callback for the simulator cloud
                 if "localhost" in base_url or "127.0.0.1" in base_url:
                     dummy_callback = "https://webhook.site/dummy-phonepe-callback"
@@ -476,7 +480,7 @@ class BillingService:
                 "merchantTransactionId": txn_id,
                 "merchantUserId": f"U{phone[-10:]}",
                 "amount": paise_amount,
-                "redirectUrl": f"{base_url}/frontend/template/billing.html?status=success&txnId={txn_id}",
+                "redirectUrl": f"{base_url}/billing.html?status=success&txnId={txn_id}",
                 "redirectMode": "REDIRECT",
                 "callbackUrl": dummy_callback,
                 "mobileNumber": phone[-10:],
@@ -501,7 +505,10 @@ class BillingService:
             base_api = settings.PHONEPE_BASE_URL or "https://api-preprod.phonepe.com/apis/pg-sandbox"
             if pp_env == "production":
                 base_api = "https://api.phonepe.com/apis/hermes"
-            
+                # Dynamic Security Check: Warn if using default test salts in production
+                if settings.PHONEPE_MERCHANT_ID == "PGTESTPAYUAT86":
+                    print("[WARNING] Running in PRODUCTION with DEFAULT UAT Merchant ID!")
+
             api_url = f"{base_api}{endpoint}"
             
             try:
@@ -511,7 +518,15 @@ class BillingService:
                         json={"request": payload_main},
                         headers={"Content-Type": "application/json", "X-VERIFY": x_verify},
                     )
-                    resp_data = resp.json()
+                    
+                    if resp.status_code == 429:
+                        raise HTTPException(status_code=429, detail="Too many requests to PhonePe. Please wait 1-2 minutes or use a different account.")
+                    
+                    try:
+                        resp_data = resp.json()
+                    except Exception:
+                        print(f"[PhonePe Error] Non-JSON response ({resp.status_code}): {resp.text[:200]}")
+                        raise HTTPException(status_code=502, detail="Invalid response from Payment Gateway")
                     
                 if resp_data.get("success"):
                     pay_url = resp_data["data"]["instrumentResponse"]["redirectInfo"]["url"]
@@ -524,9 +539,14 @@ class BillingService:
                     }
                 else:
                     msg = resp_data.get("message", "PhonePe initiation failed")
+                    code = resp_data.get("code", "UNKNOWN")
+                    print(f"[PhonePe Rejection] {code}: {msg}")
                     raise HTTPException(status_code=400, detail=f"Gateway Error: {msg}")
+                    
+            except HTTPException:
+                raise
             except Exception as e:
-                print(f"[PhonePe Error] {e}")
+                print(f"[PhonePe Connection Error] {e}")
                 raise HTTPException(status_code=502, detail=f"Payment Gateway unreachable: {str(e)}")
 
         # 2. Static QR & Shared Link fallback
@@ -549,7 +569,8 @@ class BillingService:
             "upi_id": upi_id,
             "qr_image_url": qr_url,
             "dynamic_upi_link": dynamic_upi,
-            "amount": amount
+            "amount": amount,
+            "is_fallback": False # Reset fallback as requested by user
         }
 
     async def check_phonepe_payment_status(self, txn_id: str, current_user: User) -> Dict[str, Any]:

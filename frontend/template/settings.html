@@ -545,8 +545,16 @@
 
                             <div class="setting-row">
                                 <div>
+                                    <div class="setting-label">Invoice Year</div>
+                                    <div class="setting-desc">Year used in invoice numbers, e.g. <strong>INV/2027/001</strong> and <strong>PINV/2027/001</strong>. Change to override the default system year.</div>
+                                </div>
+                                <input type="number" id="inv-year" class="form-control form-control-sm" style="max-width:120px;" placeholder="e.g. 2026" min="2000" max="2100">
+                            </div>
+
+                            <div class="setting-row">
+                                <div>
                                     <div class="setting-label">Next Invoice Sequence (With GST)</div>
-                                    <div class="setting-desc">Controls Inv/YYYY/### numbering. Set to 1 to reset.</div>
+                                    <div class="setting-desc">Controls Inv/<em>YEAR</em>/### numbering. Set to 1 to reset.</div>
                                 </div>
                                 <input type="number" id="inv-seq-with-gst" class="form-control form-control-sm" style="max-width:160px;" placeholder="1" min="1">
                             </div>
@@ -554,10 +562,11 @@
                             <div class="setting-row">
                                 <div>
                                     <div class="setting-label">Next Invoice Sequence (Without GST)</div>
-                                    <div class="setting-desc">Controls PInv/YYYY/### numbering. Set to 1 to reset.</div>
+                                    <div class="setting-desc">Controls PInv/<em>YEAR</em>/### numbering. Set to 1 to reset.</div>
                                 </div>
                                 <input type="number" id="inv-seq-without-gst" class="form-control form-control-sm" style="max-width:160px;" placeholder="1" min="1">
                             </div>
+
 
                             <div class="setting-row">
                                 <div>

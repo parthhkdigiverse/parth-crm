@@ -307,7 +307,7 @@
             </div>
 
                 <!-- ── Stats ────────────────────────────────────────── -->
-                <div class="row g-3 mb-4">
+                <div class="row g-3 mb-3">
                     <div class="col-6 col-md-3">
                         <div class="stat-card">
                             <div class="stat-content-left">
@@ -710,8 +710,10 @@
         let personalWithoutGstDefaultAmount = 12000;
         let activeAutofillSource = 'visit';
         let pendingActionBillId = null;
-
-        // Populate Billing Month dropdown (Past 6 months excluding current)
+        
+        // QR Caching to prevent PhonePe rate limiting during wizard navigation
+        let lastQRParams = null; 
+        let wizardQRData = null;  
         function initBillingMonthDropdown() {
             const select = document.getElementById('c-billing-month');
             if (!select) return;
@@ -739,7 +741,6 @@
 
         // Wizard state
         let wizardStep = 1;
-        let wizardQRData = null;   // result from /generate-qr
 
         function fmtMoney(v) {
             const n = Number(v);
@@ -867,8 +868,8 @@
                     payment_type: currentFilters['payment-type-filter'] || 'ALL',
                     gst_type: currentFilters['gst-type-filter'] || 'ALL',
                     search: currentFilters['inv-search'] || '',
-                    skip: 0, 
-                    limit: 200,
+                    skip: 0,
+                    // No limit — returns ALL matching invoices
                 });
                 invoiceActionsById = {};
                 if (Array.isArray(allBills) && allBills.length) {
@@ -1113,6 +1114,11 @@
             setGstTypeOptions(paymentType);
             const selectedGstType = document.getElementById('c-gst-type').value;
             const chip = document.getElementById('default-amount-chip');
+            
+            // Invalidate QR cache if payment params change
+            lastQRParams = null;
+            wizardQRData = null;
+
             if (!paymentType || !selectedGstType) return;
             const currentAmount = Number(document.getElementById('c-amount').value);
             try {
@@ -1127,6 +1133,13 @@
                     chip.textContent = `Payable ₹${fmtMoney(resolved.total_amount)} (No GST)`;
                 }
             } catch (e) { /* silent — user may not have selected both yet */ }
+        }
+
+        function updateAmountPreview(val) {
+            // Invalidate QR cache if amount changes
+            lastQRParams = null;
+            wizardQRData = null;
+            onPaymentModeChanged();
         }
 
         async function goToStep2() {
@@ -1187,21 +1200,40 @@
                 return;
             }
 
-            document.getElementById('step2-confirm-btn').innerHTML = '<i class="bi bi-check-circle me-2"></i>Verify & Create Invoice';
-            document.getElementById('step2-confirm-btn').onclick = () => verifyAndProceedToStep3();
-            document.getElementById('p2-qr-zone').innerHTML = `
-            <div class="text-center py-5">
-                <div class="spinner-grow text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
-                <div class="mt-3 text-muted">Securing payment link...</div>
-            </div>`;
+            // 🚀 INTELLIGENT CACHING
+            const currentParams = JSON.stringify({ pt, gt, amt, phone });
+            const canReuseCache = (lastQRParams === currentParams && wizardQRData);
 
-            try {
-                wizardQRData = await ApiClient.generateInvoicePaymentQR({
-                    payment_type: pt, gst_type: gt, amount: total, phone: phone,
-                    origin: window.location.origin
-                });
-                
-                const qr = wizardQRData;
+            if (canReuseCache) {
+                console.log("[Payment] Reusing cached QR data");
+            } else {
+                document.getElementById('p2-qr-zone').innerHTML = `
+                <div class="text-center py-5">
+                    <div class="spinner-grow text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
+                    <div class="mt-3 text-muted">Securing payment link...</div>
+                </div>`;
+
+                try {
+                    wizardQRData = await ApiClient.generateInvoicePaymentQR({
+                        payment_type: pt, gst_type: gt, amount: total, phone: phone,
+                        origin: window.location.origin
+                    });
+                    lastQRParams = currentParams; // Update cache key
+                } catch (e) {
+                    document.getElementById('p2-qr-zone').innerHTML = `
+                    <div class="alert alert-danger border-0 rounded-4 p-4 text-center mt-3">
+                        <div class="h1 mb-3"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                        <div class="fw-bold mb-1">Generation Failed</div>
+                        <div class="small">${e.data?.detail || e.message || 'Check your billing settings.'}</div>
+                        <button onclick="goToStep1()" class="btn btn-link text-danger mt-3 small p-0">Go back and check details</button>
+                    </div>`;
+                    wizardQRData = null;
+                    lastQRParams = null;
+                    return;
+                }
+            }
+            
+            const qr = wizardQRData;
                 let hubHtml = '';
 
                 if (qr.type === 'gateway') {
@@ -1316,17 +1348,6 @@
                 
                 document.getElementById('p2-qr-zone').innerHTML = hubHtml;
                 document.getElementById('createModal').querySelector('.modal-box').style.width = '550px';
-
-            } catch (e) {
-                document.getElementById('p2-qr-zone').innerHTML = `
-                <div class="alert alert-danger border-0 rounded-4 p-4 text-center mt-3">
-                    <div class="h1 mb-3"><i class="bi bi-exclamation-triangle-fill"></i></div>
-                    <div class="fw-bold mb-1">Generation Failed</div>
-                    <div class="small">${e.data?.detail || e.message || 'Check your billing settings.'}</div>
-                    <button onclick="goToStep1()" class="btn btn-link text-danger mt-3 small p-0">Go back and check details</button>
-                </div>`;
-                wizardQRData = null;
-            }
         }
 
         // ── Status Polling Logic ────────────────────────────────────────────────────────
@@ -1457,45 +1478,65 @@
 
             if (status === 'success' || status === 'failed') {
                 const isSuccess = status === 'success';
-                const themeColor = isSuccess ? '#16a34a' : '#dc2626';
-                const themeBg = isSuccess ? '#f0fdf4' : '#fef2f2';
-                const themeBorder = isSuccess ? '#bbf7d0' : '#fecaca';
-                const icon = isSuccess ? 'bi-check-lg' : 'bi-x-lg';
-                const title = isSuccess ? 'Payment Successful!' : 'Payment Failed';
+                const themeColor = isSuccess ? '#10b981' : '#ef4444';
+                const themeBg = isSuccess ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)';
+                const icon = isSuccess ? 'bi-patch-check-fill' : 'bi-exclamation-octagon-fill';
+                const title = isSuccess ? 'Payment Successful' : 'Payment Failed';
                 const msg = isSuccess 
-                    ? 'Your transaction has been processed. You can now close this tab and return to the billing window.' 
-                    : 'The transaction could not be completed. Please return to the billing window to try again.';
+                    ? 'Your payment was processed successfully. You can now safely close this window.' 
+                    : 'We could not verify your payment. Please return to the billing dashboard to try again.';
 
                 document.addEventListener('DOMContentLoaded', () => {
                     document.body.innerHTML = `
-                    <div style="height:100vh; display:flex; align-items:center; justify-content:center; background:#f8fafc; font-family:'Inter', sans-serif;">
-                        <div style="text-align:center; padding:40px; background:#fff; border-radius:24px; box-shadow:0 10px 25px rgba(0,0,0,0.05); max-width:400px; width:90%; border:1px solid #e2e8f0;">
-                            <div style="width:80px; height:80px; background:${themeBg}; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 24px; border:2px solid ${themeBorder};">
-                                <i class="bi ${icon}" style="font-size:40px; color:${themeColor};"></i>
+                    <div style="height:100vh; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); font-family:'Inter', sans-serif;">
+                        <div style="text-align:center; padding:48px; background:#fff; border-radius:32px; box-shadow:0 15px 45px rgba(0,0,0,0.08); max-width:440px; width:92%; border:1px solid rgba(0,0,0,0.03);">
+                            <div style="width:96px; height:96px; background:${themeBg}; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 32px; border:3px solid #fff; box-shadow:0 8px 16px rgba(0,0,0,0.05);">
+                                <i class="bi ${icon}" style="font-size:44px; color:${themeColor};"></i>
                             </div>
-                            <h1 style="font-family:'Outfit', sans-serif; font-size:1.5rem; color:#0f172a; margin-bottom:12px;">${title}</h1>
-                            <p style="color:#64748b; font-size:0.95rem; line-height:1.6; margin-bottom:24px;">${msg}</p>
+                            <h1 style="font-family:'Outfit', sans-serif; font-size:1.75rem; font-weight:800; color:#1e293b; margin-bottom:14px; letter-spacing:-0.01em;">${title}</h1>
+                            <p style="color:#64748b; font-size:1rem; line-height:1.6; margin-bottom:32px; font-weight:500;">${msg}</p>
                             
-                            <div id="countdown-text" style="font-size:12px; color:#94a3b8; font-weight:600; letter-spacing:1px; text-transform:uppercase; margin-bottom: 20px;">Auto-closing in 3 seconds...</div>
-                            
-                            <a href="billing.html" style="display:inline-block; padding:10px 24px; background:var(--primary, #2563eb); color:#fff; text-decoration:none; border-radius:8px; font-weight:600; font-size:14px; transition: opacity 0.2s;">Return to Billing</a>
+                            <div class="d-grid gap-2">
+                                <button onclick="window.close()" id="return-btn" style="padding:14px 28px; background:${isSuccess ? '#10b981' : '#1e293b'}; color:#fff; border:none; border-radius:14px; font-weight:700; font-size:15px; cursor:pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);">
+                                    ${isSuccess ? '<i class="bi bi-x-circle me-2"></i>Close Window' : '<i class="bi bi-arrow-left me-2"></i>Back to Billing'}
+                                </button>
+                                <a href="billing.html" style="font-size:13px; color:#94a3b8; text-decoration:none; margin-top:10px; font-weight:600;">Not closing? Click here</a>
+                            </div>
+
+                            <div id="status-tag" style="margin-top:32px; font-size:11px; color:${themeColor}; font-weight:800; letter-spacing:0.1em; text-transform:uppercase; background:${themeBg}; padding:6px 16px; border-radius:100px; display:inline-block;">
+                                ${isSuccess ? 'Transaction Completed' : 'Transaction Declined'}
+                            </div>
                         </div>
                     </div>`;
                     
-                    // Notify original window if possible
-                    if (window.opener && typeof window.opener.manualCheckStatus === 'function') {
-                        window.opener.manualCheckStatus(txnId);
+                    // Signal parent window
+                    try {
+                        if (window.opener && !window.opener.closed) {
+                            if (typeof window.opener.manualCheckStatus === 'function') {
+                                window.opener.manualCheckStatus(txnId);
+                                console.log('[Redirect] Successfully notified opener via manualCheckStatus');
+                            } else {
+                                // Fallback: try to just refresh the parent's data
+                                if (typeof window.opener.loadBills === 'function') {
+                                    window.opener.loadBills();
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('[Redirect] Cross-origin or window.opener access blocked:', e);
                     }
                     
-                    // Close this tab if it was opened as a popup
-                    setTimeout(() => { 
-                        if (window.opener) {
-                            window.close();
-                        } else {
-                            const countdown = document.getElementById('countdown-text');
-                            if (countdown) countdown.textContent = "Please return to your main window.";
-                        }
-                    }, 3000);
+                    // Auto-close if successful
+                    if (isSuccess) {
+                        setTimeout(() => { 
+                            if (window.opener && !window.opener.closed) {
+                                window.close(); 
+                            } else {
+                                const tag = document.getElementById('status-tag');
+                                if (tag) tag.textContent = "Safe to close";
+                            }
+                        }, 4000);
+                    }
                 });
             }
         })();

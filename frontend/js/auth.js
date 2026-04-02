@@ -39,22 +39,27 @@ if (!isLoginPage) {
 }
 
 window.getToken = function() {
-    const t = sessionStorage.getItem('access_token');
+    const t = localStorage.getItem('access_token');
     if (!t || t === 'null' || t === 'undefined' || t === '') return null;
     return t;
 }
 window.setTokens = function(a, r) {
-    sessionStorage.setItem('access_token', a);
-    if (r) sessionStorage.setItem('refresh_token', r);
+    localStorage.setItem('access_token', a);
+    if (r) localStorage.setItem('refresh_token', r);
 }
 window.clearTokens = function() {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('srm_user');
+    localStorage.removeItem('current_user');
+    // Also clear any sessionStorage remnants from old sessions
     sessionStorage.removeItem('access_token');
     sessionStorage.removeItem('refresh_token');
     sessionStorage.removeItem('srm_user');
-    sessionStorage.removeItem('current_user'); // Added based on snippet
+    sessionStorage.removeItem('current_user');
 }
 window.getUser = function() {
-    try { return JSON.parse(sessionStorage.getItem('srm_user')); } catch { return null; }
+    try { return JSON.parse(localStorage.getItem('srm_user')); } catch { return null; }
 }
 
 window.showAccessDeniedState = function(role, path) {
@@ -139,12 +144,16 @@ window.requireAuth = function() {
     let user = getUser();
 
     if (!token) {
-        // Bypass redirect if this is a payment success return (sessionStorage is tab-specific)
+        // Bypass redirect if this is a payment success return
         if (params.get('status') === 'success') {
             console.log('requireAuth: Payment success bypass detected');
             return;
         }
-        if (!isLoginPage) window.location.replace('index.html');
+        if (!isLoginPage) {
+            // Encode the current page so login can redirect back
+            const currentPage = window.location.pathname.split('/').pop() + window.location.search;
+            window.location.replace('index.html?returnTo=' + encodeURIComponent(currentPage));
+        }
         return;
     }
 
@@ -159,9 +168,9 @@ window.requireAuth = function() {
             return effective.allowed_pages;
         }
 
-        // 2. Try sessionStorage cache (for sub-page loads / persistence)
+        // 2. Try localStorage cache (shared across all tabs)
         try {
-            const cachedPolicy = JSON.parse(sessionStorage.getItem('crm_access_policy'));
+            const cachedPolicy = JSON.parse(localStorage.getItem('crm_access_policy'));
             if (cachedPolicy && Array.isArray(cachedPolicy.allowed_pages)) {
                 return cachedPolicy.allowed_pages;
             }
@@ -246,13 +255,13 @@ window.requireAuth = function() {
         .then(async profile => {
             if (!profile) return;
             const userData = { id: profile.id, name: profile.name || profile.email, email: profile.email, role: profile.role };
-            sessionStorage.setItem('srm_user', JSON.stringify(userData));
+            localStorage.setItem('srm_user', JSON.stringify(userData));
 
             if (window.ApiClient && window.ApiClient.getEffectiveAccessPolicy) {
                 try {
                     const effective = await window.ApiClient.getEffectiveAccessPolicy();
                     window.__crmEffectiveAccessPolicy = effective;
-                    sessionStorage.setItem('crm_access_policy', JSON.stringify(effective));
+                    localStorage.setItem('crm_access_policy', JSON.stringify(effective));
                 } catch (e) {
                     console.warn('Failed to load effective access policy, using fallback map', e);
                 }
@@ -298,7 +307,7 @@ async function syncAccessControl(isInitial = false) {
         const status = await response.json();
         
         const cachedUser = getUser();
-        const cachedVersion = sessionStorage.getItem('policy_version');
+        const cachedVersion = localStorage.getItem('policy_version');
         
         // Detect changes
         const roleChanged = cachedUser && cachedUser.role !== status.role;
@@ -312,7 +321,7 @@ async function syncAccessControl(isInitial = false) {
         }
 
         if (roleChanged || policyChanged || isInitial) {
-            sessionStorage.setItem('policy_version', status.policy_version);
+            localStorage.setItem('policy_version', status.policy_version);
             
             if (roleChanged || policyChanged) {
                 console.log('Access control update detected, refreshing permissions...');
@@ -320,12 +329,12 @@ async function syncAccessControl(isInitial = false) {
                 // Refetch full profile and policy
                 const profile = await window.ApiClient.getProfile();
                 const userData = { id: profile.id, name: profile.name || profile.email, email: profile.email, role: profile.role };
-                sessionStorage.setItem('srm_user', JSON.stringify(userData));
+                localStorage.setItem('srm_user', JSON.stringify(userData));
 
                 if (window.ApiClient && window.ApiClient.getEffectiveAccessPolicy) {
                     const effective = await window.ApiClient.getEffectiveAccessPolicy();
                     window.__crmEffectiveAccessPolicy = effective;
-                    sessionStorage.setItem('crm_access_policy', JSON.stringify(effective));
+                    localStorage.setItem('crm_access_policy', JSON.stringify(effective));
                 }
 
                 // Update UI: Dispatch event for SPA components to re-render

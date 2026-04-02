@@ -62,7 +62,7 @@ class VisitService:
     async def get_visits(
         self, 
         skip: int = 0, 
-        limit: int = 100, 
+        limit: Optional[int] = None, 
         current_user: User = None, 
         shop_id: Optional[PydanticObjectId] = None, 
         user_id: Optional[PydanticObjectId] = None,
@@ -114,7 +114,11 @@ class VisitService:
                 )
             )
 
-        visits = await q.sort("-visit_date").skip(skip).limit(limit).to_list()
+        # Build query — only apply limit when explicitly provided
+        query = q.sort("-visit_date").skip(skip)
+        if limit is not None:
+            query = query.limit(limit)
+        visits = await query.to_list()
         for v in visits:
             await self._populate_visit_metadata(v)
         return visits

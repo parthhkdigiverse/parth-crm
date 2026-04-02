@@ -11,11 +11,14 @@ router = APIRouter()
 global_router = APIRouter()
 
 @global_router.get("/all", response_model=List[FeedbackRead])
-async def get_all_feedbacks():
+async def get_all_feedbacks(
+    skip: int = 0,
+    limit: Optional[int] = None
+):
     """List all feedbacks for dashboard. Public/Global access."""
     from app.modules.feedback.service import FeedbackService
     service = FeedbackService()
-    return await service.get_all_client_feedbacks()
+    return await service.get_all_client_feedbacks(skip=skip, limit=limit)
 # Role checkers
 staff_access = RoleChecker([
     UserRole.ADMIN,
@@ -40,7 +43,7 @@ async def create_feedback(
 @router.get("/", response_model=List[FeedbackRead])
 async def read_feedbacks(
     skip: int = 0,
-    limit: int = 100,
+    limit: Optional[int] = None,
     current_user: User = Depends(staff_access)
 ) -> Any:
     """List feedbacks. PMs see only their assigned feedbacks."""

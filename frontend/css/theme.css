@@ -2660,6 +2660,7 @@ label {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
+    margin-top: 2rem;
     margin-bottom: 22px;
     box-shadow: var(--shadow-xs);
     overflow: visible;

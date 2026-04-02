@@ -713,8 +713,11 @@
                 }
 
                 const data = await res.json();
-                sessionStorage.setItem('access_token', data.access_token);
-                if (data.refresh_token) sessionStorage.setItem('refresh_token', data.refresh_token);
+                localStorage.setItem('access_token', data.access_token);
+                if (data.refresh_token) localStorage.setItem('refresh_token', data.refresh_token);
+                // Also clear any stale sessionStorage tokens
+                sessionStorage.removeItem('access_token');
+                sessionStorage.removeItem('refresh_token');
 
                 btn.classList.add('success');
                 btn.innerHTML = `<i class="bi bi-check-lg"></i> Success! Redirecting...`;
@@ -724,13 +727,18 @@
                     const r = await fetch(`${API}/auth/profile`, { headers: { 'Authorization': `Bearer ${data.access_token}` } });
                     if (r.ok) {
                         const p = await r.json();
-                        sessionStorage.setItem('srm_user', JSON.stringify({ id: p.id, name: p.name || p.email, email: p.email, role: p.role }));
+                        localStorage.setItem('srm_user', JSON.stringify({ id: p.id, name: p.name || p.email, email: p.email, role: p.role }));
                     }
                 } catch (_) { }
 
+                // Redirect to billing if user came from a payment return, else dashboard
+                const params = new URLSearchParams(window.location.search);
+                const returnTo = params.get('returnTo');
+                const targetPage = returnTo ? decodeURIComponent(returnTo) : 'dashboard.html';
+
                 setTimeout(() => {
                     document.getElementById('redirect-overlay').classList.add('active');
-                    setTimeout(() => window.location.replace('dashboard.html'), 350);
+                    setTimeout(() => window.location.replace(targetPage), 350);
                 }, 400);
 
             } catch (err) {

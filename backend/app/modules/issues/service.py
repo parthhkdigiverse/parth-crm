@@ -23,7 +23,7 @@ class IssueService:
     async def get_all_issues(
         self,
         skip: int = 0,
-        limit: int = 100,
+        limit: Optional[int] = None,
         status: Optional[str] = None,
         severity: Optional[str] = None,
         client_id: Optional[PydanticObjectId] = None,
@@ -81,7 +81,10 @@ class IssueService:
             if client_id: q = q.find(Issue.client_id == client_id)
             if assigned_to_id: q = q.find(Issue.assigned_to_id == assigned_to_id)
 
-            issues = await q.sort("-created_at").skip(skip).limit(limit).to_list()
+            query = q.sort("-created_at").skip(skip)
+            if limit is not None:
+                query = query.limit(limit)
+            issues = await query.to_list()
             
             # Enrich properties sequentially (NoSQL join replacement)
             for issue in issues:
@@ -185,7 +188,7 @@ class IssueService:
         self,
         current_user: User,
         skip: int = 0,
-        limit: int = 100,
+        limit: Optional[int] = None,
         status: Optional[str] = None,
         severity: Optional[str] = None,
         client_id: Optional[PydanticObjectId] = None,
@@ -209,7 +212,11 @@ class IssueService:
             if severity: q = q.find(Issue.severity == severity)
             if client_id: q = q.find(Issue.client_id == client_id)
             if assigned_to_id: q = q.find(Issue.assigned_to_id == assigned_to_id)
-            return await q.sort("-created_at").skip(skip).limit(limit).to_list()
+            
+            query = q.sort("-created_at").skip(skip)
+            if limit is not None:
+                query = query.limit(limit)
+            return await query.to_list()
         except Exception as e:
             print(f"Error fetching user issues: {e}")
             return []

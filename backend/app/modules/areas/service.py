@@ -14,18 +14,24 @@ class AreaService:
         # No db session needed in Beanie!
         pass
 
-    async def get_areas(self, current_user: User, skip: int = 0, limit: int = 100):
+    async def get_areas(self, current_user: User, skip: int = 0, limit: Optional[int] = None):
         # Base query: non-archived areas
         find_query = Area.find(Area.is_archived != True)
 
         if current_user.role == "ADMIN":
-            areas = await find_query.skip(skip).limit(limit).to_list()
+            query = find_query.skip(skip)
+            if limit is not None:
+                query = query.limit(limit)
+            areas = await query.to_list()
         else:
             # Sales/Telesales: Check many-to-many replacement (list of ObjectIds)
-            areas = await Area.find(
+            query = Area.find(
                 Area.is_archived != True,
                 In(Area.assigned_user_ids, [current_user.id])
-            ).skip(skip).limit(limit).to_list()
+            ).skip(skip)
+            if limit is not None:
+                query = query.limit(limit)
+            areas = await query.to_list()
 
         all_users = await User.find_all().to_list()
         user_map = {str(u.id): u for u in all_users if u.id}

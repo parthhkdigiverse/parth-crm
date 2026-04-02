@@ -46,14 +46,18 @@ class ActivityLogger:
         await activity_log.insert()
         return activity_log
 
-    async def get_logs(self, skip: int = 0, limit: int = 100, current_user = None):
+    async def get_logs(self, skip: int = 0, limit: Optional[int] = None, current_user = None):
         try:
             find_query = ActivityLog.find_all()
             
             if current_user and current_user.role != UserRole.ADMIN:
                 find_query = ActivityLog.find(ActivityLog.user_id == current_user.id)
             
-            logs = await find_query.sort("-created_at").skip(skip).limit(limit).to_list()
+            # Build query — only apply limit when explicitly provided
+            query = find_query.sort("-created_at").skip(skip)
+            if limit is not None:
+                query = query.limit(limit)
+            logs = await query.to_list()
             
             for log in logs:
                 if log.user_id:

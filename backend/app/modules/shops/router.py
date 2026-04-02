@@ -72,7 +72,7 @@ async def read_demo_queue(
 @router.get("/", response_model=List[ShopRead])
 async def read_shops(
     skip: int = 0,
-    limit: int = 100,
+    limit: Optional[int] = None,
     pipeline_stage: Optional[MasterPipelineStage] = None,
     owner_id: Optional[PydanticObjectId] = None,
     exclude_leads: bool = Query(False),

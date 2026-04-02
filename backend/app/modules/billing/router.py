@@ -240,7 +240,7 @@ async def create_invoice(
 @router.get("/", response_model=List[BillRead])
 async def list_invoices(
     skip: int = 0,
-    limit: int = 200,
+    limit: Optional[int] = None,
     status_filter: Optional[str] = None,
     archived: Optional[str] = "ACTIVE",
     payment_type: Optional[str] = None,

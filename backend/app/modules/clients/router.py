@@ -45,7 +45,7 @@ async def create_client(
 @router.get("/", response_model=List[ClientRead])
 async def read_clients(
     skip: int = 0,
-    limit: int = 100,
+    limit: Optional[int] = None,
     search: Optional[str] = None,
     status_filter: Optional[str] = None, # renamed from 'status' to avoid conflict
     pm_id: Optional[str] = None,
@@ -108,7 +108,7 @@ async def read_clients(
 @router.get("/my-clients", response_model=List[ClientRead])
 async def read_my_clients(
     skip: int = 0,
-    limit: int = 100,
+    limit: Optional[int] = None,
     search: Optional[str] = None,
     sort_by: Optional[str] = "created_at",
     sort_order: Optional[str] = "desc",

@@ -81,7 +81,7 @@ async def create_visit(
 @router.get("/", response_model=List[VisitRead])
 async def read_visits(
     skip: int = 0,
-    limit: int = 100,
+    limit: Optional[int] = None,
     shop_id: Optional[PydanticObjectId] = None,
     user_id: Optional[PydanticObjectId] = None,
     area_id: Optional[PydanticObjectId] = None,

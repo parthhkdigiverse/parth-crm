@@ -699,6 +699,7 @@ async function loadInvoiceSettings() {
         const data = await window.ApiClient.getInvoiceSettings();
         document.getElementById('inv-default-amount').value = data.invoice_default_amount || 12000;
         document.getElementById('inv-personal-no-gst-amount').value = data.personal_without_gst_default_amount || 12000;
+        document.getElementById('inv-year').value = data.invoice_year || new Date().getFullYear();
         document.getElementById('inv-seq-with-gst').value = data.invoice_seq_with_gst || 1;
         document.getElementById('inv-seq-without-gst').value = data.invoice_seq_without_gst || 1;
         document.getElementById('inv-company-name').value = data.company_name || '';
@@ -785,6 +786,7 @@ async function saveInvoiceSettings() {
     const payload = {
         invoice_default_amount: parseFloat(document.getElementById('inv-default-amount').value) || 12000,
         personal_without_gst_default_amount: parseFloat(document.getElementById('inv-personal-no-gst-amount').value) || 12000,
+        invoice_year: parseInt(document.getElementById('inv-year').value, 10) || new Date().getFullYear(),
         invoice_seq_with_gst: parseInt(document.getElementById('inv-seq-with-gst').value, 10) || 1,
         invoice_seq_without_gst: parseInt(document.getElementById('inv-seq-without-gst').value, 10) || 1,
         company_name: document.getElementById('inv-company-name').value.trim(),
