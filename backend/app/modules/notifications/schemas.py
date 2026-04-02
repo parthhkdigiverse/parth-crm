@@ -1,8 +1,7 @@
 from typing import Optional
 from datetime import datetime, timezone
 from pydantic import field_serializer
-from beanie import PydanticObjectId
-from app.core.base_schema import MongoBaseSchema
+from app.core.base_schema import MongoBaseSchema, PydanticObjectId
 
 class NotificationRead(MongoBaseSchema):
     id: PydanticObjectId

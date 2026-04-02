@@ -258,7 +258,7 @@ class ApiClient {
 
     // ─── Attendance ──────────────────────────────────────────
     static async getPunchStatus() {
-        return this.request('/attendance/status');
+        return this.request('/attendance/punch-status');
     }
     static async punch() {
         return this.request('/attendance/punch', { method: 'POST' });

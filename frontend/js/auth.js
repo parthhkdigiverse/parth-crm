@@ -139,6 +139,11 @@ window.requireAuth = function() {
     let user = getUser();
 
     if (!token) {
+        // Bypass redirect if this is a payment success return (sessionStorage is tab-specific)
+        if (params.get('status') === 'success') {
+            console.log('requireAuth: Payment success bypass detected');
+            return;
+        }
         if (!isLoginPage) window.location.replace('index.html');
         return;
     }

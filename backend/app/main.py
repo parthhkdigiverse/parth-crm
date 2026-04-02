@@ -101,7 +101,7 @@ app = FastAPI(title="SRM AI SETU API", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,  # Set to False to allow "*" in allow_origins with JWT headers
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -155,12 +155,13 @@ app.include_router(api_router, prefix="/api")
 
 @app.get("/api/config")
 async def get_config(request: Request):
-    # If API_BASE_URL is explicitly set in .env/settings, use it.
+    # Final calculated API Base URL for internal/fallback use.
+    # If empty, the frontend (api.js) will use window.location.origin.
     if settings.API_BASE_URL:
-        return {"API_BASE_URL": settings.API_BASE_URL}
+        API_BASE_URL = settings.API_BASE_URL
+    else:
+        API_BASE_URL = "" # Let frontend decide
         
-    # Fallback: Prefer request-derived base URL so frontend always targets the active host/port.
-    request_base = str(request.base_url).rstrip("/")
     return {
-        "API_BASE_URL": f"{request_base}/api"
+        "API_BASE_URL": API_BASE_URL
     }

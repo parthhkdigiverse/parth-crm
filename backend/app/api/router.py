@@ -89,9 +89,13 @@ def get_system_ip():
     except Exception:
         return {"ip": "127.0.0.1"}
 
+@api_router.get("/")
+async def health_check():
+    return {"status": "ok", "version": 2, "source": "api_routes_health"}
+
 @api_router.get("/health")
 def health_check():
-    return {"status": "ok"}
+    return {"status": "ok", "version": 2, "source": "api_router"}
 
 @api_router.get("/feedback/form")
 def get_feedback_form():

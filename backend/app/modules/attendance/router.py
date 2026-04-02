@@ -39,8 +39,8 @@ async def get_attendance_logs(
 async def get_attendance_summary(
     background_tasks: BackgroundTasks,
     user_id: Optional[PydanticObjectId] = Query(None),
-    start_date: dt_date = Query(...),
-    end_date: dt_date = Query(...),
+    start_date: Optional[dt_date] = Query(None),
+    end_date: Optional[dt_date] = Query(None),
     reconcile: bool = Query(False),
     current_user: User = Depends(get_current_active_user)
 ):

@@ -101,13 +101,50 @@ class ReportService:
         today_start = datetime.combine(now.date(), datetime.min.time())
         employees_present = len(await Attendance.get_pymongo_collection().distinct("user_id", {"date": today_start, "is_deleted": False}))
 
-        # --- 6. Breakdown Analytics ---
+        # --- 6. Breakdown Analytics (Donut Chart) ---
         status_pipeline = [
             {"$match": v_match},
             {"$group": {"_id": "$status", "count": {"$sum": 1}}}
         ]
         visit_status_res = await Visit.get_pymongo_collection().aggregate(status_pipeline).to_list(length=None)
         visit_status_breakdown = {str(r["_id"]): r["count"] for r in visit_status_res}
+
+        # --- 7. Chart Data (Last 12 Months for better visibility) ---
+        one_year_ago = now - timedelta(days=365)
+        
+        # Visits Trend
+        v_chart_pipeline = [
+            {"$addFields": {"v_date_dt": {"$toDate": "$visit_date"}}},
+            {"$match": {**v_match, "v_date_dt": {"$gte": one_year_ago}}},
+            {"$group": {
+                "_id": {
+                    "year": {"$year": "$v_date_dt"},
+                    "month": {"$month": "$v_date_dt"}
+                },
+                "count": {"$sum": 1}
+            }},
+            {"$sort": {"_id.year": 1, "_id.month": 1}},
+            {"$limit": 12}
+        ]
+        v_chart_res = await Visit.get_pymongo_collection().aggregate(v_chart_pipeline).to_list(length=None)
+        visits_chart_data = {datetime(r["_id"]["year"], r["_id"]["month"], 1).strftime("%b"): r["count"] for r in v_chart_res}
+
+        # Revenue Trend
+        r_chart_pipeline = [
+            {"$addFields": {"c_date_dt": {"$toDate": "$created_at"}}},
+            {"$match": {**b_match, "c_date_dt": {"$gte": one_year_ago}}},
+            {"$group": {
+                "_id": {
+                    "year": {"$year": "$c_date_dt"},
+                    "month": {"$month": "$c_date_dt"}
+                },
+                "total": {"$sum": "$amount"}
+            }},
+            {"$sort": {"_id.year": 1, "_id.month": 1}},
+            {"$limit": 12}
+        ]
+        r_chart_res = await Bill.get_pymongo_collection().aggregate(r_chart_pipeline).to_list(length=None)
+        revenue_by_month = {datetime(r["_id"]["year"], r["_id"]["month"], 1).strftime("%b"): float(r["total"]) for r in r_chart_res}
 
         return {
             "total_visits": total_visits,
@@ -117,16 +154,16 @@ class ReportService:
             "visits_mom_pct": visits_mom_pct,
             "clients_mom_pct": clients_mom_pct,
             "projects_mom_pct": projects_mom_pct,
-            "revenue_mom_pct": 0.0, # Placeholder, can be complex MoM
+            "revenue_mom_pct": 0.0,
             "open_issues": await Issue.find(Issue.status == GlobalTaskStatus.OPEN, Issue.is_deleted == False).count(),
             "employees_present": employees_present,
             "visit_status_breakdown": visit_status_breakdown,
-            "visits_chart_data": {},
+            "visits_chart_data": visits_chart_data,
             "presence_mom_pct": 0.0,
             "visits_chart_title": 'Visits Overview',
-            "revenue_by_month": {},
+            "revenue_by_month": revenue_by_month,
             "issue_severity_breakdown": {},
-            "visit_outcomes_breakdown": {}
+            "visit_outcomes_breakdown": visit_status_breakdown
         }
 
     @staticmethod

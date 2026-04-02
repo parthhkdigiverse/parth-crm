@@ -673,34 +673,21 @@
     </div>
 
     <!-- ══════════════ BILLING SETTINGS MODAL ══════════════ -->
-    <div class="modal-overlay d-none" id="settingsModal" style="z-index:2100;">
-        <div class="modal-box" style="width:450px;" onclick="event.stopPropagation()">
-            <div class="modal-header-row mb-3">
-                <div class="modal-title-text"><i class="bi bi-gear-fill me-2"></i>Billing Settings</div>
-                <button class="modal-close-x" onclick="closeSettingsModal()"><i class="bi bi-x-lg"></i></button>
+    <!-- ══════════════ INVOICE VIEW MODAL (PREVIEW) ══════════════ -->
+    <div class="modal-overlay d-none" id="viewModal" style="z-index:2200;">
+        <div class="modal-box" style="width:850px;max-width:98vw;padding:0;overflow:hidden;" onclick="event.stopPropagation()">
+            <div class="modal-header-row px-3 py-3 border-bottom bg-light">
+                <div class="modal-title-text"><i class="bi bi-file-earmark-text text-primary me-2"></i>Invoice Preview</div>
+                <button class="modal-close-x" onclick="closeViewModal()"><i class="bi bi-x-lg"></i></button>
             </div>
-            <div class="fw-bold mb-2"
-                style="font-size:0.75rem;letter-spacing:0.06em;text-transform:uppercase;color:#94a3b8;">Default
-                Configuration</div>
-            <div class="mb-3">
-                <div class="field-label">General Default Amount (₹)</div>
-                <input type="number" id="set-default-amt" class="field-input" placeholder="e.g. 12000">
-                <div class="small text-muted mt-1">This amount is automatically filled in for new invoices.</div>
+            <div id="p3-preview-body" style="height: calc(100vh - 200px); overflow-y: auto; background: #f8fafc; padding: 20px;">
+                <!-- HTML content injected here -->
             </div>
-            <div class="mb-3">
-                <div class="field-label">Personal (Non-GST) Default Amount (₹)</div>
-                <input type="number" id="set-personal-amt" class="field-input" placeholder="e.g. 12000">
-                <div class="small text-muted mt-1">Default for Personal Bank / Cash payments without GST.</div>
-            </div>
-            <div class="d-flex gap-2 pt-3 border-top">
-                <button class="btn btn-light flex-grow-1" onclick="closeSettingsModal()">Cancel</button>
-                <button class="btn btn-primary flex-grow-1 fw-bold" id="save-settings-btn"
-                    onclick="submitSaveSettings()">
-                    Save Settings
-                </button>
+            <div class="modal-footer px-3 py-2 border-top text-end bg-light">
+                <button class="btn btn-secondary btn-sm" onclick="closeViewModal()">Close Preview</button>
             </div>
         </div>
-        <div style="position:absolute;inset:0;z-index:-1;" onclick="closeSettingsModal()"></div>
+        <div style="position:absolute;inset:0;z-index:-1;" onclick="closeViewModal()"></div>
     </div>
 
 
@@ -785,7 +772,7 @@
             if (st === 'SENT') {
                 const cName = String(b.invoice_client_name || '').replace(/'/g, "\\'");
                 const iNo = String(b.invoice_number || '').replace(/'/g, "\\'");
-                return `<span class="inv-pill ${s.cls} shadow-sm" style="cursor:pointer;" onclick="openWAModal(${b.id}, '${cName}', '${iNo}', '${phone}')" title="Resend via WhatsApp">
+                return `<span class="inv-pill ${s.cls} shadow-sm" style="cursor:pointer;" onclick="openWAModal('${b.id}', '${cName}', '${iNo}', '${phone}')" title="Resend via WhatsApp">
                             <i class="bi ${s.icon}"></i>${s.label} <i class="bi bi-arrow-repeat ms-1 opacity-75"></i>
                         </span>`;
             }
@@ -797,6 +784,13 @@
 
         // ── Load data ─────────────────────────────────────────────────────────────────
         async function init() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const landingStatus = urlParams.get('status');
+            if (landingStatus === 'success' || landingStatus === 'failed') {
+                console.log('init: Payment landing page detected, skipping authenticated data load.');
+                return;
+            }
+            
             try {
                 currentUser = ApiClient.getCurrentUser();
                 try {
@@ -950,21 +944,22 @@
                 const phone = b.invoice_client_phone || '';
                 const paymentTypeLabel = { BUSINESS_ACCOUNT: 'Business Bank', PERSONAL_ACCOUNT: 'Personal Bank', CASH: 'Cash' }[b.payment_type] || '—';
                 const gstTypeLabel = b.gst_type === 'WITHOUT_GST' ? 'GST 0%' : 'GST 18%';
-                let actions = `<button class="action-menu-btn me-1" title="Preview Invoice" onclick="previewInvoice(${b.id})"><i class="bi bi-eye"></i></button>`;
+                let actions = `<button class="action-menu-btn me-1" title="Preview Invoice" onclick="previewInvoice('${b.id}')"><i class="bi bi-eye"></i></button>`;
+                
                 const rowActions = invoiceActionsById[b.id] || {};
                 const canVerifyRow = Boolean(rowActions.can_verify);
                 const canSendRow = Boolean(rowActions.can_send_whatsapp);
                 if (canVerifyRow && (st === 'PENDING_VERIFICATION' || st === 'DRAFT')) {
-                    actions += `<button class="action-menu-btn me-1" title="Verify Invoice" onclick="openVerifyModal(${b.id},'${b.invoice_number}')" style="color:#15803D;border-color:#bbf7d0;background:#F0FDF4;"><i class="bi bi-patch-check"></i></button>`;
+                    actions += `<button class="action-menu-btn me-1" title="Verify Invoice" onclick="openVerifyModal('${b.id}','${b.invoice_number}')" style="color:#15803D;border-color:#bbf7d0;background:#F0FDF4;"><i class="bi bi-patch-check"></i></button>`;
                 }
                 if (canSendRow && (st === 'VERIFIED' || st === 'SENT')) {
-                    actions += `<button class="action-menu-btn" title="Send via WhatsApp" onclick="openWAModal(${b.id},\`${clientDisplay}\`,\`${b.invoice_number}\`,\`${phone}\`)" style="color:#1565C0;border-color:#bfdbfe;background:#EFF6FF;"><i class="bi bi-whatsapp"></i></button>`;
+                    actions += `<button class="action-menu-btn" title="Send via WhatsApp" onclick="openWAModal('${b.id}',\`${clientDisplay}\`,\`${b.invoice_number}\`,\`${phone}\`)" style="color:#1565C0;border-color:#bfdbfe;background:#EFF6FF;"><i class="bi bi-whatsapp"></i></button>`;
                 }
-                if (rowActions.can_archive) actions += `<button class="action-menu-btn ms-1" title="Archive" onclick="archiveInvoice(${b.id},'${b.invoice_number || ''}')" style="color:#92400e;border-color:#fde68a;background:#fffbeb;"><i class="bi bi-archive"></i></button>`;
-                if (rowActions.can_unarchive) actions += `<button class="action-menu-btn ms-1" title="Restore" onclick="unarchiveInvoice(${b.id},'${b.invoice_number || ''}')" style="color:#0369a1;border-color:#bae6fd;background:#f0f9ff;"><i class="bi bi-box-arrow-up"></i></button>`;
-                if (rowActions.can_delete_archived) actions += `<button class="action-menu-btn ms-1" title="Delete" onclick="deleteArchivedInvoice(${b.id},'${b.invoice_number || ''}')" style="color:#b91c1c;border-color:#fecaca;background:#fef2f2;"><i class="bi bi-trash"></i></button>`;
+                if (rowActions.can_archive) actions += `<button class="action-menu-btn ms-1" title="Archive" onclick="archiveInvoice('${b.id}','${b.invoice_number || ''}')" style="color:#92400e;border-color:#fde68a;background:#fffbeb;"><i class="bi bi-archive"></i></button>`;
+                if (rowActions.can_unarchive) actions += `<button class="action-menu-btn ms-1" title="Restore" onclick="unarchiveInvoice('${b.id}','${b.invoice_number || ''}')" style="color:#0369a1;border-color:#bae6fd;background:#f0f9ff;"><i class="bi bi-box-arrow-up"></i></button>`;
+                if (rowActions.can_delete_archived) actions += `<button class="action-menu-btn ms-1" title="Delete" onclick="deleteArchivedInvoice('${b.id}','${b.invoice_number || ''}')" style="color:#b91c1c;border-color:#fecaca;background:#fef2f2;"><i class="bi bi-trash"></i></button>`;
                 return `<tr>
-            <td data-label="Select"><input type="checkbox" ${selectedBillIds.has(b.id) ? 'checked' : ''} onchange="toggleBillSelection(${b.id}, this.checked)"></td>
+            <td data-label="Select"><input type="checkbox" ${selectedBillIds.has(b.id) ? 'checked' : ''} onchange="toggleBillSelection('${b.id}', this.checked)"></td>
             <td data-label="Invoice #" class="fw-semibold" style="font-family:monospace;color:var(--primary);">${b.invoice_number || '—'}</td>
             <td data-label="Client">
                 <div class="tbl-client-name">${clientDisplay}</div>
@@ -1298,7 +1293,7 @@
                                 </div>
 
                                 <div class="d-grid gap-3">
-                                    <a href="${qr.dynamic_upi_link}" class="btn btn-pay-now btn-lg py-3 rounded-4 shadow-sm" style="font-size:1rem;">
+                                    <a href="${qr.dynamic_upi_link}" target="_blank" class="btn btn-pay-now btn-lg py-3 rounded-4 shadow-sm" style="font-size:1rem;">
                                         <i class="bi bi-phone me-2"></i> Pay via Mobile App
                                     </a>
                                     <div class="row g-2">
@@ -1453,6 +1448,57 @@
                 }
             }
         }
+        
+        // ── Payment Redirect Handler ───────────────────────────────────────────────────
+        (function handlePaymentRedirect() {
+            const params = new URLSearchParams(window.location.search);
+            const status = params.get('status');
+            const txnId = params.get('txnId');
+
+            if (status === 'success' || status === 'failed') {
+                const isSuccess = status === 'success';
+                const themeColor = isSuccess ? '#16a34a' : '#dc2626';
+                const themeBg = isSuccess ? '#f0fdf4' : '#fef2f2';
+                const themeBorder = isSuccess ? '#bbf7d0' : '#fecaca';
+                const icon = isSuccess ? 'bi-check-lg' : 'bi-x-lg';
+                const title = isSuccess ? 'Payment Successful!' : 'Payment Failed';
+                const msg = isSuccess 
+                    ? 'Your transaction has been processed. You can now close this tab and return to the billing window.' 
+                    : 'The transaction could not be completed. Please return to the billing window to try again.';
+
+                document.addEventListener('DOMContentLoaded', () => {
+                    document.body.innerHTML = `
+                    <div style="height:100vh; display:flex; align-items:center; justify-content:center; background:#f8fafc; font-family:'Inter', sans-serif;">
+                        <div style="text-align:center; padding:40px; background:#fff; border-radius:24px; box-shadow:0 10px 25px rgba(0,0,0,0.05); max-width:400px; width:90%; border:1px solid #e2e8f0;">
+                            <div style="width:80px; height:80px; background:${themeBg}; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 24px; border:2px solid ${themeBorder};">
+                                <i class="bi ${icon}" style="font-size:40px; color:${themeColor};"></i>
+                            </div>
+                            <h1 style="font-family:'Outfit', sans-serif; font-size:1.5rem; color:#0f172a; margin-bottom:12px;">${title}</h1>
+                            <p style="color:#64748b; font-size:0.95rem; line-height:1.6; margin-bottom:24px;">${msg}</p>
+                            
+                            <div id="countdown-text" style="font-size:12px; color:#94a3b8; font-weight:600; letter-spacing:1px; text-transform:uppercase; margin-bottom: 20px;">Auto-closing in 3 seconds...</div>
+                            
+                            <a href="billing.html" style="display:inline-block; padding:10px 24px; background:var(--primary, #2563eb); color:#fff; text-decoration:none; border-radius:8px; font-weight:600; font-size:14px; transition: opacity 0.2s;">Return to Billing</a>
+                        </div>
+                    </div>`;
+                    
+                    // Notify original window if possible
+                    if (window.opener && typeof window.opener.manualCheckStatus === 'function') {
+                        window.opener.manualCheckStatus(txnId);
+                    }
+                    
+                    // Close this tab if it was opened as a popup
+                    setTimeout(() => { 
+                        if (window.opener) {
+                            window.close();
+                        } else {
+                            const countdown = document.getElementById('countdown-text');
+                            if (countdown) countdown.textContent = "Please return to your main window.";
+                        }
+                    }, 3000);
+                });
+            }
+        })();
 
         function sharePaymentLink(url, title) {
             if (navigator.share) {
@@ -1591,6 +1637,38 @@
                 document.getElementById('autofill-list').innerHTML = `<div class="text-center py-4 text-danger small">${e.message || 'Failed to load'}</div>`;
             }
         }
+        async function downloadInvoicePDF(billId) {
+            try {
+                showToast('Generating PDF...', 'info');
+                const token = ApiClient.getToken();
+                const response = await fetch(`${ApiClient.BASE_URL}/billing/${billId}/download-pdf`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (!response.ok) {
+                    const err = await response.json().catch(() => ({}));
+                    throw new Error(err.detail || 'Failed to generate PDF');
+                }
+                
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                // Prettier filename if possible
+                a.download = `Invoice_${billId}.pdf`; 
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                }, 100);
+                showToast('Success! Download started.', 'success');
+            } catch (e) {
+                console.error(e);
+                showToast(e.message, 'error');
+            }
+        }
+        function closeViewModal() { document.getElementById('viewModal').classList.add('d-none'); }
         function filterAutofillList() {
             const q = (document.getElementById('autofill-search').value || '').toLowerCase();
             const list = document.getElementById('autofill-list');

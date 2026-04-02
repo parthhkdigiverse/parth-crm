@@ -73,7 +73,7 @@ class BillingService:
             # We look for successful payments that have an invoice-like string
             # Since the field name is slightly uncertain, we check common ones or use a regex on values if possible.
             # However, usually it's 'invoice_no' or 'invoice_number'.
-            website_coll = Bill.get_settings().database["website_payment"]
+            website_coll = Bill.get_pymongo_collection().database["website_payment"]
             
             # Potential field names: invoice_number, invoice_no, invoice_string
             possible_fields = ["invoice_number", "invoice_no", "invoice_string"]
@@ -135,7 +135,7 @@ class BillingService:
             if not exists:
                 # Also check website_payment just in case to be 100% sure of uniqueness
                 if sync_website:
-                    website_coll = Bill.get_settings().database["website_payment"]
+                    website_coll = Bill.get_pymongo_collection().database["website_payment"]
                     site_exists = await website_coll.find_one({
                         "$or": [
                             {"invoice_number": invoice_number},
@@ -405,7 +405,7 @@ class BillingService:
         await bill.save()
         return bill
 
-    async def send_whatsapp_invoice(self, bill_id: PydanticObjectId, current_user: User) -> dict:
+    async def send_whatsapp_invoice(self, bill_id: PydanticObjectId, current_user: User, base_url: str = None) -> dict:
         bill = await self.get_bill(bill_id)
         if not bill: raise HTTPException(status_code=404, detail="Not Found")
         
@@ -476,10 +476,11 @@ class BillingService:
                 "merchantTransactionId": txn_id,
                 "merchantUserId": f"U{phone[-10:]}",
                 "amount": paise_amount,
-                "redirectUrl": f"{base_url}/frontend/template/billing.html",
+                "redirectUrl": f"{base_url}/frontend/template/billing.html?status=success&txnId={txn_id}",
                 "redirectMode": "REDIRECT",
                 "callbackUrl": dummy_callback,
                 "mobileNumber": phone[-10:],
+                "expiresIn": 180,
                 "paymentInstrument": {"type": "PAY_PAGE"}
             }
             
@@ -551,10 +552,19 @@ class BillingService:
             "amount": amount
         }
 
-    async def check_phonepe_payment_status(self, txn_id: str) -> Dict[str, Any]:
+    async def check_phonepe_payment_status(self, txn_id: str, current_user: User) -> Dict[str, Any]:
         """
-        Polls PhonePe for transaction status.
+        Polls PhonePe for transaction status and verifies ownership.
         """
+        # Security: Check if this txn_id is already linked to a bill
+        bill = await Bill.find_one(Bill.transaction_id == txn_id)
+        if bill:
+            # If bill exists, verify ownership (Admin/Creator only)
+            is_admin = getattr(current_user, "role", "") == "ADMIN"
+            is_creator = str(bill.created_by_id) == str(current_user.id)
+            if not (is_admin or is_creator):
+                raise HTTPException(status_code=403, detail="You do not have permission to check this payment status.")
+        
         merchant_id = settings.PHONEPE_MERCHANT_ID
         salt_key = settings.PHONEPE_SALT_KEY
         salt_idx = settings.PHONEPE_SALT_INDEX
@@ -583,7 +593,6 @@ class BillingService:
                 data = resp.json()
                 
             # data structure: {success: bool, code: str, message: str, data: {merchantTransactionId, state, ...}}
-            # PhonePe SUCCESS code is usually "PAYMENT_SUCCESS"
             return {
                 "success": data.get("success", False),
                 "code": data.get("code", "UNKNOWN"),

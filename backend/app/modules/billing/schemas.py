@@ -2,8 +2,7 @@ import typing
 from typing import Optional
 import datetime
 from pydantic import field_validator
-from beanie import PydanticObjectId
-from app.core.base_schema import MongoBaseSchema
+from app.core.base_schema import MongoBaseSchema, PydanticObjectId
 
 class BillCreate(MongoBaseSchema):
     # Client details (name + phone required)

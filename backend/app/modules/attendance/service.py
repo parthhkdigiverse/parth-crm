@@ -231,7 +231,12 @@ class AttendanceService:
         return logs
 
     @staticmethod
-    async def get_attendance_summary(target_user: User | None, start_date: date, end_date: date, reconcile: bool, current_user: User):
+    async def get_attendance_summary(target_user: User | None, start_date: Optional[date], end_date: Optional[date], reconcile: bool, current_user: User):
+        if not end_date:
+            end_date = datetime.now(UTC).date()
+        if not start_date:
+            start_date = end_date - timedelta(days=30)
+            
         settings = await AttendanceService.load_attendance_settings()
         
         # Use simple User list fetch

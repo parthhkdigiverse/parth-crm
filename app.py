@@ -6,18 +6,12 @@ import os
 root_dir = os.path.dirname(os.path.abspath(__file__))
 backend_dir = os.path.join(root_dir, "backend")
 
-# Ensure paths are in sys.path once and correctly
-if root_dir not in sys.path:
-    sys.path.insert(0, root_dir)
+# Ensure backend directory is in sys.path to allow 'import app' effectively
 if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
-# asyncio bug with ProactorEventLoop is no longer a concern in modern Python versions
-# if sys.platform == 'win32':
-#     import asyncio
-#     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
-from backend.app.core.config import HOST, PORT
+# Import config through the backend app package
+from app.core.config import HOST, PORT
 import time
 
 _display_host = "localhost" if HOST == "0.0.0.0" else HOST
@@ -27,6 +21,7 @@ def kill_process_on_port(port):
     import subprocess
     import os
     import platform
+    import socket
     
     system = platform.system().lower()
     try:
@@ -35,29 +30,45 @@ def kill_process_on_port(port):
         
         if system == "windows":
             # Find the PID(s) using the port on Windows
-            cmd = f'netstat -ano | findstr :{port}'
-            output = subprocess.check_output(cmd, shell=True).decode()
-            
-            for line in output.strip().split('\n'):
-                line = line.strip()
-                if not line: continue
-                parts = line.split()
-                if len(parts) >= 2 and f":{port}" in parts[1]:
-                    pid = parts[-1]
-                    if pid.isdigit() and int(pid) != 0 and int(pid) != my_pid:
-                        pids.add(pid)
+            try:
+                cmd = f'netstat -ano | findstr :{port}'
+                output = subprocess.check_output(cmd, shell=True).decode()
+                
+                for line in output.strip().split('\n'):
+                    line = line.strip()
+                    if not line: continue
+                    parts = line.split()
+                    if len(parts) >= 2 and f":{port}" in parts[1]:
+                        pid = parts[-1]
+                        if pid.isdigit() and int(pid) != 0 and int(pid) != my_pid:
+                            pids.add(pid)
+            except subprocess.CalledProcessError:
+                pass
             
             if pids:
                 for pid in pids:
                     print(f"[Cleanup] Terminating conflicting process PID: {pid} on port {port}...")
                     subprocess.run(f'taskkill /F /PID {pid}', shell=True, capture_output=True)
-                time.sleep(1.0)
-                print("[Cleanup] Port cleared.")
+            
+            # Verification Loop: Wait for the port to be truly free
+            print("[Cleanup] Verifying port release...")
+            for i in range(10):
+                try:
+                    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                        s.bind((HOST, port))
+                        print("[Cleanup] Port cleared and verified.")
+                        return True
+                except Exception:
+                    if i < 9:
+                        time.sleep(0.5)
+                        continue
+                    else:
+                        print(f"[Cleanup] Warning: Port {port} still busy (likely TIME_WAIT or late-closing).")
                 
         else:
             # macOS / Linux (using lsof)
             try:
-                # lsof -t gives only the PID
                 cmd = f'lsof -t -iTCP:{port} -sTCP:LISTEN'
                 output = subprocess.check_output(cmd, shell=True).decode()
                 for line in output.strip().split('\n'):
@@ -72,7 +83,6 @@ def kill_process_on_port(port):
                     time.sleep(1.0)
                     print("[Cleanup] Port cleared.")
             except subprocess.CalledProcessError:
-                # lsof returns exit code 1 if no process found
                 pass
                 
     except Exception as e:
@@ -90,13 +100,10 @@ if __name__ == "__main__":
         # Clear the port before starting
         kill_process_on_port(PORT)
         
-        # Import the app here AFTER sys.path adjustment
-        from backend.app.main import app
-        
-        # Run the FastAPI server directly with the app object
-        # This is more reliable on Windows than the string import "module:app"
+        # Run using string-import format for better stability on Windows
+        # This points to the 'app' package inside 'backend' (handled via sys.path)
         uvicorn.run(
-            app, 
+            "app.main:app", 
             host=HOST, 
             port=PORT,
             reload=False,

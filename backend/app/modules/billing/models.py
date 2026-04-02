@@ -32,7 +32,7 @@ class Bill(Document):
     # Statuses
     invoice_status: str = "DRAFT"
     status: str = "PENDING"
-    invoice_number: Optional[str] = None
+    invoice_number: Optional[Indexed(str)] = None
     transaction_id: Optional[str] = None
     payment_gateway_status: Optional[str] = None
     whatsapp_sent: bool = False
