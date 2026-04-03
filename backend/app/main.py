@@ -133,7 +133,7 @@ else:
 backend_path = os.path.join(project_root, "backend")
 static_path = os.path.join(backend_path, "static")
 os.makedirs(static_path, exist_ok=True)  # ensure it exists on first boot
-app.mount("/static", StaticFiles(directory=static_path), name="static")
+app.mount("/backend_static", StaticFiles(directory=static_path), name="backend_static")
 
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
@@ -160,6 +160,9 @@ async def get_config(request: Request):
     }
 
 # This must remain at the bottom of the file, below all app.include_router() calls!
+if os.path.exists(frontend_path):
+    app.mount("/static", StaticFiles(directory=frontend_path), name="static_assets")
+
 # html=True tells FastAPI to automatically serve index.html on '/' and match other .html files.
 template_path = os.path.join(frontend_path, "template")
 if os.path.exists(template_path):

@@ -52,7 +52,7 @@ async def read_archived_areas(
 @router.get("/", response_model=List[AreaRead])
 async def read_areas(
     skip: int = 0,
-    limit: Optional[int] = None,
+    limit: int = 100,
     current_user: User = Depends(staff_access)
 ) -> Any:
     """

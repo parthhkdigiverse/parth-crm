@@ -3,15 +3,15 @@
 <html lang="en">
 
 <head>
-    <link rel="icon" type="image/x-icon" href="/frontend/favicon.ico">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Project Overview | SRM AI SETU</title>
-    <link rel="stylesheet" href="/frontend/css/bootstrap.min.css">
-    <link rel="stylesheet" href="/frontend/css/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="/frontend/css/theme.css?v=20260321">
-    <link rel="stylesheet" href="/frontend/css/components.css?v=20260321">
+    <link rel="stylesheet" href="../css/bootstrap.min.css">
+    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/theme.css?v=20260321">
+    <link rel="stylesheet" href="../css/components.css?v=20260321">
     <style>
         .kanban-board {
             display: flex;
@@ -630,11 +630,11 @@
         </div>
     </div>
 
-    <script src="/frontend/js/utils.js?v=20260326"></script>
-    <script src="/frontend/js/api.js?v=20260321"></script>
-    <script src="/frontend/js/auth.js?v=20260321"></script>
-    <script src="/frontend/js/ui_components.js?v=20260321"></script>
-    <script src="/frontend/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/utils.js?v=20260326"></script>
+    <script src="../js/api.js?v=20260321"></script>
+    <script src="../js/auth.js?v=20260321"></script>
+    <script src="../js/ui_components.js?v=20260321"></script>
+    <script src="../js/bootstrap.bundle.min.js"></script>
 
     <script>
         requireAuth();
@@ -698,11 +698,15 @@
                         const daysSince = updatedAt ? Math.floor((Date.now() - updatedAt) / 86400000) : null;
                         const isStale = daysSince !== null && daysSince >= 3 && status !== 'DELIVERY';
 
+                        const extractedNames = (l.assigned_users && l.assigned_users.length > 0) ? l.assigned_users.map(u => u.name).join(', ') : null;
+                        const finalOwnerName = l.owner_name || extractedNames || l.assigned_to_name || 'Unassigned';
+                        const finalOwnerInitial = finalOwnerName !== 'Unassigned' ? finalOwnerName.charAt(0).toUpperCase() : 'U';
+
                         return `
                             <div class="lead-card ${isStale ? 'stale' : ''}" 
                                 data-source="${(l.source || 'Other')}"
                                 data-pm="${l.project_manager_name || ''}"
-                                data-owner="${l.owner_name || ''}"
+                                data-owner="${finalOwnerName}"
                                 data-sentiment="${(() => {
                                     if (!l.last_visit_status) return '';
                                     let es = l.last_visit_status;
@@ -721,8 +725,8 @@
                                 <div class="d-flex justify-content-between align-items-center mt-3">
                                     <span class="source-badge bg-${sourceClass}">${l.source || 'Other'}</span>
                                     <div class="lead-owner">
-                                        <div class="owner-avatar">${(l.owner_name || 'U')[0].toUpperCase()}</div>
-                                        <span>${l.owner_name || 'Unassigned'}</span>
+                                        <div class="owner-avatar">${finalOwnerInitial}</div>
+                                        <span>${finalOwnerName}</span>
                                     </div>
                                 </div>
                                 ${l.last_visitor_name ? `
@@ -877,7 +881,7 @@
                 const contactName  = l.contact_person || '—';
                 const shopName     = l.name || '—';
                 const phone        = l.phone || '—';
-                const assigneeName = (l.assigned_to_user?.name) || l.assigned_to_name || l.owner_name || 'Unassigned';
+                const assigneeName = (l.assigned_to_user?.name) || l.assigned_to_name || l.owner_name || ((l.assigned_users && l.assigned_users.length > 0) ? l.assigned_users.map(u => u.name).join(', ') : null) || 'Unassigned';
                 const initials     = getInitials(assigneeName);
                 const pmName       = l.project_manager_name || null;
 

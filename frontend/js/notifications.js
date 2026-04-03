@@ -255,7 +255,7 @@ function renderNotifications(notifications) {
                     </div>
                     <div class="d-flex align-items-center gap-2">
                         <span class="text-muted" style="font-size:0.72rem;white-space:nowrap;">${formatTimeAgo(n.created_at)}</span>
-                        ${isUnread ? `<button class="btn p-0 border-0" style="color:var(--text-muted);font-size:1rem;" onclick="event.stopPropagation();markSingleAsRead(${n.id})" title="Mark as read"><i class="bi bi-check2-circle"></i></button>` : ''}
+                        ${isUnread ? `<button class="btn p-0 border-0" style="color:var(--text-muted);font-size:1rem;" onclick="event.stopPropagation();markSingleAsRead('${n.id}')" title="Mark as read"><i class="bi bi-check2-circle"></i></button>` : ''}
                     </div>
                 </div>
                 <p class="text-secondary mb-0" style="font-size:0.83rem;line-height:1.5;word-break:break-word;">${cleanMessage}</p>

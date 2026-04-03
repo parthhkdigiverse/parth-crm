@@ -149,7 +149,7 @@ class VisitService:
                 file_path = UPLOAD_DIR / fname
                 with file_path.open("wb") as buffer:
                     shutil.copyfileobj(storefront_photo.file, buffer)
-                visit.storefront_photo_url = f"/static/uploads/visits/{fname}"
+                visit.storefront_photo_url = f"/backend_static/uploads/visits/{fname}"
                 visit.photo_url = visit.storefront_photo_url
             except Exception as e:
                 raise HTTPException(status_code=500, detail=f"Storefront upload failed: {str(e)}")
@@ -161,7 +161,7 @@ class VisitService:
                 file_path = UPLOAD_DIR / fname
                 with file_path.open("wb") as buffer:
                     shutil.copyfileobj(selfie_photo.file, buffer)
-                visit.selfie_photo_url = f"/static/uploads/visits/{fname}"
+                visit.selfie_photo_url = f"/backend_static/uploads/visits/{fname}"
                 if not visit.photo_url:
                     visit.photo_url = visit.selfie_photo_url
             except Exception as e:

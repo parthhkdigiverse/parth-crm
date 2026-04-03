@@ -367,8 +367,8 @@ async function loadSlabsSettings() {
                     <td class="text-primary fw-bold">₹${Number(s.incentive_per_unit).toLocaleString('en-IN')}</td>
                     <td class="text-success fw-bold">₹${Number(s.slab_bonus).toLocaleString('en-IN')}</td>
                     <td class="d-flex gap-1">
-                        <button class="btn btn-sm" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:7px;font-size:0.75rem;padding:2px 8px;" onclick="openEditSlabSettings(${s.id},${s.min_units},${s.max_units},${s.incentive_per_unit},${s.slab_bonus})"><i class="bi bi-pencil"></i></button>
-                        <button class="btn btn-sm" style="background:#fef2f2;color:#b91c1c;border:1px solid #fca5a5;border-radius:7px;font-size:0.75rem;padding:2px 8px;" onclick="deleteSlabSetting(${s.id})"><i class="bi bi-trash"></i></button>
+                        <button class="btn btn-sm" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:7px;font-size:0.75rem;padding:2px 8px;" onclick="openEditSlabSettings('${s.id}','${s.min_units}','${s.max_units}','${s.incentive_per_unit}','${s.slab_bonus}')"><i class="bi bi-pencil"></i></button>
+                        <button class="btn btn-sm" style="background:#fef2f2;color:#b91c1c;border:1px solid #fca5a5;border-radius:7px;font-size:0.75rem;padding:2px 8px;" onclick="deleteSlabSetting('${s.id}')"><i class="bi bi-trash"></i></button>
                     </td>
                 </tr>`).join('')}
                 </tbody>

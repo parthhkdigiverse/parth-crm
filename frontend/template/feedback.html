@@ -10,9 +10,9 @@
     <title>Feedback Management — SRM AI SETU</title>
     <!-- Google Fonts: Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/frontend/css/bootstrap.min.css">
-    <link rel="stylesheet" href="/frontend/css/theme.css">
-    <link rel="stylesheet" href="/frontend/css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/css/theme.css">
+    <link rel="stylesheet" href="/static/css/bootstrap-icons.min.css">
     <style>
         :root {
             --crm-primary: var(--primary);
@@ -231,12 +231,12 @@
         </div>
     </div>
 
-    <script src="/frontend/js/utils.js?v=2.3"></script>
-    <script src="/frontend/js/api.js?v=2.3"></script>
-    <script src="/frontend/js/auth.js?v=2.3"></script>
-    <script src="/frontend/js/ui_components.js?v=20260312"></script>
-    <script src="/frontend/js/app.js?v=2.3"></script>
-    <script src="/frontend/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/utils.js?v=20260403"></script>
+    <script src="/static/js/api.js?v=20260403"></script>
+    <script src="/static/js/auth.js?v=20260403"></script>
+    <script src="/static/js/ui_components.js?v=20260403"></script>
+    <script src="/static/js/app.js?v=20260403"></script>
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
     <script>
         requireAuth();
         const sb = document.getElementById('sidebar');
@@ -475,7 +475,7 @@
                                 <div class="text-muted small fw-bold mb-0">${dateStr}</div>
                                 <div class="text-muted" style="font-size: 0.7rem;">${timeStr}</div>
                             </div>
-                            <button class="btn btn-link btn-sm p-0 mb-1" title="Delete" onclick="deleteFeedback(${f.id})"><i class="bi bi-trash text-danger"></i></button>
+                            <button class="btn btn-link btn-sm p-0 mb-1" title="Delete" onclick="deleteFeedback('${f.id}')"><i class="bi bi-trash text-danger"></i></button>
                         </div>
                     </td>
                 </tr>

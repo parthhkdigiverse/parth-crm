@@ -11,10 +11,10 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="/frontend/css/bootstrap.min.css">
-    <link rel="stylesheet" href="/frontend/css/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="/frontend/css/theme.css?v=20260321">
-    <link rel="stylesheet" href="/frontend/css/components.css?v=20260321">
+    <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/static/css/theme.css?v=20260403">
+    <link rel="stylesheet" href="/static/css/components.css?v=20260403">
     <style>
         /* ── Professional Table Styling ── */
         .grid-card {
@@ -492,12 +492,12 @@
     </div>
 
     <!-- Scripts -->
-    <script src="/frontend/js/utils.js?v=20260326"></script>
-    <script src="/frontend/js/api.js?v=20260321"></script>
-    <script src="/frontend/js/auth.js?v=20260321"></script>
-    <script src="/frontend/js/ui_components.js?v=20260321"></script>
-    <script src="/frontend/js/app.js?v=20260321"></script>
-    <script src="/frontend/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/utils.js?v=20260403"></script>
+    <script src="/static/js/api.js?v=20260403"></script>
+    <script src="/static/js/auth.js?v=20260403"></script>
+    <script src="/static/js/ui_components.js?v=20260403"></script>
+    <script src="/static/js/app.js?v=20260403"></script>
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
     <script>
         requireAuth();
         const sb = document.getElementById('sidebar');
@@ -660,9 +660,9 @@
                     let actions = `<span class="text-muted small">Viewer</span>`;
                     if (canManageEmployees) {
                         actions = `
-                            <button class="btn-action" onclick="viewEmployeeAttendance(${emp.id}, '${emp.name}')" title="Attendance History"><i class="bi bi-calendar-check"></i></button>
-                            <button class="btn-action" onclick="openEditModal(${emp.id})" title="Edit"><i class="bi bi-pencil"></i></button>
-                            ${emp.role !== 'admin' ? `<button class="btn-action btn-action-danger" onclick="deleteEmployee(${emp.id})" title="Delete"><i class="bi bi-trash"></i></button>` : ''}
+                            <button class="btn-action" onclick="viewEmployeeAttendance('${emp.id}', '${emp.name}')" title="Attendance History"><i class="bi bi-calendar-check"></i></button>
+                            <button class="btn-action" onclick="openEditModal('${emp.id}')" title="Edit"><i class="bi bi-pencil"></i></button>
+                            ${emp.role !== 'admin' ? `<button class="btn-action btn-action-danger" onclick="deleteEmployee('${emp.id}')" title="Delete"><i class="bi bi-trash"></i></button>` : ''}
                         `;
                     }
 
@@ -1013,7 +1013,7 @@
                         <td>${statusBadge(r.day_status)}</td>
                         <td class="d-mobile-none">${leaveBadge(r.leave_status)}</td>
                         <td class="text-end">
-                            <button class="btn-action" onclick="viewPunchLogs('${r.date}', ${r.user_id})" title="View Details">
+                            <button class="btn-action" onclick="viewPunchLogs('${r.date}', '${r.user_id}')" title="View Details">
                                 <i class="bi bi-eye"></i>
                             </button>
                         </td>

@@ -171,7 +171,7 @@ function renderQueue(projects) {
         const acceptBadge = needsAccept ? `<span class="badge bg-danger rounded-pill" style="font-size:0.6rem;"><i class="bi bi-lightning-charge-fill"></i> Claim</span>` : '';
 
         html += `
-                <div class="lead-card p-3 mb-3 rounded-4 bg-white shadow-sm border border-light" id="card-${p.id}" onclick="selectLead(${p.id})" style="cursor: pointer; transition: transform 0.2s;">
+                <div class="lead-card p-3 mb-3 rounded-4 bg-white shadow-sm border border-light" id="card-${p.id}" onclick="selectLead('${p.id}')" style="cursor: pointer; transition: transform 0.2s;">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <div class="d-flex align-items-center gap-2">
                             <span class="badge ${badgeColor} px-2 py-1 rounded-pill" style="font-size:0.75rem; font-weight:600;">${p.pipeline_stage}</span> 
@@ -240,7 +240,7 @@ function renderActionCenter(project) {
                             <div class="mb-3"><i class="bi bi-inbox text-warning" style="font-size: 3rem;"></i></div>
                             <h4 class="fw-bold">Claim This Lead</h4>
                             <p class="text-muted mb-4">You must accept this lead to lock it to your profile before starting a visit.</p>
-                            <button class="btn btn-success px-5 fw-bold" onclick="acceptLead(${project.id})">Accept Lead</button>
+                            <button class="btn btn-success px-5 fw-bold" onclick="acceptLead('${project.id}')">Accept Lead</button>
                         </div>`;
         } else {
             actionContainer.innerHTML = `
@@ -258,7 +258,7 @@ function renderActionCenter(project) {
                         <div class="mb-3"><i class="bi bi-calendar-check text-warning" style="font-size: 3rem;"></i></div>
                         <h4 class="fw-bold">Pitching & Demo</h4>
                         <div class="d-flex justify-content-center gap-3 mt-4">
-                            <button class="btn btn-warning text-dark px-4 fw-bold" onclick="window.openSmartScheduleModal(${project.id})"><i class="bi bi-calendar-plus me-2"></i>Schedule Demo</button>
+                            <button class="btn btn-warning text-dark px-4 fw-bold" onclick="window.openSmartScheduleModal('${project.id}')"><i class="bi bi-calendar-plus me-2"></i>Schedule Demo</button>
                             <button class="btn btn-outline-dark px-4 fw-semibold" onclick="startFollowUpVisit()"><i class="bi bi-person-walking me-2"></i>Log Follow-up Visit</button>
                         </div>
                     </div>`;
@@ -270,7 +270,7 @@ function renderActionCenter(project) {
                         <h4 class="fw-bold text-info">Demo & Negotiation</h4>
                         <p class="text-muted mb-4 px-3">The PM is handling the demo. You can log field follow-ups or reschedule the demo if the client requested a time change.</p>
                         <div class="d-flex justify-content-center gap-3 mt-4 flex-wrap">
-                            <button class="btn btn-info text-dark px-4 fw-bold shadow-sm" onclick="window.openSmartScheduleModal(${project.id})"><i class="bi bi-calendar-event me-2"></i>Re-Schedule Demo</button>
+                            <button class="btn btn-info text-dark px-4 fw-bold shadow-sm" onclick="window.openSmartScheduleModal('${project.id}')"><i class="bi bi-calendar-event me-2"></i>Re-Schedule Demo</button>
                             <button class="btn btn-outline-dark px-4 fw-semibold" onclick="startFollowUpVisit()"><i class="bi bi-person-walking me-2"></i>Log Follow-up Visit</button>
                         </div>
                     </div>`;
@@ -1214,7 +1214,7 @@ function renderTrainingTracker(project, meetings = []) {
         } else {
             hasPendingSchedule = true;
             statusBadge = `<span class="badge bg-warning bg-opacity-10 text-warning border border-warning"><i class="bi bi-clock me-1"></i>Scheduled</span>
-                           <button class="btn btn-sm btn-outline-warning ms-2" onclick="openRescheduleModal(${m.id}, '${m.date}', ${currentProject.pm_id})"><i class="bi bi-clock-history"></i> Reschedule</button>`;
+                           <button class="btn btn-sm btn-outline-warning ms-2" onclick="openRescheduleModal('${m.id}', '${m.date}', '${currentProject.pm_id}')"><i class="bi bi-clock-history"></i> Reschedule</button>`;
         }
 
         html += `
@@ -1245,7 +1245,7 @@ function renderTrainingTracker(project, meetings = []) {
                         <div class="small text-muted">Awaiting PM Availability</div>
                     </div>
                 </div>
-                <button class="btn btn-primary fw-bold shadow-sm" onclick="openTrainingScheduleModal(${project.id}, ${project.client_id || 'null'})">
+                <button class="btn btn-primary fw-bold shadow-sm" onclick="openTrainingScheduleModal('${project.id}', '${project.client_id || 'null'}')">
                     <i class="bi bi-calendar-plus me-2"></i>Schedule Session
                 </button>
             </div>
@@ -1257,7 +1257,7 @@ function renderTrainingTracker(project, meetings = []) {
         html += `
             <div class="text-center mt-4 pt-3 border-top">
                 <p class="text-muted small mb-2"><i class="bi bi-info-circle me-1"></i>Client has completed the mandatory 3 sessions.</p>
-                <button class="btn btn-outline-secondary btn-sm fw-bold rounded-pill px-4" onclick="openTrainingScheduleModal(${project.id}, ${project.client_id || 'null'})">
+                <button class="btn btn-outline-secondary btn-sm fw-bold rounded-pill px-4" onclick="openTrainingScheduleModal('${project.id}', '${project.client_id || 'null'}')">
                     <i class="bi bi-plus-lg me-1"></i>Schedule Optional Session ${sessionCounter}
                 </button>
             </div>

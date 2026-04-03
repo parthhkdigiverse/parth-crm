@@ -33,9 +33,9 @@ window.hasFeatureAccess = function(featureKey, roleInput) {
 // Inject global theme styles (but NOT on the login page to avoid style degradation)
 const isLoginPage = window.location.pathname.endsWith('index.html') || window.location.pathname.endsWith('/') || window.location.pathname === '';
 if (!isLoginPage) {
-    document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="../css/theme.css?v=2.6">');
-    document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="../css/components.css?v=2.6">');
-    document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="../css/global.css?v=2.6">');
+    document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="/static/css/theme.css?v=20260403">');
+    document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="/static/css/components.css?v=20260403">');
+    document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="/static/css/global.css?v=20260403">');
 }
 
 window.getToken = function() {

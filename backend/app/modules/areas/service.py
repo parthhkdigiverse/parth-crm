@@ -14,27 +14,36 @@ class AreaService:
         # No db session needed in Beanie!
         pass
 
-    async def get_areas(self, current_user: User, skip: int = 0, limit: Optional[int] = None):
+    async def get_areas(self, current_user: User, skip: int = 0, limit: int = 100):
         # Base query: non-archived areas
+        # Import here so the enrich_area nested closure can always access In/Or
+        from beanie.operators import Or, In
         find_query = Area.find(Area.is_archived != True)
 
-        if current_user.role == "ADMIN":
-            query = find_query.skip(skip)
-            if limit is not None:
-                query = query.limit(limit)
-            areas = await query.to_list()
+        is_admin = "ADMIN" in str(current_user.role).upper()
+        if is_admin:
+            areas = await find_query.skip(skip).limit(limit).to_list()
         else:
-            # Sales/Telesales: Check many-to-many replacement (list of ObjectIds)
-            query = Area.find(
-                Area.is_archived != True,
-                In(Area.assigned_user_ids, [current_user.id])
-            ).skip(skip)
-            if limit is not None:
-                query = query.limit(limit)
-            areas = await query.to_list()
+            
+            # Fetch implicitly assigned areas via Shop relationships
+            shop_query = Shop.find(Or(
+                Shop.owner_id == current_user.id,
+                Shop.created_by_id == current_user.id,
+                Shop.project_manager_id == current_user.id,
+                In(Shop.assigned_owner_ids, [current_user.id]),
+                In(Shop.assigned_user_ids, [current_user.id])
+            ))
+            user_shops = await shop_query.to_list()
+            shop_area_ids = list(set([s.area_id for s in user_shops if getattr(s, 'area_id', None)]))
 
-        all_users = await User.find_all().to_list()
-        user_map = {str(u.id): u for u in all_users if u.id}
+            # Sales/Telesales: Can see areas they are assigned to OR areas containing shops they own/manage
+            areas = await Area.find(
+                Area.is_archived != True,
+                Or(
+                    In(Area.assigned_user_ids, [current_user.id]),
+                    In(Area.id, shop_area_ids)
+                )
+            ).skip(skip).limit(limit).to_list()
 
         import asyncio
         async def enrich_area(area):
@@ -42,36 +51,27 @@ class AreaService:
             area.shops_count = await Shop.find(Shop.area_id == area.id, Shop.is_deleted != True, Shop.is_archived != True).count()
             
             # Populate creator name
-            area.created_by_name = user_map.get(str(area.created_by_id)).name if area.created_by_id and str(area.created_by_id) in user_map else "System"
+            if area.created_by_id:
+                creator = await User.get(area.created_by_id)
+                area.created_by_name = creator.name if creator else None
+            else:
+                area.created_by_name = None
 
             # Populate archived by name
             if area.is_archived and area.archived_by_id:
-                area.archived_by_name = user_map.get(str(area.archived_by_id)).name if str(area.archived_by_id) in user_map else "System"
+                archived_by = await User.get(area.archived_by_id)
+                area.archived_by_name = archived_by.name if archived_by else None
             else:
                 area.archived_by_name = None
-                
-            # Dynamic fields for UI
-            area.owner_name = user_map.get(str(area.assigned_user_id)).name if getattr(area, 'assigned_user_id', None) and str(area.assigned_user_id) in user_map else "Unassigned"
-            area.manager_name = "Unassigned" # Area doesn't inherently have a manager yet
 
             # Populate assigned users list for UI dropdowns/tables
             assigned_users = []
             if area.assigned_user_ids:
-                for uid in area.assigned_user_ids:
-                    str_uid = str(uid)
-                    if str_uid in user_map:
-                        u = user_map[str_uid]
-                        assigned_users.append({
-                            "id": str_uid,
-                            "name": u.name,
-                            "role": u.role.value if hasattr(u.role, 'value') else str(u.role)
-                        })
-                    else:
-                        assigned_users.append({
-                            "id": str_uid,
-                            "name": "Unknown",
-                            "role": "STAFF"
-                        })
+                users = await User.find(In(User.id, area.assigned_user_ids)).to_list()
+                assigned_users = [
+                    {"id": str(u.id), "name": u.name, "role": u.role.value if hasattr(u.role, 'value') else str(u.role)} 
+                    for u in users
+                ]
             area.assigned_users = assigned_users
             return area
 
@@ -119,7 +119,8 @@ class AreaService:
         area.created_by_id = current_user.id
         
         # Auto-Assign if not Admin
-        if current_user.role != UserRole.ADMIN:
+        is_admin = "ADMIN" in str(current_user.role).upper()
+        if not is_admin:
             area.assigned_user_ids = [current_user.id]
             area.assignment_status = "ACCEPTED"
             area.accepted_at = datetime.now(UTC)
@@ -251,7 +252,9 @@ class AreaService:
         if not area:
             raise HTTPException(status_code=404, detail="Area not found")
         
-        if current_user.role != "ADMIN":
+        role_str = current_user.role.value if hasattr(current_user.role, 'value') else str(current_user.role)
+        is_admin = "ADMIN" in str(current_user.role).upper()
+        if not is_admin:
             if current_user.id not in area.assigned_user_ids:
                 raise HTTPException(status_code=403, detail="Not authorized to archive this area")
         
@@ -267,9 +270,11 @@ class AreaService:
         return {"detail": f"Area \"{area.name}\" and its shops have been archived"}
 
     async def get_archived_areas(self, current_user: User):
-        find_query = Area.find(Area.is_archived == True)
+        find_query = Area.find(Area.is_archived == True)  # Intentional: archived list wants only explicitly archived docs
 
-        if current_user.role == "ADMIN":
+        role_str = current_user.role.value if hasattr(current_user.role, 'value') else str(current_user.role)
+        is_admin = "ADMIN" in str(current_user.role).upper()
+        if is_admin:
             areas = await find_query.to_list()
         else:
             from beanie.operators import Or
@@ -281,41 +286,30 @@ class AreaService:
                 )
             ).to_list()
 
-        all_users = await User.find_all().to_list()
-        user_map = {str(u.id): u for u in all_users if u.id}
-
         import asyncio
         async def enrich_archived_area(area):
             # For archived areas, we count all shops (they will all be archived anyway)
             area.shops_count = await Shop.find(Shop.area_id == area.id).count()
 
             if area.archived_by_id:
-                area.archived_by_name = user_map.get(str(area.archived_by_id)).name if str(area.archived_by_id) in user_map else "System"
+                archived_by = await User.get(area.archived_by_id)
+                area.archived_by_name = archived_by.name if archived_by else None
             else:
                 area.archived_by_name = None
 
-            area.created_by_name = user_map.get(str(area.created_by_id)).name if area.created_by_id and str(area.created_by_id) in user_map else "System"
-
-            area.owner_name = user_map.get(str(area.assigned_user_id)).name if getattr(area, 'assigned_user_id', None) and str(area.assigned_user_id) in user_map else "Unassigned"
-            area.manager_name = "Unassigned"
+            if area.created_by_id:
+                creator = await User.get(area.created_by_id)
+                area.created_by_name = creator.name if creator else None
+            else:
+                area.created_by_name = None
 
             assigned_users = []
             if area.assigned_user_ids:
-                for uid in area.assigned_user_ids:
-                    str_uid = str(uid)
-                    if str_uid in user_map:
-                        u = user_map[str_uid]
-                        assigned_users.append({
-                            "id": str_uid,
-                            "name": u.name,
-                            "role": u.role.value if hasattr(u.role, 'value') else str(u.role)
-                        })
-                    else:
-                        assigned_users.append({
-                            "id": str_uid,
-                            "name": "Unknown",
-                            "role": "STAFF"
-                        })
+                users = await User.find(In(User.id, area.assigned_user_ids)).to_list()
+                assigned_users = [
+                    {"id": str(u.id), "name": u.name, "role": u.role.value if hasattr(u.role, 'value') else str(u.role)} 
+                    for u in users
+                ]
             area.assigned_users = assigned_users
             return area
 
@@ -327,7 +321,9 @@ class AreaService:
         if not area:
             raise HTTPException(status_code=404, detail="Area not found")
         
-        if current_user.role != "ADMIN":
+        role_str = current_user.role.value if hasattr(current_user.role, 'value') else str(current_user.role)
+        is_admin = "ADMIN" in str(current_user.role).upper()
+        if not is_admin:
             if area.archived_by_id != current_user.id and current_user.id not in area.assigned_user_ids:
                  raise HTTPException(status_code=403, detail="Not authorized to unarchive this area")
         
@@ -358,7 +354,7 @@ class AreaService:
             raise HTTPException(status_code=404, detail="Area not found")
         
         from app.modules.settings.models import AppSetting
-        policy = await AppSetting.find_one(AppSetting.key == "delete_policy")
+        policy = await AppSetting.find_one({"key": "delete_policy"})
         is_hard = policy and policy.value == "HARD"
 
         if is_hard:

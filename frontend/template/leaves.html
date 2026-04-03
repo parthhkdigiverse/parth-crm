@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Leaves — SRM AI SETU</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/frontend/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/css/bootstrap.min.css">
     <script>
         // CRITICAL: Global Error Handling (Placed in HEAD to catch early script failures)
         window.__loadedScripts = [];
@@ -42,9 +42,9 @@
             return false;
         };
     </script>
-    <link rel="stylesheet" href="/frontend/css/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="/frontend/css/theme.css?v=20260321">
-    <link rel="stylesheet" href="/frontend/css/components.css?v=20260321">
+    <link rel="stylesheet" href="/static/css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/static/css/theme.css?v=20260403">
+    <link rel="stylesheet" href="/static/css/components.css?v=20260403">
 </head>
 
 <body class="bg-app">
@@ -255,12 +255,12 @@
         </div>
     </div>
 
-    <script src="/frontend/js/utils.js?v=20260326" onload="window.__loadedScripts.push('utils.js')"></script>
-    <script src="/frontend/js/api.js?v=20260321" onload="window.__loadedScripts.push('api.js')"></script>
-    <script src="/frontend/js/auth.js?v=20260321" onload="window.__loadedScripts.push('auth.js')"></script>
-    <script src="/frontend/js/ui_components.js?v=20260321" onload="window.__loadedScripts.push('ui_components.js')"></script>
-    <script src="/frontend/js/app.js?v=20260321" onload="window.__loadedScripts.push('app.js')"></script>
-    <script src="/frontend/js/bootstrap.bundle.min.js" onload="window.__loadedScripts.push('bootstrap.js')"></script>
+    <script src="/static/js/utils.js?v=20260403" onload="window.__loadedScripts.push('utils.js')"></script>
+    <script src="/static/js/api.js?v=20260403" onload="window.__loadedScripts.push('api.js')"></script>
+    <script src="/static/js/auth.js?v=20260403" onload="window.__loadedScripts.push('auth.js')"></script>
+    <script src="/static/js/ui_components.js?v=20260403" onload="window.__loadedScripts.push('ui_components.js')"></script>
+    <script src="/static/js/app.js?v=20260403" onload="window.__loadedScripts.push('app.js')"></script>
+    <script src="/static/js/bootstrap.bundle.min.js" onload="window.__loadedScripts.push('bootstrap.js')"></script>
     <script>
         if (typeof window.requireAuth === 'function') window.requireAuth();
         const sb = document.getElementById('sidebar');
@@ -523,21 +523,21 @@
                     
                     if (canManageLeave && l.status === 'PENDING') {
                         lastCol = `<div class="d-flex gap-1 flex-wrap">
-                           <button class="btn btn-sm btn-outline-success" title="Approve" onclick="approveLeaveWithRemarks(${l.id}, 'APPROVED')"><i class="bi bi-check-lg"></i> Approve</button>
-                           <button class="btn btn-sm btn-outline-danger" title="Reject" onclick="approveLeaveWithRemarks(${l.id}, 'REJECTED')"><i class="bi bi-x-lg"></i> Reject</button>
+                           <button class="btn btn-sm btn-outline-success" title="Approve" onclick="approveLeaveWithRemarks('${l.id}', 'APPROVED')"><i class="bi bi-check-lg"></i> Approve</button>
+                           <button class="btn btn-sm btn-outline-danger" title="Reject" onclick="approveLeaveWithRemarks('${l.id}', 'REJECTED')"><i class="bi bi-x-lg"></i> Reject</button>
                          </div>`;
                     } else if (!canManageLeave && canEditOwnLeave && l.status === 'PENDING' && String(l.user_id) === String(user?.id)) {
                         if (isAutoLeave) {
                             lastCol = `<span class="text-muted small italic"><i class="bi bi-lock-fill me-1"></i>Auto leave restricted</span>`;
                         } else {
                             lastCol = `<div class="d-flex gap-1 flex-wrap">
-                                <button class="btn btn-sm btn-outline-primary" title="Edit" onclick="openEditLeave(${l.id})"><i class="bi bi-pencil"></i> Edit</button>
-                                <button class="btn btn-sm btn-outline-danger" title="Cancel" onclick="cancelLeave(${l.id})"><i class="bi bi-x-circle"></i> Cancel</button>
+                                <button class="btn btn-sm btn-outline-primary" title="Edit" onclick="openEditLeave('${l.id}')"><i class="bi bi-pencil"></i> Edit</button>
+                                <button class="btn btn-sm btn-outline-danger" title="Cancel" onclick="cancelLeave('${l.id}')"><i class="bi bi-x-circle"></i> Cancel</button>
                             </div>`;
                         }
                     } else if (canManageLeave && (l.status === 'APPROVED' || l.status === 'REJECTED')) {
                         lastCol = `<div class="d-flex gap-1 justify-content-end">
-                            <button class="btn btn-sm btn-outline-secondary" style="font-size:0.7rem;" title="Edit Remarks" onclick="approveLeaveWithRemarks(${l.id}, '${l.status}')">
+                            <button class="btn btn-sm btn-outline-secondary" style="font-size:0.7rem;" title="Edit Remarks" onclick="approveLeaveWithRemarks('${l.id}', '${l.status}')">
                                 <i class="bi bi-chat-left-text me-1"></i>Remark
                             </button>
                         </div>`;

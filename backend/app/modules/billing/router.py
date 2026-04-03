@@ -52,7 +52,7 @@ async def upload_qr_image(
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
     
-    return {"url": f"/static/uploads/qrs/{filename}"}
+    return {"url": f"/backend_static/uploads/qrs/{filename}"}
 
 @router.get("/settings")
 async def get_invoice_settings(

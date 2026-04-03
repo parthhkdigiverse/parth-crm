@@ -9,11 +9,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Meetings | SRM AI SETU</title>
     <!-- Combined Stylesheets -->
-    <link rel="stylesheet" href="/frontend/css/bootstrap.min.css">
-    <link rel="stylesheet" href="/frontend/css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/css/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/frontend/css/theme.css?v=20260321">
-    <link rel="stylesheet" href="/frontend/css/components.css?v=20260321">
+    <link rel="stylesheet" href="/static/css/theme.css?v=20260403">
+    <link rel="stylesheet" href="/static/css/components.css?v=20260403">
     <style>
         .page-content-standard {
             padding: 40px;
@@ -339,12 +339,12 @@
     </div>
 
     <!-- Scripts -->
-    <script src="/frontend/js/utils.js?v=20260326"></script>
-    <script src="/frontend/js/api.js?v=20260321"></script>
-    <script src="/frontend/js/auth.js?v=20260321"></script>
-    <script src="/frontend/js/ui_components.js?v=20260321"></script>
-    <script src="/frontend/js/app.js?v=20260321"></script>
-    <script src="/frontend/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/utils.js?v=20260403"></script>
+    <script src="/static/js/api.js?v=20260403"></script>
+    <script src="/static/js/auth.js?v=20260403"></script>
+    <script src="/static/js/ui_components.js?v=20260403"></script>
+    <script src="/static/js/app.js?v=20260403"></script>
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
 
     <script>
         // Security & Layout Init
@@ -461,7 +461,7 @@
                         <td><span class="badge status-badge border ${statusBadge(m.status)}">${m.status || 'Scheduled'}</span></td>
                         <td>
                             ${isFinished ? `
-                                <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="fetchAISummary(${m.id})">
+                                <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="fetchAISummary('${m.id}')">
                                     <i class="bi bi-robot me-1"></i>Report
                                 </button>
                             ` : `<span class="text-muted small">${m.content ? m.content.substring(0, 30) + '...' : 'Pre-meeting phase'}</span>`}
@@ -473,17 +473,17 @@
                                 </button>
                                 <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
                                     ${(!isFinished && !isCancelled) ? `
-                                        <li><a class="dropdown-item" href="#" onclick="updateStatus(${m.id}, 'RESOLVED')"><i class="bi bi-check2-circle me-2 text-success"></i>Mark Done</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="openRescheduleModal(${m.id}, '${m.date}', ${m.client_id})"><i class="bi bi-calendar2-range me-2 text-primary"></i>Reschedule</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="updateStatus(${m.id}, 'CANCELLED')"><i class="bi bi-x-circle me-2 text-danger"></i>Cancel</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="updateStatus('${m.id}', 'RESOLVED')"><i class="bi bi-check2-circle me-2 text-success"></i>Mark Done</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="openRescheduleModal('${m.id}', '${m.date}', '${m.client_id}')"><i class="bi bi-calendar2-range me-2 text-primary"></i>Reschedule</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="updateStatus('${m.id}', 'CANCELLED')"><i class="bi bi-x-circle me-2 text-danger"></i>Cancel</a></li>
                                     ` : ''}
                                     ${(!m.meet_link && !isFinished && !isCancelled) ? `
-                                        <li><a class="dropdown-item" href="#" onclick="initializeMeet(${m.id})"><i class="bi bi-camera-video me-2 text-info"></i>Create G-Meet</a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="initializeMeet('${m.id}')"><i class="bi bi-camera-video me-2 text-info"></i>Create G-Meet</a></li>
                                     ` : m.meet_link ? `
                                         <li><a class="dropdown-item" href="${m.meet_link}" target="_blank"><i class="bi bi-link-45deg me-2"></i>Join Meet</a></li>
                                     ` : ''}
                                     <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item text-danger" href="#" onclick="deleteMeeting(${m.id})"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                                    <li><a class="dropdown-item text-danger" href="#" onclick="deleteMeeting('${m.id}')"><i class="bi bi-trash me-2"></i>Delete</a></li>
                                 </ul>
                             </div>
                         </td>
@@ -544,7 +544,7 @@
                 });
 
                 grid.innerHTML = res.slots.map(s => `
-                    <div class="slot-pill ${s.is_available ? '' : 'disabled'}" onclick="${s.is_available ? `selectSlot('${s.time}')` : ''}">
+                    <div class="slot-pill ${s.is_available ? '' : 'disabled'}" onclick="'${s.is_available ? `selectSlot('${s.time}')` : ''}">
                         ${s.time}
                     </div>
                 `).join('');
@@ -632,7 +632,7 @@
                 const res = await apiPost('/users/availability/group', { user_ids: userIds, date: date });
                 
                 container.innerHTML = res.slots.map(s => `
-                    <div class="slot-pill res-slot ${s.is_available ? '' : 'disabled'}" onclick="${s.is_available ? `selectResSlot('${s.time}')` : ''}">
+                    <div class="slot-pill res-slot ${s.is_available ? '' : 'disabled'}" onclick="'${s.is_available ? `selectResSlot('${s.time}')` : ''}">
                         ${s.time}
                     </div>
                 `).join('') || '<div class="text-muted small w-100 text-center">No slots available</div>';
@@ -731,7 +731,7 @@
                         <td><span class="badge ${badgeClass} extra-small">${m.status}</span></td>
                         <td>
                             ${isFinished ?
-                            `<button class="btn btn-sm btn-light-soft text-primary fw-bold extra-small" onclick="fetchAISummary(${m.id})"><i class="bi bi-stars me-1"></i>Report</button>` :
+                            `<button class="btn btn-sm btn-light-soft text-primary fw-bold extra-small" onclick="fetchAISummary('${m.id}')"><i class="bi bi-stars me-1"></i>Report</button>` :
                             '<span class="text-muted extra-small italic">Pending...</span>'}
                         </td>
                         <td class="pe-4 text-end">
@@ -743,9 +743,9 @@
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end shadow border-0">
                                         <li><a class="dropdown-item" href="meeting_strategy.html?id=${m.id}"><i class="bi bi-eye me-2"></i>Detailed View</a></li>
-                                        ${!isFinished ? `<li><a class="dropdown-item" href="javascript:void(0)" onclick="openRescheduleModal(${m.id}, ${m.host_id || ''})"><i class="bi bi-calendar2-range me-2"></i>Reschedule</a></li>` : ''}
+                                        ${!isFinished ? `<li><a class="dropdown-item" href="javascript:void(0)" onclick="openRescheduleModal('${m.id}', '${m.host_id || ''}')"><i class="bi bi-calendar2-range me-2"></i>Reschedule</a></li>` : ''}
                                         <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item text-danger" href="javascript:void(0)" onclick="deleteMeeting(${m.id})"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                                        <li><a class="dropdown-item text-danger" href="javascript:void(0)" onclick="deleteMeeting('${m.id}')"><i class="bi bi-trash me-2"></i>Delete</a></li>
                                     </ul>
                                 </div>
                             </div>

@@ -575,8 +575,8 @@ async function renderDashboard() {
                         <td>${c.organization || '—'}</td>
                         <td>${c.pm_id ? `<span class="badge badge-primary">PM #${c.pm_id}</span>` : `<span class="badge badge-warning">Unassigned</span>`}</td>
                         <td style="display:flex;gap:6px;">
-                            <button class="btn btn-ghost" title="Add Issue" style="padding:4px 8px;" onclick="openNewIssueModal(${c.id})"><i class="fa-solid fa-triangle-exclamation" style="color:var(--warning);"></i></button>
-                            <button class="btn btn-ghost" title="Add Meeting" style="padding:4px 8px;" onclick="openNewMeetingModal(${c.id})"><i class="fa-regular fa-calendar-plus" style="color:var(--primary);"></i></button>
+                            <button class="btn btn-ghost" title="Add Issue" style="padding:4px 8px;" onclick="openNewIssueModal('${c.id}')"><i class="fa-solid fa-triangle-exclamation" style="color:var(--warning);"></i></button>
+                            <button class="btn btn-ghost" title="Add Meeting" style="padding:4px 8px;" onclick="openNewMeetingModal('${c.id}')"><i class="fa-regular fa-calendar-plus" style="color:var(--primary);"></i></button>
                         </td>
                     </tr>`).join('');
             mainContent.innerHTML = `
@@ -628,10 +628,10 @@ async function renderDashboard() {
                     <div class="dropdown">
                         <button class="btn btn-ghost p-1" data-bs-toggle="dropdown"><i class="fa-solid fa-ellipsis-vertical"></i></button>
                         <ul class="dropdown-menu shadow border-0">
-                            <li><a class="dropdown-item" href="javascript:void(0)" onclick="openEditShopModal(${s.id})"><i class="fa-solid fa-pen me-2"></i> Edit</a></li>
-                            ${!isConverted ? `<li><a class="dropdown-item" href="javascript:void(0)" onclick="openNewBillModal(${s.id})"><i class="fa-solid fa-file-invoice-dollar me-2 text-success"></i> Convert & Bill</a></li>` : ''}
+                            <li><a class="dropdown-item" href="javascript:void(0)" onclick="openEditShopModal('${s.id}')"><i class="fa-solid fa-pen me-2"></i> Edit</a></li>
+                            ${!isConverted ? `<li><a class="dropdown-item" href="javascript:void(0)" onclick="openNewBillModal('${s.id}')"><i class="fa-solid fa-file-invoice-dollar me-2 text-success"></i> Convert & Bill</a></li>` : ''}
                             <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item text-danger" href="javascript:void(0)" onclick="confirmDeleteShop(${s.id})"><i class="fa-solid fa-trash me-2"></i> Delete</a></li>
+                            <li><a class="dropdown-item text-danger" href="javascript:void(0)" onclick="confirmDeleteShop('${s.id}')"><i class="fa-solid fa-trash me-2"></i> Delete</a></li>
                         </ul>
                     </div>
                 </div>
@@ -639,7 +639,7 @@ async function renderDashboard() {
                 <div class="text-muted" style="font-size:13px;margin-bottom:12px;"><i class="fa-solid fa-phone me-2"></i> ${s.phone || '—'}</div>
                 
                 <div style="display:flex;justify-content:space-between;align-items:center;">
-                    <select class="form-control" style="height:28px;font-size:11px;width:110px;padding:2px 5px;" onchange="updateShopStatus(${s.id}, this.value)">
+                    <select class="form-control" style="height:28px;font-size:11px;width:110px;padding:2px 5px;" onchange="updateShopStatus('${s.id}', this.value)">
                         ${columns.map(c => `<option value="${c.key}" ${s.pipeline_stage === c.key ? 'selected' : ''}>${c.label}</option>`).join('')}
                     </select>
                     <div style="width:28px;height:28px;border-radius:50%;background:var(--primary-light);color:var(--primary);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;" title="Assigned Agent">
@@ -1250,7 +1250,7 @@ async function renderDashboard() {
                     </div>
                 </td>
                 <td style="padding: 20px 24px; text-align:right;">
-                    <button class="btn btn-sm btn-light border fw-semibold" onclick="openSalaryModal(${e.id}, '${name.replace(/'/g, "\\'")}', ${e.base_salary})" style="border-radius:8px;">
+                    <button class="btn btn-sm btn-light border fw-semibold" onclick="openSalaryModal('${e.id}', '${name.replace(/'/g, "\\'")}', ${e.base_salary})" style="border-radius:8px;">
                         <i class="bi bi-file-earmark-text text-primary me-1"></i> Generate Slip
                     </button>
                 </td>
@@ -1433,7 +1433,7 @@ async function renderDashboard() {
                 <td>${i.pm_id ? `PM #${i.pm_id}` : '—'}</td>
                 <td>${i.created_at ? new Date(i.created_at).toLocaleDateString() : '—'}</td>
                 <td>
-                    <select class="form-control" style="height:28px;font-size:11px;width:120px;padding:2px 5px;" onchange="promptIssueStatusUpdate(${i.id}, this.value, '${i.status}')">
+                    <select class="form-control" style="height:28px;font-size:11px;width:120px;padding:2px 5px;" onchange="promptIssueStatusUpdate('${i.id}', this.value, '${i.status}')">
                         <option value="PENDING" ${i.status === 'PENDING' ? 'selected' : ''}>Pending</option>
                         <option value="RESOLVED" ${i.status === 'RESOLVED' ? 'selected' : ''}>Resolved</option>
                         <option value="CANCEL" ${i.status === 'CANCEL' ? 'selected' : ''}>Cancel</option>
@@ -1585,7 +1585,7 @@ async function renderDashboard() {
                 </td>
                 <td>${u.email || '—'}</td>
                 <td>
-                    <select class="form-control" style="height:32px;font-size:13px;" onchange="changeUserRole(${u.user_id || u.id}, this.value)">
+                    <select class="form-control" style="height:32px;font-size:13px;" onchange="changeUserRole('${u.user_id || u.id}', this.value)">
                         ${roleOptions.map(r => `<option value="${r}" ${r === u.role ? 'selected' : ''}>${r}</option>`).join('')}
                     </select>
                 </td>

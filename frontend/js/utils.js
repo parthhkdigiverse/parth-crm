@@ -445,11 +445,11 @@ class ArchivedDataOffcanvas {
             <tr>
                 ${colsHtml}
                 <td class="text-end pe-4 text-nowrap">
-                    <button class="btn btn-sm btn-outline-primary rounded-3 me-1" onclick="window.ArchivedDataOffcanvas.instances['${this.offcanvasId}'].restoreItem(${item.id})">
+                    <button class="btn btn-sm btn-outline-primary rounded-3 me-1" onclick="window.ArchivedDataOffcanvas.instances['${this.offcanvasId}'].restoreItem('${item.id}')">
                         <i class="bi bi-arrow-90deg-up"></i> Restore
                     </button>
                     ${isAdmin ? `
-                    <button class="btn btn-sm btn-outline-danger rounded-3" onclick="window.ArchivedDataOffcanvas.instances['${this.offcanvasId}'].hardDeleteItem(${item.id})">
+                    <button class="btn btn-sm btn-outline-danger rounded-3" onclick="window.ArchivedDataOffcanvas.instances['${this.offcanvasId}'].hardDeleteItem('${item.id}')">
                         <i class="bi bi-trash"></i>
                     </button>
                     ` : ''}

@@ -8,10 +8,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Issues — SRM AI SETU</title>
-    <link rel="stylesheet" href="/frontend/css/bootstrap.min.css">
-    <link rel="stylesheet" href="/frontend/css/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="/frontend/css/theme.css?v=20260321">
-    <link rel="stylesheet" href="/frontend/css/components.css?v=20260321">
+    <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/static/css/theme.css?v=20260403">
+    <link rel="stylesheet" href="/static/css/components.css?v=20260403">
     <style>
         /* Inline Validation */
         .is-invalid {
@@ -176,12 +176,12 @@
         </div>
     </div>
 
-    <script src="/frontend/js/utils.js?v=20260326"></script>
-    <script src="/frontend/js/api.js?v=20260321"></script>
-    <script src="/frontend/js/auth.js?v=20260321"></script>
-    <script src="/frontend/js/ui_components.js?v=20260321"></script>
-    <script src="/frontend/js/app.js?v=20260321"></script>
-    <script src="/frontend/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/utils.js?v=20260403"></script>
+    <script src="/static/js/api.js?v=20260403"></script>
+    <script src="/static/js/auth.js?v=20260403"></script>
+    <script src="/static/js/ui_components.js?v=20260403"></script>
+    <script src="/static/js/app.js?v=20260403"></script>
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
     <script>
         requireAuth();
         const sb = document.getElementById('sidebar');
@@ -262,7 +262,7 @@
                     const canDeleteIssue = isAdminUser;
 
                     return `
-                <tr class="align-middle ${criticalClass}" style="height: 60px; cursor: ${canUpdateIssue ? 'pointer' : 'default'};" ${canUpdateIssue ? `onclick="openHandleModal(${i.id}, '${i.status}', '${(i.remarks || '').replace(/'/g, "\\'")}')"` : ''}>
+                <tr class="align-middle ${criticalClass}" style="height: 60px; cursor: ${canUpdateIssue ? 'pointer' : 'default'};" ${canUpdateIssue ? `onclick="openHandleModal('${i.id}', '${i.status}', '${(i.remarks || '').replace(/'/g, "\\'")}')"` : ''}>
                     <td class="ps-3" onclick="event.stopPropagation()">
                         <input type="checkbox" class="form-check-input issue-checkbox" value="${i.id}" onclick="updateSelectedCount()">
                     </td>
@@ -280,9 +280,9 @@
                     <td class="text-muted">${i.created_at ? new Date(i.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}</td>
                     <td class="text-end" onclick="event.stopPropagation()">
                         <div class="d-flex gap-2 justify-content-end">
-                            ${canUpdateIssue ? `<button class="btn btn-sm btn-outline-primary" onclick="openHandleModal(${i.id}, '${i.status}', '${(i.remarks || '').replace(/'/g, "\\'")}')" title="Handle"><i class="bi bi-wrench-adjustable"></i></button>` : ''}
-                            ${canUpdateIssue && i.status !== 'RESOLVED' && i.status !== 'CANCELLED' ? `<button class="btn btn-sm btn-outline-success" onclick="quickResolve(${i.id})" title="Quick Resolve"><i class="bi bi-check-lg"></i></button>` : ''}
-                            ${canDeleteIssue ? `<button class="btn btn-sm btn-outline-danger" onclick="deleteIssue(${i.id})" title="Delete"><i class="bi bi-trash"></i></button>` : ''}
+                            ${canUpdateIssue ? `<button class="btn btn-sm btn-outline-primary" onclick="openHandleModal('${i.id}', '${i.status}', '${(i.remarks || '').replace(/'/g, "\\'")}')" title="Handle"><i class="bi bi-wrench-adjustable"></i></button>` : ''}
+                            ${canUpdateIssue && i.status !== 'RESOLVED' && i.status !== 'CANCELLED' ? `<button class="btn btn-sm btn-outline-success" onclick="quickResolve('${i.id}')" title="Quick Resolve"><i class="bi bi-check-lg"></i></button>` : ''}
+                            ${canDeleteIssue ? `<button class="btn btn-sm btn-outline-danger" onclick="deleteIssue('${i.id}')" title="Delete"><i class="bi bi-trash"></i></button>` : ''}
                         </div>
                     </td>
                 </tr>`;
