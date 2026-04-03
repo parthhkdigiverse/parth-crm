@@ -24,21 +24,27 @@ class ApiClient {
     }
 
     static getAccessToken() {
-        return sessionStorage.getItem('access_token');
+        // Prefer localStorage (persistent), fall back to sessionStorage for old sessions
+        return localStorage.getItem('access_token') || sessionStorage.getItem('access_token') || null;
     }
 
     static getRefreshToken() {
-        return sessionStorage.getItem('refresh_token');
+        return localStorage.getItem('refresh_token') || sessionStorage.getItem('refresh_token') || null;
     }
 
     static setTokens(accessToken, refreshToken) {
-        sessionStorage.setItem('access_token', accessToken);
+        localStorage.setItem('access_token', accessToken);
         if (refreshToken) {
-            sessionStorage.setItem('refresh_token', refreshToken);
+            localStorage.setItem('refresh_token', refreshToken);
         }
     }
 
     static clearTokens() {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('srm_user');
+        localStorage.removeItem('current_user');
+        // Also purge legacy sessionStorage entries
         sessionStorage.removeItem('access_token');
         sessionStorage.removeItem('refresh_token');
         sessionStorage.removeItem('srm_user');
@@ -46,11 +52,11 @@ class ApiClient {
     }
 
     static setCurrentUser(user) {
-        sessionStorage.setItem('srm_user', JSON.stringify(user));
+        localStorage.setItem('srm_user', JSON.stringify(user));
     }
 
     static getCurrentUser() {
-        try { return JSON.parse(sessionStorage.getItem('srm_user')); } catch { return null; }
+        try { return JSON.parse(localStorage.getItem('srm_user')); } catch { return null; }
     }
 
     static async request(path, options = {}) {
@@ -647,6 +653,13 @@ class ApiClient {
     static async updateInvoiceSettings(data) {
         return this.request('/billing/settings', { method: 'PUT', body: data });
     }
+    static async getEmployeeCodeSettings() {
+        return this.request('/users/config/employee-code');
+    }
+    static async updateEmployeeCodeSettings(data) {
+        return this.request('/users/config/employee-code', { method: 'PUT', body: data });
+    }
+
     static async getInvoiceWorkflowOptions() {
         return this.request('/billing/workflow/options');
     }

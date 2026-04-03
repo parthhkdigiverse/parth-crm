@@ -289,7 +289,6 @@
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-xs);
     overflow: hidden;
-    margin-bottom: 24px; /* More breathable margin */
 }
 
 .filter-panel-head {

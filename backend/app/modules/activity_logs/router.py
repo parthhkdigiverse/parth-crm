@@ -10,7 +10,7 @@ router = APIRouter()
 @router.get("/", response_model=List[Any]) # Nuclear relaxation to Any
 async def read_activity_logs(
     skip: int = 0,
-    limit: int = 100,
+    limit: Optional[int] = None,
     current_user: User = Depends(get_current_active_user)
 ):
     """

@@ -53,7 +53,7 @@ class ShopService:
         return shop
 
     @staticmethod
-    async def list_shops(current_user: User, skip: int = 0, limit: int = 100, pipeline_stage: MasterPipelineStage = None, owner_id: PydanticObjectId = None, exclude_leads: bool = False):
+    async def list_shops(current_user: User, skip: int = 0, limit: Optional[int] = None, pipeline_stage: MasterPipelineStage = None, owner_id: PydanticObjectId = None, exclude_leads: bool = False):
         query = Shop.find(Shop.is_deleted != True)
         
         if pipeline_stage:
@@ -73,7 +73,11 @@ class ShopService:
         elif owner_id:
             query = query.find(Shop.owner_id == owner_id)
 
-        results = await query.skip(skip).limit(limit).to_list()
+        # Build query — only apply limit when explicitly provided
+        executable_query = query.skip(skip)
+        if limit is not None:
+            executable_query = executable_query.limit(limit)
+        results = await executable_query.to_list()
         
         all_users = await User.find_all().to_list()
         user_map = {str(u.id): u.name for u in all_users if u.id}

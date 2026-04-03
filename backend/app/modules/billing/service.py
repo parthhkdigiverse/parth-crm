@@ -47,11 +47,11 @@ class BillingService:
             await new_setting.insert()
 
     async def _get_website_max_seq(self, prefix: str, year: int) -> int:
+    async def _get_website_max_seq(self, prefix: str, year: int) -> int:
         """
         Finds the highest sequence number (NNN) from website_payment ONLY.
         Only counts 'SUCCESS' statuses as per user's requirement.
         """
-        max_seq = 0
         regex = f"^{prefix}/{year}/"
         website_coll = Bill.get_pymongo_collection().database["website_payment"]
         possible_fields = ["invoice", "invoice_no", "invoice_number"]
@@ -85,9 +85,8 @@ class BillingService:
 
         if gst_type == "WITHOUT_GST":
             seq_key = "invoice_seq_without_gst"
-            series = "PINV"
-            prefix = "PInv"
-            sync_website = False
+            series  = "PINV"
+            prefix  = "PInv"
         else:
             seq_key = "invoice_seq_with_gst"
             series = "INV"
@@ -324,8 +323,12 @@ class BillingService:
         if not bill or bill.is_deleted: return None
         return bill
 
-    async def get_all_bills(self, current_user: User, skip: int = 0, limit: int = 200, search: str = None, **kwargs):
-        """Refined bill retrieval with dynamic aggregation of frontend filters."""
+    async def get_all_bills(self, current_user: User, skip: int = 0, limit: Optional[int] = None, search: str = None, **kwargs):
+        """Refined bill retrieval with dynamic aggregation of frontend filters.
+        
+        When `limit` is None (the default), ALL matching records are returned.
+        When `limit` is an integer, only that many records are returned.
+        """
         filters: Dict[str, Any] = {"is_deleted": False}
         
         # RBAC: Non-admins only see their own or non-archived bills
@@ -366,7 +369,12 @@ class BillingService:
             val = kwargs["archived"]
             filters["is_archived"] = str(val).lower() == "true"
 
-        bills = await Bill.find(filters).sort("-created_at").skip(skip).limit(limit).to_list()
+        # Build query — only apply limit when explicitly provided
+        query = Bill.find(filters).sort("-created_at").skip(skip)
+        if limit is not None:
+            query = query.limit(limit)
+        bills = await query.to_list()
+
         res = []
         for b in bills:
             d = b.model_dump()
@@ -453,7 +461,16 @@ class BillingService:
                 base_url = f"http://localhost:{settings.SRM_PORT if hasattr(settings, 'SRM_PORT') else 8000}"
                 dummy_callback = "https://webhook.site/dummy-phonepe-callback"
             else:
-                if not base_url.startswith("http"): base_url = f"https://{base_url}"
+                if not base_url.startswith("http"):
+                    # Local development helper: default to http for localhost/127.0.0.1
+                    if "localhost" in base_url or "127.0.0.1" in base_url:
+                        base_url = f"http://{base_url}"
+                    else:
+                        base_url = f"https://{base_url}"
+                
+                # Ensure no trailing slash in base_url
+                base_url = base_url.rstrip("/")
+
                 # If it's a localhost origin, use a dummy callback for the simulator cloud
                 if "localhost" in base_url or "127.0.0.1" in base_url:
                     dummy_callback = "https://webhook.site/dummy-phonepe-callback"
@@ -465,7 +482,7 @@ class BillingService:
                 "merchantTransactionId": txn_id,
                 "merchantUserId": f"U{phone[-10:]}",
                 "amount": paise_amount,
-                "redirectUrl": f"{base_url}/frontend/template/billing.html?status=success&txnId={txn_id}",
+                "redirectUrl": f"{base_url}/billing.html?status=success&txnId={txn_id}",
                 "redirectMode": "REDIRECT",
                 "callbackUrl": dummy_callback,
                 "mobileNumber": phone[-10:],
@@ -490,7 +507,10 @@ class BillingService:
             base_api = settings.PHONEPE_BASE_URL or "https://api-preprod.phonepe.com/apis/pg-sandbox"
             if pp_env == "production":
                 base_api = "https://api.phonepe.com/apis/hermes"
-            
+                # Dynamic Security Check: Warn if using default test salts in production
+                if settings.PHONEPE_MERCHANT_ID == "PGTESTPAYUAT86":
+                    print("[WARNING] Running in PRODUCTION with DEFAULT UAT Merchant ID!")
+
             api_url = f"{base_api}{endpoint}"
             
             try:
@@ -500,7 +520,15 @@ class BillingService:
                         json={"request": payload_main},
                         headers={"Content-Type": "application/json", "X-VERIFY": x_verify},
                     )
-                    resp_data = resp.json()
+                    
+                    if resp.status_code == 429:
+                        raise HTTPException(status_code=429, detail="Too many requests to PhonePe. Please wait 1-2 minutes or use a different account.")
+                    
+                    try:
+                        resp_data = resp.json()
+                    except Exception:
+                        print(f"[PhonePe Error] Non-JSON response ({resp.status_code}): {resp.text[:200]}")
+                        raise HTTPException(status_code=502, detail="Invalid response from Payment Gateway")
                     
                 if resp_data.get("success"):
                     pay_url = resp_data["data"]["instrumentResponse"]["redirectInfo"]["url"]
@@ -513,9 +541,14 @@ class BillingService:
                     }
                 else:
                     msg = resp_data.get("message", "PhonePe initiation failed")
+                    code = resp_data.get("code", "UNKNOWN")
+                    print(f"[PhonePe Rejection] {code}: {msg}")
                     raise HTTPException(status_code=400, detail=f"Gateway Error: {msg}")
+                    
+            except HTTPException:
+                raise
             except Exception as e:
-                print(f"[PhonePe Error] {e}")
+                print(f"[PhonePe Connection Error] {e}")
                 raise HTTPException(status_code=502, detail=f"Payment Gateway unreachable: {str(e)}")
 
         # 2. Static QR & Shared Link fallback
@@ -538,7 +571,8 @@ class BillingService:
             "upi_id": upi_id,
             "qr_image_url": qr_url,
             "dynamic_upi_link": dynamic_upi,
-            "amount": amount
+            "amount": amount,
+            "is_fallback": False # Reset fallback as requested by user
         }
 
     async def check_phonepe_payment_status(self, txn_id: str, current_user: User) -> Dict[str, Any]:

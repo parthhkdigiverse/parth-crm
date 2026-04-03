@@ -172,19 +172,7 @@
         .field-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .required-star { color: #ef4444; }
 
-        body { margin: 0; padding: 0; background: var(--bg-app); min-height: 100vh; overflow-x: hidden; }
-        .main-wrapper { 
-            min-height: calc(100vh - 60px); 
-            display: flex; 
-            flex-direction: column; 
-            max-width: 100vw;
-            overflow-x: hidden;
-        }
-        .page-content-standard {
-            flex: 1;
-            padding: 20px 24px !important;
-            max-width: 100%;
-        }
+        /* Redundant body and wrapper styles removed to use theme.css defaults */
         .grid-card {
             border-radius: 14px;
             overflow: visible !important;
@@ -242,14 +230,14 @@
 </head>
 
 <body>
-    <div class="d-flex">
+    <div class="d-flex" style="width: 100%; overflow-x: hidden;">
         <div id="sidebar"></div>
-        <div class="main-wrapper flex-grow-1">
+        <div class="main-wrapper flex-grow-1" style="min-width: 0; overflow-x: hidden;">
             <div class="page-content-standard">
-                <div class="page-header-glass d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+                <div class="page-header-glass">
                     <div class="min-w-0">
-                        <h2 class="page-section-title fw-bold mb-1 text-main">Client Directory</h2>
-                        <p class="mb-0 small text-muted d-flex align-items-center gap-2 flex-wrap">
+                        <h2 class="page-section-title fw-bold mb-1">Client Directory</h2>
+                        <p class="text-muted mb-0 small d-flex align-items-center gap-2 flex-wrap">
                             Manage your client relationships and project history.
                             <span class="count-badge"><i class="bi bi-people-fill"></i><span id="client-count">0</span> Registered</span>
                         </p>

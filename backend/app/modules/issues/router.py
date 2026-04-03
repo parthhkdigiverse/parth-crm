@@ -50,7 +50,7 @@ async def _require_feature_access(current_user: User, feature_key: str, detail: 
 @global_router.get("/", response_model=List[IssueRead])
 async def read_global_issues(
     skip: int = 0,
-    limit: int = 100,
+    limit: Optional[int] = None,
     status: Optional[str] = None,
     severity: Optional[str] = None,
     client_id: Optional[PydanticObjectId] = None,

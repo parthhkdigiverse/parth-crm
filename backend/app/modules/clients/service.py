@@ -22,7 +22,7 @@ class ClientService:
     async def get_clients(
         self,
         skip: int = 0,
-        limit: int = 100,
+        limit: Optional[int] = None,
         search: str = None,
         sort_by: str = "created_at",
         sort_order: str = "desc",
@@ -76,7 +76,10 @@ class ClientService:
             # Sorting
             prefix = "-" if sort_order.lower() == "desc" else ""
             # MongoDB uses field names for sorting
-            clients = await q.sort(f"{prefix}{sort_by}").skip(skip).limit(limit).to_list()
+            query = q.sort(f"{prefix}{sort_by}").skip(skip)
+            if limit is not None:
+                query = query.limit(limit)
+            clients = await query.to_list()
             
             # Enrich with PM Name sequentially
             for c in clients:

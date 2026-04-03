@@ -35,7 +35,7 @@ async def create_project(
 @router.get("/", response_model=List[ProjectRead])
 async def read_projects(
     skip: int = 0,
-    limit: int = 100,
+    limit: Optional[int] = None,
     current_user: User = Depends(staff_access)
 ) -> Any:
     # PMs only see their own projects, Admins and Sales can see all

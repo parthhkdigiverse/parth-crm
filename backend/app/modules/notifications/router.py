@@ -13,7 +13,7 @@ router = APIRouter()
 @router.get("/", response_model=List[NotificationRead])
 async def read_notifications(
     skip: int = 0,
-    limit: int = 100,
+    limit: Optional[int] = None,
     current_user: User = Depends(get_current_user)
 ) -> Any:
     """Get all notifications for current user, newest first."""
@@ -25,11 +25,14 @@ async def read_notifications(
         settings = await SystemSettings.find_one()
         delete_policy = settings.delete_policy if settings else "SOFT"
         
-        query = Notification.find(Notification.user_id == user_id)
+        query = Notification.find(Notification.user_id == user_id).sort("-created_at").skip(skip)
         if delete_policy == "SOFT":
             query = query.find(Notification.is_deleted != True)
             
-        return await query.sort("-created_at").skip(skip).limit(limit).to_list()
+        if limit is not None:
+            query = query.limit(limit)
+            
+        return await query.to_list()
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

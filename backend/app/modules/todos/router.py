@@ -108,7 +108,7 @@ async def create_todo(
 @router.get("/", response_model=List[TodoRead])
 async def read_todos(
     skip: int = 0,
-    limit: int = 100,
+    limit: Optional[int] = None,
     status: Optional[TodoStatus] = None,
     assigned_to: Optional[str] = None,
     current_user: User = Depends(get_current_user)
@@ -123,7 +123,11 @@ async def read_todos(
     if assigned_to:
         query = query.find(Todo.assigned_to == assigned_to)
 
-    return await query.sort("-created_at").skip(skip).limit(limit).to_list()
+    # Build query — only apply limit when explicitly provided
+    executable_query = query.sort("-created_at").skip(skip)
+    if limit is not None:
+        executable_query = executable_query.limit(limit)
+    return await executable_query.to_list()
 
 @router.patch("/{todo_id}", response_model=TodoRead)
 async def update_todo(

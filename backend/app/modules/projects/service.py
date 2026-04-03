@@ -48,13 +48,17 @@ class ProjectService:
         
         return project
 
-    async def get_projects(self, skip: int = 0, limit: int = 100, pm_id: Optional[PydanticObjectId] = None) -> List[Project]:
+    async def get_projects(self, skip: int = 0, limit: Optional[int] = None, pm_id: Optional[PydanticObjectId] = None) -> List[Project]:
         """Fetches a list of projects with enrichment."""
         q = Project.find(Project.is_deleted == False)
         if pm_id:
             q = q.find(Project.pm_id == pm_id)
         
-        projects = await q.sort("-created_at").skip(skip).limit(limit).to_list()
+        # Build query — only apply limit when explicitly provided
+        query = q.sort("-created_at").skip(skip)
+        if limit is not None:
+            query = query.limit(limit)
+        projects = await query.to_list()
         for p in projects:
             await self._populate_project_metadata(p)
         return projects

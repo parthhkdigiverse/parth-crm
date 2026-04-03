@@ -20,8 +20,11 @@ class MeetingService:
     async def get_meeting(self, meeting_id: PydanticObjectId) -> Optional[MeetingSummary]:
         return await MeetingSummary.find_one(MeetingSummary.id == meeting_id, MeetingSummary.is_deleted == False)
 
-    async def get_meetings(self, skip: int = 0, limit: int = 100) -> List[MeetingSummary]:
-        return await MeetingSummary.find(MeetingSummary.is_deleted == False).skip(skip).limit(limit).to_list()
+    async def get_meetings(self, skip: int = 0, limit: Optional[int] = None) -> List[MeetingSummary]:
+        query = MeetingSummary.find(MeetingSummary.is_deleted == False).skip(skip)
+        if limit is not None:
+            query = query.limit(limit)
+        return await query.to_list()
 
     async def create_meeting(self, meeting_in: MeetingSummaryCreate, client_id: Optional[PydanticObjectId], current_user: User, request: Request):
         """Creates a new meeting summary, handles attendee logic, and synchronizes with external apps like Meet and Todo."""
