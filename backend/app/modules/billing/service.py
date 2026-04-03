@@ -47,11 +47,11 @@ class BillingService:
             await new_setting.insert()
 
     async def _get_website_max_seq(self, prefix: str, year: int) -> int:
-    async def _get_website_max_seq(self, prefix: str, year: int) -> int:
         """
         Finds the highest sequence number (NNN) from website_payment ONLY.
         Only counts 'SUCCESS' statuses as per user's requirement.
         """
+        max_seq = 0
         regex = f"^{prefix}/{year}/"
         website_coll = Bill.get_pymongo_collection().database["website_payment"]
         possible_fields = ["invoice", "invoice_no", "invoice_number"]
