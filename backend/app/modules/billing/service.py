@@ -53,7 +53,7 @@ class BillingService:
         """
         max_seq = 0
         regex = f"^{prefix}/{year}/"
-        website_coll = Bill.get_pymongo_collection().database["website_payment"]
+        website_coll = Bill.get_motor_collection().database["website_payment"]
         possible_fields = ["invoice", "invoice_no", "invoice_number"]
         or_filters = [{f: {"$regex": regex}} for f in possible_fields]
         
@@ -105,7 +105,7 @@ class BillingService:
 
         # 3. UNIQUENESS: Final check in website table to prevent overlaps
         if sync_website:
-            website_coll = Bill.get_pymongo_collection().database["website_payment"]
+            website_coll = Bill.get_motor_collection().database["website_payment"]
             while True:
                 invoice_number = f"{prefix}/{year}/{current:03d}"
                 site_exists = await website_coll.find_one({
@@ -689,7 +689,7 @@ class BillingService:
         return bill
 
     async def archive_invoices_bulk(self, ids: List[PydanticObjectId], current_user: User) -> dict:
-        await Bill.get_pymongo_collection().update_many(
+        await Bill.get_motor_collection().update_many(
             {"_id": {"$in": ids}},
             {"$set": {"is_archived": True, "archived_by_id": current_user.id}}
         )
@@ -711,7 +711,7 @@ class BillingService:
         if current_user.role != UserRole.ADMIN:
             raise HTTPException(status_code=403, detail="Permission Denied")
         
-        await Bill.get_pymongo_collection().update_many(
+        await Bill.get_motor_collection().update_many(
             {"_id": {"$in": ids}, "is_archived": True},
             {"$set": {"is_deleted": True}}
         )

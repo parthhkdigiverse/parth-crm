@@ -10,8 +10,8 @@
     <title>Project Overview | SRM AI SETU</title>
     <link rel="stylesheet" href="../css/bootstrap.min.css">
     <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="../css/theme.css?v=20260321">
-    <link rel="stylesheet" href="../css/components.css?v=20260321">
+    <link rel="stylesheet" href="../css/theme.css?v=20260406">
+    <link rel="stylesheet" href="../css/components.css?v=20260406">
     <style>
         .kanban-board {
             display: flex;
@@ -970,43 +970,52 @@
                 { label: 'Project Started', index: 3 }
             ];
 
-            let timelineHtml = `<div class="mt-4 pt-3 border-top"><h6 class="fw-bold mb-3" style="font-size:0.85rem;color:#64748b;">PIPELINE PROGRESS</h6><div class="px-2">`;
+            let timelineHtml = `<div class="mt-4 pt-3 border-top">
+                <h6 class="fw-bold mb-3" style="font-size:0.78rem;color:#64748b;text-transform:uppercase;letter-spacing:0.07em;">
+                    <i class="bi bi-diagram-3 me-2 text-primary"></i>Pipeline Progress
+                </h6>
+                <div class="pipeline-progress-track">`;
 
             steps.forEach((step, i) => {
                 const isCompleted = currentStatusIndex >= step.index;
                 const isLast = i === steps.length - 1;
-
-                // Step 2 (index 2 = "Schedule the Demo") gets special "In Progress" treatment
-                // when a PM is assigned but demo_stage < 3
                 const isStep3InProgress = (step.index === 2) && !isCompleted && l.project_manager_id && (l.demo_stage || 0) < 3;
 
-                // Colors: Green if done, Blue spinner if in-progress, Gray if pending
-                const dotColor = isCompleted ? '#10b981' : (isStep3InProgress ? '#2563eb' : '#e2e8f0');
-                const iconHtml = isCompleted
-                    ? `<i class="bi bi-check text-white" style="font-size: 0.75rem;"></i>`
-                    : (isStep3InProgress ? `<i class="bi bi-arrow-repeat text-white" style="font-size: 0.6rem;"></i>` : '');
-                const textColor = isCompleted ? '#0f172a' : (isStep3InProgress ? '#2563eb' : '#94a3b8');
-                const weightClass = (isCompleted || isStep3InProgress) ? 'fw-bold' : 'fw-medium';
-                const subText = isStep3InProgress
-                    ? `<div class="mt-1" style="font-size:0.72rem;color:#2563eb;"><i class="bi bi-person-gear me-1"></i>Assigned to PM: ${l.project_manager_name}</div>`
-                    : '';
+                let pillState = 'pp-pending';
+                let iconHtml  = `<span class="pp-icon"><i class="bi bi-circle" style="font-size:0.5rem;"></i></span>`;
+
+                if (isCompleted) {
+                    pillState = 'pp-done';
+                    iconHtml  = `<span class="pp-icon"><i class="bi bi-check-lg" style="font-size:0.55rem;"></i></span>`;
+                } else if (isStep3InProgress) {
+                    pillState = 'pp-active';
+                    iconHtml  = `<span class="pp-icon"><i class="bi bi-arrow-repeat" style="font-size:0.6rem;"></i></span>`;
+                } else if (currentStatusIndex + 1 === step.index) {
+                    pillState = 'pp-active';
+                    iconHtml  = `<span class="pp-icon"><i class="bi bi-chevron-right" style="font-size:0.55rem;"></i></span>`;
+                }
+
                 timelineHtml += `
-                    <div class="d-flex position-relative z-1" style="margin-bottom: ${isLast ? '0' : '1.5rem'};">
-                        ${isCompleted && !isLast ? `<div class="position-absolute" style="left: 7px; top: 16px; bottom: -24px; width: 2px; background: #10b981; z-index: -1;"></div>` : ''}
-                        
-                        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" 
-                             style="width: 16px; height: 16px; margin-top: 2px; background: ${dotColor}; transition: background 0.3s;">
-                            ${iconHtml}
-                        </div>
-                        <div class="ms-3">
-                            <div class="${weightClass}" style="font-size: 0.8rem; color: ${textColor};">${step.label}</div>
-                            ${subText}
-                        </div>
-                    </div>
-                `;
+                    <div class="pipeline-step-pill">
+                        <div class="pipeline-pill-inner ${pillState}">${iconHtml}${step.label}</div>
+                    </div>`;
+
+                if (!isLast) {
+                    const connDone = isCompleted ? 'conn-done' : '';
+                    timelineHtml += `<div class="pipeline-connector ${connDone}"></div>`;
+                }
             });
 
-            timelineHtml += `</div></div>`;
+            timelineHtml += `</div>`;
+
+            // PM sub-note if in progress
+            if (l.project_manager_id && currentStatusIndex < 3) {
+                timelineHtml += `<div class="d-flex align-items-center gap-2 mt-2" style="font-size:0.75rem;color:#2563eb;">
+                    <i class="bi bi-person-gear"></i> Assigned PM: ${l.project_manager_name}
+                </div>`;
+            }
+
+            timelineHtml += `</div>`;
 
             const pmBtnLabel = l.project_manager_id ? 'Re-assign PM' : 'Assign PM &amp; Schedule Demo';
             const pmAssignBtnHtml = (l.pipeline_stage === 'PITCHING') ? `

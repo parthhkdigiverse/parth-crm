@@ -103,7 +103,7 @@ async def get_billing_autofill_sources(
     if current_user.role != UserRole.ADMIN:
         v_filters["user_id"] = current_user.id
     
-    raw_shop_ids = await Visit.get_pymongo_collection().distinct("shop_id", v_filters)
+    raw_shop_ids = await Visit.get_motor_collection().distinct("shop_id", v_filters)
     shop_ids_valid = [PydanticObjectId(rid) for rid in raw_shop_ids if rid]
     
     shops = await Shop.find(

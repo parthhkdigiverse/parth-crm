@@ -81,7 +81,7 @@ class FeedbackService:
         
         # Non-admins: only see feedbacks for clients they own or manage
         from app.modules.clients.models import Client as ClientModel
-        raw_client_ids = await ClientModel.get_pymongo_collection().distinct("_id", {
+        raw_client_ids = await ClientModel.get_motor_collection().distinct("_id", {
             "$or": [
                 {"pm_id": current_user.id},
                 {"owner_id": current_user.id},

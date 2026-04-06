@@ -168,11 +168,28 @@ function renderNotifications(notifications) {
     const highSection = document.getElementById('high-priority-notif-section');
     const listEl = document.getElementById('notif-list');
 
+    // ── Module → icon badge class mapping (Bootstrap Icons only) ──
+    const getIconClass = (module) => {
+        const m = (module || '').toLowerCase();
+        if (m === 'critical' || m === 'issue')  return { icon: 'bi-exclamation-triangle-fill', cat: 'ni-alert' };
+        if (m === 'alert')                       return { icon: 'bi-bell-fill',                 cat: 'ni-alert' };
+        if (m === 'reminder' || m === 'meeting') return { icon: 'bi-calendar-event-fill',       cat: 'ni-meeting' };
+        if (m === 'leave')                       return { icon: 'bi-calendar-x-fill',           cat: 'ni-leave' };
+        if (m === 'salary')                      return { icon: 'bi-cash-stack',                cat: 'ni-salary' };
+        if (m === 'incentive')                   return { icon: 'bi-award-fill',                cat: 'ni-meeting' };
+        if (m === 'feedback')                    return { icon: 'bi-chat-square-text-fill',     cat: 'ni-feedback' };
+        if (m === 'project')                     return { icon: 'bi-briefcase-fill',            cat: 'ni-project' };
+        if (m === 'task')                        return { icon: 'bi-check2-square',             cat: 'ni-task' };
+        if (m === 'demo')                        return { icon: 'bi-play-circle-fill',          cat: 'ni-meeting' };
+        return { icon: 'bi-bell-fill', cat: 'ni-info' };
+    };
+
     // Render cards after the high-priority section
     const cardsHtml = notifications.map(n => {
         const { module, title } = parseNotifTitle(n.title);
         const { cleanMessage, meetLink, meetingId, sessionClosed } = parseMessagePayload(n.message);
         const meta = getModuleMeta(module, n.title);
+        const { icon, cat } = getIconClass(module);
 
         // Determine final redirect URL
         let redirectUrl = meta.href || 'notifications.html';
@@ -187,40 +204,43 @@ function renderNotifications(notifications) {
 
         const isUnread = !n.is_read;
         const isCritical = module === 'Critical' || module === 'Issue';
-        const cardBg = isCritical ? 'bg-danger-subtle' : (isUnread ? 'bg-primary-subtle' : '');
-        const cardBorder = isCritical ? 'border-left: 3px solid #ef4444;' : '';
 
-        // Module badge
+        // Card state class
+        const cardStateClass = isCritical ? 'nc-critical' : (isUnread ? 'nc-unread' : '');
+
+        // Module badge colors
         const badgeColorMap = {
-            'Issue': 'rgba(239,68,68,0.1)', 'Critical': 'rgba(239,68,68,0.1)',
-            'Reminder': 'rgba(245,158,11,0.1)', 'Alert': 'rgba(245,158,11,0.1)',
-            'Leave': 'rgba(14,165,233,0.1)', 'Salary': 'rgba(34,197,94,0.1)',
-            'Project': 'rgba(59,130,246,0.1)', 'Task': 'rgba(107,114,128,0.1)',
-            'Feedback': 'rgba(6,182,212,0.1)', 'Incentive': 'rgba(245,158,11,0.1)',
-            'Demo': 'rgba(245,158,11,0.1)'
-        };
-        const textColorMap = {
             'Issue': '#b91c1c', 'Critical': '#b91c1c', 'Reminder': '#92400e',
-            'Alert': '#92400e', 'Leave': '#0369a1', 'Salary': '#166534',
+            'Alert': '#b45309', 'Leave': '#0369a1', 'Salary': '#166534',
             'Project': '#1d4ed8', 'Task': '#374151', 'Feedback': '#0e7490',
             'Incentive': '#92400e', 'Demo': '#92400e'
         };
-        const badgeBg = module ? (badgeColorMap[module] || 'rgba(100,116,139,0.1)') : '';
-        const badgeColor = module ? (textColorMap[module] || '#475569') : '#475569';
-        const moduleBadge = module ? `<span style="font-size:9px;font-weight:700;letter-spacing:0.04em;background:${badgeBg};color:${badgeColor};padding:2px 8px;border-radius:5px;border:1px solid ${badgeBg};">${module.toUpperCase()}</span>` : '';
+        const badgeBgMap = {
+            'Issue': 'rgba(239,68,68,0.10)', 'Critical': 'rgba(239,68,68,0.10)',
+            'Reminder': 'rgba(245,158,11,0.10)', 'Alert': 'rgba(245,158,11,0.10)',
+            'Leave': 'rgba(14,165,233,0.10)', 'Salary': 'rgba(34,197,94,0.10)',
+            'Project': 'rgba(59,130,246,0.10)', 'Task': 'rgba(107,114,128,0.10)',
+            'Feedback': 'rgba(6,182,212,0.10)', 'Incentive': 'rgba(245,158,11,0.10)',
+            'Demo': 'rgba(245,158,11,0.10)'
+        };
+        const badgeColor = module ? (badgeColorMap[module] || '#475569') : null;
+        const badgeBg    = module ? (badgeBgMap[module]    || 'rgba(100,116,139,0.08)') : null;
+        const moduleBadge = module
+            ? `<span class="notif-module-badge" style="background:${badgeBg};color:${badgeColor};">${module.toUpperCase()}</span>`
+            : '';
 
-        const newBadge = isUnread ? `<span class="badge bg-primary rounded-pill" style="font-size:8px;padding:2px 6px;">NEW</span>` : '';
+        const newDot = isUnread ? `<span class="notif-unread-dot"></span>` : '';
 
-        // Action button: meeting with link → Join (external), meeting with ID → Join (meetings.html?id=X), no meeting → relevant page link
+        // Action button — meeting: "Join Meeting →", others: "View X →"
         let actionBtn = '';
         if (meta.href === 'meetings.html' || meetingId) {
             if (meetLink && !sessionClosed) {
-                actionBtn = `<a href="${meetLink}" target="_blank" onclick="event.stopPropagation()" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1 mt-2" style="border-radius:8px;font-size:0.78rem;font-weight:700;padding:5px 14px;">
+                actionBtn = `<a href="${meetLink}" target="_blank" onclick="event.stopPropagation()" class="notif-action-link na-meeting">
                     <i class="bi bi-camera-video-fill"></i> Join Meeting
                 </a>`;
             } else if (!sessionClosed) {
                 const meetUrl = meetingId ? `meetings.html?id=${meetingId}` : 'meetings.html';
-                actionBtn = `<a href="${meetUrl}" onclick="event.stopPropagation()" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1 mt-2" style="border-radius:8px;font-size:0.78rem;font-weight:700;padding:5px 14px;">
+                actionBtn = `<a href="${meetUrl}" onclick="event.stopPropagation()" class="notif-action-link na-meeting">
                     <i class="bi bi-calendar-check"></i> Join Meeting
                 </a>`;
             }
@@ -232,37 +252,39 @@ function renderNotifications(notifications) {
                 'feedback.html': 'View Feedback', 'projects_demo.html': 'View Demo'
             };
             const label = labels[meta.href] || 'View';
-            actionBtn = `<a href="${meta.href}" onclick="event.stopPropagation()" class="text-decoration-none mt-2 d-inline-block fw-semibold" style="font-size:0.78rem;color:var(--primary);">${label} →</a>`;
+            actionBtn = `<a href="${meta.href}" onclick="event.stopPropagation()" class="notif-action-link">
+                <i class="bi bi-arrow-right-short"></i> ${label}
+            </a>`;
         }
 
-        const sessionBadge = sessionClosed ? `<span class="badge bg-secondary mt-2 d-inline-block" style="font-size:10px;">Session Ended</span>` : '';
+        const sessionBadge = sessionClosed
+            ? `<span class="badge bg-secondary ms-2" style="font-size:10px;">Session Ended</span>`
+            : '';
+
+        const markReadBtn = isUnread
+            ? `<button class="btn p-0 border-0 ms-auto" style="color:var(--text-muted);font-size:0.9rem;" onclick="event.stopPropagation();markSingleAsRead('${n.id}')" title="Mark as read"><i class="bi bi-check2-circle"></i></button>`
+            : '';
 
         return `
-        <div class="d-flex align-items-start gap-3 p-4 border-bottom position-relative ${cardBg}"
-             style="cursor:pointer;transition:background 0.2s;${cardBorder}"
-             onclick="window.location.href='${redirectUrl}'"
-             onmouseover="this.style.background='${isCritical ? 'rgba(239,68,68,0.06)' : 'var(--bg-app)'}'"
-             onmouseout="this.style.background=''">
-            <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 ${meta.bg}" style="width:46px;height:46px;min-width:46px;">
-                <i class="bi ${meta.icon} fs-5"></i>
+        <div class="notif-context-card ${cardStateClass}" onclick="window.location.href='${redirectUrl}'">
+            <div class="notif-icon-badge ${cat}">
+                <i class="bi ${icon}"></i>
+                ${newDot}
             </div>
-            <div class="flex-grow-1 overflow-hidden">
-                <div class="d-flex justify-content-between align-items-start mb-1 flex-wrap gap-2">
-                    <div class="d-flex align-items-center flex-wrap gap-2">
+            <div class="notif-body">
+                <div class="notif-meta-row">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
                         ${moduleBadge}
-                        <span class="fw-bold" style="font-size:0.9rem;color:var(--text-1);">${title}</span>
-                        ${newBadge}
+                        <span class="notif-title-text">${title}</span>
                     </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="text-muted" style="font-size:0.72rem;white-space:nowrap;">${formatTimeAgo(n.created_at)}</span>
-                        ${isUnread ? `<button class="btn p-0 border-0" style="color:var(--text-muted);font-size:1rem;" onclick="event.stopPropagation();markSingleAsRead('${n.id}')" title="Mark as read"><i class="bi bi-check2-circle"></i></button>` : ''}
+                    <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                        <span class="notif-time-text">${formatTimeAgo(n.created_at)}</span>
+                        ${markReadBtn}
                     </div>
                 </div>
-                <p class="text-secondary mb-0" style="font-size:0.83rem;line-height:1.5;word-break:break-word;">${cleanMessage}</p>
-                <div>${actionBtn}${sessionBadge}</div>
-                <div class="text-muted mt-1" style="font-size:0.71rem;">
-                    ${dateObj.toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit', hour12:true })}
-                </div>
+                <p class="notif-message-text mb-0">${cleanMessage}</p>
+                ${(actionBtn || sessionBadge) ? `<div class="notif-action-row">${actionBtn}${sessionBadge}</div>` : ''}
+                <div class="notif-date-full">${dateObj.toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit', hour12:true })}</div>
             </div>
         </div>`;
     }).join('');

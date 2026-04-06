@@ -349,9 +349,9 @@ class ShopService:
         # For staff: only exclude leads visited by them; for admin: exclude any visit
         # We'll fetch the IDs of shops already visited to filter them out
         if is_admin:
-            visited_shop_ids = await Visit.get_pymongo_collection().distinct("shop_id")
+            visited_shop_ids = await Visit.get_motor_collection().distinct("shop_id")
         else:
-            visited_shop_ids = await Visit.get_pymongo_collection().distinct("shop_id", {"user_id": current_user.id})
+            visited_shop_ids = await Visit.get_motor_collection().distinct("shop_id", {"user_id": current_user.id})
 
         from beanie.operators import NotIn
         query = Shop.find(
@@ -700,5 +700,5 @@ class ShopService:
             {"$sort": {"pm_name": 1}}
         ]
         
-        results = await Shop.get_pymongo_collection().aggregate(pipeline).to_list(length=None)
+        results = await Shop.get_motor_collection().aggregate(pipeline).to_list(length=None)
         return results

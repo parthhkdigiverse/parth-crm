@@ -58,7 +58,7 @@ class ReportService:
         v_match = {"is_deleted": False}
         if user_id: v_match["user_id"] = user_id
         if area_id:
-             raw_ids = await Shop.get_pymongo_collection().distinct("_id", {"area_id": PydanticObjectId(area_id) if hasattr(area_id, "id") or type(area_id)==str else area_id})
+             raw_ids = await Shop.get_motor_collection().distinct("_id", {"area_id": PydanticObjectId(area_id) if hasattr(area_id, "id") or type(area_id)==str else area_id})
              shop_ids = [PydanticObjectId(rid) for rid in raw_ids if rid]
              v_match["shop_id"] = {"$in": shop_ids}
         
@@ -94,19 +94,19 @@ class ReportService:
             {"$match": b_match},
             {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
         ]
-        rev_res = await Bill.get_pymongo_collection().aggregate(rev_pipeline).to_list(length=None)
+        rev_res = await Bill.get_motor_collection().aggregate(rev_pipeline).to_list(length=None)
         revenue_mtd = rev_res[0]["total"] if rev_res else 0.0
 
         # --- 5. Staff Presence ---
         today_start = datetime.combine(now.date(), datetime.min.time())
-        employees_present = len(await Attendance.get_pymongo_collection().distinct("user_id", {"date": today_start, "is_deleted": False}))
+        employees_present = len(await Attendance.get_motor_collection().distinct("user_id", {"date": today_start, "is_deleted": False}))
 
         # --- 6. Breakdown Analytics (Donut Chart) ---
         status_pipeline = [
             {"$match": v_match},
             {"$group": {"_id": "$status", "count": {"$sum": 1}}}
         ]
-        visit_status_res = await Visit.get_pymongo_collection().aggregate(status_pipeline).to_list(length=None)
+        visit_status_res = await Visit.get_motor_collection().aggregate(status_pipeline).to_list(length=None)
         visit_status_breakdown = {str(r["_id"]): r["count"] for r in visit_status_res}
 
         # --- 7. Chart Data (Last 12 Months for better visibility) ---
@@ -126,7 +126,7 @@ class ReportService:
             {"$sort": {"_id.year": 1, "_id.month": 1}},
             {"$limit": 12}
         ]
-        v_chart_res = await Visit.get_pymongo_collection().aggregate(v_chart_pipeline).to_list(length=None)
+        v_chart_res = await Visit.get_motor_collection().aggregate(v_chart_pipeline).to_list(length=None)
         visits_chart_data = {datetime(r["_id"]["year"], r["_id"]["month"], 1).strftime("%b"): r["count"] for r in v_chart_res}
 
         # Revenue Trend
@@ -143,7 +143,7 @@ class ReportService:
             {"$sort": {"_id.year": 1, "_id.month": 1}},
             {"$limit": 12}
         ]
-        r_chart_res = await Bill.get_pymongo_collection().aggregate(r_chart_pipeline).to_list(length=None)
+        r_chart_res = await Bill.get_motor_collection().aggregate(r_chart_pipeline).to_list(length=None)
         revenue_by_month = {datetime(r["_id"]["year"], r["_id"]["month"], 1).strftime("%b"): float(r["total"]) for r in r_chart_res}
 
         return {
@@ -250,7 +250,7 @@ class ReportService:
             }
         ]
         
-        results = await User.get_pymongo_collection().aggregate(pipeline).to_list(length=None)
+        results = await User.get_motor_collection().aggregate(pipeline).to_list(length=None)
         
         performance = []
         for r in results:
@@ -282,7 +282,7 @@ class ReportService:
         q = Project.find(Project.is_deleted == False)
         if requesting_user.role != UserRole.ADMIN:
             # Manual filtering across clients
-            raw_c_ids = await Client.get_pymongo_collection().distinct("_id", {
+            raw_c_ids = await Client.get_motor_collection().distinct("_id", {
                 "$or": [{"owner_id": requesting_user.id}, {"pm_id": requesting_user.id}]
             })
             owned_clients = [PydanticObjectId(rid) for rid in raw_c_ids if rid]
@@ -295,7 +295,7 @@ class ReportService:
             if not client: continue
             
             # Sum verified payments
-            paid_res = await Payment.get_pymongo_collection().aggregate([
+            paid_res = await Payment.get_motor_collection().aggregate([
                 {"$match": {"client_id": p.client_id, "status": "VERIFIED"}},
                 {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
             ]).to_list(length=None)
@@ -321,14 +321,14 @@ class ReportService:
         year, m = map(int, month.split('-'))
         
         # Revenue from verified payments
-        rev_res = await Payment.get_pymongo_collection().aggregate([
+        rev_res = await Payment.get_motor_collection().aggregate([
             {"$match": {"status": "VERIFIED", "$expr": {"$and": [{"$eq": [{"$type": "$verified_at"}, "date"]}, {"$eq": [{"$month": "$verified_at"}, m]}, {"$eq": [{"$year": "$verified_at"}, year]}]}}},
             {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
         ]).to_list(length=None)
         
         # Expenses from salary and incentives
-        sal_res = await SalarySlip.get_pymongo_collection().aggregate([{"$match": {"month": month}}, {"$group": {"_id": None, "total": {"$sum": "$final_salary"}}}]).to_list(length=None)
-        inc_res = await IncentiveSlip.get_pymongo_collection().aggregate([{"$match": {"period": month}}, {"$group": {"_id": None, "total": {"$sum": "$total_incentive"}}}]).to_list(length=None)
+        sal_res = await SalarySlip.get_motor_collection().aggregate([{"$match": {"month": month}}, {"$group": {"_id": None, "total": {"$sum": "$final_salary"}}}]).to_list(length=None)
+        inc_res = await IncentiveSlip.get_motor_collection().aggregate([{"$match": {"period": month}}, {"$group": {"_id": None, "total": {"$sum": "$total_incentive"}}}]).to_list(length=None)
         
         revenue = rev_res[0]["total"] if rev_res else 0.0
         expenses = (sal_res[0]["total"] if sal_res else 0.0) + (inc_res[0]["total"] if inc_res else 0.0)

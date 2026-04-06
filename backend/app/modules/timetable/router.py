@@ -165,7 +165,7 @@ async def get_timetable(
         
     visits = await v_query.to_list()
     # Filter by Shop deleted status requires manual lookup
-    valid_shop_ids = await Shop.get_pymongo_collection().distinct("_id", {"is_deleted": False})
+    valid_shop_ids = await Shop.get_motor_collection().distinct("_id", {"is_deleted": False})
     valid_shop_str = [str(x) for x in valid_shop_ids]
 
     for v in visits:
@@ -200,7 +200,7 @@ async def get_timetable(
     m_query = MeetingSummary.find(MeetingSummary.is_deleted == False, MeetingSummary.date >= start_date, MeetingSummary.date <= end_date)
     meetings = await m_query.to_list()
     
-    valid_client_ids = await Client.get_pymongo_collection().distinct("_id", {"is_deleted": False})
+    valid_client_ids = await Client.get_motor_collection().distinct("_id", {"is_deleted": False})
     valid_client_str = [str(x) for x in valid_client_ids]
     
     for m in meetings:

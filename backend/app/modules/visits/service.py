@@ -84,7 +84,7 @@ class VisitService:
             q = q.find(Visit.user_id == user_id)
             
         if area_id and str(area_id).upper() != "ALL":
-            raw_ids = await Shop.get_pymongo_collection().distinct("_id", {"area_id": PydanticObjectId(area_id)})
+            raw_ids = await Shop.get_motor_collection().distinct("_id", {"area_id": PydanticObjectId(area_id)})
             shop_ids_in_area = [PydanticObjectId(rid) for rid in raw_ids if rid]
             q = q.find(In(Visit.shop_id, shop_ids_in_area))
             
@@ -98,7 +98,7 @@ class VisitService:
 
         # --- SECURITY ENFORCEMENT (RBAC) ---
         if current_user and current_user.role != UserRole.ADMIN and not shop_id:
-            raw_owned_ids = await Shop.get_pymongo_collection().distinct("_id", {
+            raw_owned_ids = await Shop.get_motor_collection().distinct("_id", {
                 "$or": [
                     {"owner_id": current_user.id},
                     {"assigned_owner_ids": {"$in": [current_user.id]}}

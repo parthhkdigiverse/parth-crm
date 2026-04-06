@@ -49,7 +49,7 @@ class ClientService:
             if current_user and current_user.role != UserRole.ADMIN:
                 # Scoped view: Owner, PM, or via Billing link
                 # bridge view: find clients associated with invoices created by current user
-                billed_phones = await Bill.get_pymongo_collection().distinct(
+                billed_phones = await Bill.get_motor_collection().distinct(
                     "invoice_client_phone", 
                     {"created_by_id": current_user.id}
                 )

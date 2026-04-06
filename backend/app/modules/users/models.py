@@ -28,8 +28,8 @@ class User(Document):
     # --- Employee / HR Profile ---
     employee_code: Optional[str] = None
     joining_date: Optional[date] = None
-    base_salary: float = 0.0
-    target: int = 0
+    base_salary: Optional[float] = 0.0
+    target: Optional[int] = 0
     incentive_enabled: bool = True
     department: Optional[str] = None
 

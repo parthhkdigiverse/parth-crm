@@ -36,7 +36,7 @@ class IssueService:
             
             if pm_id:
                 # Manual join replacement: fetch clients managed by this PM
-                raw_pm_clients = await Client.get_pymongo_collection().distinct("_id", {"pm_id": PydanticObjectId(pm_id)})
+                raw_pm_clients = await Client.get_motor_collection().distinct("_id", {"pm_id": PydanticObjectId(pm_id)})
                 pm_clients = [PydanticObjectId(rid) for rid in raw_pm_clients if rid]
                 q = q.find(In(Issue.client_id, pm_clients))
 
@@ -52,7 +52,7 @@ class IssueService:
                     allowed_groups.extend(["GROUP_SALES", "GROUP_PM", "GROUP_PM_SALES"])
                 
                 # Fetch clients related to user for ownership cross-reference
-                raw_user_client_ids = await Client.get_pymongo_collection().distinct("_id", {
+                raw_user_client_ids = await Client.get_motor_collection().distinct("_id", {
                     "$or": [
                         {"owner_id": current_user.id},
                         {"pm_id": current_user.id},

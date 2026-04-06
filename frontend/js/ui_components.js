@@ -739,7 +739,7 @@ window.refreshBell = async function () {
                     sessionClosed = true;
                     cleanMessage = cleanMessage.replace('STATUS:COMPLETED', '').trim();
                 }
-                
+
                 // [START] - Standardized Link/Meeting ID Parsing
                 if (cleanMessage.includes('MEETING_ID:')) {
                     const parts = cleanMessage.split('MEETING_ID:');
@@ -1433,6 +1433,26 @@ window.initAttendance = async function () {
             if (mm) mm.textContent = '--';
             if (ss) ss.textContent = '--';
         }
+
+        // FIX 4: Midnight reset — check every 30s if the calendar date has rolled over
+        if (window._midnightCheck) clearInterval(window._midnightCheck);
+        const _midnightStartDate = new Date().toDateString();
+        window._midnightCheck = setInterval(async () => {
+            if (new Date().toDateString() !== _midnightStartDate) {
+                clearInterval(window._midnightCheck);
+                window._midnightCheck = null;
+                if (window._attTimer) {
+                    clearInterval(window._attTimer);
+                    window._attTimer = null;
+                }
+                try {
+                    const freshStatus = await window.ApiClient.getPunchStatus();
+                    updateUI(freshStatus);
+                } catch (e) {
+                    console.warn('[Attendance] Midnight refresh failed', e);
+                }
+            }
+        }, 30000);
     };
 
     updateUI(status);
