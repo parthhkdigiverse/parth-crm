@@ -59,7 +59,7 @@ async def update_project(
     request: Request,
     project_id: PydanticObjectId,
     project_in: ProjectUpdate,
-    current_user: User = Depends(pm_access)
+    current_user: User = Depends(staff_access)  # All staff can update project status
 ) -> Any:
     service = ProjectService()
     return await service.update_project(project_id, project_in, current_user, request)

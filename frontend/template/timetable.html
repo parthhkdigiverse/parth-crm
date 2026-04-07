@@ -2490,7 +2490,7 @@
                     return;
                 }
 
-                // [START] Prevent scheduling in the past
+                // Only block if the date is strictly before today
                 const now = new Date();
                 const [year, month, day] = date.split('-').map(Number);
                 const selectedDateOnly = new Date(year, month - 1, day);
@@ -2499,12 +2499,6 @@
                 if (selectedDateOnly < todayOnly) {
                     showToastMsg('Cannot schedule an activity for a past date.');
                     return;
-                } else if (selectedDateOnly.getTime() === todayOnly.getTime() && start) {
-                    const [sh, sm] = start.split(':').map(Number);
-                    if (now.getHours() > sh || (now.getHours() === sh && now.getMinutes() > sm)) {
-                        showToastMsg('Cannot schedule an activity for a past time today.');
-                        return;
-                    }
                 }
                 // [END]
 

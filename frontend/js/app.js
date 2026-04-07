@@ -1008,13 +1008,30 @@ async function renderDashboard() {
         const renderTableRows = (filtered) => {
             return filtered.length ? filtered.map(p => {
                 const prog = p.progress_percentage || 0;
+                const statusOptions = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CANCELLED'];
+                const statusDropdown = statusOptions.map(s => 
+                    `<a class="dropdown-item small py-2" href="javascript:void(0)" onclick="window.updateProjectStatus('${p.id}', '${s}')">
+                        ${statusBadge(s)} ${s === p.status ? '<i class="bi bi-check2 ms-1 text-success"></i>' : ''}
+                     </a>`
+                ).join('');
+
                 return `
                 <tr style="vertical-align: middle;">
                     <td style="font-weight:600; color:var(--text-main); padding: 20px 24px;">${p.name}</td>
                     <td class="text-muted" style="padding: 20px 24px;">${p.client_name || 'Client #' + p.client_id}</td>
                     <td style="padding: 20px 24px;">${pmanagerIcon(p.pm_name)}</td>
                     <td style="padding: 20px 24px;">${formatDateRange(p)}</td>
-                    <td style="padding: 20px 24px;">${statusBadge(p.status)}</td>
+                    <td style="padding: 20px 24px;">
+                        <div class="dropdown">
+                            <span role="button" data-bs-toggle="dropdown" aria-expanded="false" title="Click to change status">
+                                ${statusBadge(p.status)}
+                                <i class="bi bi-chevron-down" style="font-size:0.65rem; opacity:0.6; margin-left:2px;"></i>
+                            </span>
+                            <ul class="dropdown-menu shadow border-0 p-1" style="border-radius:10px; min-width:160px;">
+                                ${statusDropdown}
+                            </ul>
+                        </div>
+                    </td>
                     <td style="font-weight:600; color:var(--text-main); padding: 20px 24px;">${formatBudget(p.budget)}</td>
                     <td style="width: 180px; padding: 20px 24px;">
                         <div style="display:flex; align-items:center; gap:12px;">
@@ -1095,6 +1112,17 @@ async function renderDashboard() {
         // Initial filter application in case filter was already set
         if (window._projectFilter !== 'ALL' || window._projectSearch) applyFilters();
     }
+
+    window.updateProjectStatus = async (projectId, newStatus) => {
+        try {
+            await window.ApiClient.updateProject(projectId, { status: newStatus });
+            showToast(`Project status updated to ${newStatus.replace('_', ' ')}`);
+            await renderProjects();
+        } catch (e) {
+            console.error('Project update failed:', e);
+            showToast('Failed to update project status. You may not have permission.', 'error');
+        }
+    };
 
     // ─── HR & Payroll Modules ─────────────────────────────────────────────
     async function renderEmployees() {
