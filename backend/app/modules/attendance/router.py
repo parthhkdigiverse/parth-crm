@@ -54,12 +54,16 @@ async def get_attendance_summary(
 
     # Optimization: Move reconcile to background if it's broad
     if reconcile:
+        from datetime import datetime, timezone, timedelta
+        # Resolve defaults here — background tasks receive raw values, not the service's defaults
+        resolved_end = end_date or datetime.now(timezone.utc).date()
+        resolved_start = start_date or (resolved_end - timedelta(days=30))
         settings = await AttendanceService.load_attendance_settings()
         if target_user:
-            background_tasks.add_task(AttendanceService.ensure_auto_leaves, target_user, start_date, end_date, settings)
+            background_tasks.add_task(AttendanceService.ensure_auto_leaves, target_user, resolved_start, resolved_end, settings)
         else:
             # Multi-user reconciliation in background
-            background_tasks.add_task(AttendanceService.reconcile_all_users, start_date, end_date, settings)
+            background_tasks.add_task(AttendanceService.reconcile_all_users, resolved_start, resolved_end, settings)
 
     return await AttendanceService.get_attendance_summary(
         target_user, start_date, end_date, False, current_user

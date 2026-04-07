@@ -1415,3 +1415,146 @@ input[type="password"]::-ms-clear { display: none; }
     display: inline-block;
     vertical-align: middle;
 }
+
+/* ══════════════════════════════════════════════════════════════
+   SRM UNIFIED TABLE SYSTEM
+   Apply  class="srm-data-card"  to the wrapper card and
+          class="srm-table"      to every <table> in the project.
+   This gives every table the same premium look.
+   ════════════════════════════════════════════════════════════ */
+
+/* ── Card wrapper shared by all table cards ── */
+.srm-data-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: column;
+}
+
+/* ── Card header (title bar above the table) ── */
+.srm-data-card .srm-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 20px;
+    background: var(--bg-app);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    flex-shrink: 0;
+}
+
+.srm-data-card .srm-card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+}
+
+.srm-data-card .srm-card-title i {
+    font-size: 0.9rem;
+    color: var(--primary);
+    opacity: 0.8;
+}
+
+.srm-data-card .srm-card-meta {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+/* ── Table itself ── */
+.srm-table {
+    width: 100%;
+    margin-bottom: 0;
+    border-collapse: collapse;
+    font-size: 0.865rem;
+}
+
+.srm-table thead tr {
+    background: var(--bg-app);
+}
+
+.srm-table thead th {
+    padding: 10px 16px;
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border) !important;
+    white-space: nowrap;
+    vertical-align: middle;
+    background: var(--bg-app) !important;
+}
+
+.srm-table tbody td {
+    padding: 12px 16px;
+    color: var(--text-main);
+    border-bottom: 1px solid var(--border-subtle);
+    vertical-align: middle;
+    font-size: 0.865rem;
+}
+
+.srm-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.srm-table tbody tr:hover td {
+    background: rgba(79, 70, 229, 0.03);
+}
+
+/* ── Empty / skeleton state ── */
+.srm-table .srm-empty-row td {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    border-bottom: none !important;
+}
+
+/* ── Table responsive wrapper inside srm-data-card ── */
+.srm-data-card .srm-table-wrap {
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    flex: 1;
+}
+
+.srm-data-card .srm-table-wrap::-webkit-scrollbar { height: 5px; }
+.srm-data-card .srm-table-wrap::-webkit-scrollbar-track { background: var(--bg-app); }
+.srm-data-card .srm-table-wrap::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+
+/* ── Dark mode ── */
+[data-theme="dark"] .srm-data-card {
+    background: var(--surface);
+    border-color: var(--border);
+}
+
+[data-theme="dark"] .srm-data-card .srm-card-header {
+    background: var(--surface-raised, var(--bg-app));
+    border-bottom-color: var(--border);
+}
+
+[data-theme="dark"] .srm-table thead th {
+    background: var(--surface-raised, var(--bg-app)) !important;
+    color: var(--text-muted);
+}
+
+[data-theme="dark"] .srm-table tbody td {
+    color: var(--text-main);
+    border-bottom-color: var(--border-subtle);
+}
+
+[data-theme="dark"] .srm-table tbody tr:hover td {
+    background: rgba(99, 102, 241, 0.06);
+}
+

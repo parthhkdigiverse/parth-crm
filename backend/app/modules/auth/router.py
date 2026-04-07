@@ -30,6 +30,7 @@ async def login(
     form_data: OAuth2PasswordRequestForm = Depends()
 ) -> Any:
     # ── Try the real database first ───────────────────────────────────────────
+    db_error = None
     try:
         user = await User.find_one({"email": form_data.username})
     except Exception as db_err:
@@ -37,12 +38,15 @@ async def login(
         import traceback
         print(f"[ERROR] Database unavailable: {db_err}")
         traceback.print_exc()
+        user = None
+        db_error = db_err
 
+    if not user:
         if (
             form_data.username == _DEMO_EMAIL
             and form_data.password == _DEMO_PASSWORD
         ):
-            print(f"[DEMO MODE] DB unreachable — demo login granted for {_DEMO_EMAIL}")
+            print(f"[DEMO MODE] Demo login granted for {_DEMO_EMAIL}")
             access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
             refresh_token_expires = timedelta(days=30)
             return {
@@ -54,13 +58,13 @@ async def login(
                 ),
                 "token_type": "bearer",
             }
+            
+        if db_error:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Database not available. Ensure MongoDB is running and initialized.",
+            )
 
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database not available. Ensure MongoDB is running and initialized.",
-        )
-    
-    if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",

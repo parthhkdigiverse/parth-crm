@@ -74,8 +74,11 @@ class AttendanceService:
                     last_out = p_out
 
             if p_in:
+                # Normalize p_in to UTC-aware (MongoDB may store naive datetimes)
+                if p_in.tzinfo is None:
+                    p_in = p_in.replace(tzinfo=UTC)
                 if p_out:
-                    end_time = p_out
+                    end_time = p_out if p_out.tzinfo is not None else p_out.replace(tzinfo=UTC)
                 else:
                     missing_punch_out = True
                     if day < datetime.now(UTC).date():

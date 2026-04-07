@@ -1206,32 +1206,33 @@ body.dark-theme .brand-text {
     font-size: 0.875rem;
 }
 
-/* Tables */
+/* Tables — unified with srm-table design language */
 .table {
     --bs-table-bg: transparent;
-    --bs-table-hover-bg: rgba(79, 70, 229, 0.025);
+    --bs-table-hover-bg: rgba(79, 70, 229, 0.03);
     margin-bottom: 0;
-    font-size: 0.875rem;
+    font-size: 0.865rem;
 }
 
 .table th {
-    background: var(--bg-surface) !important;
+    background: var(--bg-app) !important;
     color: var(--text-muted);
-    font-weight: 700;
+    font-weight: 800;
     text-transform: uppercase;
     font-size: 0.68rem;
-    letter-spacing: 0.07em;
-    padding: 11px 20px;
+    letter-spacing: 0.08em;
+    padding: 10px 16px;
     border-bottom: 1px solid var(--border) !important;
     white-space: nowrap;
+    vertical-align: middle;
 }
 
 .table td {
-    padding: 13px 20px;
+    padding: 12px 16px;
     vertical-align: middle;
     color: var(--text-main);
     border-bottom: 1px solid var(--border-subtle);
-    font-size: 0.875rem;
+    font-size: 0.865rem;
 }
 
 .table tbody tr:last-child td {
@@ -1239,7 +1240,7 @@ body.dark-theme .brand-text {
 }
 
 .table tbody tr:hover td {
-    background: rgba(79, 70, 229, 0.025);
+    background: rgba(79, 70, 229, 0.03);
 }
 
 /* Badges */
@@ -1322,7 +1323,7 @@ body.dark-theme .brand-text {
 }
 
 .modal-footer {
-    background: #FAFBFD;
+    background: var(--surface);
     border-top: 1px solid var(--border-subtle);
     padding: 1rem 1.5rem;
     gap: 8px;
@@ -2377,13 +2378,14 @@ label {
 }
 
 [data-theme="dark"] .sb-link.active {
-    background: var(--sb-active-bg);
-    color: var(--text-1) !important;
-    /* White/Off-white for sub-item */
+    background: rgba(99, 102, 241, 0.22); /* Deep indigo glow — visible on dark bg */
+    color: #ffffff !important;            /* Pure white for maximum readability */
+    font-weight: 700;
+    box-shadow: inset 3px 0 0 #6366f1;   /* Left accent line in indigo */
 }
 
 [data-theme="dark"] .sb-link.active i {
-    color: var(--primary) !important;
+    color: #818cf8 !important;            /* Indigo-400 — bright & clear on dark */
 }
 
 [data-theme="dark"] .card,
@@ -2554,8 +2556,8 @@ label {
     right: 25px;
     width: 48px;
     height: 48px;
-    background: #ffffff;
-    color: #2563eb;
+    background: var(--surface);
+    color: var(--primary);
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -2568,7 +2570,7 @@ label {
     opacity: 0;
     visibility: hidden;
     transform: translateY(20px);
-    border: 1px solid rgba(37, 99, 235, 0.1);
+    border: 1px solid var(--border);
 }
 
 .back-to-top-btn.show {
@@ -2578,10 +2580,10 @@ label {
 }
 
 .back-to-top-btn:hover {
-    background: #f8fafc;
+    background: var(--surface-raised);
     transform: translateY(-5px);
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
-    color: #1d4ed8;
+    color: var(--primary-hover);
 }
 
 /* Force mobile-only visibility */
@@ -2874,3 +2876,198 @@ label {
     color: var(--danger);
     background: var(--danger-light);
 }
+
+/* ══════════════════════════════════════════════════════════════
+   DARK MODE — Comprehensive override block
+   Covers all recurring patterns that break in dark mode:
+   bg-white, bg-light, hardcoded card-header gradients,
+   Bootstrap tabs, nav-pills, inline styles, preview blocks.
+   ════════════════════════════════════════════════════════════ */
+
+/* Bootstrap utility overrides */
+[data-theme="dark"] .bg-white {
+    background-color: var(--surface) !important;
+}
+
+[data-theme="dark"] .bg-light,
+[data-theme="dark"] .bg-body-secondary {
+    background-color: var(--surface-raised) !important;
+}
+
+[data-theme="dark"] .bg-body,
+[data-theme="dark"] .bg-body-tertiary {
+    background-color: var(--bg-app) !important;
+}
+
+/* Modal footer dark */
+[data-theme="dark"] .modal-footer {
+    background: var(--surface-raised) !important;
+    border-top-color: var(--border) !important;
+}
+
+[data-theme="dark"] .modal-header {
+    background: var(--surface-raised) !important;
+    border-bottom-color: var(--border) !important;
+}
+
+/* Card header gradient overrides — cover inline style patterns */
+[data-theme="dark"] .card-header {
+    background: var(--surface-raised) !important;
+    border-bottom-color: var(--border) !important;
+}
+
+[data-theme="dark"] [style*="background: linear-gradient(to right, rgba(248"],
+[data-theme="dark"] [style*="background: linear-gradient(to right,rgba(248"] {
+    background: var(--surface-raised) !important;
+}
+
+[data-theme="dark"] [style*="background: #f8fafc"],
+[data-theme="dark"] [style*="background:#f8fafc"],
+[data-theme="dark"] [style*="background: #FAFBFD"],
+[data-theme="dark"] [style*="background:#FAFBFD"],
+[data-theme="dark"] [style*="background: #ffffff"],
+[data-theme="dark"] [style*="background:#ffffff"],
+[data-theme="dark"] [style*="background: white"],
+[data-theme="dark"] [style*="background:white"] {
+    background: var(--surface) !important;
+}
+
+/* Bootstrap nav-tabs & nav-pills */
+[data-theme="dark"] .nav-tabs {
+    border-bottom-color: var(--border);
+}
+
+[data-theme="dark"] .nav-tabs .nav-link {
+    color: var(--text-muted);
+}
+
+[data-theme="dark"] .nav-tabs .nav-link.active {
+    background: var(--surface);
+    border-color: var(--border) var(--border) var(--surface);
+    color: var(--primary);
+}
+
+[data-theme="dark"] .nav-pills .nav-link {
+    color: var(--text-muted);
+}
+
+[data-theme="dark"] .nav-pills .nav-link.active {
+    background: var(--primary);
+    color: #fff;
+}
+
+/* Tab content panels */
+[data-theme="dark"] .tab-content,
+[data-theme="dark"] .tab-pane {
+    background: transparent;
+    color: var(--text-main);
+}
+
+/* Input groups */
+[data-theme="dark"] .input-group-text {
+    background: var(--surface-raised);
+    border-color: var(--border);
+    color: var(--text-muted);
+}
+
+/* List groups */
+[data-theme="dark"] .list-group-item {
+    background: var(--surface);
+    border-color: var(--border);
+    color: var(--text-main);
+}
+
+[data-theme="dark"] .list-group-item-action:hover {
+    background: var(--surface-raised);
+    color: var(--text-main);
+}
+
+/* Alert boxes */
+[data-theme="dark"] .alert {
+    border-color: var(--border);
+}
+
+[data-theme="dark"] .alert-info {
+    background: rgba(99, 102, 241, 0.12);
+    color: var(--primary);
+    border-color: rgba(99, 102, 241, 0.2);
+}
+
+[data-theme="dark"] .alert-warning {
+    background: rgba(217, 119, 6, 0.12);
+    color: #fbbf24;
+    border-color: rgba(217, 119, 6, 0.2);
+}
+
+[data-theme="dark"] .alert-success {
+    background: rgba(5, 150, 105, 0.12);
+    color: #34d399;
+    border-color: rgba(5, 150, 105, 0.2);
+}
+
+[data-theme="dark"] .alert-danger {
+    background: rgba(220, 38, 38, 0.12);
+    color: #f87171;
+    border-color: rgba(220, 38, 38, 0.2);
+}
+
+/* Breadcrumb */
+[data-theme="dark"] .breadcrumb {
+    background: transparent;
+}
+
+[data-theme="dark"] .breadcrumb-item + .breadcrumb-item::before {
+    color: var(--text-muted);
+}
+
+/* Progress bars */
+[data-theme="dark"] .progress {
+    background: var(--surface-raised);
+}
+
+/* Pagination */
+[data-theme="dark"] .page-link {
+    background: var(--surface);
+    border-color: var(--border);
+    color: var(--text-body);
+}
+
+[data-theme="dark"] .page-link:hover {
+    background: var(--surface-raised);
+    border-color: var(--border);
+    color: var(--primary);
+}
+
+[data-theme="dark"] .page-item.active .page-link {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+
+[data-theme="dark"] .page-item.disabled .page-link {
+    background: var(--surface);
+    color: var(--text-muted);
+}
+
+/* Tooltips */
+[data-theme="dark"] .tooltip-inner {
+    background: var(--surface-raised);
+    color: var(--text-main);
+    border: 1px solid var(--border);
+}
+
+/* Code blocks */
+[data-theme="dark"] code {
+    background: var(--surface-raised);
+    color: #f472b6;
+    padding: 2px 5px;
+    border-radius: 4px;
+}
+
+/* Back-to-top dark */
+[data-theme="dark"] .back-to-top-btn {
+    background: var(--surface);
+    color: var(--primary);
+    border-color: var(--border);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+}

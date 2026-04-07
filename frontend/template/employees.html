@@ -21,12 +21,12 @@
             border: 1px solid var(--border);
             border-radius: 12px;
             overflow: hidden;
-            background: #fff;
+            background: var(--surface);
             transition: all 0.3s ease;
         }
 
         .table > thead {
-            background: #f8fafc;
+            background: var(--bg-app);
             border-bottom: 1px solid var(--border);
         }
 
@@ -47,7 +47,7 @@
         }
 
         .table-hover > tbody > tr:hover {
-            background-color: #f8fafc !important;
+            background-color: var(--primary-light) !important;
         }
 
         .table-hover > tbody > tr:hover td {
@@ -115,12 +115,12 @@
             justify-content: center;
             border-radius: 8px;
             transition: all 0.2s ease;
-            background: #fff;
-            border: 1px solid #e2e8f0;
-            color: #64748b;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
         }
         .btn-action:hover {
-            background: #f8fafc;
+            background: var(--primary-light);
             color: var(--primary);
             border-color: var(--primary);
             transform: translateY(-1px);
@@ -619,10 +619,10 @@
                     </td>
                 </tr>`;
             
-            const department = (filters['filter-dept'] === 'ALL' ? '' : filters['filter-dept']) || '';
-            const role = (filters['filter-role'] === 'ALL' ? '' : filters['filter-role']) || '';
-            const status = (filters['filter-status'] === 'ALL' ? '' : filters['filter-status']) || '';
-            const search = filters['filter-search'] || '';
+            const department = (filters['dept'] === 'ALL' ? '' : filters['dept']) || '';
+            const role = (filters['role'] === 'ALL' ? '' : filters['role']) || '';
+            const status = (filters['status'] === 'ALL' ? '' : filters['status']) || '';
+            const search = filters['search'] || '';
 
             let query = '';
             if (department) query += `&department=${encodeURIComponent(department)}`;
