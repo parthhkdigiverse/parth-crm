@@ -1632,3 +1632,139 @@ if (typeof window.showToast !== 'function') {
         }
     };
 }
+
+// ── UNIVERSAL PAGINATION ───────────────────────────────────────────────
+/**
+ * Renders paginated data into a tbody and injects a pagination bar.
+ *
+ * @param {Object} options
+ * @param {Array}    options.data          - Full data array to paginate
+ * @param {number}   options.pageSize      - Rows per page (default: 15)
+ * @param {string}   options.tbodyId       - ID of the <tbody> to render rows into
+ * @param {string}   options.paginationId  - ID of the container for pagination controls
+ * @param {Function} options.renderRow     - Function(item) => HTML string for a <tr>
+ * @param {Array}    [options.targets]     - Optional: array of { id, renderRow, emptyMsg }
+ * @param {string}   [options.emptyMsg]    - HTML for the "no data" state
+ * @param {number}   [options.colSpan]     - colspan for empty/loading rows (default: 10)
+ * @param {number}   [options.currentPage] - Page to jump to (1-indexed, default: 1)
+ * @returns {Object} { goToPage, getCurrentPage } — controller object
+ */
+window.renderPagination = function (options) {
+    const {
+        data = [],
+        pageSize = 15,
+        tbodyId,
+        paginationId,
+        renderRow,
+        targets,
+        emptyMsg = '<tr><td colspan="10" class="text-center py-5 text-muted">No data found.</td></tr>',
+        colSpan = 10,
+        currentPage: startPage = 1,
+    } = options;
+
+    const paginationContainer = document.getElementById(paginationId);
+
+    let currentPage = Math.max(1, startPage);
+    const totalPages = Math.max(1, Math.ceil(data.length / pageSize));
+
+    function renderPage(page) {
+        currentPage = Math.min(Math.max(1, page), totalPages);
+        const start = (currentPage - 1) * pageSize;
+        const slice = data.slice(start, start + pageSize);
+
+        const renderToTarget = (tid, rRow, eMsg) => {
+            const el = document.getElementById(tid);
+            if (!el) return;
+            if (data.length === 0) {
+                el.innerHTML = eMsg || emptyMsg;
+            } else {
+                el.innerHTML = slice.map(rRow).join('');
+            }
+        };
+
+        if (targets && targets.length > 0) {
+            targets.forEach(t => renderToTarget(t.id, t.renderRow, t.emptyMsg));
+        } else if (tbodyId && renderRow) {
+            renderToTarget(tbodyId, renderRow, emptyMsg);
+        }
+
+        if (paginationContainer) {
+            renderControls();
+        }
+    }
+
+    function renderControls() {
+        if (totalPages <= 1) {
+            paginationContainer.innerHTML = '';
+            return;
+        }
+
+        const showing = data.length === 0 ? 0 : Math.min(currentPage * pageSize, data.length);
+        const from = data.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+
+        // Build page number buttons (show at most 5 around current)
+        let pages = [];
+        const delta = 2;
+        const left = Math.max(1, currentPage - delta);
+        const right = Math.min(totalPages, currentPage + delta);
+
+        for (let i = left; i <= right; i++) pages.push(i);
+        if (left > 2) pages = ['...left', ...pages];
+        if (left > 1) pages = [1, ...pages];
+        if (right < totalPages - 1) pages = [...pages, '...right'];
+        if (right < totalPages) pages = [...pages, totalPages];
+
+        const pageButtons = pages.map(p => {
+            if (typeof p === 'string') {
+                return `<li class="page-item disabled"><span class="page-link srm-page-ellipsis">…</span></li>`;
+            }
+            const active = p === currentPage ? 'active' : '';
+            return `<li class="page-item ${active}"><button class="page-link srm-page-btn" data-page="${p}">${p}</button></li>`;
+        }).join('');
+
+        paginationContainer.innerHTML = `
+            <div class="srm-pagination-bar">
+                <span class="srm-pagination-info">
+                    Showing <strong>${from}–${showing}</strong> of <strong>${data.length}</strong>
+                </span>
+                <nav aria-label="Table pagination">
+                    <ul class="pagination pagination-sm srm-pagination mb-0">
+                        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                            <button class="page-link srm-page-btn" data-page="${currentPage - 1}" aria-label="Previous">
+                                <i class="bi bi-chevron-left"></i>
+                            </button>
+                        </li>
+                        ${pageButtons}
+                        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                            <button class="page-link srm-page-btn" data-page="${currentPage + 1}" aria-label="Next">
+                                <i class="bi bi-chevron-right"></i>
+                            </button>
+                        </li>
+                    </ul>
+                </nav>
+            </div>`;
+
+        // Wire up click events
+        paginationContainer.querySelectorAll('.srm-page-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const p = parseInt(btn.dataset.page, 10);
+                if (!isNaN(p) && p >= 1 && p <= totalPages) {
+                    renderPage(p);
+                    // Scroll to top of containing card
+                    const el = tbody.closest('.card, .table-responsive, [class*="card"]');
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            });
+        });
+    }
+
+    // First render
+    renderPage(currentPage);
+
+    // Return a controller so caller can refresh without re-init
+    return {
+        goToPage: (p) => renderPage(p),
+        getCurrentPage: () => currentPage,
+        getTotalPages: () => totalPages,
+    };
+};

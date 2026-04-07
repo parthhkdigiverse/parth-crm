@@ -197,6 +197,7 @@
                                 </tbody>
                             </table>
                         </div>
+                        <div id="meetings-pagination"></div>
                     </div>
                 </div>
             </div>
@@ -758,64 +759,68 @@
                 resMeetings.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 
                 const tableBody = document.getElementById('meetings-table');
-                tableBody.innerHTML = resMeetings.map(m => {
-                    const clientName = m.client_id ? (clientMap[m.client_id] || `Client #${m.client_id}`) : '<span class="text-primary fw-bold"><i class="bi bi-person-workspace me-1"></i>Internal Team</span>';
-                    const isFinished = m.status === 'RESOLVED';
-                    const badgeClass = m.status === 'RESOLVED' ? 'bg-success' : (m.status === 'CANCELLED' ? 'bg-danger' : 'bg-info');
+                tableBody.innerHTML = '';
 
-                    const dateObj = m.date ? new Date(m.date) : null;
-                    const dStr = dateObj ? dateObj.toLocaleDateString() : 'N/A';
-                    const tStr = dateObj ? dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-
-                    // [START] - Direct Join Button
-                    const meetBtn = !isFinished && m.meet_link ? `
-                        <a href="${m.meet_link}" target="_blank" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1 shadow-sm px-3" style="font-size:11px; border-radius:8px; font-weight:700;">
-                            <i class="bi bi-camera-video-fill"></i> Join Now
-                        </a>
-                    ` : '';
-                    // [END]
-
-                    return `
-                    <tr>
-                        <td class="ps-4">
-                            <input type="checkbox" class="form-check-input meeting-row-check" data-id="${m.id}">
-                        </td>
-                        <td>
-                            <div class="fw-bold text-dark">${clientName}</div>
-                            <div class="extra-small text-muted">${m.meeting_type || 'Virtual'}</div>
-                        </td>
-                        <td>
-                            <div class="fw-semibold text-dark">${m.title || 'Untitled'}</div>
-                            <div class="extra-small text-primary" style="font-weight:700; font-size:9px;">${m.priority || 'MEDIUM'}</div>
-                        </td>
-                        <td>
-                            <div class="extra-small fw-bold text-dark">${dStr}</div>
-                            <div class="extra-small text-muted">${tStr}</div>
-                        </td>
-                        <td><span class="badge ${badgeClass} extra-small">${m.status}</span></td>
-                        <td>
-                            ${isFinished ?
-                            `<button class="btn btn-sm btn-light-soft text-primary fw-bold extra-small" onclick="fetchAISummary('${m.id}')"><i class="bi bi-stars me-1"></i>Report</button>` :
-                            '<span class="text-muted extra-small italic">Pending...</span>'}
-                        </td>
-                        <td class="pe-4 text-end">
-                            <div class="d-flex justify-content-end align-items-center gap-2">
-                                ${meetBtn}
-                                <div class="dropdown">
-                                    <button class="btn btn-icon-soft" data-bs-toggle="dropdown">
-                                        <i class="bi bi-three-dots-vertical"></i>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0">
-                                        <li><a class="dropdown-item" href="meeting_strategy.html?id=${m.id}"><i class="bi bi-eye me-2"></i>Detailed View</a></li>
-                                        ${!isFinished ? `<li><a class="dropdown-item" href="javascript:void(0)" onclick="openRescheduleModal('${m.id}', '${m.host_id || ''}')"><i class="bi bi-calendar2-range me-2"></i>Reschedule</a></li>` : ''}
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item text-danger" href="javascript:void(0)" onclick="deleteMeeting('${m.id}')"><i class="bi bi-trash me-2"></i>Delete</a></li>
-                                    </ul>
+                renderPagination({
+                    data: resMeetings,
+                    pageSize: 20,
+                    tbodyId: 'meetings-table',
+                    paginationId: 'meetings-pagination',
+                    emptyMsg: '<tr><td colspan="7" class="text-center py-5">No meetings found</td></tr>',
+                    renderRow: (m) => {
+                        const clientName = m.client_id ? (clientMap[m.client_id] || `Client #${m.client_id}`) : '<span class="text-primary fw-bold"><i class="bi bi-person-workspace me-1"></i>Internal Team</span>';
+                        const isFinished = m.status === 'RESOLVED';
+                        const badgeClass = m.status === 'RESOLVED' ? 'bg-success' : (m.status === 'CANCELLED' ? 'bg-danger' : 'bg-info');
+                        const dateObj = m.date ? new Date(m.date) : null;
+                        const dStr = dateObj ? dateObj.toLocaleDateString() : 'N/A';
+                        const tStr = dateObj ? dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+                        const meetBtn = !isFinished && m.meet_link ? `
+                            <a href="${m.meet_link}" target="_blank" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1 shadow-sm px-3" style="font-size:11px; border-radius:8px; font-weight:700;">
+                                <i class="bi bi-camera-video-fill"></i> Join Now
+                            </a>
+                        ` : '';
+                        return `
+                        <tr>
+                            <td class="ps-4">
+                                <input type="checkbox" class="form-check-input meeting-row-check" data-id="${m.id}">
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark">${clientName}</div>
+                                <div class="extra-small text-muted">${m.meeting_type || 'Virtual'}</div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-dark">${m.title || 'Untitled'}</div>
+                                <div class="extra-small text-primary" style="font-weight:700; font-size:9px;">${m.priority || 'MEDIUM'}</div>
+                            </td>
+                            <td>
+                                <div class="extra-small fw-bold text-dark">${dStr}</div>
+                                <div class="extra-small text-muted">${tStr}</div>
+                            </td>
+                            <td><span class="badge ${badgeClass} extra-small">${m.status}</span></td>
+                            <td>
+                                ${isFinished ?
+                                `<button class="btn btn-sm btn-light-soft text-primary fw-bold extra-small" onclick="fetchAISummary('${m.id}')"><i class="bi bi-stars me-1"></i>Report</button>` :
+                                '<span class="text-muted extra-small italic">Pending...</span>'}
+                            </td>
+                            <td class="pe-4 text-end">
+                                <div class="d-flex justify-content-end align-items-center gap-2">
+                                    ${meetBtn}
+                                    <div class="dropdown">
+                                        <button class="btn btn-icon-soft" data-bs-toggle="dropdown">
+                                            <i class="bi bi-three-dots-vertical"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                                            <li><a class="dropdown-item" href="meeting_strategy.html?id=${m.id}"><i class="bi bi-eye me-2"></i>Detailed View</a></li>
+                                            ${!isFinished ? `<li><a class="dropdown-item" href="javascript:void(0)" onclick="openRescheduleModal('${m.id}', '${m.host_id || ''}')"><i class="bi bi-calendar2-range me-2"></i>Reschedule</a></li>` : ''}
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><a class="dropdown-item text-danger" href="javascript:void(0)" onclick="deleteMeeting('${m.id}')"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                                        </ul>
+                                    </div>
                                 </div>
-                            </div>
-                        </td>
-                    </tr>`;
-                }).join('') || '<tr><td colspan="7" class="text-center py-5">No meetings found</td></tr>';
+                            </td>
+                        </tr>`;
+                    }
+                });
             } catch (e) {
                 console.error("Meetings Load Failed", e);
             }

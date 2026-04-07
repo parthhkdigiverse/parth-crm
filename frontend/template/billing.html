@@ -396,6 +396,7 @@
                             </tbody>
                         </table>
                     </div>
+                    <div id="billing-pagination"></div>
                 </div><!-- /grid-card -->
 
             </div><!-- /page-content -->
@@ -935,59 +936,64 @@
         }
 
         function renderTable() {
-            const tbody = document.getElementById('inv-tbody');
             const list = allBills;
             const statusVal = currentFilters['inv-status'] || 'ALL';
             const isArchiveView = statusVal === 'ARCHIVED';
             document.getElementById('billing-filter-summary').textContent = list.length + (isArchiveView ? ' archived invoice' : ' invoice') + (list.length === 1 ? '' : 's');
-            if (!list.length) {
-                tbody.innerHTML = `<tr><td colspan="9" class="text-center py-5 text-muted"><i class="bi ${isArchiveView ? 'bi-archive' : 'bi-receipt'}" style="font-size:2rem;display:block;margin-bottom:8px;color:#cbd5e1;"></i>${isArchiveView ? 'No archived invoices found.' : 'No invoices found.'}</td></tr>`;
-                syncSelectAllCheckbox(); updateBulkActionButtons(); return;
-            }
-            tbody.innerHTML = list.map(b => {
-                const st = b.invoice_status || b.status || 'DRAFT';
-                const dt = b.created_at ? new Date(b.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
-                const clientDisplay = b.invoice_client_name || b.client_name || '—';
-                const phone = b.invoice_client_phone || '';
-                const paymentTypeLabel = { BUSINESS_ACCOUNT: 'Business Bank', PERSONAL_ACCOUNT: 'Personal Bank', CASH: 'Cash' }[b.payment_type] || '—';
-                const gstTypeLabel = b.gst_type === 'WITHOUT_GST' ? 'GST 0%' : 'GST 18%';
-                let actions = `<button class="action-menu-btn me-1" title="Preview Invoice" onclick="previewInvoice('${b.id}')"><i class="bi bi-eye"></i></button>`;
-                
-                const rowActions = invoiceActionsById[b.id] || {};
-                const canVerifyRow = Boolean(rowActions.can_verify);
-                const canSendRow = Boolean(rowActions.can_send_whatsapp);
-                if (canVerifyRow && (st === 'PENDING_VERIFICATION' || st === 'DRAFT')) {
-                    actions += `<button class="action-menu-btn me-1" title="Verify Invoice" onclick="openVerifyModal('${b.id}','${b.invoice_number}')" style="color:#15803D;border-color:#bbf7d0;background:#F0FDF4;"><i class="bi bi-patch-check"></i></button>`;
+            
+            renderPagination({
+                data: list,
+                pageSize: 15,
+                tbodyId: 'inv-tbody',
+                paginationId: 'billing-pagination',
+                emptyMsg: `<tr><td colspan="10" class="text-center py-5 text-muted"><i class="bi ${isArchiveView ? 'bi-archive' : 'bi-receipt'}" style="font-size:2rem;display:block;margin-bottom:8px;color:#cbd5e1;"></i>${isArchiveView ? 'No archived invoices found.' : 'No invoices found.'}</td></tr>`,
+                renderRow: (b) => {
+                    const st = b.invoice_status || b.status || 'DRAFT';
+                    const dt = b.created_at ? new Date(b.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+                    const clientDisplay = b.invoice_client_name || b.client_name || '—';
+                    const phone = b.invoice_client_phone || '';
+                    const paymentTypeLabel = { BUSINESS_ACCOUNT: 'Business Bank', PERSONAL_ACCOUNT: 'Personal Bank', CASH: 'Cash' }[b.payment_type] || '—';
+                    const gstTypeLabel = b.gst_type === 'WITHOUT_GST' ? 'GST 0%' : 'GST 18%';
+                    let actions = `<button class="action-menu-btn me-1" title="Preview Invoice" onclick="previewInvoice('${b.id}')"><i class="bi bi-eye"></i></button>`;
+                    
+                    const rowActions = invoiceActionsById[b.id] || {};
+                    const canVerifyRow = Boolean(rowActions.can_verify);
+                    const canSendRow = Boolean(rowActions.can_send_whatsapp);
+                    if (canVerifyRow && (st === 'PENDING_VERIFICATION' || st === 'DRAFT')) {
+                        actions += `<button class="action-menu-btn me-1" title="Verify Invoice" onclick="openVerifyModal('${b.id}','${b.invoice_number}')" style="color:#15803D;border-color:#bbf7d0;background:#F0FDF4;"><i class="bi bi-patch-check"></i></button>`;
+                    }
+                    if (canSendRow && (st === 'VERIFIED' || st === 'SENT')) {
+                        actions += `<button class="action-menu-btn" title="Send via WhatsApp" onclick="openWAModal('${b.id}',\`${clientDisplay}\`,\`${b.invoice_number}\`,\`${phone}\`)" style="color:#1565C0;border-color:#bfdbfe;background:#EFF6FF;"><i class="bi bi-whatsapp"></i></button>`;
+                    }
+                    if (rowActions.can_archive) actions += `<button class="action-menu-btn ms-1" title="Archive" onclick="archiveInvoice('${b.id}','${b.invoice_number || ''}')" style="color:#92400e;border-color:#fde68a;background:#fffbeb;"><i class="bi bi-archive"></i></button>`;
+                    if (rowActions.can_unarchive) actions += `<button class="action-menu-btn ms-1" title="Restore" onclick="unarchiveInvoice('${b.id}','${b.invoice_number || ''}')" style="color:#0369a1;border-color:#bae6fd;background:#f0f9ff;"><i class="bi bi-box-arrow-up"></i></button>`;
+                    if (rowActions.can_delete_archived) actions += `<button class="action-menu-btn ms-1" title="Delete" onclick="deleteArchivedInvoice('${b.id}','${b.invoice_number || ''}')" style="color:#b91c1c;border-color:#fecaca;background:#fef2f2;"><i class="bi bi-trash"></i></button>`;
+                    
+                    return `<tr>
+                        <td data-label="Select"><input type="checkbox" ${selectedBillIds.has(b.id) ? 'checked' : ''} onchange="toggleBillSelection('${b.id}', this.checked)"></td>
+                        <td data-label="Invoice #" class="fw-semibold" style="font-family:monospace;color:var(--primary);">${b.invoice_number || '—'}</td>
+                        <td data-label="Client">
+                            <div class="tbl-client-name">${clientDisplay}</div>
+                            ${phone ? `<div class="tbl-phone"><i class="bi bi-telephone me-1"></i>${phone}</div>` : ''}
+                            ${b.invoice_client_org ? `<div class="tbl-phone"><i class="bi bi-building me-1"></i>${b.invoice_client_org}</div>` : ''}
+                        </td>
+                        <td data-label="Payment"><span class="inv-pill pill-draft">${paymentTypeLabel}</span></td>
+                        <td data-label="GST"><span class="inv-pill ${b.gst_type === 'WITHOUT_GST' ? 'pill-draft' : 'pill-verified'}">${gstTypeLabel}</span></td>
+                        <td data-label="Amount" class="amt-cell">₹${Number(b.amount || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+                        <td data-label="Status">
+                            <div class="d-flex align-items-center">${statusPill(b, st, phone)}</div>
+                            ${b.billing_month ? `<div class="small text-muted mt-1 fw-medium" style="font-size:10px;"><i class="bi bi-calendar-event me-1"></i>${b.billing_month}</div>` : ''}
+                        </td>
+                        <td data-label="Generated By">
+                            <div class="small text-secondary fw-medium"><i class="bi bi-person-fill me-1 opacity-50"></i>${b.creator_name || 'Admin'}</div>
+                        </td>
+                        <td data-label="Created Date" class="text-muted small">${dt}</td>
+                        <td data-label="Actions" class="text-end" style="white-space:nowrap;">${actions}</td>
+                    </tr>`;
                 }
-                if (canSendRow && (st === 'VERIFIED' || st === 'SENT')) {
-                    actions += `<button class="action-menu-btn" title="Send via WhatsApp" onclick="openWAModal('${b.id}',\`${clientDisplay}\`,\`${b.invoice_number}\`,\`${phone}\`)" style="color:#1565C0;border-color:#bfdbfe;background:#EFF6FF;"><i class="bi bi-whatsapp"></i></button>`;
-                }
-                if (rowActions.can_archive) actions += `<button class="action-menu-btn ms-1" title="Archive" onclick="archiveInvoice('${b.id}','${b.invoice_number || ''}')" style="color:#92400e;border-color:#fde68a;background:#fffbeb;"><i class="bi bi-archive"></i></button>`;
-                if (rowActions.can_unarchive) actions += `<button class="action-menu-btn ms-1" title="Restore" onclick="unarchiveInvoice('${b.id}','${b.invoice_number || ''}')" style="color:#0369a1;border-color:#bae6fd;background:#f0f9ff;"><i class="bi bi-box-arrow-up"></i></button>`;
-                if (rowActions.can_delete_archived) actions += `<button class="action-menu-btn ms-1" title="Delete" onclick="deleteArchivedInvoice('${b.id}','${b.invoice_number || ''}')" style="color:#b91c1c;border-color:#fecaca;background:#fef2f2;"><i class="bi bi-trash"></i></button>`;
-                return `<tr>
-            <td data-label="Select"><input type="checkbox" ${selectedBillIds.has(b.id) ? 'checked' : ''} onchange="toggleBillSelection('${b.id}', this.checked)"></td>
-            <td data-label="Invoice #" class="fw-semibold" style="font-family:monospace;color:var(--primary);">${b.invoice_number || '—'}</td>
-            <td data-label="Client">
-                <div class="tbl-client-name">${clientDisplay}</div>
-                ${phone ? `<div class="tbl-phone"><i class="bi bi-telephone me-1"></i>${phone}</div>` : ''}
-                ${b.invoice_client_org ? `<div class="tbl-phone"><i class="bi bi-building me-1"></i>${b.invoice_client_org}</div>` : ''}
-            </td>
-            <td data-label="Payment"><span class="inv-pill pill-draft">${paymentTypeLabel}</span></td>
-            <td data-label="GST"><span class="inv-pill ${b.gst_type === 'WITHOUT_GST' ? 'pill-draft' : 'pill-verified'}">${gstTypeLabel}</span></td>
-            <td data-label="Amount" class="amt-cell">₹${Number(b.amount || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
-            <td data-label="Status">
-                <div class="d-flex align-items-center">${statusPill(b, st, phone)}</div>
-                ${b.billing_month ? `<div class="small text-muted mt-1 fw-medium" style="font-size:10px;"><i class="bi bi-calendar-event me-1"></i>${b.billing_month}</div>` : ''}
-            </td>
-            <td data-label="Generated By">
-                <div class="small text-secondary fw-medium"><i class="bi bi-person-fill me-1 opacity-50"></i>${b.creator_name || 'Admin'}</div>
-            </td>
-            <td data-label="Created Date" class="text-muted small">${dt}</td>
-            <td data-label="Actions" class="text-end" style="white-space:nowrap;">${actions}</td>
-        </tr>`;
-            }).join('');
-            syncSelectAllCheckbox(); updateBulkActionButtons();
+            });
+            syncSelectAllCheckbox();
+            updateBulkActionButtons();
         }
 
         function initFilters() {

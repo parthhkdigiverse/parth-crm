@@ -228,6 +228,7 @@
                                 </tbody>
                             </table>
                         </div>
+                        <div id="users-pagination"></div>
                     </div>
                 </div>
             </div>
@@ -500,49 +501,50 @@
             let loadedUsers = [];
 
             function renderUsers(users) {
-                const tableBody = document.getElementById('users-table');
                 const countEl = document.getElementById('user-count');
                 if (countEl) countEl.textContent = `${users.length} ${users.length === 1 ? 'user' : 'users'}`;
                 
-                if (!tableBody) return;
-                if (!users.length) {
-                    tableBody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted">No users found matching your filters.</td></tr>';
-                    return;
-                }
-                tableBody.innerHTML = users.map(u => {
-                    const role = roleMeta[u.role] || { cls: '', label: u.role };
-                    const char = (u.name || u.email || 'U')[0].toUpperCase();
-                    const displayName = u.name || '—';
-                    const statusColor = u.is_active ? '#16a34a' : '#dc2626';
-                    const statusBg = u.is_active ? '#dcfce7' : '#fee2e2';
-                    return `
-                    <tr>
-                        <td class="ps-4">
-                            <div class="d-flex align-items-center gap-3">
-                                <div class="avatar-circle">${char}</div>
-                                <div>
-                                    <div class="fw-bold text-main" style="font-size:0.92rem;">${displayName}</div>
-                                    <div class="text-muted" style="font-size:0.78rem;">${u.email}</div>
+                renderPagination({
+                    data: users,
+                    pageSize: 15,
+                    paginationId: 'users-pagination',
+                    targetId: 'users-table',
+                    renderRow: (u) => {
+                        const role = roleMeta[u.role] || { cls: '', label: u.role };
+                        const char = (u.name || u.email || 'U')[0].toUpperCase();
+                        const displayName = u.name || '—';
+                        const statusColor = u.is_active ? '#16a34a' : '#dc2626';
+                        const statusBg = u.is_active ? '#dcfce7' : '#fee2e2';
+                        return `
+                        <tr>
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="avatar-circle">${char}</div>
+                                    <div>
+                                        <div class="fw-bold text-main" style="font-size:0.92rem;">${displayName}</div>
+                                        <div class="text-muted" style="font-size:0.78rem;">${u.email}</div>
+                                    </div>
                                 </div>
-                            </div>
-                        </td>
-                        <td>
-                            <span class="fw-semibold" style="font-size:0.88rem;">${u.employee_code || '<span class="text-muted opacity-50">—</span>'}</span>
-                        </td>
-                        <td><span class="role-pill ${role.cls}">${role.label}</span></td>
-                        <td><span class="status-pill" style="background:${statusBg};color:${statusColor};">${u.is_active ? 'Active' : 'Inactive'}</span></td>
-                        <td class="text-end pe-4">
-                            <div class="d-flex gap-2 justify-content-end">
-                                <button class="btn btn-sm action-btn-pill" onclick="editUser('${u.id}')" title="Edit">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                                <button class="btn btn-sm action-btn-pill delete" onclick="deleteUser('${u.id}')" title="Delete">
-                                    <i class="bi bi-trash3"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>`;
-                }).join('');
+                            </td>
+                            <td>
+                                <span class="fw-semibold" style="font-size:0.88rem;">${u.employee_code || '<span class="text-muted opacity-50">—</span>'}</span>
+                            </td>
+                            <td><span class="role-pill ${role.cls}">${role.label}</span></td>
+                            <td><span class="status-pill" style="background:${statusBg};color:${statusColor};">${u.is_active ? 'Active' : 'Inactive'}</span></td>
+                            <td class="text-end pe-4">
+                                <div class="d-flex gap-2 justify-content-end">
+                                    <button class="btn btn-sm action-btn-pill" onclick="editUser('${u.id}')" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    <button class="btn btn-sm action-btn-pill delete" onclick="deleteUser('${u.id}')" title="Delete">
+                                        <i class="bi bi-trash3"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>`;
+                    },
+                    emptyMsg: '<tr><td colspan="5" class="text-center py-5 text-muted">No users found matching your filters.</td></tr>'
+                });
             }
 
             let currentFilters = {};

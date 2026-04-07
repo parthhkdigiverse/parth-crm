@@ -780,12 +780,11 @@
                                     </tr>
                                 </thead>
                                 <tbody id="slips-tbody">
-                                    <tr><td colspan="6" class="text-center py-5 text-muted">
-                                        <span class="spinner-border spinner-border-sm me-2"></span>Loading...
-                                    </td></tr>
+                                    <!-- Rendered dynamically -->
                                 </tbody>
                             </table>
                         </div>
+                        <div id="slips-pagination"></div>
                     </div>
                     </div>
 
@@ -1388,7 +1387,6 @@
         async function loadSlips() {
             const userId = currentFilters['slip-user-filter'] === 'ALL' ? '' : (currentFilters['slip-user-filter'] || '');
             const tbody = document.getElementById('slips-tbody');
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading...</td></tr>';
             try {
                 let slips;
                 if (userId) {
@@ -1425,55 +1423,56 @@
                     if (desc) desc.textContent = 'View your personal tasks, achievements and incentive history.';
                 }
 
-                if (!slips.length) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">No incentive slips found.</td></tr>';
-                    return;
-                }
-
-                tbody.innerHTML = slips.map(s => {
-                    const name = s.user_name || ('Employee #' + s.user_id);
-                    const parts = name.split(' ');
-                    const firstName = parts[0];
-                    const lastName = parts.slice(1).join(' ');
-                    const perTask = Number(s.amount_per_unit || 0);
-                    const slabBonus = Number(s.slab_bonus_amount || 0);
-                    const rawAppliedSlab = s.applied_slab == null ? '' : String(s.applied_slab).trim();
-                    const hasValidSlab = rawAppliedSlab !== '' && rawAppliedSlab !== '0' && rawAppliedSlab !== '0.0' && rawAppliedSlab.toLowerCase() !== 'none';
-                    const slabLabel = hasValidSlab ? rawAppliedSlab : 'No slab matched';
-                    const managerRemarkEnc = encodeURIComponent(s.manager_remarks || '');
-                    const slipJsonEnc = encodeURIComponent(JSON.stringify(s));
-                    return `<tr class="hover-row">
-                        <td class="ps-3 slip-employee-cell">
-                            <div class="d-flex flex-column">
-                                <span class="fw-bold text-main" style="font-size:0.9rem; line-height:1.2;">${firstName}</span>
-                                ${lastName ? `<span class="text-muted" style="font-size:0.8rem; line-height:1.1;">${lastName}</span>` : ''}
-                            </div>
-                        </td>
-                        <td class="slip-period-cell text-nowrap" style="line-height:1.3;">
-                            <span class="fw-semibold text-main" style="font-size:0.82rem;">${s.period}</span>
-                            <span class="text-muted d-block" style="font-size:0.72rem;">${fmtDateTime(s.generated_at)}</span>
-                        </td>
-                        <td class="slip-task-cell text-nowrap ps-4">
-                            <span class="fw-bold" style="font-size:0.88rem;">${s.achieved}</span>
-                            <span class="text-muted" style="font-size:0.72rem; display:block;">Tasks</span>
-                        </td>
-                        <td>
-                            <span class="fw-semibold text-main slip-slab-label" style="font-size:0.75rem; display:block; line-height:1.2;">${slabLabel}</span>
-                            <span class="text-muted d-block" style="font-size:0.68rem;">Bonus: Rs&nbsp;${fmt(slabBonus)}</span>
-                        </td>
-                        <td class="text-end slip-rate-cell text-nowrap">
-                            <span class="text-primary fw-semibold">Rs&nbsp;${fmt(perTask)}</span>
-                        </td>
-                        <td class="pe-3 text-end fw-bold slip-total-cell text-nowrap">
-                            <div class="d-flex align-items-center justify-content-end gap-2">
-                                <span>Rs&nbsp;${fmt(s.total_incentive)}</span>
-                                <button class="btn btn-sm p-0 text-primary border-0" onclick="showSlipBreakdown('${slipJsonEnc}')">
-                                    <i class="bi bi-info-circle"></i>
-                                </button>
-                            </div>
-                        </td>
-                    </tr>`;
-                }).join('');
+                renderPagination({
+                    data: slips,
+                    pageSize: 10,
+                    tbodyId: 'slips-tbody',
+                    paginationId: 'slips-pagination',
+                    emptyMsg: '<tr><td colspan="7" class="text-center py-5 text-muted">No incentive slips found.</td></tr>',
+                    renderRow: (s) => {
+                        const name = s.user_name || ('Employee #' + s.user_id);
+                        const parts = name.split(' ');
+                        const firstName = parts[0];
+                        const lastName = parts.slice(1).join(' ');
+                        const perTask = Number(s.amount_per_unit || 0);
+                        const slabBonus = Number(s.slab_bonus_amount || 0);
+                        const rawAppliedSlab = s.applied_slab == null ? '' : String(s.applied_slab).trim();
+                        const hasValidSlab = rawAppliedSlab !== '' && rawAppliedSlab !== '0' && rawAppliedSlab !== '0.0' && rawAppliedSlab.toLowerCase() !== 'none';
+                        const slabLabel = hasValidSlab ? rawAppliedSlab : 'No slab matched';
+                        const slipJsonEnc = encodeURIComponent(JSON.stringify(s));
+                        return `<tr class="hover-row">
+                            <td class="ps-3 slip-employee-cell">
+                                <div class="d-flex flex-column">
+                                    <span class="fw-bold text-main" style="font-size:0.9rem; line-height:1.2;">${firstName}</span>
+                                    ${lastName ? `<span class="text-muted" style="font-size:0.8rem; line-height:1.1;">${lastName}</span>` : ''}
+                                </div>
+                            </td>
+                            <td class="slip-period-cell text-nowrap" style="line-height:1.3;">
+                                <span class="fw-semibold text-main" style="font-size:0.82rem;">${s.period}</span>
+                                <span class="text-muted d-block" style="font-size:0.72rem;">${fmtDateTime(s.generated_at)}</span>
+                            </td>
+                            <td class="slip-task-cell text-nowrap ps-4">
+                                <span class="fw-bold" style="font-size:0.88rem;">${s.achieved}</span>
+                                <span class="text-muted" style="font-size:0.72rem; display:block;">Tasks</span>
+                            </td>
+                            <td>
+                                <span class="fw-semibold text-main slip-slab-label" style="font-size:0.75rem; display:block; line-height:1.2;">${slabLabel}</span>
+                                <span class="text-muted d-block" style="font-size:0.68rem;">Bonus: Rs&nbsp;${fmt(slabBonus)}</span>
+                            </td>
+                            <td class="text-end slip-rate-cell text-nowrap">
+                                <span class="text-primary fw-semibold">Rs&nbsp;${fmt(perTask)}</span>
+                            </td>
+                            <td class="pe-3 text-end fw-bold slip-total-cell text-nowrap">
+                                <div class="d-flex align-items-center justify-content-end gap-2">
+                                    <span>Rs&nbsp;${fmt(s.total_incentive)}</span>
+                                    <button class="btn btn-sm p-0 text-primary border-0" onclick="showSlipBreakdown('${slipJsonEnc}')">
+                                        <i class="bi bi-info-circle"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>`;
+                    }
+                });
             } catch (e) {
                 tbody.innerHTML = `<tr><td colspan="7" class="text-center py-5 text-danger small">${e.message || 'Error'}</td></tr>`;
                 document.getElementById('stat-tasks').innerText = '-';

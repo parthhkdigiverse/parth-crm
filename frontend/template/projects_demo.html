@@ -247,12 +247,9 @@
                         <span class="fw-bold text-main" style="font-size:0.95rem;"><i class="bi bi-table me-2 text-primary"></i>Assigned Leads</span>
                         <span class="badge bg-primary-subtle text-primary rounded-pill" id="queue-count-badge">0 leads</span>
                     </div>
-                    <div id="demo-table-wrapper">
-                        <div class="empty-state">
-                            <i class="bi bi-hourglass fs-1 d-block mb-2 opacity-25"></i>
-                            <div class="fw-semibold">Loading demo queue...</div>
-                        </div>
-                    </div>
+                    <div id="demo-table-desktop"></div>
+                    <div id="demo-table-mobile"></div>
+                    <div id="demo-pagination" class="px-3 pb-2"></div>
                 </div>
 
             </div><!-- /page-content -->
@@ -342,133 +339,108 @@
             const user = window.getUser ? window.getUser() : JSON.parse(localStorage.getItem('crm_user') || '{}');
             const showPMColumn = ['ADMIN', 'SALES', 'TELESALES'].includes(user.role?.toUpperCase());
             
-            const wrapper = document.getElementById('demo-table-wrapper');
             const badge = document.getElementById('queue-count-badge');
             badge.textContent = `${shops.length} lead${shops.length !== 1 ? 's' : ''}`;
 
             if (!shops || shops.length === 0) {
-                wrapper.innerHTML = `<div class="empty-state">
+                document.getElementById('demo-table-desktop').innerHTML = `<div class="empty-state">
                     <i class="bi bi-inbox fs-1 d-block mb-2 opacity-25"></i>
                     <div class="fw-semibold">No leads in your demo queue</div>
                     <div class="small mt-1 text-muted">Leads will appear here once a PM is assigned from the Project Overview page.</div>
                 </div>`;
+                document.getElementById('demo-table-mobile').innerHTML = '';
+                document.getElementById('demo-pagination').innerHTML = '';
                 return;
             }
 
-            let tableHtml = `<div class="table-responsive d-none d-md-block">
-                <table class="table table-hover align-middle mb-0" style="font-size:0.88rem;">
-                    <thead style="background:var(--bg-app);border-bottom:2px solid var(--border-subtle);">
-                        <tr>
-                            <th class="px-2 px-lg-4 py-3 text-uppercase text-muted" style="font-size:0.7rem;letter-spacing:0.05em;font-weight:700;">Lead / Shop</th>
-                            <th class="px-2 px-lg-3 py-3 text-uppercase text-muted" style="font-size:0.7rem;letter-spacing:0.05em;font-weight:700;">Contact</th>
-                            <th class="px-2 px-lg-3 py-3 text-uppercase text-muted" style="font-size:0.7rem;letter-spacing:0.05em;font-weight:700;">Demo Progress</th>
-                            <th class="px-2 px-lg-3 py-3 text-uppercase text-muted" style="font-size:0.7rem;letter-spacing:0.05em;font-weight:700;">Sourced By</th>
-                            ${showPMColumn ? `<th class="px-2 px-lg-3 py-3 text-uppercase text-muted" style="font-size:0.7rem;letter-spacing:0.05em;font-weight:700;">Assigned PM</th>` : ''}
-                            <th class="px-2 px-lg-4 py-3 text-uppercase text-muted text-end text-nowrap" style="font-size:0.7rem;letter-spacing:0.05em;font-weight:700;">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>`;
-            
-            let cardsHtml = `<div class="d-md-none d-flex flex-column gap-3 p-3 bg-light">`;
+            const tableHead = `<div class="table-responsive d-none d-md-block"><table class="table table-hover align-middle mb-0" style="font-size:0.88rem;"><thead style="background:var(--bg-app);border-bottom:2px solid var(--border-subtle);"><tr>
+                <th class="px-2 px-lg-4 py-3 text-uppercase text-muted" style="font-size:0.7rem;letter-spacing:0.05em;font-weight:700;">Lead / Shop</th>
+                <th class="px-2 px-lg-3 py-3 text-uppercase text-muted" style="font-size:0.7rem;letter-spacing:0.05em;font-weight:700;">Contact</th>
+                <th class="px-2 px-lg-3 py-3 text-uppercase text-muted" style="font-size:0.7rem;letter-spacing:0.05em;font-weight:700;">Demo Progress</th>
+                <th class="px-2 px-lg-3 py-3 text-uppercase text-muted" style="font-size:0.7rem;letter-spacing:0.05em;font-weight:700;">Sourced By</th>
+                ${showPMColumn ? `<th class="px-2 px-lg-3 py-3 text-uppercase text-muted" style="font-size:0.7rem;letter-spacing:0.05em;font-weight:700;">Assigned PM</th>` : ''}
+                <th class="px-2 px-lg-4 py-3 text-uppercase text-muted text-end text-nowrap" style="font-size:0.7rem;letter-spacing:0.05em;font-weight:700;">Actions</th>
+            </tr></thead><tbody id="demo-tbody"></tbody></table></div>`;
 
-            shops.forEach(shop => {
-                const demoStage = shop.demo_stage || 0;
-                const hasDemoScheduled = !!shop.demo_scheduled_at;
-                const shopStatus = shop.pipeline_stage || '';
-                const isMeetingSet = shopStatus === 'NEGOTIATION' || shopStatus === 'PITCHING';
-                const waNumber = shop.phone ? shop.phone.replace(/\D/g, '') : '';
+            document.getElementById('demo-table-desktop').innerHTML = tableHead;
+            document.getElementById('demo-table-mobile').innerHTML = `<div class="d-md-none d-flex flex-column gap-3 p-3 bg-light" id="demo-cards"></div>`;
 
-                // Demo Progress column: completed count + scheduled date or (+) button
-                const nextDemoLabel = hasDemoScheduled
-                    ? `<div class="mt-1"><span class="badge" style="background:#e0e7ff;color:#2563eb;font-size:0.68rem;"><i class="bi bi-calendar-event me-1"></i>Next: ${fmtDt(shop.demo_scheduled_at)}</span></div>`
-                    : `<button class="btn btn-sm btn-outline-primary px-2 py-0 ms-2" style="font-size:0.72rem;" onclick="openScheduleDemo('${shop.id}')" title="Schedule next demo"><i class="bi bi-plus-lg"></i></button>`;
-
-                const demoProgressCell = `
-                    <div class="d-flex align-items-center gap-1">
-                        <span class="fw-semibold" style="font-size:0.82rem;">Demos: ${demoStage}</span>
-                        ${!isMeetingSet ? nextDemoLabel : ''}
-                    </div>`;
-
-                // Actions column
-                const dropdownHtml = `<div class="dropdown">
-                    <button class="btn btn-sm btn-light border-0 dropdown-toggle-no-caret" type="button" data-bs-toggle="dropdown">
-                        <i class="bi bi-three-dots-vertical text-muted"></i>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 fs-sm" style="min-width: 180px;">
-                        <li><h6 class="dropdown-header text-uppercase" style="font-size:0.65rem;letter-spacing:0.05em;">Demo Actions</h6></li>
-                        <li><a class="dropdown-item py-2 fw-medium ${!hasDemoScheduled ? 'disabled' : ''}" href="#" onclick="event.preventDefault(); markDemoComplete('${shop.id}')"><i class="bi bi-check-circle me-2 text-success"></i>Mark Done</a></li>
-                        <li><a class="dropdown-item py-2 fw-medium" href="#" onclick="event.preventDefault(); openScheduleDemo('${shop.id}', '${shop.name?.replace(/'/g, "\\'") || ''}')"><i class="bi bi-calendar-event me-2 text-primary"></i>${hasDemoScheduled ? 'Reschedule' : 'Schedule Demo'}</a></li>
-                        ${(shop.demo_type === 'Google Meet' && shop.demo_meet_link) ? `<li><a class="dropdown-item py-2 fw-medium" href="${shop.demo_meet_link}" target="_blank"><i class="bi bi-camera-video me-2 text-danger"></i>Join Meet</a></li>` : ''}
-                        ${hasDemoScheduled ? `<li><hr class="dropdown-divider"></li><li><a class="dropdown-item py-2 fw-medium text-danger" href="#" onclick="event.preventDefault(); cancelDemo('${shop.id}')"><i class="bi bi-x-circle me-2"></i>Cancel Demo</a></li>` : ''}
-                    </ul>
-                </div>`;
-
-                tableHtml += `<tr id="shop-row-${shop.id}">
-                    <td class="px-2 px-lg-4 py-3">
-                        <div class="fw-bold text-main">${shop.name || '—'}</div>
-                        <div class="small text-muted">${shop.area_name || ''}</div>
-                    </td>
-                    <td class="px-2 px-lg-3 py-3">
-                        <div class="fw-semibold">${shop.contact_person || '—'}</div>
-                        <div class="small text-muted d-flex align-items-center">
-                            <i class="bi bi-telephone me-1"></i> ${shop.phone || '—'}
-                            ${waNumber ? `<a href="https://wa.me/${waNumber}" target="_blank" title="Chat on WhatsApp"><i class="bi bi-whatsapp text-success ms-2"></i></a>` : ''}
-                        </div>
-                    </td>
-                    <td class="px-2 px-lg-3 py-3">${demoProgressCell}</td>
-                    <td class="px-2 px-lg-3 py-3">
-                        <div class="fw-semibold" style="font-size:0.82rem;">${shop.owner_name || '—'}</div>
-                        <div class="small text-muted" style="font-size:0.72rem;">Sales Agent</div>
-                    </td>
-                    ${showPMColumn ? `<td class="px-2 px-lg-3 py-3">
-                        <div class="fw-semibold" style="font-size:0.82rem;">${shop.assigned_pm_name || shop.project_manager_name || '—'}</div>
-                    </td>` : ''}
-                    <td class="px-2 px-lg-4 py-3 text-end text-nowrap">
-                        ${dropdownHtml}
-                    </td>
-                </tr>`;
-
-                // Add to mobile cards view
-                cardsHtml += `<div class="card shadow-sm rounded-4 border-0 position-relative mb-2">
-                    <div class="position-absolute top-0 end-0 mt-3 me-3 z-1">
-                        ${dropdownHtml.replace('btn-sm btn-light border-0 dropdown-toggle-no-caret', 'btn-light border-0 dropdown-toggle-no-caret d-flex align-items-center justify-content-center rounded-circle').replace('<button', '<button style="min-height:44px;min-width:44px;"')}
-                    </div>
-                    <div class="card-body p-3">
-                        <h6 class="fw-bold text-main mb-1 pe-5" style="font-size:1.15rem; line-height:1.2;">${shop.name || '—'}</h6>
-                        <div class="small text-muted mb-3"><i class="bi bi-geo-alt-fill me-1 text-primary"></i>${shop.area_name || 'No Area Specified'}</div>
-                        
-                        <div class="row g-2 border-bottom pb-2 mb-2">
-                            <div class="col-6">
-                                <div class="text-muted fw-bold" style="font-size:0.65rem;letter-spacing:0.5px;">CONTACT</div>
-                                <div class="fw-semibold" style="font-size:0.85rem;">${shop.contact_person || '—'}</div>
-                                <div class="text-muted small d-flex align-items-center">
-                                    <i class="bi bi-telephone me-1"></i> ${shop.phone || '—'}
-                                    ${waNumber ? `<a href="https://wa.me/${waNumber}" target="_blank" title="Chat on WhatsApp"><i class="bi bi-whatsapp text-success ms-2"></i></a>` : ''}
+            renderPagination({
+                data: shops,
+                pageSize: 15,
+                paginationId: 'demo-pagination',
+                targets: [
+                    {
+                        id: 'demo-tbody',
+                        renderRow: (shop) => {
+                            const demoStage = shop.demo_stage || 0;
+                            const hasDemoScheduled = !!shop.demo_scheduled_at;
+                            const shopStatus = shop.pipeline_stage || '';
+                            const isMeetingSet = shopStatus === 'NEGOTIATION' || shopStatus === 'PITCHING';
+                            const waNumber = shop.phone ? shop.phone.replace(/\D/g, '') : '';
+                            const nextDemoLabel = hasDemoScheduled
+                                ? `<div class="mt-1"><span class="badge" style="background:#e0e7ff;color:#2563eb;font-size:0.68rem;"><i class="bi bi-calendar-event me-1"></i>Next: ${fmtDt(shop.demo_scheduled_at)}</span></div>`
+                                : `<button class="btn btn-sm btn-outline-primary px-2 py-0 ms-2" style="font-size:0.72rem;" onclick="openScheduleDemo('${shop.id}')" title="Schedule next demo"><i class="bi bi-plus-lg"></i></button>`;
+                            const demoProgressCell = `<div class="d-flex align-items-center gap-1"><span class="fw-semibold" style="font-size:0.82rem;">Demos: ${demoStage}</span>${!isMeetingSet ? nextDemoLabel : ''}</div>`;
+                            const dropdownHtml = buildDemoDropdown(shop, hasDemoScheduled);
+                            return `<tr id="shop-row-${shop.id}">
+                                <td class="px-2 px-lg-4 py-3"><div class="fw-bold text-main">${shop.name || '—'}</div><div class="small text-muted">${shop.area_name || ''}</div></td>
+                                <td class="px-2 px-lg-3 py-3"><div class="fw-semibold">${shop.contact_person || '—'}</div><div class="small text-muted d-flex align-items-center"><i class="bi bi-telephone me-1"></i> ${shop.phone || '—'}${waNumber ? `<a href="https://wa.me/${waNumber}" target="_blank" title="Chat on WhatsApp"><i class="bi bi-whatsapp text-success ms-2"></i></a>` : ''}</div></td>
+                                <td class="px-2 px-lg-3 py-3">${demoProgressCell}</td>
+                                <td class="px-2 px-lg-3 py-3"><div class="fw-semibold" style="font-size:0.82rem;">${shop.owner_name || '—'}</div><div class="small text-muted" style="font-size:0.72rem;">Sales Agent</div></td>
+                                ${showPMColumn ? `<td class="px-2 px-lg-3 py-3"><div class="fw-semibold" style="font-size:0.82rem;">${shop.assigned_pm_name || shop.project_manager_name || '—'}</div></td>` : ''}
+                                <td class="px-2 px-lg-4 py-3 text-end text-nowrap">${dropdownHtml}</td>
+                            </tr>`;
+                        }
+                    },
+                    {
+                        id: 'demo-cards',
+                        renderRow: (shop) => {
+                            const demoStage = shop.demo_stage || 0;
+                            const hasDemoScheduled = !!shop.demo_scheduled_at;
+                            const shopStatus = shop.pipeline_stage || '';
+                            const isMeetingSet = shopStatus === 'NEGOTIATION' || shopStatus === 'PITCHING';
+                            const waNumber = shop.phone ? shop.phone.replace(/\D/g, '') : '';
+                            const nextDemoLabel = hasDemoScheduled
+                                ? `<div class="mt-1"><span class="badge" style="background:#e0e7ff;color:#2563eb;font-size:0.68rem;"><i class="bi bi-calendar-event me-1"></i>Next: ${fmtDt(shop.demo_scheduled_at)}</span></div>`
+                                : `<button class="btn btn-sm btn-outline-primary px-2 py-0 ms-2" style="font-size:0.72rem;" onclick="openScheduleDemo('${shop.id}')" title="Schedule next demo"><i class="bi bi-plus-lg"></i></button>`;
+                            const demoProgressCell = `<div class="d-flex align-items-center gap-1"><span class="fw-semibold" style="font-size:0.82rem;">Demos: ${demoStage}</span>${!isMeetingSet ? nextDemoLabel : ''}</div>`;
+                            const dropdownHtml = buildDemoDropdown(shop, hasDemoScheduled);
+                            return `<div class="card shadow-sm rounded-4 border-0 position-relative mb-2">
+                                <div class="position-absolute top-0 end-0 mt-3 me-3 z-1">${dropdownHtml.replace('btn-sm btn-light border-0 dropdown-toggle-no-caret', 'btn-light border-0 dropdown-toggle-no-caret d-flex align-items-center justify-content-center rounded-circle').replace('<button', '<button style="min-height:44px;min-width:44px;"')}</div>
+                                <div class="card-body p-3">
+                                    <h6 class="fw-bold text-main mb-1 pe-5" style="font-size:1.15rem; line-height:1.2;">${shop.name || '—'}</h6>
+                                    <div class="small text-muted mb-3"><i class="bi bi-geo-alt-fill me-1 text-primary"></i>${shop.area_name || 'No Area Specified'}</div>
+                                    <div class="row g-2 border-bottom pb-2 mb-2">
+                                        <div class="col-6"><div class="text-muted fw-bold" style="font-size:0.65rem;letter-spacing:0.5px;">CONTACT</div><div class="fw-semibold" style="font-size:0.85rem;">${shop.contact_person || '—'}</div><div class="text-muted small d-flex align-items-center"><i class="bi bi-telephone me-1"></i> ${shop.phone || '—'}${waNumber ? `<a href="https://wa.me/${waNumber}" target="_blank" title="Chat on WhatsApp"><i class="bi bi-whatsapp text-success ms-2"></i></a>` : ''}</div></div>
+                                        <div class="col-6 border-start"><div class="text-muted fw-bold mb-1" style="font-size:0.65rem;letter-spacing:0.5px;">DEMO PROGRESS</div>${demoProgressCell}</div>
+                                    </div>
+                                    <div class="row g-2 pt-2 border-top">
+                                        <div class="col-6"><div class="text-muted fw-bold" style="font-size:0.65rem;letter-spacing:0.5px;">SOURCED BY</div><div class="fw-medium" style="font-size:0.85rem;">${shop.owner_name || '—'}</div></div>
+                                        ${showPMColumn ? `<div class="col-6"><div class="text-muted fw-bold" style="font-size:0.65rem;letter-spacing:0.5px;">ASSIGNED PM</div><div class="fw-medium" style="font-size:0.85rem;">${shop.assigned_pm_name || shop.project_manager_name || '—'}</div></div>` : ''}
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="col-6 border-start">
-                                <div class="text-muted fw-bold mb-1" style="font-size:0.65rem;letter-spacing:0.5px;">DEMO PROGRESS</div>
-                                ${demoProgressCell}
-                            </div>
-                        </div>
-                        <div class="row g-2 pt-2 border-top">
-                            <div class="col-6">
-                                <div class="text-muted fw-bold" style="font-size:0.65rem;letter-spacing:0.5px;">SOURCED BY</div>
-                                <div class="fw-medium" style="font-size:0.85rem;">${shop.owner_name || '—'}</div>
-                            </div>
-                            ${showPMColumn ? `
-                            <div class="col-6">
-                                <div class="text-muted fw-bold" style="font-size:0.65rem;letter-spacing:0.5px;">ASSIGNED PM</div>
-                                <div class="fw-medium" style="font-size:0.85rem;">${shop.assigned_pm_name || shop.project_manager_name || '—'}</div>
-                            </div>` : ''}
-                        </div>
-                    </div>
-                </div>`;
+                            </div>`;
+                        }
+                    }
+                ],
+                emptyMsg: '<tr><td colspan="6">No leads found.</td></tr>'
             });
+        }
 
-            tableHtml += '</tbody></table></div>';
-            cardsHtml += '</div>';
-            wrapper.innerHTML = tableHtml + cardsHtml;
+        function buildDemoDropdown(shop, hasDemoScheduled) {
+            return `<div class="dropdown">
+                <button class="btn btn-sm btn-light border-0 dropdown-toggle-no-caret" type="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-three-dots-vertical text-muted"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 fs-sm" style="min-width: 180px;">
+                    <li><h6 class="dropdown-header text-uppercase" style="font-size:0.65rem;letter-spacing:0.05em;">Demo Actions</h6></li>
+                    <li><a class="dropdown-item py-2 fw-medium ${!hasDemoScheduled ? 'disabled' : ''}" href="#" onclick="event.preventDefault(); markDemoComplete('${shop.id}')"><i class="bi bi-check-circle me-2 text-success"></i>Mark Done</a></li>
+                    <li><a class="dropdown-item py-2 fw-medium" href="#" onclick="event.preventDefault(); openScheduleDemo('${shop.id}', '${shop.name?.replace(/'/g, "\\'") || ''}')"><i class="bi bi-calendar-event me-2 text-primary"></i>${hasDemoScheduled ? 'Reschedule' : 'Schedule Demo'}</a></li>
+                    ${(shop.demo_type === 'Google Meet' && shop.demo_meet_link) ? `<li><a class="dropdown-item py-2 fw-medium" href="${shop.demo_meet_link}" target="_blank"><i class="bi bi-camera-video me-2 text-danger"></i>Join Meet</a></li>` : ''}
+                    ${hasDemoScheduled ? `<li><hr class="dropdown-divider"></li><li><a class="dropdown-item py-2 fw-medium text-danger" href="#" onclick="event.preventDefault(); cancelDemo('${shop.id}')"><i class="bi bi-x-circle me-2"></i>Cancel Demo</a></li>` : ''}
+                </ul>
+            </div>`;
         }
 
         // ── Filtering and KPIs ──
@@ -569,17 +541,17 @@
 
         // ── Load demo queue from API ──
         async function loadDemoQueue() {
-            const wrapper = document.getElementById('demo-table-wrapper');
-            wrapper.innerHTML = `<div class="empty-state"><div class="spinner-border text-primary" role="status"></div><div class="mt-2 text-muted">Loading...</div></div>`;
+            document.getElementById('demo-table-desktop').innerHTML = `<div class="empty-state"><div class="spinner-border text-primary" role="status"></div><div class="mt-2 text-muted">Loading...</div></div>`;
+            document.getElementById('demo-table-mobile').innerHTML = '';
+            document.getElementById('demo-pagination').innerHTML = '';
             try {
                 const shops = await window.ApiClient.request('/shops/demo-queue');
-                // Exclude shops that have already been converted (deal closed via billing)
                 window.allDemoShops = (shops || []).filter(shop => shop.pipeline_stage !== 'DELIVERY' && shop.pipeline_stage !== 'MAINTENANCE');
                 populateDemoFilters();
                 applyDemoFilters();
             } catch (err) {
                 console.error('Failed to load demo queue', err);
-                wrapper.innerHTML = `<div class="empty-state"><i class="bi bi-exclamation-circle text-danger fs-2 d-block mb-2"></i><div>Failed to load demo queue</div></div>`;
+                document.getElementById('demo-table-desktop').innerHTML = `<div class="empty-state"><i class="bi bi-exclamation-circle text-danger fs-2 d-block mb-2"></i><div>Failed to load demo queue</div></div>`;
             }
         }
 

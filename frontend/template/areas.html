@@ -396,12 +396,6 @@
                 font-size: 0.85rem;
                 color: var(--text-muted);
             }
-            .shops-header-actions {
-                display: flex !important;
-                flex-wrap: wrap;
-                gap: 8px;
-                width: 100%;
-            }
             
             .shop-card-mobile {
                 background: var(--surface);
@@ -547,10 +541,8 @@
                                         <span id="shops-panel-count" class="text-muted small"></span>
                                     </div>
                                     <div id="shops-panel-body" class="flex-grow-1" style="overflow-y: auto;">
-                                        <div
-                                            class="h-100 d-flex flex-column align-items-center justify-content-center p-5 text-muted opacity-50">
-                                            <i class="bi bi-geo-alt"
-                                                style="font-size: 4rem; display: block; margin-bottom: 1rem;"></i>
+                                        <div class="h-100 d-flex flex-column align-items-center justify-content-center p-5 text-muted opacity-50">
+                                            <i class="bi bi-geo-alt" style="font-size: 4rem; display: block; margin-bottom: 1rem;"></i>
                                             <p>Click an area on the left to view its shops</p>
                                         </div>
                                     </div>
@@ -1115,8 +1107,6 @@
                         ondblclick="openEditAreaModal('${a.id}')" title="Double-click to edit">
                     <span class="area-info"><i class="bi bi-geo-alt-fill"></i><span>${a.name}${sourcedBadge}</span></span>
                     <span class="area-count-pill">${shopCount} Shops</span>
-                    <div class="area-mobile-actions d-none">
-                        <button class="btn btn-sm btn-light border p-1 px-2 shadow-sm rounded-3" onclick="event.stopPropagation(); window.openEditAreaModal('${a.id}')"><i class="bi bi-pencil mb-0"></i></button>
                     </div>
                 </li>`;
             }).join('');
@@ -1134,241 +1124,120 @@
             let badgeHtml = '';
             if (area && area.priority_level) {
                 const p = area.priority_level.toUpperCase();
-                if (p === 'HIGH') {
-                    badgeHtml = `<span class="badge bg-danger-subtle text-danger ms-2 d-flex align-items-center" style="font-size:0.75rem;padding:4px 8px;"><i class="bi bi-flag-fill me-1"></i> High Priority</span>`;
-                } else if (p === 'MEDIUM') {
-                    badgeHtml = `<span class="badge bg-warning-subtle text-warning-emphasis ms-2 d-flex align-items-center" style="font-size:0.75rem;padding:4px 8px;"><i class="bi bi-flag-fill me-1"></i> Medium Priority</span>`;
-                } else if (p === 'LOW') {
-                    badgeHtml = `<span class="badge bg-secondary-subtle text-secondary ms-2 d-flex align-items-center" style="font-size:0.75rem;padding:4px 8px;"><i class="bi bi-flag-fill me-1"></i> Low Priority</span>`;
-                }
+                if (p === 'HIGH') badgeHtml = `<span class="badge bg-danger-subtle text-danger ms-2 d-flex align-items-center" style="font-size:0.75rem;padding:4px 8px;"><i class="bi bi-flag-fill me-1"></i> High Priority</span>`;
+                else if (p === 'MEDIUM') badgeHtml = `<span class="badge bg-warning-subtle text-warning-emphasis ms-2 d-flex align-items-center" style="font-size:0.75rem;padding:4px 8px;"><i class="bi bi-flag-fill me-1"></i> Medium Priority</span>`;
+                else if (p === 'LOW') badgeHtml = `<span class="badge bg-secondary-subtle text-secondary ms-2 d-flex align-items-center" style="font-size:0.75rem;padding:4px 8px;"><i class="bi bi-flag-fill me-1"></i> Low Priority</span>`;
             }
 
             const isPendingArea = area && area.assignment_status === 'PENDING';
             const isAcceptedArea = area && area.assignment_status === 'ACCEPTED';
             let statusBadge = '';
-            // Only show 'Sourced by' badge when the creator is a different person from the viewer
             let sourcedByBadge = area && area.created_by_name && area.created_by_id && (!user || area.created_by_id !== user.id)
                 ? `<span class="badge bg-info text-dark ms-2 align-self-center" style="font-size:0.75rem;"><i class="bi bi-person-plus"></i> Sourced by: ${area.created_by_name}</span>`
-                : "";
-            
+                : '';
             if (isPendingArea) {
-                if (isAdmin) {
-                    statusBadge = `<span class="badge bg-warning text-dark ms-2 align-self-center">Pending Staff Acceptance</span>`;
-                } else {
-                    statusBadge = `<span class="badge rounded-pill bg-warning text-dark placeholder-glow ms-2 align-self-center">Pending Acceptance</span>`;
-                }
-            } else if (isAcceptedArea) {
-                if (isAdmin) {
-                    statusBadge = `<span class="badge bg-success ms-2 align-self-center">Claimed / Accepted</span>`;
-                }
+                statusBadge = isAdmin ? `<span class="badge bg-warning text-dark ms-2 align-self-center">Pending Staff Acceptance</span>` : `<span class="badge rounded-pill bg-warning text-dark placeholder-glow ms-2 align-self-center">Pending Acceptance</span>`;
+            } else if (isAcceptedArea && isAdmin) {
+                statusBadge = `<span class="badge bg-success ms-2 align-self-center">Claimed / Accepted</span>`;
             }
 
             document.getElementById('shops-panel-title').innerHTML =
-                `<div class="d-flex flex-column w-100">
-                    <div class="d-flex flex-column flex-lg-row align-items-start align-items-lg-center gap-2 gap-lg-3 mb-3 mb-lg-2">
-                        <span class="d-none d-lg-inline fw-bold fs-5"><i class="bi bi-shop"></i> Shops in ${areaName}</span>
-                        <span class="d-inline d-lg-none fw-bold fs-5" style="color: var(--text-1);">Shops in ${areaName}</span>
-                        
-                        <div class="d-flex align-items-center gap-2 flex-wrap mt-1 mt-lg-0">
-                            ${statusBadge}
-                            ${sourcedByBadge}
-                            ${badgeHtml}
-                        </div>
-                    </div>
-
-                    <div class="shops-header-actions d-flex flex-wrap gap-2">
-                        ${isPendingArea && !isAdmin ? `
-                            <button class="btn btn-sm btn-success" style="font-size:0.75rem;padding:5px 12px;border-radius:6px;" onclick="acceptAssignment('areas', '${areaId}')">
-                                <i class="bi bi-check-circle me-1"></i> Accept Lead
-                            </button>
-                        ` : ''}
-                        ${!isPendingArea && isAdmin ? `
-                            <button class="btn btn-sm btn-outline-info" style="font-size:0.75rem;padding:5px 12px;border-radius:6px;" onclick="openAssignModal('${areaId}')" title="Assign area to user">
-                                <i class="bi bi-person-plus-fill me-1"></i> Assign
-                            </button>
-                        ` : ''}
-                        <button class="btn btn-sm btn-outline-secondary" style="font-size:0.75rem;padding:5px 12px;border-radius:6px;background:var(--surface);" onclick="openEditAreaModal('${areaId}')" title="Edit area">
-                            <i class="bi bi-pencil-fill me-1"></i> Edit
-                        </button>
-                        ${(isAdmin || (area && area.assigned_users && area.assigned_users.some(u => u.id === user?.id))) ? `
-                        <button class="btn btn-sm btn-outline-danger ms-2" style="font-size:0.7rem;padding:2px 8px;border-radius:6px;"
-                        onclick="archiveArea('${areaId}', '${areaName.replace(/'/g, "\\'")}')" title="Archive area"><i class="bi bi-archive"></i> Archive</button>` : ''}
-                    </div>
-                 </div>`;
+                `<i class="bi bi-shop me-2"></i>Shops in ${areaName}${statusBadge}${sourcedByBadge}${badgeHtml}`;
             document.getElementById('shops-panel-count').textContent = `${shops.length} shop${shops.length !== 1 ? 's' : ''}`;
             const body = document.getElementById('shops-panel-body');
+
             if (!shops.length) {
                 body.innerHTML = `<div class="p-5 text-center"><i class="bi bi-shop opacity-25" style="font-size:3rem;"></i><p class="text-muted mt-3">No shops in this area yet.<br><a href="javascript:void(0)" onclick="switchAddShopForArea('${areaId}')" class="text-primary fw-bold">Add one now?</a></p></div>`;
                 return;
             }
-            const desktopRows = shops.map(s => {
+
+            let desktopRows = '';
+            let mobileCards = '';
+
+            shops.forEach(s => {
                 let assignedHtml = '';
                 if (s.assigned_users && s.assigned_users.length > 0) {
                     const primaryUser = s.assigned_users[0].name;
-                    const allNames = s.assigned_users.map(u => u.name).join(', ');
                     const ownerInit = (primaryUser || 'U')[0].toUpperCase();
-
                     if (s.assigned_users.length === 1) {
                         assignedHtml = `<div class="d-flex align-items-center gap-2"><div class="avatar-owner">${ownerInit}</div><span class="fw-medium">${primaryUser}</span></div>`;
                     } else {
-                        const othersCount = s.assigned_users.length - 1;
-                        assignedHtml = `
-                            <div class="d-flex align-items-center gap-2 flex-wrap" title="${allNames}">
-                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle rounded-pill d-flex align-items-center gap-1 p-1 pe-2">
-                                    <div class="avatar-owner" style="width:20px;height:20px;font-size:0.7rem;">${ownerInit}</div>
-                                    <span style="font-size: 0.85rem; font-weight: 500;">${primaryUser}</span>
-                                </span>
-                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle rounded-pill px-2 py-1" style="font-size: 0.75rem;">
-                                    +${othersCount} others
-                                </span>
-                            </div>
-                        `;
+                        assignedHtml = `<div class="d-flex align-items-center gap-2 flex-wrap" title="${s.assigned_users.map(u=>u.name).join(', ')}"><span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle rounded-pill d-flex align-items-center gap-1 p-1 pe-2"><div class="avatar-owner" style="width:20px;height:20px;font-size:0.7rem;">${ownerInit}</div><span style="font-size: 0.85rem; font-weight: 500;">${primaryUser}</span></span><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle rounded-pill px-2 py-1" style="font-size: 0.75rem;">+${s.assigned_users.length - 1} others</span></div>`;
                     }
                 } else {
                     assignedHtml = `<div class="d-flex align-items-center gap-2"><span class="text-muted"><i class="bi bi-person-dash me-1"></i>Unassigned</span></div>`;
                 }
 
-                let shopStatusBadge = '';
                 const isPendingShop = s.assignment_status === 'PENDING';
-                const isAcceptedShop = s.assignment_status === 'ACCEPTED';
-                if (isPendingShop) {
-                    shopStatusBadge = isAdmin 
-                        ? `<br><span class="badge bg-warning text-dark mt-1">Pending Staff Acceptance</span>`
-                        : `<br><span class="badge rounded-pill bg-warning text-dark placeholder-glow mt-1">Pending Acceptance</span>`;
-                } else if (isAcceptedShop && isAdmin) {
-                    shopStatusBadge = `<br><span class="badge bg-success mt-1">Claimed / Accepted</span>`;
-                }
-
-                // Hide 'Sourced by' badge for the user who created the shop themselves
+                const shopStatusBadge = isPendingShop
+                    ? `<br><span class="badge bg-warning text-dark mt-1">${isAdmin ? 'Pending Staff Acceptance' : 'Pending Acceptance'}</span>`
+                    : (s.assignment_status === 'ACCEPTED' && isAdmin ? `<br><span class="badge bg-success mt-1">Claimed / Accepted</span>` : '');
                 const sourcedByShop = s.created_by_name && s.created_by_id && (!user || s.created_by_id !== user.id)
                     ? `<div class="mt-1"><span class="badge bg-info text-dark" style="font-size:0.7rem;"><i class="bi bi-person-plus"></i> Sourced by: ${s.created_by_name}</span></div>`
-                    : "";
+                    : '';
 
-                return `<tr>
-                        <td>
-                            <span class="shop-name-primary">${s.name}</span>
-                            <span class="shop-name-sub">${s.address || 'No address set'}</span>
-                            ${sourcedByShop}
-                            ${shopStatusBadge}
-                        </td>
-                        <td>${assignedHtml}</td>
-                        <td>
-                            <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.name + ' ' + (s.address || ''))}" 
-                               target="_blank" 
-                               class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
-                               title="Open in Google Maps">
-                                <i class="bi bi-map-fill"></i> Map
-                            </a>
-                        </td>
-                        <td>
-                            ${s.phone ? `
-                                <div class="d-flex flex-column gap-1">
-                                    <a href="tel:${s.phone}" class="text-decoration-none fw-bold text-primary mb-1 d-inline-flex align-items-center gap-2" title="Call Shop">
-                                        <i class="bi bi-telephone-outbound"></i>${s.phone}
-                                    </a>
-                                    <a href="https://wa.me/${s.phone.replace(/[^0-9]/g, '')}" target="_blank" class="text-success small fw-medium text-decoration-none d-inline-flex align-items-center gap-2" title="WhatsApp Shop">
-                                        <i class="bi bi-whatsapp"></i>WhatsApp
-                                    </a>
-                                </div>
-                            ` : `<span class="text-muted small fst-italic">No number logged</span>`}
-                        </td>
-                        <td>
-                            <div class="d-flex justify-content-end gap-2">
-                                ${isPendingShop && !isAdmin ? `
-                                    <button class="btn btn-success btn-sm" onclick="acceptAssignment('shops', '${s.id}')"><i class="bi bi-check-circle"></i> Accept</button>
-                                ` : `
-                                    <button class="btn-action text-primary" onclick="editShop('${s.id}')" title="Edit shop"><i class="bi bi-pencil"></i></button>
-                                    ${(isAdmin || (s.assigned_users && s.assigned_users.some(u => u.id === user?.id))) ? `
-                                    <button class="btn-action text-danger" onclick="archiveShop('${s.id}', '${s.name.replace(/'/g, "\\'")}')" title="Archive shop"><i class="bi bi-archive"></i></button>` : ''}
-                                `}
-                            </div>
-                        </td>
-                    </tr>`;
-            }).join('');
+                const phoneCell = s.phone
+                    ? `<div class="d-flex flex-column gap-1"><a href="tel:${s.phone}" class="text-decoration-none fw-bold text-primary mb-1 d-inline-flex align-items-center gap-2" title="Call Shop"><i class="bi bi-telephone-outbound"></i>${s.phone}</a><a href="https://wa.me/${s.phone.replace(/[^0-9]/g, '')}" target="_blank" class="text-success small fw-medium text-decoration-none d-inline-flex align-items-center gap-2" title="WhatsApp Shop"><i class="bi bi-whatsapp"></i>WhatsApp</a></div>`
+                    : `<span class="text-muted small fst-italic">No number logged</span>`;
 
-            const desktopTable = `<table class="shops-table d-none d-lg-table w-100">
-                <thead><tr><th>Shop Details</th><th>Assigned To</th><th>Location</th><th>Contact</th><th></th></tr></thead>
-                <tbody>${desktopRows}</tbody>
-            </table>`;
+                const actionButtons = isPendingShop && !isAdmin
+                    ? `<button class="btn btn-success btn-sm" onclick="acceptAssignment('shops', '${s.id}')"><i class="bi bi-check-circle"></i> Accept</button>`
+                    : `<button class="btn-action text-primary" onclick="editShop('${s.id}')" title="Edit shop"><i class="bi bi-pencil"></i></button>${(isAdmin || (s.assigned_users && s.assigned_users.some(u => u.id === user?.id))) ? `<button class="btn-action text-danger" onclick="archiveShop('${s.id}', '${s.name.replace(/'/g, "\\'")}')"><i class="bi bi-archive"></i></button>` : ''}`;
 
-            const mobileCardsHtml = `<div class="mobile-shops-list d-block d-lg-none mt-3 p-3 pt-0">
-                ${shops.map(s => {
-                    const isPendingShop = s.assignment_status === 'PENDING';
-                    const isAcceptedShop = s.assignment_status === 'ACCEPTED';
-                    
-                    let statusHtml = '';
-                    if (isPendingShop) {
-                        statusHtml = isAdmin 
-                            ? `<span class="badge bg-warning text-dark border border-warning-subtle fw-semibold mt-2">Pending Staff Acceptance</span>`
-                            : `<span class="badge rounded-pill bg-warning text-dark placeholder-glow mt-2">Pending Acceptance</span>`;
-                    } else if (isAcceptedShop && isAdmin) {
-                        statusHtml = `<span class="badge bg-success border border-success-subtle fw-semibold mt-2">Claimed / Accepted</span>`;
-                    } else if (s.pipeline_stage) {
-                        statusHtml = `<span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold mt-2">${s.pipeline_stage}</span>`;
-                    }
+                desktopRows += `<tr>
+                    <td><span class="shop-name-primary">${s.name}</span><span class="shop-name-sub">${s.address || 'No address set'}</span>${sourcedByShop}${shopStatusBadge}</td>
+                    <td>${assignedHtml}</td>
+                    <td><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.name + ' ' + (s.address || ''))}" target="_blank" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"><i class="bi bi-map-fill"></i> Map</a></td>
+                    <td>${phoneCell}</td>
+                    <td><div class="d-flex justify-content-end gap-2">${actionButtons}</div></td>
+                </tr>`;
 
-                    const sourcedByBadge = s.created_by_name && s.created_by_id && (!user || s.created_by_id !== user.id)
-                        ? `<span class="badge bg-info text-dark ms-1 mt-1" style="font-size:0.75rem;"><i class="bi bi-person-plus"></i> Sourced by: ${s.created_by_name}</span>`
-                        : "";
-                    
-                    let assignedHtml = '';
-                    if (s.assigned_users && s.assigned_users.length > 0) {
-                        const primaryUser = s.assigned_users[0].name;
-                        const allNames = s.assigned_users.map(u => u.name).join(', ');
-                        const ownerInit = (primaryUser || 'U')[0].toUpperCase();
+                const isAcceptedShop = s.assignment_status === 'ACCEPTED';
+                let mobileStatusHtml = '';
+                if (isPendingShop) mobileStatusHtml = isAdmin ? `<span class="badge bg-warning text-dark border border-warning-subtle fw-semibold mt-2">Pending Staff Acceptance</span>` : `<span class="badge rounded-pill bg-warning text-dark mt-2">Pending Acceptance</span>`;
+                else if (isAcceptedShop && isAdmin) mobileStatusHtml = `<span class="badge bg-success border border-success-subtle fw-semibold mt-2">Claimed / Accepted</span>`;
+                else if (s.pipeline_stage) mobileStatusHtml = `<span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold mt-2">${s.pipeline_stage}</span>`;
+                const mobileSourcingBadge = s.created_by_name && s.created_by_id && (!user || s.created_by_id !== user.id) ? `<span class="badge bg-info text-dark ms-1 mt-1" style="font-size:0.75rem;"><i class="bi bi-person-plus"></i> Sourced by: ${s.created_by_name}</span>` : '';
 
-                        if (s.assigned_users.length === 1) {
-                            assignedHtml = `<div class="d-flex align-items-center gap-2"><div class="avatar-owner" style="width:24px;height:24px;font-size:0.8rem;">${ownerInit}</div><span class="fw-medium text-dark small">${primaryUser}</span></div>`;
-                        } else {
-                            const othersCount = s.assigned_users.length - 1;
-                            assignedHtml = `
-                                <div class="d-flex align-items-center gap-2 flex-wrap" title="${allNames}">
-                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle rounded-pill d-flex align-items-center gap-1 p-1 pe-2">
-                                        <div class="avatar-owner" style="width:20px;height:20px;font-size:0.7rem;">${ownerInit}</div>
-                                        <span style="font-size: 0.85rem; font-weight: 500;">${primaryUser}</span>
-                                    </span>
-                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle rounded-pill px-2 py-1" style="font-size: 0.75rem;">
-                                        +${othersCount} others
-                                    </span>
-                                </div>
-                            `;
-                        }
-                    } else {
-                        assignedHtml = `<div class="d-flex align-items-center gap-2"><span class="text-muted small fst-italic"><i class="bi bi-person-dash me-1"></i>Unassigned</span></div>`;
-                    }
+                let mobileAssignedHtml = '';
+                if (s.assigned_users && s.assigned_users.length > 0) {
+                    const pu = s.assigned_users[0].name;
+                    const oi = (pu || 'U')[0].toUpperCase();
+                    if (s.assigned_users.length === 1) mobileAssignedHtml = `<div class="d-flex align-items-center gap-2"><div class="avatar-owner" style="width:24px;height:24px;font-size:0.8rem;">${oi}</div><span class="fw-medium text-dark small">${pu}</span></div>`;
+                    else mobileAssignedHtml = `<div class="d-flex align-items-center gap-2 flex-wrap" title="${s.assigned_users.map(u=>u.name).join(', ')}"><span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle rounded-pill d-flex align-items-center gap-1 p-1 pe-2"><div class="avatar-owner" style="width:20px;height:20px;font-size:0.7rem;">${oi}</div><span style="font-size:0.85rem;font-weight:500;">${pu}</span></span><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle rounded-pill px-2 py-1" style="font-size:0.75rem;">+${s.assigned_users.length-1} others</span></div>`;
+                } else mobileAssignedHtml = `<div class="d-flex align-items-center gap-2"><span class="text-muted small fst-italic"><i class="bi bi-person-dash me-1"></i>Unassigned</span></div>`;
 
-                    return `
-                    <div class="shop-card-mobile p-3 border rounded shadow-sm" style="background: var(--surface);">
-                        <div class="d-flex flex-column gap-1 border-bottom pb-3 mb-3 px-1">
-                            <h6 class="card-title text-dark mb-1 d-flex align-items-center flex-wrap gap-1">${s.name} ${sourcedByBadge}</h6>
-                            <div class="text-muted small mb-1">
-                                <i class="bi bi-geo-alt text-muted me-1"></i>${s.address || 'No address set'}
-                            </div>
-                            <div class="d-flex align-items-center flex-wrap gap-2 mt-1">
-                                ${statusHtml ? statusHtml : ''}
-                                ${assignedHtml}
-                            </div>
-                        </div>
-                        <div class="mb-3 px-1 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                            <div class="text-muted small fw-medium"><i class="bi bi-person text-muted me-1"></i>${s.contact_person || 'No Contact Person'}</div>
-                            <div class="text-muted small fw-medium"><i class="bi bi-telephone text-muted me-1"></i>${s.phone || 'No Phone Logged'}</div>
-                        </div>
-                        <div class="card-footer d-grid gap-2 border-0 bg-transparent p-0" style="grid-template-columns: 1fr 1fr;">
-                            ${s.phone ? `<a href="tel:${s.phone}" class="btn btn-sm d-flex align-items-center justify-content-center fw-semibold py-2" style="background:#eef2ff;color:#4f46e5;border:1px solid #e0e7ff;" title="Call"><i class="bi bi-telephone-outbound me-2 mb-0"></i> Call</a>` : `<button class="btn btn-sm btn-light fw-semibold d-flex align-items-center justify-content-center text-muted border-secondary-subtle py-2" disabled title="No Phone"><i class="bi bi-telephone-x me-2 mb-0"></i> Call</button>`}
-                            
-                            ${s.phone ? `<a href="https://wa.me/${s.phone.replace(/[^0-9]/g, '')}" target="_blank" class="btn btn-sm d-flex align-items-center justify-content-center fw-semibold text-success py-2" style="background:#f0fdf4;border:1px solid #dcfce7;" title="WhatsApp"><i class="bi bi-whatsapp me-2 mb-0"></i> WhatsApp</a>` : `<button class="btn btn-sm btn-light fw-semibold d-flex align-items-center justify-content-center text-muted border-secondary-subtle py-2" disabled title="No Phone"><i class="bi bi-whatsapp me-2 mb-0"></i> WhatsApp</button>`}
-                            
-                            <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.name + ' ' + (s.address || ''))}" target="_blank" class="btn btn-sm bg-light fw-semibold d-flex align-items-center justify-content-center text-dark border py-2" title="Map"><i class="bi bi-geo-alt me-2 mb-0"></i> Map</a>
-                            
-                            <button onclick="editShop('${s.id}')" class="btn btn-sm d-flex align-items-center justify-content-center fw-semibold py-2" style="background:var(--bg-app);color:#0ea5e9;border:1px solid var(--border);" title="Update"><i class="bi bi-pencil me-2 mb-0"></i> Update</button>
-                        </div>
+                const mobilePhoneBtns = s.phone
+                    ? `<a href="tel:${s.phone}" class="btn btn-sm d-flex align-items-center justify-content-center fw-semibold py-2" style="background:#eef2ff;color:#4f46e5;border:1px solid #e0e7ff;"><i class="bi bi-telephone-outbound me-2 mb-0"></i> Call</a><a href="https://wa.me/${s.phone.replace(/[^0-9]/g, '')}" target="_blank" class="btn btn-sm d-flex align-items-center justify-content-center fw-semibold text-success py-2" style="background:#f0fdf4;border:1px solid #dcfce7;"><i class="bi bi-whatsapp me-2 mb-0"></i> WhatsApp</a>`
+                    : `<button class="btn btn-sm btn-light fw-semibold d-flex align-items-center justify-content-center text-muted border-secondary-subtle py-2" disabled><i class="bi bi-telephone-x me-2 mb-0"></i> Call</button><button class="btn btn-sm btn-light fw-semibold d-flex align-items-center justify-content-center text-muted border-secondary-subtle py-2" disabled><i class="bi bi-whatsapp me-2 mb-0"></i> WhatsApp</button>`;
+
+                mobileCards += `<div class="shop-card-mobile p-3 border rounded shadow-sm" style="background: var(--surface);">
+                    <div class="d-flex flex-column gap-1 border-bottom pb-3 mb-3 px-1">
+                        <h6 class="card-title text-dark mb-1 d-flex align-items-center flex-wrap gap-1">${s.name} ${mobileSourcingBadge}</h6>
+                        <div class="text-muted small mb-1"><i class="bi bi-geo-alt text-muted me-1"></i>${s.address || 'No address set'}</div>
+                        <div class="d-flex align-items-center flex-wrap gap-2 mt-1">${mobileStatusHtml}${mobileAssignedHtml}</div>
                     </div>
-                    `;
-                }).join('')}
-            </div>`;
+                    <div class="mb-3 px-1 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div class="text-muted small fw-medium"><i class="bi bi-person text-muted me-1"></i>${s.contact_person || '—'}</div>
+                        <div class="text-muted small fw-medium"><i class="bi bi-telephone text-muted me-1"></i>${s.phone || '—'}</div>
+                    </div>
+                    <div class="card-footer d-grid gap-2 border-0 bg-transparent p-0" style="grid-template-columns: 1fr 1fr;">
+                        ${mobilePhoneBtns}
+                        <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.name + ' ' + (s.address || ''))}" target="_blank" class="btn btn-sm bg-light fw-semibold d-flex align-items-center justify-content-center text-dark border py-2"><i class="bi bi-geo-alt me-2 mb-0"></i> Map</a>
+                        <button onclick="editShop('${s.id}')" class="btn btn-sm d-flex align-items-center justify-content-center fw-semibold py-2" style="background:var(--bg-app);color:#0ea5e9;border:1px solid var(--border);"><i class="bi bi-pencil me-2 mb-0"></i> Update</button>
+                    </div>
+                </div>`;
+            });
 
-            body.innerHTML = desktopTable + mobileCardsHtml;
+            body.innerHTML = `
+                <table class="shops-table d-none d-lg-table w-100">
+                    <thead><tr><th>Shop Details</th><th>Assigned To</th><th>Location</th><th>Contact</th><th></th></tr></thead>
+                    <tbody>${desktopRows}</tbody>
+                </table>
+                <div class="mobile-shops-list d-block d-lg-none mt-3 p-3 pt-0">${mobileCards}</div>
+            `;
         }
+
 
         // ── Search & Source Filter ──
         // Search & Source Filter removed because they are handled by initFilters()

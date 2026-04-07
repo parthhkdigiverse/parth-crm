@@ -273,6 +273,7 @@
                                     <span class="spinner-border spinner-border-sm me-2"></span>Loading history...
                                 </div>
                             </div>
+                            <div id="accepted-pagination"></div>
                         </div>
                     </div>
                 </div>
@@ -322,6 +323,7 @@
                                     <span class="spinner-border spinner-border-sm me-2"></span>Loading visits...
                                 </div>
                             </div>
+                            <div id="visits-pagination"></div>
                         </div>
                     </div>
                 </div>
@@ -723,10 +725,6 @@
         }
 
         function renderVisits(visits) {
-            const tbody = document.getElementById('visits-table');
-            const cardsEl = document.getElementById('visits-cards');
-            if (!tbody) return;
-
             const countEl = document.getElementById('count-all-visits');
             if (countEl) countEl.innerText = visits.length;
 
@@ -738,154 +736,140 @@
                 OTHER: { class: 'badge-slate-light', label: 'Other', icon: 'bi-dot' }
             };
 
-            if (!visits.length) {
-                tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5 text-muted"><i class="bi bi-geo-alt" style="font-size:2rem;display:block;margin-bottom:8px;color:#cbd5e1;"></i>No matching visits found.</td></tr>';
-                if (cardsEl) cardsEl.innerHTML = '<div class="text-center py-5 text-muted"><i class="bi bi-geo-alt" style="font-size:2rem;display:block;margin-bottom:8px;color:#cbd5e1;"></i>No matching visits.</div>';
-                return;
-            }
+            const pipelineMap = {
+                'LEAD': { class: 'bg-secondary-subtle text-secondary', label: 'LEAD', icon: 'bi-funnel' },
+                'PITCHING': { class: 'bg-info-subtle text-info-emphasis', label: 'PITCHING', icon: 'bi-easel' },
+                'NEGOTIATION': { class: 'bg-warning-subtle text-warning-emphasis', label: 'NEGOTIATION', icon: 'bi-briefcase' },
+                'DELIVERY': { class: 'bg-success-subtle text-success', label: 'DELIVERY', icon: 'bi-box-seam' },
+                'MAINTENANCE': { class: 'bg-primary-subtle text-primary', label: 'MAINTENANCE', icon: 'bi-tools' },
+            };
 
-            const rows = [];
-            const cards = [];
+            const ordinal = n => {
+                const s = ['th', 'st', 'nd', 'rd'], vv = n % 100;
+                return n + (s[(vv - 20) % 10] || s[vv] || s[0]);
+            };
 
-            visits.forEach(v => {
-                let ui = statusMap[v.status] || { class: 'badge-slate-light', label: v.status, icon: 'bi-dot' };
-
-                // Lead pipeline stage badge
-                const pipelineMap = {
-                    'LEAD': { class: 'bg-secondary-subtle text-secondary', label: 'LEAD', icon: 'bi-funnel' },
-                    'PITCHING': { class: 'bg-info-subtle text-info-emphasis', label: 'PITCHING', icon: 'bi-easel' },
-                    'NEGOTIATION': { class: 'bg-warning-subtle text-warning-emphasis', label: 'NEGOTIATION', icon: 'bi-briefcase' },
-                    'DELIVERY': { class: 'bg-success-subtle text-success', label: 'DELIVERY', icon: 'bi-box-seam' },
-                    'MAINTENANCE': { class: 'bg-primary-subtle text-primary', label: 'MAINTENANCE', icon: 'bi-tools' },
-                };
-                const stage = pipelineMap[v.shop_status] || { class: 'bg-light text-dark', label: v.shop_status || 'UNKNOWN', icon: 'bi-circle' };
-
-                // --- Mobile Optimized Badge & PM Info ---
-                const badgeHtml = `
-                    <div class="text-end">
-                        <span class="badge rounded-pill px-3 py-1 ${stage.class}"><i class="bi ${stage.icon} me-1"></i>${stage.label}</span>
-                        <div class="small text-muted mt-1 fw-medium" style="font-size:0.7rem;"><i class="bi bi-person-badge me-1"></i>PM: ${v.project_manager_name || '<span class="text-danger">Unassigned</span>'}</div>
-                    </div>
-                `;
-                const vDate = v.visit_date ? new Date(v.visit_date) : null;
-                const dateStr = vDate ? vDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
-                const timeStr = vDate ? vDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '';
-
-                // --- Dynamic Visit Sequence (ordinal) ---
-                const systemLogs = ['DEMO_RESCHEDULED', 'MEETING_RESCHEDULED', 'DEMO_CANCELLED', 'MEETING_CANCELLED'];
-                const isSystemLog = systemLogs.includes(v.status);
-                let seqNum = 1;
-
-                if (!isSystemLog) {
-                    // Count only ACTUAL visits for this shop up to and including this one
-                    const actualVisitsBeforeThis = allVisits.filter(x =>
-                        x.shop_id === v.shop_id &&
-                        !systemLogs.includes(x.status) &&
-                        new Date(x.visit_date) <= new Date(v.visit_date)
-                    );
-                    seqNum = actualVisitsBeforeThis.length || 1;
-                }
-
-                const ordinal = n => {
-                    const s = ['th', 'st', 'nd', 'rd'], vv = n % 100;
-                    return n + (s[(vv - 20) % 10] || s[vv] || s[0]);
-                };
-
-                const formattedStatus = v.status ? v.status.replace(/_/g, ' ') : 'Visit';
-                const outcomeLabel = { SATISFIED: 'Satisfied', ACCEPT: 'Accepted', DECLINE: 'Declined', TAKE_TIME_TO_THINK: 'Thinking', OTHER: 'Other' }[v.status] || formattedStatus;
-
-                // Format differently for system logs vs real visits
-                const visitStatusCell = isSystemLog
-                    ? `<span class="fw-bold text-secondary"><i class="bi bi-gear me-1"></i>System:</span> <span class="text-muted">${outcomeLabel}</span>`
-                    : `<span class="fw-bold text-primary">${ordinal(seqNum)} Visit:</span> ${outcomeLabel}`;
-
-                const visitStatusText = isSystemLog ? `System: ${outcomeLabel}` : `${ordinal(seqNum)} Visit: ${outcomeLabel}`;
-
-                const photoUrls = [{ url: v.storefront_photo_url, label: 'Storefront' }, { url: v.selfie_photo_url, label: 'Selfie' }].filter(p => p.url);
-                let photosCell = photoUrls.length
-                    ? `<div class="d-flex align-items-center justify-content-center gap-1 flex-wrap">${photoUrls.map(p =>
-                        `<img src="${p.url}" alt="${p.label}" style="width:35px;height:35px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--border);" onclick="window.open('${p.url}','_blank')" title="${p.label}">`
-                    ).join('')}</div>`
-                    : `<i class="bi bi-camera text-light" style="font-size:1.2rem;"></i>`;
-
-                let remarksHtml = '<span class="text-muted" style="font-size:0.8rem;">—</span>';
-                if (v.remarks) {
-                    const safeRemarks = v.remarks.replace(/"/g, '&quot;');
-                    remarksHtml = `
-                        <div class="d-flex align-items-center justify-content-between gap-2">
-                            <span class="text-truncate text-muted" style="max-width: 150px;" title="${safeRemarks}">${v.remarks}</span>
-                            <a tabindex="0" class="btn btn-sm btn-light rounded-circle p-1 d-flex align-items-center justify-content-center" role="button" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-placement="left" data-bs-custom-class="custom-popover" data-bs-title="Visit Remarks" data-bs-content="${safeRemarks}">
-                                <i class="bi bi-chat-text-fill text-primary" style="font-size: 0.85rem;"></i>
-                            </a>
-                        </div>
-                    `;
-                }
-
-                // Desktop Row
-                rows.push(`
-                    <tr>
-                        <td class="ps-4">${visitStatusCell}</td>
-                        <td class="fw-semibold text-dark">${v.shop_name || ('Shop #' + v.shop_id)}</td>
-                        <td class="text-muted">${v.area_name || '—'}</td>
-                        <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="rounded-circle bg-primary-soft text-primary d-flex align-items-center justify-content-center fw-bold" style="width:30px;height:30px;font-size:0.72rem;border:1px solid var(--primary-ring);">
-                                    ${(v.user_name || 'U').slice(0, 2).toUpperCase()}
+            renderPagination({
+                data: visits,
+                pageSize: 15,
+                paginationId: 'visits-pagination',
+                targets: [
+                    {
+                        id: 'visits-table',
+                        renderRow: (v) => {
+                            let ui = statusMap[v.status] || { class: 'badge-slate-light', label: v.status, icon: 'bi-dot' };
+                            const stage = pipelineMap[v.shop_status] || { class: 'bg-light text-dark', label: v.shop_status || 'UNKNOWN', icon: 'bi-circle' };
+                            const badgeHtml = `
+                                <div class="text-end">
+                                    <span class="badge rounded-pill px-3 py-1 ${stage.class}"><i class="bi ${stage.icon} me-1"></i>${stage.label}</span>
+                                    <div class="small text-muted mt-1 fw-medium" style="font-size:0.7rem;"><i class="bi bi-person-badge me-1"></i>PM: ${v.project_manager_name || '<span class="text-danger">Unassigned</span>'}</div>
                                 </div>
-                                <span class="text-muted small">${v.user_name || '—'}</span>
-                            </div>
-                        </td>
-                        <td class="text-muted">
-                            <div class="fw-medium text-dark">${dateStr}</div>
-                            <div class="small">${timeStr}</div>
-                        </td>
-                        <td>${badgeHtml}</td>
-                        <td>${remarksHtml}</td>
-                        <td class="pe-4 text-center">${photosCell}</td>
-                    </tr>
-                `);
+                            `;
+                            const vDate = v.visit_date ? new Date(v.visit_date) : null;
+                            const dateStr = vDate ? vDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+                            const timeStr = vDate ? vDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '';
 
-                // Mobile Card
-                const mobilePhotosList = photoUrls.length
-                    ? `<div class="d-flex gap-2 overflow-auto pb-1 mt-3">${photoUrls.map(p =>
-                        `<img src="${p.url}" style="width:65px;height:65px;object-fit:cover;border-radius:12px;cursor:pointer;flex-shrink:0;" onclick="window.open('${p.url}','_blank')" title="${p.label}">`
-                    ).join('')}</div>`
-                    : '';
+                            const systemLogs = ['DEMO_RESCHEDULED', 'MEETING_RESCHEDULED', 'DEMO_CANCELLED', 'MEETING_CANCELLED'];
+                            const isSystemLog = systemLogs.includes(v.status);
+                            let seqNum = 1;
+                            if (!isSystemLog) {
+                                const actualVisitsBeforeThis = allVisits.filter(x =>
+                                    x.shop_id === v.shop_id && !systemLogs.includes(x.status) && new Date(x.visit_date) <= new Date(v.visit_date)
+                                );
+                                seqNum = actualVisitsBeforeThis.length || 1;
+                            }
+                            const outcomeLabel = { SATISFIED: 'Satisfied', ACCEPT: 'Accepted', DECLINE: 'Declined', TAKE_TIME_TO_THINK: 'Thinking', OTHER: 'Other' }[v.status] || (v.status ? v.status.replace(/_/g, ' ') : 'Visit');
+                            const visitStatusCell = isSystemLog
+                                ? `<span class="fw-bold text-secondary"><i class="bi bi-gear me-1"></i>System:</span> <span class="text-muted">${outcomeLabel}</span>`
+                                : `<span class="fw-bold text-primary">${ordinal(seqNum)} Visit:</span> ${outcomeLabel}`;
 
-                cards.push(`
-                    <div class="card visit-card-mobile shadow-sm mb-3 border-0" style="background:var(--surface);">
-                        <div class="card-body p-3">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="fw-bold text-primary small">${visitStatusText}</span>
-                                ${badgeHtml}
-                            </div>
-                            <h5 class="fw-bold text-dark mb-3 text-truncate" title="${v.shop_name || ('Shop #' + v.shop_id)}">${v.shop_name || ('Shop #' + v.shop_id)}</h5>
-                            <div class="row g-2 mb-2">
-                                <div class="col-6 d-flex flex-column">
-                                    <span class="text-dark mb-1 small">${v.area_name || '—'}</span>
-                                    <span class="text-muted" style="font-size:0.75rem;">${dateStr}${timeStr ? ' · ' + timeStr : ''}</span>
-                                </div>
-                                <div class="col-6 d-flex align-items-center gap-2 justify-content-end">
-                                    <div class="d-flex flex-column text-end">
-                                        <span class="text-muted" style="font-size:0.7rem;">Agent</span>
-                                        <span class="text-dark fw-medium small">${v.user_name || '—'}</span>
+                            const photoUrls = [{ url: v.storefront_photo_url, label: 'Storefront' }, { url: v.selfie_photo_url, label: 'Selfie' }].filter(p => p.url);
+                            let photosCell = photoUrls.length
+                                ? `<div class="d-flex align-items-center justify-content-center gap-1 flex-wrap">${photoUrls.map(p =>
+                                    `<img src="${p.url}" alt="${p.label}" style="width:35px;height:35px;object-fit:cover;border-radius:6px;cursor:pointer;border:1px solid var(--border);" onclick="window.open('${p.url}','_blank')" title="${p.label}">`
+                                ).join('')}</div>`
+                                : `<i class="bi bi-camera text-light" style="font-size:1.2rem;"></i>`;
+
+                            let remarksHtml = '<span class="text-muted" style="font-size:0.8rem;">—</span>';
+                            if (v.remarks) {
+                                const safeRemarks = v.remarks.replace(/"/g, '&quot;');
+                                remarksHtml = `
+                                    <div class="d-flex align-items-center justify-content-between gap-2">
+                                        <span class="text-truncate text-muted" style="max-width: 150px;" title="${safeRemarks}">${v.remarks}</span>
+                                        <a tabindex="0" class="btn btn-sm btn-light rounded-circle p-1 d-flex align-items-center justify-content-center" role="button" data-bs-toggle="popover" data-bs-trigger="focus" data-bs-placement="left" data-bs-custom-class="custom-popover" data-bs-title="Visit Remarks" data-bs-content="${safeRemarks}">
+                                            <i class="bi bi-chat-text-fill text-primary" style="font-size: 0.85rem;"></i>
+                                        </a>
                                     </div>
-                                    <div class="avatar-owner rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white" style="width:35px;height:35px;font-size:0.8rem;">${(v.user_name || 'U').slice(0, 2).toUpperCase()}</div>
-                                </div>
-                            </div>
-                            ${v.remarks ? `<p class="text-muted small mb-2" style="font-size:0.78rem;">${v.remarks}</p>` : ''}
-                            ${mobilePhotosList}
-                        </div>
-                    </div>
-                `);
+                                `;
+                            }
+
+                            return `
+                                <tr>
+                                    <td class="ps-4">${visitStatusCell}</td>
+                                    <td class="fw-semibold text-dark">${v.shop_name || ('Shop #' + v.shop_id)}</td>
+                                    <td class="text-muted">${v.area_name || '—'}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="rounded-circle bg-primary-soft text-primary d-flex align-items-center justify-content-center fw-bold" style="width:30px;height:30px;font-size:0.72rem;border:1px solid var(--primary-ring);">
+                                                ${(v.user_name || 'U').slice(0, 2).toUpperCase()}
+                                            </div>
+                                            <span class="text-muted small">${v.user_name || '—'}</span>
+                                        </div>
+                                    </td>
+                                    <td class="text-muted">
+                                        <div class="fw-medium text-dark">${dateStr}</div>
+                                        <div class="small">${timeStr}</div>
+                                    </td>
+                                    <td>${badgeHtml}</td>
+                                    <td>${remarksHtml}</td>
+                                    <td class="pe-4 text-center">${photosCell}</td>
+                                </tr>`;
+                        },
+                        emptyMsg: '<tr><td colspan="8" class="text-center py-5 text-muted"><i class="bi bi-geo-alt" style="font-size:2rem;display:block;margin-bottom:8px;color:#cbd5e1;"></i>No matching visits found.</td></tr>'
+                    },
+                    {
+                        id: 'visits-cards',
+                        renderRow: (v) => {
+                            const stage = pipelineMap[v.shop_status] || { class: 'bg-light text-dark', label: v.shop_status || 'UNKNOWN', icon: 'bi-circle' };
+                            const badgeHtml = `<span class="badge rounded-pill px-3 py-1 ${stage.class}"><i class="bi ${stage.icon} me-1"></i>${stage.label}</span>`;
+                            const vDate = v.visit_date ? new Date(v.visit_date) : null;
+                            const dateStr = vDate ? vDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+                            const timeStr = vDate ? vDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '';
+                            const systemLogs = ['DEMO_RESCHEDULED', 'MEETING_RESCHEDULED', 'DEMO_CANCELLED', 'MEETING_CANCELLED'];
+                            const outcomeLabel = { SATISFIED: 'Satisfied', ACCEPT: 'Accepted', DECLINE: 'Declined', TAKE_TIME_TO_THINK: 'Thinking', OTHER: 'Other' }[v.status] || (v.status ? v.status.replace(/_/g, ' ') : 'Visit');
+                            const photoUrls = [{ url: v.storefront_photo_url, label: 'Storefront' }, { url: v.selfie_photo_url, label: 'Selfie' }].filter(p => p.url);
+                            const mobilePhotosList = photoUrls.length
+                                ? `<div class="d-flex gap-2 overflow-auto pb-1 mt-3">${photoUrls.map(p =>
+                                    `<img src="${p.url}" style="width:65px;height:65px;object-fit:cover;border-radius:12px;cursor:pointer;flex-shrink:0;" onclick="window.open('${p.url}','_blank')" title="${p.label}">`
+                                ).join('')}</div>`
+                                : '';
+
+                            return `
+                                <div class="card visit-card-mobile shadow-sm mb-3 border-0" style="background:var(--surface);">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="fw-bold text-primary small">${outcomeLabel}</span>
+                                            ${badgeHtml}
+                                        </div>
+                                        <h5 class="fw-bold text-dark mb-3 text-truncate">${v.shop_name || ('Shop #' + v.shop_id)}</h5>
+                                        <div class="row g-2 mb-2">
+                                            <div class="col-6 d-flex flex-column">
+                                                <span class="text-dark mb-1 small">${v.area_name || '—'}</span>
+                                                <span class="text-muted" style="font-size:0.75rem;">${dateStr} · ${timeStr}</span>
+                                            </div>
+                                            <div class="col-6 d-flex align-items-center gap-2 justify-content-end">
+                                                <div class="avatar-owner rounded-circle bg-secondary d-flex align-items-center justify-content-center text-white" style="width:35px;height:35px;font-size:0.8rem;">${(v.user_name || 'U').slice(0, 2).toUpperCase()}</div>
+                                            </div>
+                                        </div>
+                                        ${v.remarks ? `<p class="text-muted small mb-2">${v.remarks}</p>` : ''}
+                                        ${mobilePhotosList}
+                                    </div>
+                                </div>`;
+                        },
+                        emptyMsg: '<div class="text-center py-5 text-muted">No matching visits found.</div>'
+                    }
+                ]
             });
-
-            tbody.innerHTML = rows.join('');
-            if (cardsEl) cardsEl.innerHTML = cards.join('');
-
-            // Re-init popovers
-            const popoverTriggerList = document.querySelectorAll('#visits-table [data-bs-toggle="popover"]');
-            [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl));
         }
 
         function applyVisitsFilter() {
@@ -973,110 +957,107 @@
 
         // ── Load Accepted Leads History ──────────────────────────
         async function loadAcceptedLeads() {
-            const tbody = document.getElementById('accepted-leads-table');
-            const cardsEl = document.getElementById('accepted-leads-cards');
-            const header = document.getElementById('dynamic-assign-header');
-
             try {
-                if (isAdmin) {
-                    header.textContent = "Assigned To (Staff)";
-                } else {
-                    header.textContent = "Assigned By (Manager)";
-                }
-
                 const leads = await apiGet('/shops/accepted/history');
                 const countEl = document.getElementById('count-pending');
                 if (countEl) countEl.innerText = leads.length;
 
-                if (!leads || !leads.length) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No accepted leads found in your history.</td></tr>';
-                    if (cardsEl) cardsEl.innerHTML = '<div class="text-center py-4 text-muted">No accepted leads found in your history.</div>';
-                    return;
-                }
-
-                const rows = [];
-                const cards = [];
-
-                leads.forEach(l => {
-                    const agentValue = isAdmin ? l.assigned_to_name : l.assigned_by_name;
-                    const dateObj = l.accepted_at ? new Date(l.accepted_at) : null;
-                    const dateStr = dateObj ? dateObj.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
-                    const timeStr = dateObj ? dateObj.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '';
-                    const shopId = l.shop_id || l.id;
-                    const shopName = l.shop_name || 'Selected Shop';
-                    const initials = (agentValue || 'U').slice(0, 2).toUpperCase();
-
-                    // ── Desktop table row ──────────────────────────
-                    rows.push(`
-                        <tr>
-                            <td class="text-muted ps-4"><i class="bi bi-geo-alt me-2"></i>${l.area_name || '—'}</td>
-                            <td class="fw-semibold text-dark">${shopName}</td>
-                            <td>
-                                <div class="d-flex align-items-center gap-2">
-                                    <div class="rounded-circle bg-success-light text-success d-flex align-items-center justify-content-center fw-bold" style="width:28px;height:28px;font-size:0.7rem;border:1px solid var(--success-text);">
-                                        ${initials}
-                                    </div>
-                                    <span class="text-muted small">${agentValue || 'Unknown'}</span>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="fw-medium text-dark">${dateStr}</div>
-                                <div class="small text-muted">${timeStr}</div>
-                            </td>
-                            <td>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input capture-switch" type="checkbox" role="switch"
-                                        data-shop-id="${shopId}"
-                                        data-shop-name="${shopName}"
-                                        id="switch-${l.id}">
-                                    <label class="form-check-label text-warning small" for="switch-${l.id}">Pending</label>
-                                </div>
-                            </td>
-                            <td class="pe-4">
-                                <button class="btn btn-sm btn-outline-primary view-lead-btn"
-                                    data-shop-id="${shopId}"
-                                    title="View Details">
-                                    <i class="bi bi-eye"></i> View
-                                </button>
-                            </td>
-                        </tr>
-                    `);
-
-                    // ── Mobile card ────────────────────────────────
-                    cards.push(`
-                        <div class="card visit-card-mobile shadow-sm mb-3 border-0" style="background:var(--surface);">
-                            <div class="card-body p-3">
-                                <div class="d-flex justify-content-between align-items-start mb-3">
-                                    <div>
-                                        <h6 class="fw-bold text-dark mb-1">${shopName}</h6>
-                                        <div class="text-muted small">${l.area_name || '—'}</div>
-                                    </div>
-                                    <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill px-3 py-2">Pending</span>
-                                </div>
-                                <div class="text-muted small mb-2">${dateStr}${timeStr ? ' · ' + timeStr : ''}</div>
-                                <div class="d-flex justify-content-between align-items-center mt-3">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="avatar-owner rounded-circle bg-secondary-subtle text-secondary d-flex align-items-center justify-content-center fw-bold" style="width:35px;height:35px;">${initials}</div>
-                                        <span class="text-dark fw-medium small">${agentValue || 'Unknown'}</span>
-                                    </div>
-                                    <button class="btn btn-outline-primary btn-sm rounded-pill px-4 fw-bold view-lead-btn"
-                                        data-shop-id="${shopId}">
-                                        View
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    `);
-                });
-
-                tbody.innerHTML = rows.join('');
-                if (cardsEl) cardsEl.innerHTML = cards.join('');
-
+                renderAcceptedLeads(leads);
             } catch (err) {
                 console.error("History fetch error:", err);
-                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger small">Error: ${err.message || 'Failed to fetch history'}</td></tr>`;
-                if (cardsEl) cardsEl.innerHTML = `<div class="text-center py-4 text-danger small">Error: ${err.message || 'Failed to fetch history'}</div>`;
+                const tbody = document.getElementById('accepted-leads-table');
+                if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 text-danger small">Error: ${err.message || 'Failed to fetch history'}</td></tr>`;
             }
+        }
+
+        function renderAcceptedLeads(leads) {
+            const header = document.getElementById('dynamic-assign-header');
+            if (header) header.textContent = isAdmin ? "Assigned To (Staff)" : "Assigned By (Manager)";
+
+            renderPagination({
+                data: leads,
+                pageSize: 10,
+                paginationId: 'accepted-pagination',
+                targets: [
+                    {
+                        id: 'accepted-leads-table',
+                        renderRow: (l) => {
+                            const agentValue = isAdmin ? l.assigned_to_name : l.assigned_by_name;
+                            const dateObj = l.accepted_at ? new Date(l.accepted_at) : null;
+                            const dateStr = dateObj ? dateObj.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+                            const timeStr = dateObj ? dateObj.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '';
+                            const shopId = l.shop_id || l.id;
+                            const shopName = l.shop_name || 'Selected Shop';
+                            const initials = (agentValue || 'U').slice(0, 2).toUpperCase();
+
+                            return `
+                                <tr>
+                                    <td class="text-muted ps-4"><i class="bi bi-geo-alt me-2"></i>${l.area_name || '—'}</td>
+                                    <td class="fw-semibold text-dark">${shopName}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="rounded-circle bg-success-light text-success d-flex align-items-center justify-content-center fw-bold" style="width:28px;height:28px;font-size:0.7rem;border:1px solid var(--success-text);">
+                                                ${initials}
+                                            </div>
+                                            <span class="text-muted small">${agentValue || 'Unknown'}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-medium text-dark">${dateStr}</div>
+                                        <div class="small text-muted">${timeStr}</div>
+                                    </td>
+                                    <td>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input capture-switch" type="checkbox" role="switch"
+                                                data-shop-id="${shopId}"
+                                                data-shop-name="${shopName}"
+                                                id="switch-${l.id}">
+                                            <label class="form-check-label text-warning small" for="switch-${l.id}">Pending</label>
+                                        </div>
+                                    </td>
+                                    <td class="pe-4">
+                                        <button class="btn btn-sm btn-outline-primary view-lead-btn" data-shop-id="${shopId}" title="View Details">
+                                            <i class="bi bi-eye"></i> View
+                                        </button>
+                                    </td>
+                                </tr>`;
+                        },
+                        emptyMsg: '<tr><td colspan="6" class="text-center py-4 text-muted">No accepted leads found.</td></tr>'
+                    },
+                    {
+                        id: 'accepted-leads-cards',
+                        renderRow: (l) => {
+                            const agentValue = isAdmin ? l.assigned_to_name : l.assigned_by_name;
+                            const dateObj = l.accepted_at ? new Date(l.accepted_at) : null;
+                            const shopId = l.shop_id || l.id;
+                            const shopName = l.shop_name || 'Selected Shop';
+                            const initials = (agentValue || 'U').slice(0, 2).toUpperCase();
+
+                            return `
+                                <div class="card visit-card-mobile shadow-sm mb-3 border-0" style="background:var(--surface);">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex justify-content-between align-items-start mb-3">
+                                            <div>
+                                                <h6 class="fw-bold text-dark mb-1">${shopName}</h6>
+                                                <div class="text-muted small">${l.area_name || '—'}</div>
+                                            </div>
+                                            <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill px-3 py-2">Pending</span>
+                                        </div>
+                                        <div class="text-muted small mb-2">${l.accepted_at ? new Date(l.accepted_at).toLocaleString('en-IN') : '—'}</div>
+                                        <div class="d-flex justify-content-between align-items-center mt-3">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="avatar-owner rounded-circle bg-secondary-subtle text-secondary d-flex align-items-center justify-content-center fw-bold" style="width:35px;height:35px;">${initials}</div>
+                                                <span class="text-dark fw-medium small">${agentValue || 'Unknown'}</span>
+                                            </div>
+                                            <button class="btn btn-outline-primary btn-sm rounded-pill px-4 fw-bold view-lead-btn" data-shop-id="${shopId}">View</button>
+                                        </div>
+                                    </div>
+                                </div>`;
+                        },
+                        emptyMsg: '<div class="text-center py-4 text-muted">No accepted leads.</div>'
+                    }
+                ]
+            });
         }
 
         // ── Save Visit ──────────────────────────────────────────

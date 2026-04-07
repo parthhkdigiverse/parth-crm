@@ -689,6 +689,7 @@
                                 </tbody>
                             </table>
                         </div>
+                        <div id="employees-pagination" class="px-3 pb-2"></div>
                     </div>
                 </div>
 
@@ -736,6 +737,7 @@
                                 </tbody>
                             </table>
                         </div>
+                        <div id="attendance-admin-pagination" class="px-3 pb-2"></div>
                     </div>
                 </div>
 
@@ -753,35 +755,36 @@
                     </div>
                     <div class="card-body p-0" id="employee-self-body">
 
-                        <div class="px-3 pt-3">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <div class="text-muted small" id="self-attendance-count">0 record(s)</div>
-                                <div class="fw-bold text-primary" id="self-attendance-total-hours">Total: 0.00 hrs</div>
+                            <div class="px-3 pt-3">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div class="text-muted small" id="self-attendance-count">0 record(s)</div>
+                                    <div class="fw-bold text-primary" id="self-attendance-total-hours">Total: 0.00 hrs</div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="table table-hover table-professional table-sm align-middle mb-0">
-                                <thead>
-                                    <tr>
-                                        <th class="ps-3" style="white-space:nowrap;">Date</th>
-                                        <th style="white-space:nowrap;" class="d-mobile-none">In</th>
-                                        <th style="white-space:nowrap;" class="d-mobile-none">Out</th>
-                                        <th style="white-space:nowrap;">Hours</th>
-                                        <th style="white-space:nowrap;">Status</th>
-                                        <th style="white-space:nowrap;" class="d-mobile-none">Leave</th>
-                                        <th style="white-space:nowrap; text-align:right;" class="pe-3">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="self-attendance-tbody">
-                                    <tr>
-                                        <td colspan="7" class="text-center py-4 text-muted">No data loaded.</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                            <div class="table-responsive">
+                                <table class="table table-hover table-professional table-sm align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th class="ps-3" style="white-space:nowrap;">Date</th>
+                                            <th style="white-space:nowrap;" class="d-mobile-none">In</th>
+                                            <th style="white-space:nowrap;" class="d-mobile-none">Out</th>
+                                            <th style="white-space:nowrap;">Hours</th>
+                                            <th style="white-space:nowrap;">Status</th>
+                                            <th style="white-space:nowrap;" class="d-mobile-none">Leave</th>
+                                            <th style="white-space:nowrap; text-align:right;" class="pe-3">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="self-attendance-tbody">
+                                        <tr>
+                                            <td colspan="7" class="text-center py-4 text-muted">No data loaded.</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div id="self-attendance-pagination" class="px-3 pb-2"></div>
                         </div>
                     </div>
                 </div>
-            </div>
 
         </div>
     </div>
@@ -976,7 +979,6 @@
                 }
             });
         }
-
         async function loadEmployees(filters = {}) {
             const tbody = document.getElementById('employees-tbody');
             if (!tbody) return;
@@ -989,6 +991,7 @@
                         </div>
                     </td>
                 </tr>`;
+            document.getElementById('employees-pagination').innerHTML = '';
 
             const department = (filters['dept'] === 'ALL' ? '' : filters['dept']) || '';
             const role = (filters['role'] === 'ALL' ? '' : filters['role']) || '';
@@ -1008,11 +1011,6 @@
                 employeesData = await apiGet('/employees/' + query);
                 document.getElementById('employee-count-badge').innerText = `${employeesData.length} Employee${employeesData.length !== 1 ? 's' : ''}`;
 
-                if (employeesData.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">No employees found.</td></tr>';
-                    return;
-                }
-
                 // Collect and Initialize Department Filters if first load
                 const departments = [...new Set(employeesData.map(e => e.department).filter(d => d))].sort();
                 const filterWrapper = document.getElementById('filter-wrapper');
@@ -1022,56 +1020,63 @@
 
                 populateAttendanceEmployeeFilter();
 
-                tbody.innerHTML = employeesData.map(emp => {
-                    const avatarLetter = (emp.name || emp.email || 'U')[0].toUpperCase();
-                    const statusClass = emp.is_active ? 'status-active' : 'status-inactive';
-                    const statusText = emp.is_active ? '<i class="bi bi-check-circle-fill"></i> Active' : '<i class="bi bi-x-circle-fill"></i> Inactive';
-                    const roleClass = (emp.role || 'CLIENT').toUpperCase();
+                renderPagination({
+                    data: employeesData,
+                    pageSize: 15,
+                    tbodyId: 'employees-tbody',
+                    paginationId: 'employees-pagination',
+                    emptyMsg: '<tr><td colspan="7" class="text-center py-5 text-muted">No employees found.</td></tr>',
+                    renderRow: (emp) => {
+                        const avatarLetter = (emp.name || emp.email || 'U')[0].toUpperCase();
+                        const statusClass = emp.is_active ? 'status-active' : 'status-inactive';
+                        const statusText = emp.is_active ? '<i class="bi bi-check-circle-fill"></i> Active' : '<i class="bi bi-x-circle-fill"></i> Inactive';
+                        const roleClass = (emp.role || 'CLIENT').toUpperCase();
 
-                    let actions = `<span class="text-muted small">Viewer</span>`;
-                    if (canManageEmployees) {
-                        actions = `
-                            <button class="btn-action" onclick="viewEmployeeAttendance('${emp.id}', '${emp.name}')" title="Attendance History"><i class="bi bi-calendar-check"></i></button>
-                            <button class="btn-action" onclick="openEditModal('${emp.id}')" title="Edit"><i class="bi bi-pencil"></i></button>
-                            ${emp.role !== 'admin' ? `<button class="btn-action btn-action-danger" onclick="deleteEmployee('${emp.id}')" title="Delete"><i class="bi bi-trash"></i></button>` : ''}
+                        let actions = `<span class="text-muted small">Viewer</span>`;
+                        if (canManageEmployees) {
+                            actions = `
+                                <button class="btn-action" onclick="viewEmployeeAttendance('${emp.id}', '${emp.name}')" title="Attendance History"><i class="bi bi-calendar-check"></i></button>
+                                <button class="btn-action" onclick="openEditModal('${emp.id}')" title="Edit"><i class="bi bi-pencil"></i></button>
+                                ${emp.role !== 'admin' ? `<button class="btn-action btn-action-danger" onclick="deleteEmployee('${emp.id}')" title="Delete"><i class="bi bi-trash"></i></button>` : ''}
+                            `;
+                        }
+
+                        return `
+                        <tr>
+                            <td class="ps-3">
+                                <input type="checkbox" class="form-check-input emp-checkbox" value="${emp.id}" onclick="updateSelectedCount()">
+                            </td>
+                            <td class="px-3">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="employee-avatar shadow-sm">${avatarLetter}</div>
+                                    <div class="min-w-0">
+                                        <h6 class="mb-0 fw-bold text-dark text-truncate" style="font-size: 0.875rem;">${emp.name || '<i>No Name</i>'}</h6>
+                                        <div class="text-muted text-truncate" style="font-size: 0.75rem;">${emp.email}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-3 d-mobile-none">
+                                <div class="fw-semibold text-dark small">${emp.department || '—'}</div>
+                                <div class="text-muted" style="font-size: 0.7rem;">${emp.employee_code || 'No Code'}</div>
+                            </td>
+                            <td class="px-3 d-mobile-none">
+                                <span class="role-badge role-${roleClass}" style="font-size: 0.65rem; padding: 2px 8px;">${(emp.role || 'Unknown').replace(/_/g, ' ')}</span>
+                            </td>
+                            <td class="px-3 text-muted d-mobile-none" style="font-size: 0.8rem;">
+                                ${emp.phone ? `<i class="bi bi-telephone me-1 opacity-50"></i>${emp.phone}` : '—'}
+                            </td>
+                            <td class="px-3">
+                                <span class="status-badge ${statusClass}" style="padding: 2px 8px; font-size: 0.65rem;">${statusText}</span>
+                            </td>
+                            <td class="px-3 text-end">
+                                <div class="d-flex justify-content-end gap-1">
+                                    ${actions}
+                                </div>
+                            </td>
+                        </tr>
                         `;
                     }
-
-                    return `
-                    <tr>
-                        <td class="ps-3">
-                            <input type="checkbox" class="form-check-input emp-checkbox" value="${emp.id}" onclick="updateSelectedCount()">
-                        </td>
-                        <td class="px-3">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="employee-avatar shadow-sm">${avatarLetter}</div>
-                                <div class="min-w-0">
-                                    <h6 class="mb-0 fw-bold text-dark text-truncate" style="font-size: 0.875rem;">${emp.name || '<i>No Name</i>'}</h6>
-                                    <div class="text-muted text-truncate" style="font-size: 0.75rem;">${emp.email}</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="px-3 d-mobile-none">
-                            <div class="fw-semibold text-dark small">${emp.department || '—'}</div>
-                            <div class="text-muted" style="font-size: 0.7rem;">${emp.employee_code || 'No Code'}</div>
-                        </td>
-                        <td class="px-3 d-mobile-none">
-                            <span class="role-badge role-${roleClass}" style="font-size: 0.65rem; padding: 2px 8px;">${(emp.role || 'Unknown').replace(/_/g, ' ')}</span>
-                        </td>
-                        <td class="px-3 text-muted d-mobile-none" style="font-size: 0.8rem;">
-                            ${emp.phone ? `<i class="bi bi-telephone me-1 opacity-50"></i>${emp.phone}` : '—'}
-                        </td>
-                        <td class="px-3">
-                            <span class="status-badge ${statusClass}" style="padding: 2px 8px; font-size: 0.65rem;">${statusText}</span>
-                        </td>
-                        <td class="px-3 text-end">
-                            <div class="d-flex justify-content-end gap-1">
-                                ${actions}
-                            </div>
-                        </td>
-                    </tr>
-                    `;
-                }).join('');
+                });
             } catch (err) {
                 console.error("Error loading employees", err);
                 tbody.innerHTML = `<tr><td colspan="7" class="text-center py-5 text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Failed to load employees (${err.message || 'Unknown error'})</td></tr>`;
@@ -1252,7 +1257,8 @@
             if (!tbody) return;
 
             tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading...</td></tr>';
-
+            document.getElementById('self-attendance-pagination').innerHTML = '';
+            
             try {
                 const data = await ApiClient.getAttendanceSummary({
                     start_date: start,
@@ -1263,27 +1269,29 @@
                 document.getElementById('self-attendance-count').textContent = `${records.length} record(s)`;
                 document.getElementById('self-attendance-total-hours').textContent = `Total: ${(data.total_hours || 0).toFixed(2)} hrs`;
 
-                if (!records.length) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No attendance records found.</td></tr>';
-                    return;
-                }
-
-                tbody.innerHTML = records.map(r => {
-                    const day = new Date(r.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-                    return `<tr>
-                        <td style="white-space:nowrap;">${day}</td>
-                        <td class="d-mobile-none">${formatTimeCell(r.first_punch_in)}</td>
-                        <td class="d-mobile-none">${formatTimeCell(r.last_punch_out)}</td>
-                        <td>${(r.total_hours || 0).toFixed(2)}</td>
-                        <td>${statusBadge(r.day_status)}</td>
-                        <td class="d-mobile-none">${leaveBadge(r.leave_status)}</td>
-                        <td class="text-end">
-                            <button class="btn-action" onclick="viewPunchLogs('${r.date}')" title="View Details">
-                                <i class="bi bi-eye"></i>
-                            </button>
-                        </td>
-                    </tr>`;
-                }).join('');
+                renderPagination({
+                    data: records,
+                    pageSize: 15,
+                    tbodyId: 'self-attendance-tbody',
+                    paginationId: 'self-attendance-pagination',
+                    emptyMsg: '<tr><td colspan="7" class="text-center py-4 text-muted">No attendance records found.</td></tr>',
+                    renderRow: (r) => {
+                        const day = new Date(r.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+                        return `<tr>
+                            <td style="white-space:nowrap;">${day}</td>
+                            <td class="d-mobile-none">${formatTimeCell(r.first_punch_in)}</td>
+                            <td class="d-mobile-none">${formatTimeCell(r.last_punch_out)}</td>
+                            <td>${(r.total_hours || 0).toFixed(2)}</td>
+                            <td>${statusBadge(r.day_status)}</td>
+                            <td class="d-mobile-none">${leaveBadge(r.leave_status)}</td>
+                            <td class="text-end">
+                                <button class="btn-action" onclick="viewPunchLogs('${r.date}')" title="View Details">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </td>
+                        </tr>`;
+                    }
+                });
             } catch (err) {
                 console.error('Self attendance load failed', err);
                 tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger">Failed to load attendance.</td></tr>';
@@ -1347,7 +1355,8 @@
             const start = attendanceFilters['att-from'] || '';
             const end = attendanceFilters['att-to'] || '';
             const userId = attendanceFilters['att-user'] || '';
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading...</td></tr>';
+            document.getElementById('attendance-admin-pagination').innerHTML = '';
 
             try {
                 const params = {
@@ -1362,31 +1371,33 @@
                 document.getElementById('attendance-count').textContent = `${records.length} record(s)`;
                 document.getElementById('attendance-total-hours').textContent = `Total: ${(data.total_hours || 0).toFixed(2)} hrs`;
 
-                if (!records.length) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No attendance records found.</td></tr>';
-                    return;
-                }
-
-                tbody.innerHTML = records.map(r => {
-                    const day = new Date(r.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-                    return `<tr>
-                        <td style="white-space:nowrap;">${day}</td>
-                        <td style="white-space:nowrap;">${r.user_name || 'User #' + r.user_id}</td>
-                        <td class="d-mobile-none">${formatTimeCell(r.first_punch_in)}</td>
-                        <td class="d-mobile-none">${formatTimeCell(r.last_punch_out)}</td>
-                        <td>${(r.total_hours || 0).toFixed(2)}</td>
-                        <td>${statusBadge(r.day_status)}</td>
-                        <td class="d-mobile-none">${leaveBadge(r.leave_status)}</td>
-                        <td class="text-end">
-                            <button class="btn-action" onclick="viewPunchLogs('${r.date}', '${r.user_id}')" title="View Details">
-                                <i class="bi bi-eye"></i>
-                            </button>
-                        </td>
-                    </tr>`;
-                }).join('');
+                renderPagination({
+                    data: records,
+                    pageSize: 15,
+                    tbodyId: 'attendance-admin-tbody',
+                    paginationId: 'attendance-admin-pagination',
+                    emptyMsg: '<tr><td colspan="8" class="text-center py-4 text-muted">No attendance records found.</td></tr>',
+                    renderRow: (r) => {
+                        const day = new Date(r.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+                        return `<tr>
+                            <td style="white-space:nowrap;">${day}</td>
+                            <td style="white-space:nowrap;">${r.user_name || 'User #' + r.user_id}</td>
+                            <td class="d-mobile-none">${formatTimeCell(r.first_punch_in)}</td>
+                            <td class="d-mobile-none">${formatTimeCell(r.last_punch_out)}</td>
+                            <td>${(r.total_hours || 0).toFixed(2)}</td>
+                            <td>${statusBadge(r.day_status)}</td>
+                            <td class="d-mobile-none">${leaveBadge(r.leave_status)}</td>
+                            <td class="text-end">
+                                <button class="btn-action" onclick="viewPunchLogs('${r.date}', '${r.user_id}')" title="View Details">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </td>
+                        </tr>`;
+                    }
+                });
             } catch (err) {
                 console.error('Attendance summary error', err);
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger">Failed to load attendance.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-danger">Failed to load attendance.</td></tr>';
             }
         }
 

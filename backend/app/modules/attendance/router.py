@@ -1,7 +1,7 @@
 # backend/app/modules/attendance/router.py
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
-from datetime import date as dt_date, timedelta
+from datetime import datetime, date as dt_date, timedelta, timezone
 from beanie import PydanticObjectId
 
 from app.core.dependencies import get_current_active_user
@@ -62,6 +62,9 @@ async def get_attendance_summary(
 
     # Optimization: Move reconcile to background if requested
     if reconcile:
+        # Resolve defaults here — background tasks receive raw values, not the service's defaults
+        resolved_end = end_date or datetime.now(timezone.utc).date()
+        resolved_start = start_date or (resolved_end - timedelta(days=30))
         settings = await AttendanceService.load_attendance_settings()
         if target_user:
             background_tasks.add_task(AttendanceService.ensure_auto_leaves, target_user, start_date, end_date, settings)

@@ -902,54 +902,56 @@
             const tbody = document.getElementById('todo-tbody');
             if (!tbody) return;
 
-            if (filteredTasks.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-5"><i class="bi bi-search fs-1 opacity-25"></i><br>No matching objectives found</td></tr>`;
-                return;
-            }
+            renderPagination({
+                data: filteredTasks,
+                pageSize: 15,
+                tbodyId: 'todo-tbody',
+                paginationId: 'todo-pagination',
+                emptyMsg: `<tr><td colspan="6" class="text-center text-muted py-5"><i class="bi bi-search fs-1 opacity-25"></i><br>No matching objectives found</td></tr>`,
+                renderRow: (t) => {
+                    const assignee = t.assigned_to || 'Unassigned';
+                    const initials = (assignee.split(' ').map(n => n[0]).join('') || '?').toUpperCase().slice(0, 2);
+                    let timeStr = t.start_time ? `${t.start_time.slice(0, 5)}` : '';
+                    if (t.end_time) timeStr += ` - ${t.end_time.slice(0, 5)}`;
+                    const displayDate = t.due_date ? new Date(t.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'No date';
+                    const isCompleted = t.status === 'COMPLETED';
 
-            tbody.innerHTML = filteredTasks.map(t => {
-                const assignee = t.assigned_to || 'Unassigned';
-                const initials = (assignee.split(' ').map(n => n[0]).join('') || '?').toUpperCase().slice(0, 2);
-                let timeStr = t.start_time ? `${t.start_time.slice(0, 5)}` : '';
-                if (t.end_time) timeStr += ` - ${t.end_time.slice(0, 5)}`;
-                const displayDate = t.due_date ? new Date(t.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'No date';
-                const isCompleted = t.status === 'COMPLETED';
-
-                return `
-                <tr class="todo-row ${isCompleted ? 'completed' : ''}">
-                    <td class="ps-4">
-                        <div class="fw-bold text-slate-900" style="font-size:0.95rem;">${t.title}</div>
-                        <div class="text-muted smaller mt-1 d-flex align-items-center gap-2">
-                            <span class="badge rounded-pill bg-light text-dark border p-1 px-2" style="font-size:10px; font-weight:700;">${(t.event_type || 'TASK').toUpperCase()}</span>
-                            <i class="bi bi-link-45deg me-1"></i>${t.related_entity || 'General'}
-                        </div>
-                    </td>
-                    <td>${priorityBadge(t.priority)}</td>
-                    <td>${statBadge(t.status)}</td>
-                    <td>
-                        <div class="d-flex align-items-center gap-2">
-                            <div class="avatar-circle-sm">${initials}</div>
-                            <span class="small fw-medium">${assignee}</span>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="small fw-bold">${displayDate}</div>
-                        <div class="smaller text-muted mt-1"><i class="bi bi-clock me-1"></i>${timeStr || 'Anytime'}</div>
-                    </td>
-                    <td class="text-end pe-4">
-                        <div class="dropdown">
-                            <button class="btn btn-ghost btn-sm rounded-3 px-2" data-bs-toggle="dropdown" data-bs-display="static"><i class="bi bi-three-dots-vertical"></i></button>
-                            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-2" style="border-radius:14px; min-width: 170px; margin-top: 5px;">
-                                <li><a class="dropdown-item rounded-3 py-2 small fw-bold" href="javascript:void(0)" onclick="openEditModal('${t.id}')"><i class="bi bi-pencil-square me-2 text-primary"></i> Edit Details</a></li>
-                                ${!isCompleted ? `<li><a class="dropdown-item rounded-3 py-2 small fw-bold" href="javascript:void(0)" onclick="changeStatus('${t.id}', 'IN_PROGRESS')"><i class="bi bi-hourglass-split me-2 text-info"></i> Mark In Progress</a></li>` : ''}
-                                ${!isCompleted ? `<li><a class="dropdown-item rounded-3 py-2 small fw-bold" href="javascript:void(0)" onclick="changeStatus('${t.id}', 'COMPLETED')"><i class="bi bi-check2-all me-2 text-success"></i> Mark Done</a></li>` : ''}
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item rounded-3 py-2 small fw-bold text-danger" href="javascript:void(0)" onclick="deleteTask('${t.id}')"><i class="bi bi-trash3 me-2"></i> Delete Objective</a></li>
-                            </ul>
-                        </div>
-                    </td>
-                </tr>`;
-            }).join('');
+                    return `
+                    <tr class="todo-row ${isCompleted ? 'completed' : ''}">
+                        <td class="ps-4">
+                            <div class="fw-bold text-slate-900" style="font-size:0.95rem;">${t.title}</div>
+                            <div class="text-muted smaller mt-1 d-flex align-items-center gap-2">
+                                <span class="badge rounded-pill bg-light text-dark border p-1 px-2" style="font-size:10px; font-weight:700;">${(t.event_type || 'TASK').toUpperCase()}</span>
+                                <i class="bi bi-link-45deg me-1"></i>${t.related_entity || 'General'}
+                            </div>
+                        </td>
+                        <td>${priorityBadge(t.priority)}</td>
+                        <td>${statBadge(t.status)}</td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="avatar-circle-sm">${initials}</div>
+                                <span class="small fw-medium">${assignee}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="small fw-bold">${displayDate}</div>
+                            <div class="smaller text-muted mt-1"><i class="bi bi-clock me-1"></i>${timeStr || 'Anytime'}</div>
+                        </td>
+                        <td class="text-end pe-4">
+                            <div class="dropdown">
+                                <button class="btn btn-ghost btn-sm rounded-3 px-2" data-bs-toggle="dropdown" data-bs-display="static"><i class="bi bi-three-dots-vertical"></i></button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-2" style="border-radius:14px; min-width: 170px; margin-top: 5px;">
+                                    <li><a class="dropdown-item rounded-3 py-2 small fw-bold" href="javascript:void(0)" onclick="openEditModal('${t.id}')"><i class="bi bi-pencil-square me-2 text-primary"></i> Edit Details</a></li>
+                                    ${!isCompleted ? `<li><a class="dropdown-item rounded-3 py-2 small fw-bold" href="javascript:void(0)" onclick="changeStatus('${t.id}', 'IN_PROGRESS')"><i class="bi bi-hourglass-split me-2 text-info"></i> Mark In Progress</a></li>` : ''}
+                                    ${!isCompleted ? `<li><a class="dropdown-item rounded-3 py-2 small fw-bold" href="javascript:void(0)" onclick="changeStatus('${t.id}', 'COMPLETED')"><i class="bi bi-check2-all me-2 text-success"></i> Mark Done</a></li>` : ''}
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item rounded-3 py-2 small fw-bold text-danger" href="javascript:void(0)" onclick="deleteTask('${t.id}')"><i class="bi bi-trash3 me-2"></i> Delete Objective</a></li>
+                                </ul>
+                            </div>
+                        </td>
+                    </tr>`;
+                }
+            });
         }
 
         function renderTodo() {

@@ -152,6 +152,7 @@
                             </tbody>
                         </table>
                     </div>
+                    <div id="leaves-pagination"></div>
                 </div>
             </div>
         </div>
@@ -437,7 +438,6 @@
         // Load leaves
         async function loadLeaves() {
             const tbody = document.getElementById('leaves-tbody');
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading...</td></tr>';
             try {
                 let allLeaves = null;
                 let leaves;
@@ -451,11 +451,11 @@
 
                 // Apply filters (admin only)
                 if (canManageLeave) {
-                    const userF = currentFilters['user'];
-                    const statusF = currentFilters['status'];
-                    const typeF = currentFilters['type'];
-                    const fromF = currentFilters['from'];
-                    const toF = currentFilters['to'];
+                    const userF = currentFilters['filter-user'];
+                    const statusF = currentFilters['filter-status'];
+                    const typeF = currentFilters['filter-type'];
+                    const fromF = currentFilters['filter-from'];
+                    const toF = currentFilters['filter-to'];
 
                     if (userF && userF !== 'ALL') leaves = leaves.filter(l => String(l.user_id) === String(userF));
                     if (statusF && statusF !== 'ALL') leaves = leaves.filter(l => l.status === statusF);
@@ -481,89 +481,89 @@
                 }
 
                 const countStr = leaves.length + ' record(s)';
-                const countEl = document.getElementById('leave-count');
                 const countNonAdmin = document.getElementById('leave-count-non-admin');
-                if (countEl) countEl.textContent = countStr;
                 if (countNonAdmin) countNonAdmin.textContent = canManageLeave ? '' : countStr;
 
-                if (!leaves.length) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">No leave requests found.</td></tr>';
-                    return;
-                }
+                renderPagination({
+                    data: leaves,
+                    pageSize: 15,
+                    tbodyId: 'leaves-tbody',
+                    paginationId: 'leaves-pagination',
+                    emptyMsg: '<tr><td colspan="8" class="text-center py-5 text-muted">No leave requests found.</td></tr>',
+                    renderRow: (l) => {
+                        const st = leaveStatusMap[l.status] || leaveStatusMap.PENDING;
+                        const start = new Date(l.start_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+                        const end = new Date(l.end_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+                        const days = Math.ceil((new Date(l.end_date) - new Date(l.start_date)) / 86400000) + 1;
+                        const dayHalf = (l.day_type === 'HALF') ? 0.5 : 1;
+                        const displayDays = days * dayHalf;
+                        const dayTypeLabel = l.day_type === 'HALF' ? '<span class="badge bg-warning-subtle text-warning border ms-1" style="font-size:0.7rem;">Half</span>' : '';
+                        const typeLabel = leaveTypeLabels[l.leave_type] || l.leave_type || 'Casual';
+                        const typeCls = l.leave_type === 'UNPAID' ? 'bg-danger-subtle text-danger border' : 'bg-surface text-main border';
 
-                tbody.innerHTML = leaves.map(l => {
-                    const st = leaveStatusMap[l.status] || leaveStatusMap.PENDING;
-                    const start = new Date(l.start_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-                    const end = new Date(l.end_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-                    const days = Math.ceil((new Date(l.end_date) - new Date(l.start_date)) / 86400000) + 1;
-                    const dayHalf = (l.day_type === 'HALF') ? 0.5 : 1;
-                    const displayDays = days * dayHalf;
-                    const dayTypeLabel = l.day_type === 'HALF' ? '<span class="badge bg-warning-subtle text-warning border ms-1" style="font-size:0.7rem;">Half</span>' : '';
-                    const typeLabel = leaveTypeLabels[l.leave_type] || l.leave_type || 'Casual';
-                    const typeCls = l.leave_type === 'UNPAID' ? 'bg-danger-subtle text-danger border' : 'bg-surface text-main border';
-
-                    let lastCol;
-                    const isAutoLeave = (l.reason || '').includes('Auto leave');
-                    
-                    if (canManageLeave && l.status === 'PENDING') {
-                        lastCol = `<div class="d-flex gap-1 flex-wrap">
-                           <button class="btn btn-sm btn-outline-success" title="Approve" onclick="approveLeaveWithRemarks('${l.id}', 'APPROVED')"><i class="bi bi-check-lg"></i> Approve</button>
-                           <button class="btn btn-sm btn-outline-danger" title="Reject" onclick="approveLeaveWithRemarks('${l.id}', 'REJECTED')"><i class="bi bi-x-lg"></i> Reject</button>
-                         </div>`;
-                    } else if (!canManageLeave && canEditOwnLeave && l.status === 'PENDING' && String(l.user_id) === String(user?.id)) {
-                        if (isAutoLeave) {
-                            lastCol = `<span class="text-muted small italic"><i class="bi bi-lock-fill me-1"></i>Auto leave restricted</span>`;
-                        } else {
+                        let lastCol;
+                        const isAutoLeave = (l.reason || '').includes('Auto leave');
+                        
+                        if (canManageLeave && l.status === 'PENDING') {
                             lastCol = `<div class="d-flex gap-1 flex-wrap">
-                                <button class="btn btn-sm btn-outline-primary" title="Edit" onclick="openEditLeave('${l.id}')"><i class="bi bi-pencil"></i> Edit</button>
-                                <button class="btn btn-sm btn-outline-danger" title="Cancel" onclick="cancelLeave('${l.id}')"><i class="bi bi-x-circle"></i> Cancel</button>
+                               <button class="btn btn-sm btn-outline-success" title="Approve" onclick="approveLeaveWithRemarks('${l.id}', 'APPROVED')"><i class="bi bi-check-lg"></i> Approve</button>
+                               <button class="btn btn-sm btn-outline-danger" title="Reject" onclick="approveLeaveWithRemarks('${l.id}', 'REJECTED')"><i class="bi bi-x-lg"></i> Reject</button>
+                             </div>`;
+                        } else if (!canManageLeave && canEditOwnLeave && l.status === 'PENDING' && String(l.user_id) === String(user?.id)) {
+                            if (isAutoLeave) {
+                                lastCol = `<span class="text-muted small italic"><i class="bi bi-lock-fill me-1"></i>Auto leave restricted</span>`;
+                            } else {
+                                lastCol = `<div class="d-flex gap-1 flex-wrap">
+                                    <button class="btn btn-sm btn-outline-primary" title="Edit" onclick="openEditLeave('${l.id}')"><i class="bi bi-pencil"></i> Edit</button>
+                                    <button class="btn btn-sm btn-outline-danger" title="Cancel" onclick="cancelLeave('${l.id}')"><i class="bi bi-x-circle"></i> Cancel</button>
+                                </div>`;
+                            }
+                        } else if (canManageLeave && (l.status === 'APPROVED' || l.status === 'REJECTED')) {
+                            lastCol = `<div class="d-flex gap-1 justify-content-end">
+                                <button class="btn btn-sm btn-outline-secondary" style="font-size:0.7rem;" title="Edit Remarks" onclick="approveLeaveWithRemarks('${l.id}', '${l.status}')">
+                                    <i class="bi bi-chat-left-text me-1"></i>Remark
+                                </button>
                             </div>`;
+                        } else if (l.remarks) {
+                            const remarksEsc = (l.remarks || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+                            lastCol = `<span class="text-muted small d-block text-truncate" style="max-width:160px;" title="${remarksEsc}"><i class="bi bi-chat-left-text me-1"></i>${remarksEsc}</span>`;
+                        } else if (l.approver_name) {
+                            lastCol = `<span class="text-muted small">By: ${l.approver_name}</span>`;
+                        } else {
+                            lastCol = '<span class="text-muted small">--</span>';
                         }
-                    } else if (canManageLeave && (l.status === 'APPROVED' || l.status === 'REJECTED')) {
-                        lastCol = `<div class="d-flex gap-1 justify-content-end">
-                            <button class="btn btn-sm btn-outline-secondary" style="font-size:0.7rem;" title="Edit Remarks" onclick="approveLeaveWithRemarks('${l.id}', '${l.status}')">
-                                <i class="bi bi-chat-left-text me-1"></i>Remark
-                            </button>
-                        </div>`;
-                    } else if (l.remarks) {
-                        const remarksEsc = (l.remarks || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
-                        lastCol = `<span class="text-muted small d-block text-truncate" style="max-width:160px;" title="${remarksEsc}"><i class="bi bi-chat-left-text me-1"></i>${remarksEsc}</span>`;
-                    } else if (l.approver_name) {
-                        lastCol = `<span class="text-muted small">By: ${l.approver_name}</span>`;
-                    } else {
-                        lastCol = '<span class="text-muted small">--</span>';
+
+                        const createdStr = l.created_at ? new Date(l.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+                        const updatedStr = l.updated_at ? new Date(l.updated_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+                        const timeInfo = l.status === 'PENDING'
+                            ? `<div class="text-muted" style="font-size:0.65rem; margin-top:2px;">Applied: ${createdStr}</div>`
+                            : `<div class="text-muted" style="font-size:0.65rem; margin-top:2px;">Decided: ${updatedStr}</div>`;
+
+                        const reasonHtml = l.reason ? `<div class="mb-1"><strong>Reason:</strong> <span class="text-muted">${l.reason}</span></div>` : '';
+                        const remarksTheme = l.status === 'REJECTED' ? 'background:var(--danger-soft); border:1px solid var(--danger-ring); color:var(--danger-text);' : 'background:var(--bg-app); color:var(--text-main);';
+                        const remarksHtml = l.remarks ? `<div class="p-2 rounded mt-1" style="${remarksTheme} font-size:0.75rem;"><strong>Admin Remark:</strong> ${l.remarks}</div>` : '';
+
+                        return `<tr>
+                            <td class="ps-4 fw-semibold text-dark" style="white-space:nowrap; max-width:150px; overflow:hidden; text-overflow:ellipsis;" title="${l.user_name || ''}">${l.user_name || 'User #' + l.user_id}</td>
+                            <td><span class="badge ${typeCls}" style="font-weight:500;white-space:nowrap; font-size:0.75rem;">${typeLabel}</span></td>
+                            <td class="text-muted" style="white-space:nowrap; font-size:0.75rem;">${start} — ${end}</td>
+                            <td class="fw-semibold" style="white-space:nowrap; font-size:0.75rem;">${displayDays}${dayTypeLabel}</td>
+                            <td>
+                                <div style="font-size:0.75rem; line-height:1.3; min-width:200px;">
+                                    ${reasonHtml}
+                                    ${remarksHtml}
+                                </div>
+                            </td>
+                            <td>
+                                <span class="status-pill ${st.cls}" style="white-space:nowrap; font-size:0.7rem;"><i class="bi ${st.icon} me-1"></i>${st.label}</span>
+                                ${timeInfo}
+                            </td>
+                            <td class="pe-4 text-end">
+                                ${lastCol}
+                            </td>
+                        </tr>`;
                     }
-
-                    const createdStr = l.created_at ? new Date(l.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
-                    const updatedStr = l.updated_at ? new Date(l.updated_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
-                    const timeInfo = l.status === 'PENDING'
-                        ? `<div class="text-muted" style="font-size:0.65rem; margin-top:2px;">Applied: ${createdStr}</div>`
-                        : `<div class="text-muted" style="font-size:0.65rem; margin-top:2px;">Decided: ${updatedStr}</div>`;
-
-                    const reasonHtml = l.reason ? `<div class="mb-1"><strong>Reason:</strong> <span class="text-muted">${l.reason}</span></div>` : '';
-                    const remarksTheme = l.status === 'REJECTED' ? 'background:var(--danger-soft); border:1px solid var(--danger-ring); color:var(--danger-text);' : 'background:var(--bg-app); color:var(--text-main);';
-                    const remarksHtml = l.remarks ? `<div class="p-2 rounded mt-1" style="${remarksTheme} font-size:0.75rem;"><strong>Admin Remark:</strong> ${l.remarks}</div>` : '';
-
-                    return `<tr>
-                        <td class="ps-4 fw-semibold text-dark" style="white-space:nowrap; max-width:150px; overflow:hidden; text-overflow:ellipsis;" title="${l.user_name || ''}">${l.user_name || 'User #' + l.user_id}</td>
-                        <td><span class="badge ${typeCls}" style="font-weight:500;white-space:nowrap; font-size:0.75rem;">${typeLabel}</span></td>
-                        <td class="text-muted" style="white-space:nowrap; font-size:0.75rem;">${start} — ${end}</td>
-                        <td class="fw-semibold" style="white-space:nowrap; font-size:0.75rem;">${displayDays}${dayTypeLabel}</td>
-                        <td>
-                            <div style="font-size:0.75rem; line-height:1.3; min-width:200px;">
-                                ${reasonHtml}
-                                ${remarksHtml}
-                            </div>
-                        </td>
-                        <td>
-                            <span class="status-pill ${st.cls}" style="white-space:nowrap; font-size:0.7rem;"><i class="bi ${st.icon} me-1"></i>${st.label}</span>
-                            ${timeInfo}
-                        </td>
-                        <td class="pe-4 text-end">
-                            ${lastCol}
-                        </td>
-                    </tr>`;
-                }).join('');
+                });
             } catch (e) {
                 tbody.innerHTML = `<tr><td colspan="8" class="text-center py-5 text-danger"><i class="bi bi-exclamation-triangle me-2"></i>${e.message || 'Error'}</td></tr>`;
             }

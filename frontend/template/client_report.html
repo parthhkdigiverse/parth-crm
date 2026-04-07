@@ -124,6 +124,7 @@
                         </div>
                     </div>
                 </div>
+                <div id="report-pagination" class="mt-2"></div>
 
             </div>
         </div>
@@ -198,103 +199,95 @@
         }
 
         function renderTable(data) {
-            const tbody = document.getElementById('report-tbody');
-            const cards = document.getElementById('report-cards');
             document.getElementById('record-count').textContent = `${data.length} Clients`;
 
-            if (!data.length) {
-                const emptyHtml = `<tr><td colspan="6" class="text-center py-5 text-muted">No clients match the current filters.</td></tr>`;
-                tbody.innerHTML = emptyHtml;
-                cards.innerHTML = emptyHtml;
-                return;
-            }
-
-            let rows = '';
-            let cardHtml = '';
-
-            data.forEach(c => {
-                const bizName = c.business_name || c.company_name || c.shop_name || c.company || c.organization || c.project_name || 'Direct Client';
-                const pmName = c.pm_name || c.onboarding_pm_name || 'Unassigned';
-                const pmInitials = (pmName !== 'Unassigned') ? pmName.slice(0, 2).toUpperCase() : '?';
-                const rawDate = c.created_at || c.date_added || c.createdAt || c.timestamp;
-                const regDateObj = rawDate ? new Date(rawDate) : new Date();
-                const regDate = rawDate ? regDateObj.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A';
-
-                // --- Remaining Days Logic ---
-                const today = new Date();
-                const diffTime = today.getTime() - regDateObj.getTime();
-                const daysPassed = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
-
-                let remainingHtml = '';
-                let remainingExportText = '';
-                if (daysPassed <= 10) {
-                    const left = 10 - daysPassed;
-                    remainingHtml = `<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1"><i class="bi bi-hourglass-split me-1"></i>Buffer: ${left} Days</span>`;
-                    remainingExportText = `Buffer: ${left} Days`;
-                } else {
-                    const left = 375 - daysPassed;
-                    if (left > 0) {
-                        remainingHtml = `<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"><i class="bi bi-calendar-check me-1"></i>${left} Days Left</span>`;
-                        remainingExportText = `${left} Days Left`;
-                    } else {
-                        remainingHtml = `<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1"><i class="bi bi-exclamation-circle me-1"></i>Expired</span>`;
-                        remainingExportText = `Expired`;
+            renderPagination({
+                data: data,
+                pageSize: 15,
+                paginationId: 'report-pagination',
+                targets: [
+                    {
+                        id: 'report-tbody',
+                        renderRow: (c) => {
+                            const bizName = c.business_name || c.company_name || c.shop_name || c.company || c.organization || c.project_name || 'Direct Client';
+                            const pmName = c.pm_name || c.onboarding_pm_name || 'Unassigned';
+                            const pmInitials = (pmName !== 'Unassigned') ? pmName.slice(0, 2).toUpperCase() : '?';
+                            const rawDate = c.created_at || c.date_added || c.createdAt || c.timestamp;
+                            const regDateObj = rawDate ? new Date(rawDate) : new Date();
+                            const regDate = rawDate ? regDateObj.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A';
+                            const today = new Date();
+                            const diffTime = today.getTime() - regDateObj.getTime();
+                            const daysPassed = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+                            let remainingHtml = '';
+                            if (daysPassed <= 10) {
+                                const left = 10 - daysPassed;
+                                remainingHtml = `<span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1"><i class="bi bi-hourglass-split me-1"></i>Buffer: ${left} Days</span>`;
+                            } else {
+                                const left = 375 - daysPassed;
+                                if (left > 0) {
+                                    remainingHtml = `<span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1"><i class="bi bi-calendar-check me-1"></i>${left} Days Left</span>`;
+                                } else {
+                                    remainingHtml = `<span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1"><i class="bi bi-exclamation-circle me-1"></i>Expired</span>`;
+                                }
+                            }
+                            return `<tr class="border-bottom">
+                                <td class="ps-4">
+                                    <div class="fw-bold text-main" style="font-size:1.05rem;">${bizName}</div>
+                                    <div class="text-muted small"><i class="bi bi-person me-1"></i>${c.name}</div>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="avatar-circle bg-primary-subtle text-primary border" style="width:28px;height:28px;font-size:0.7rem;">${pmInitials}</div>
+                                        <span class="text-dark fw-medium small">${pmName}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center mb-1">
+                                        <span class="${c.healthClass} health-dot"></span>
+                                        <span class="fw-medium small text-dark">${c.healthText}</span>
+                                    </div>
+                                    <div class="text-muted extra-small">${c.openIssuesCount} Open Issues · ${c.meetingsCount} Sessions</div>
+                                </td>
+                                <td class="text-muted small">${regDate}</td>
+                                <td>${remainingHtml}</td>
+                                <td class="pe-4 text-end">
+                                    <a href="clients.html?id=${c.id}" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-medium">View</a>
+                                </td>
+                            </tr>`;
+                        }
+                    },
+                    {
+                        id: 'report-cards',
+                        renderRow: (c) => {
+                            const bizName = c.business_name || c.company_name || c.shop_name || c.company || c.organization || c.project_name || 'Direct Client';
+                            const pmName = c.pm_name || c.onboarding_pm_name || 'Unassigned';
+                            const pmInitials = (pmName !== 'Unassigned') ? pmName.slice(0, 2).toUpperCase() : '?';
+                            const rawDate = c.created_at || c.date_added || c.createdAt || c.timestamp;
+                            const regDateObj = rawDate ? new Date(rawDate) : new Date();
+                            const regDate = rawDate ? regDateObj.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A';
+                            return `<div class="client-card-mobile bg-white shadow-sm mb-3 p-3">
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <div>
+                                        <h6 class="fw-bold text-dark mb-0">${bizName}</h6>
+                                        <div class="text-muted small">${c.name}</div>
+                                    </div>
+                                    <span class="badge bg-light text-dark border"><span class="${c.healthClass} health-dot" style="width:6px;height:6px;"></span>${c.healthText}</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="avatar-circle bg-primary-subtle text-primary" style="width:24px;height:24px;font-size:0.6rem;">${pmInitials}</div>
+                                        <span class="text-muted" style="font-size:0.75rem;">${pmName}</span>
+                                    </div>
+                                    <div class="text-end">
+                                        <div class="text-muted" style="font-size:0.7rem;">Added ${regDate}</div>
+                                    </div>
+                                </div>
+                            </div>`;
+                        }
                     }
-                }
-                c.remainingExportText = remainingExportText;
-                // ----------------------------
-
-                // Desktop Row
-                rows += `
-                <tr class="border-bottom">
-                    <td class="ps-4">
-                        <div class="fw-bold text-main" style="font-size:1.05rem;">${bizName}</div>
-                        <div class="text-muted small"><i class="bi bi-person me-1"></i>${c.name}</div>
-                    </td>
-                    <td>
-                        <div class="d-flex align-items-center gap-2">
-                            <div class="avatar-circle bg-primary-subtle text-primary border" style="width:28px;height:28px;font-size:0.7rem;">${pmInitials}</div>
-                            <span class="text-dark fw-medium small">${pmName}</span>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="d-flex align-items-center mb-1">
-                            <span class="${c.healthClass} health-dot"></span>
-                            <span class="fw-medium small text-dark">${c.healthText}</span>
-                        </div>
-                        <div class="text-muted extra-small">${c.openIssuesCount} Open Issues · ${c.meetingsCount} Sessions</div>
-                    </td>
-                    <td class="text-muted small">${regDate}</td>
-                    <td>${remainingHtml}</td>
-                    <td class="pe-4 text-end">
-                        <a href="clients.html?id=${c.id}" class="btn btn-sm btn-outline-primary rounded-pill px-3 fw-medium">View</a>
-                    </td>
-                </tr>`;
-
-                // Mobile Card
-                cardHtml += `
-                <div class="client-card-mobile bg-white shadow-sm mb-3 p-3">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div>
-                            <h6 class="fw-bold text-dark mb-0">${bizName}</h6>
-                            <div class="text-muted small">${c.name}</div>
-                        </div>
-                        <span class="badge bg-light text-dark border"><span class="${c.healthClass} health-dot" style="width:6px;height:6px;"></span>${c.healthText}</span>
-                    </div>
-                    <div class="d-flex justify-content-between align-items-center pt-3 border-top">
-                        <div class="d-flex align-items-center gap-2">
-                            <div class="avatar-circle bg-primary-subtle text-primary" style="width:24px;height:24px;font-size:0.6rem;">${pmInitials}</div>
-                            <span class="text-muted" style="font-size:0.75rem;">${pmName}</span>
-                        </div>
-                        <div class="text-end">
-                            <div class="text-muted" style="font-size:0.7rem;">Added ${regDate}</div>
-                        </div>
-                    </div>
-                </div>`;
+                ],
+                emptyMsg: '<tr><td colspan="6" class="text-center py-5 text-muted">No clients match the current filters.</td></tr>'
             });
-
-            tbody.innerHTML = rows;
-            cards.innerHTML = cardHtml;
         }
 
         function initFilters() {

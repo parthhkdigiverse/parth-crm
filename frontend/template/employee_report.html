@@ -144,6 +144,7 @@
                             </tbody>
                         </table>
                     </div>
+                    <div id="report-pagination" class="p-2"></div>
                 </div>
             </div>
         </div>
@@ -365,11 +366,9 @@
         }
 
         function renderReportTable(data) {
-            const tbody = document.getElementById('report-tbody');
             const searchInput = document.getElementById('emp-search');
             const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
 
-            // Apply search filtering on top of data
             const filteredData = data.filter(item =>
                 item.name.toLowerCase().includes(searchTerm) ||
                 item.email.toLowerCase().includes(searchTerm) ||
@@ -378,34 +377,41 @@
 
             document.getElementById('record-count').textContent = `${filteredData.length} Records`;
 
-            tbody.innerHTML = filteredData.map(item => `
-                <tr class="employee-row">
-                    <td class="text-center">
-                        <div class="pill-badge pill-neutral">${item.id.toString().padStart(2, '0')}</div>
-                    </td>
-                    <td>
-                        <div class="employee-name-container clickable-name" onclick="openDrillDown('${item.id}', '${item.name}', '${item.role}', '${item.leads}', '${item.sales}')">
-                            <span class="employee-main-name">${item.name}</span>
-                            <span class="employee-email">${item.email}</span>
-                        </div>
-                    </td>
-                    <td class="text-center"><span class="pill-badge pill-info">${formatRole(item.role)}</span></td>
-                    <td class="text-center"><span class="fw-bold">${item.visits}</span></td>
-                    <td class="text-center"><span class="text-success fw-bold"><i class="bi bi-lightning-fill me-1 small"></i>${item.leads}</span></td>
-                    <td class="text-center">
-                        <div class="status-pill ${item.success_rate >= 50 ? 'pill-success' : 'pill-warning'} mx-auto" style="width: 70px; justify-content: center;">
-                            ${item.success_rate}%
-                        </div>
-                    </td>
-                    <td class="text-center">
-                        <span class="currency-value">₹${item.sales.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
-                        <span class="text-muted small ms-1">(${item.target > 0 ? Math.round((item.sales / item.target) * 100) : 0}%)</span>
-                    </td>
-                    <td class="text-center">
-                        <span class="text-primary fw-bold" style="font-family: 'Outfit';">₹${item.incentive.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
-                    </td>
-                </tr>
-            `).join('');
+            renderPagination({
+                data: filteredData,
+                pageSize: 15,
+                tbodyId: 'report-tbody',
+                paginationId: 'report-pagination',
+                emptyMsg: '<tr><td colspan="8" class="text-center py-5 text-muted">No records found.</td></tr>',
+                renderRow: (item) => `
+                    <tr class="employee-row">
+                        <td class="text-center">
+                            <div class="pill-badge pill-neutral">${item.id.toString().padStart(2, '0')}</div>
+                        </td>
+                        <td>
+                            <div class="employee-name-container clickable-name" onclick="openDrillDown('${item.id}', '${item.name}', '${item.role}', '${item.leads}', '${item.sales}')">
+                                <span class="employee-main-name">${item.name}</span>
+                                <span class="employee-email">${item.email}</span>
+                            </div>
+                        </td>
+                        <td class="text-center"><span class="pill-badge pill-info">${formatRole(item.role)}</span></td>
+                        <td class="text-center"><span class="fw-bold">${item.visits}</span></td>
+                        <td class="text-center"><span class="text-success fw-bold"><i class="bi bi-lightning-fill me-1 small"></i>${item.leads}</span></td>
+                        <td class="text-center">
+                            <div class="status-pill ${item.success_rate >= 50 ? 'pill-success' : 'pill-warning'} mx-auto" style="width: 70px; justify-content: center;">
+                                ${item.success_rate}%
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <span class="currency-value">₹${item.sales.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                            <span class="text-muted small ms-1">(${item.target > 0 ? Math.round((item.sales / item.target) * 100) : 0}%)</span>
+                        </td>
+                        <td class="text-center">
+                            <span class="text-primary fw-bold" style="font-family: 'Outfit';">₹${item.incentive.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                        </td>
+                    </tr>
+                `
+            });
         }
 
         function updateKPICards(data) {

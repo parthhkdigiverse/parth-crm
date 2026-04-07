@@ -139,6 +139,7 @@
                             </tbody>
                         </table>
                     </div>
+                    <div id="salary-pagination"></div>
                 </div>
                 <!-- Generate Salary Slip Modal -->
                 <div class="srm-overlay" id="salaryModal">
@@ -567,8 +568,6 @@
                     // Load slips
                     async function loadSlips() {
                         const tbody = document.getElementById('slips-tbody');
-                        tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading...</td></tr>';
-
                         try {
                             let slips;
                             if (canViewAllSalary) {
@@ -592,9 +591,6 @@
                             if (countBadge) countBadge.textContent = slips.length + ' record(s)';
 
                             // SORTING LOGIC:
-                            // 1. Remarks at top (Priority 1)
-                            // 2. Drafts above Paid (Priority 2)
-                            // 3. Month descending (Priority 3)
                             slips.sort((a, b) => {
                                 const aHasRemark = !!(a.employee_remarks && a.employee_remarks.trim() && a.employee_remarks !== 'None');
                                 const bHasRemark = !!(b.employee_remarks && b.employee_remarks.trim() && b.employee_remarks !== 'None');
@@ -611,102 +607,100 @@
                                 return (b.month || '').localeCompare(a.month || '');
                             });
 
-                            if (!slips.length) {
-                                tbody.innerHTML = '<tr><td colspan="9" class="text-center py-5 text-muted">No salary slips found.</td></tr>';
-                                return;
-                            }
+                            renderPagination({
+                                data: slips,
+                                pageSize: 15,
+                                tbodyId: 'slips-tbody',
+                                paginationId: 'salary-pagination',
+                                emptyMsg: '<tr><td colspan="9" class="text-center py-5 text-muted">No salary slips found.</td></tr>',
+                                renderRow: (s) => {
+                                    const canManageSalary = window.hasFeatureAccess ? window.hasFeatureAccess('salary_manage_roles') : isAdmin;
+                                    const statusCls = s.status === 'CONFIRMED' ? 'badge-green-light' : 'badge-yellow-light';
+                                    const statusIcon = s.status === 'CONFIRMED' ? 'bi-check-circle' : 'bi-hourglass-split';
+                                    const statusLabel = s.status === 'CONFIRMED' ? 'PAID' : 'DRAFT';
+                                    const visibleLabel = s.is_visible_to_employee ? 'Visible' : 'Hidden';
 
-                            tbody.innerHTML = slips.map(s => {
-                                const canManageSalary = window.hasFeatureAccess ? window.hasFeatureAccess('salary_manage_roles') : isAdmin;
-                                const statusCls = s.status === 'CONFIRMED' ? 'badge-green-light' : 'badge-yellow-light';
-                                const statusIcon = s.status === 'CONFIRMED' ? 'bi-check-circle' : 'bi-hourglass-split';
-                                const statusLabel = s.status === 'CONFIRMED' ? 'PAID' : 'DRAFT';
-                                const visibleLabel = s.is_visible_to_employee ? 'Visible' : 'Hidden';
+                                    let previewBtn = '';
+                                    let visibilityBtn = '';
+                                    let remarkBtn = '';
+                                    let slipIconBtn = '';
 
-                                let previewBtn = '';
-                                let visibilityBtn = '';
-                                let confirmBtn = '';
-                                let remarkBtn = '';
-                                let slipIconBtn = '';
+                                    if (canManageSalary) {
+                                        const sid = s.id || s._id;
+                                        previewBtn = `<button class="btn btn-sm btn-outline-primary" title="Download Salary Slip" onclick="downloadInvoice('${sid}')"><i class="bi bi-file-earmark-pdf"></i></button>`;
 
-                                if (canManageSalary) {
-                                    const sid = s.id || s._id;
-                                    // Admin Icons: Eye (Preview), Tick (Release/Visibility)
-                                    previewBtn = `<button class="btn btn-sm btn-outline-primary" title="Download Salary Slip" onclick="downloadInvoice('${sid}')"><i class="bi bi-file-earmark-pdf"></i></button>`;
+                                        const visibilityTitle = s.is_visible_to_employee ? 'Hide from employee' : 'Release to employee';
+                                        const visibilityIcon = s.is_visible_to_employee ? 'bi-check-lg' : 'bi-send';
+                                        const visibilityBtnClass = s.is_visible_to_employee ? 'btn-success' : 'btn-outline-secondary';
+                                        visibilityBtn = `<button class="btn btn-sm ${visibilityBtnClass}" title="${visibilityTitle}" onclick="toggleSalaryVisibility('${sid}', ${!s.is_visible_to_employee})"><i class="bi ${visibilityIcon}"></i></button>`;
 
-                                    const visibilityTitle = s.is_visible_to_employee ? 'Hide from employee' : 'Release to employee';
-                                    const visibilityIcon = s.is_visible_to_employee ? 'bi-check-lg' : 'bi-send';
-                                    const visibilityBtnClass = s.is_visible_to_employee ? 'btn-success' : 'btn-outline-secondary';
-                                    visibilityBtn = `<button class="btn btn-sm ${visibilityBtnClass}" title="${visibilityTitle}" onclick="toggleSalaryVisibility('${sid}', ${!s.is_visible_to_employee})"><i class="bi ${visibilityIcon}"></i></button>`;
+                                        const hasEmpRemark = !!(s.employee_remarks && s.employee_remarks.trim() && s.employee_remarks !== 'None');
+                                        const hasMgrRemark = !!(s.manager_remarks && s.manager_remarks.trim() && s.manager_remarks !== 'None');
 
-                                    // Admin Remark Highlight: Show dot only if employee has a remark AND admin hasn't replied yet
-                                    const hasEmpRemark = !!(s.employee_remarks && s.employee_remarks.trim() && s.employee_remarks !== 'None');
-                                    const hasMgrRemark = !!(s.manager_remarks && s.manager_remarks.trim() && s.manager_remarks !== 'None');
+                                        if (hasEmpRemark) {
+                                            const showDot = !hasMgrRemark;
+                                            remarkBtn = `<button class="btn btn-sm btn-light border-0 p-1 position-relative" 
+                                                title="View Employee Remark: ${s.employee_remarks.substring(0, 50)}..." 
+                                                onclick="openSalaryRemarks('${sid}', '${encodeURIComponent(s.employee_remarks)}', '${encodeURIComponent(s.manager_remarks || '')}', true)">
+                                            <i class="bi bi-chat-left-text ${showDot ? 'text-danger' : 'text-primary'}" style="font-size: 1.2rem;"></i>
+                                            ${showDot ? '<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>' : ''}
+                                        </button>`;
+                                        }
+                                    } else {
+                                        const sid = s.id || s._id;
+                                        const empRemarksEnc = encodeURIComponent(s.employee_remarks || '');
+                                        const mgrRemarksEnc = encodeURIComponent(s.manager_remarks || '');
+                                        remarkBtn = `<button class="btn btn-sm btn-outline-info" title="Remarks" onclick="openSalaryRemarks('${sid}', '${empRemarksEnc}', '${mgrRemarksEnc}', false)"><i class="bi bi-chat-left-text"></i></button>`;
 
-                                    if (hasEmpRemark) {
-                                        const showDot = !hasMgrRemark;
-                                        remarkBtn = `<button class="btn btn-sm btn-light border-0 p-1 position-relative" 
-                                            title="View Employee Remark: ${s.employee_remarks.substring(0, 50)}..." 
-                                            onclick="openSalaryRemarks('${sid}', '${encodeURIComponent(s.employee_remarks)}', '${encodeURIComponent(s.manager_remarks || '')}', true)">
-                                        <i class="bi bi-chat-left-text ${showDot ? 'text-danger' : 'text-primary'}" style="font-size: 1.2rem;"></i>
-                                        ${showDot ? '<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>' : ''}
-                                    </button>`;
+                                        if (s.status === 'CONFIRMED' && s.is_visible_to_employee) {
+                                            slipIconBtn = `<button class="btn btn-sm btn-outline-primary" title="Download Slip" onclick="downloadInvoice('${sid}')"><i class="bi bi-file-earmark-pdf"></i></button>`;
+                                        }
                                     }
-                                } else {
-                                    const sid = s.id || s._id;
-                                    // Employee Icons: Remark, Slip
-                                    const empRemarksEnc = encodeURIComponent(s.employee_remarks || '');
-                                    const mgrRemarksEnc = encodeURIComponent(s.manager_remarks || '');
-                                    remarkBtn = `<button class="btn btn-sm btn-outline-info" title="Remarks" onclick="openSalaryRemarks('${sid}', '${empRemarksEnc}', '${mgrRemarksEnc}', false)"><i class="bi bi-chat-left-text"></i></button>`;
 
-                                    if (s.status === 'CONFIRMED' && s.is_visible_to_employee) {
-                                        slipIconBtn = `<button class="btn btn-sm btn-outline-primary" title="Download Slip" onclick="downloadInvoice('${sid}')"><i class="bi bi-file-earmark-pdf"></i></button>`;
-                                    }
+                                    const totalBonus = (parseFloat(s.incentive_amount) || 0) + (parseFloat(s.slab_bonus) || 0);
+                                    const empName = (window.userNameMap && window.userNameMap[s.user_id]) || s.user_name || 'User #' + s.user_id;
+
+                                    const sid = s.id || s._id;
+                                    const isPaid = (s.status || '').toUpperCase() === 'CONFIRMED';
+                                    const statusToggle = canManageSalary
+                                        ? `<div class="d-flex flex-column align-items-center">
+                            <div class="form-check form-switch p-0 m-0 d-flex align-items-center bg-app rounded-pill px-2 py-0 border" style="min-width: 80px; height: 24px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);">
+                                    <input class="form-check-input ms-0 mt-0" type="checkbox" style="cursor:pointer; width: 28px; height: 14px;" 
+                                            ${isPaid ? 'checked disabled' : ''} 
+                                            onchange="if(this.checked) confirmSlip('${sid}')">
+                                <span class="ms-1" style="font-size: 0.62rem; font-weight: 800; color: ${isPaid ? 'var(--success-text)' : 'var(--text-muted)'};">
+                                ${isPaid ? 'PAID' : 'DRAFT'}
+                                </span>
+                                </div>
+                                <div class="mt-1" style="font-size: 0.6rem; color: ${s.is_visible_to_employee ? 'var(--success-text)' : 'var(--text-muted)'}; letter-spacing: 0.02em;">
+                                    ${s.is_visible_to_employee ? 'RELEASED' : 'HIDDEN'}
+                                </div>
+                            </div>`
+                                        : `<span class="status-pill ${statusCls} w-100 d-block text-center"><i class="bi ${statusIcon} me-1"></i>${statusLabel}</span>`;
+
+                                    return `<tr>
+                            <td class="fw-semibold" style="color:var(--text-main); overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${empName}">${empName}</td>
+                            <td class="text-muted small">${s.month}</td>
+                            <td class="small">${INR(s.base_salary)}</td>
+                            <td class="small">
+                                <span style="color:var(--success-text);">${s.paid_leaves}P</span>
+                                <span class="text-muted mx-1">/</span>
+                                <span style="color:var(--danger-text);">${s.unpaid_leaves}U</span>
+                            </td>
+                            <td style="color:var(--success-text); font-weight:600;" class="small">+${INR(totalBonus)}</td>
+                            <td style="color:var(--danger-text); font-weight:600;" class="small">-${INR(s.deduction_amount)}</td>
+                            <td class="fw-bold small">${INR(s.final_salary)}</td>
+                            <td>
+                                ${statusToggle}
+                            </td>
+                            <td class="text-end">
+                                <div class="d-flex gap-1 justify-content-end align-items-center">
+                                    ${previewBtn}${visibilityBtn}${remarkBtn}${slipIconBtn}
+                                </div>
+                            </td>
+                        </tr>`;
                                 }
-
-                                const totalBonus = (parseFloat(s.incentive_amount) || 0) + (parseFloat(s.slab_bonus) || 0);
-                                const empName = (window.userNameMap && window.userNameMap[s.user_id]) || s.user_name || 'User #' + s.user_id;
-
-                                const sid = s.id || s._id;
-                                const isPaid = (s.status || '').toUpperCase() === 'CONFIRMED';
-                                const statusToggle = canManageSalary
-                                    ? `<div class="d-flex flex-column align-items-center">
-                         <div class="form-check form-switch p-0 m-0 d-flex align-items-center bg-app rounded-pill px-2 py-0 border" style="min-width: 80px; height: 24px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);">
-                                   <input class="form-check-input ms-0 mt-0" type="checkbox" style="cursor:pointer; width: 28px; height: 14px;" 
-                                          ${isPaid ? 'checked disabled' : ''} 
-                                          onchange="if(this.checked) confirmSlip('${sid}')">
-                               <span class="ms-1" style="font-size: 0.62rem; font-weight: 800; color: ${isPaid ? 'var(--success-text)' : 'var(--text-muted)'};">
-                               ${isPaid ? 'PAID' : 'DRAFT'}
-                               </span>
-                             </div>
-                             <div class="mt-1" style="font-size: 0.6rem; color: ${s.is_visible_to_employee ? 'var(--success-text)' : 'var(--text-muted)'}; letter-spacing: 0.02em;">
-                                ${s.is_visible_to_employee ? 'RELEASED' : 'HIDDEN'}
-                             </div>
-                           </div>`
-                                    : `<span class="status-pill ${statusCls} w-100 d-block text-center"><i class="bi ${statusIcon} me-1"></i>${statusLabel}</span>`;
-
-                                return `<tr>
-                        <td class="fw-semibold" style="color:var(--text-main); overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${empName}">${empName}</td>
-                        <td class="text-muted small">${s.month}</td>
-                        <td class="small">${INR(s.base_salary)}</td>
-                        <td class="small">
-                            <span style="color:var(--success-text);">${s.paid_leaves}P</span>
-                            <span class="text-muted mx-1">/</span>
-                            <span style="color:var(--danger-text);">${s.unpaid_leaves}U</span>
-                        </td>
-                        <td style="color:var(--success-text); font-weight:600;" class="small">+${INR(totalBonus)}</td>
-                        <td style="color:var(--danger-text); font-weight:600;" class="small">-${INR(s.deduction_amount)}</td>
-                        <td class="fw-bold small">${INR(s.final_salary)}</td>
-                        <td>
-                            ${statusToggle}
-                        </td>
-                        <td class="text-end">
-                            <div class="d-flex gap-1 justify-content-end align-items-center">
-                                ${previewBtn}${visibilityBtn}${remarkBtn}${slipIconBtn}
-                            </div>
-                        </td>
-                    </tr>`;
-                            }).join('');
+                            });
                         } catch (e) {
                             tbody.innerHTML = `<tr><td colspan="9" class="text-center py-5 text-danger">${e.message || 'Error'}</td></tr>`;
                         }

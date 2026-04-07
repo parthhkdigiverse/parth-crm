@@ -83,6 +83,7 @@
                                 </tbody>
                             </table>
                         </div>
+                        <div id="issues-pagination"></div>
                     </div>
                 </div>
             </div><!-- /page-content -->
@@ -246,21 +247,22 @@
             const open = issues.filter(i => i.status === 'OPEN').length;
             document.getElementById('issue-count').textContent = `${open} unresolved · ${issues.length} total issues`;
             if (window.checkHighPriorityIssues) window.checkHighPriorityIssues();
-            document.getElementById('issues-table').innerHTML = issues.length
-                ? issues.map(i => {
+
+            renderPagination({
+                data: issues,
+                pageSize: 20,
+                tbodyId: 'issues-table',
+                paginationId: 'issues-pagination',
+                emptyMsg: '<tr><td colspan="8" class="text-center py-5 text-muted">No issues found.</td></tr>',
+                renderRow: (i) => {
                     const icon = sevIcons[i.severity] || sevIcons['LOW'];
                     const sBadge = `<span class="badge rounded-pill fw-medium px-3 py-2 ${sevStyle[i.severity] || sevStyle.LOW}">${i.severity}</span>`;
-
-                    // format status
                     const stLabel = (i.status || 'PENDING').replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
                     const stBadge = `<span class="badge rounded-pill fw-medium px-3 py-2 ${stStyle[i.status] || stStyle.PENDING}">${stLabel}</span>`;
-
-                    // Check if critical
                     const isCritical = i.severity === 'HIGH' && !['RESOLVED', 'CANCELLED'].includes(i.status);
                     const criticalClass = isCritical ? 'critical-issue-row' : '';
                     const canUpdateIssue = isAdminUser || i.assigned_to_id === currentUser.id || i.reporter_id === currentUser.id;
                     const canDeleteIssue = isAdminUser;
-
                     return `
                 <tr class="align-middle ${criticalClass}" style="height: 60px; cursor: ${canUpdateIssue ? 'pointer' : 'default'};" ${canUpdateIssue ? `onclick="openHandleModal('${i.id}', '${i.status}', '${(i.remarks || '').replace(/'/g, "\\'")}')"` : ''}>
                     <td class="ps-3" onclick="event.stopPropagation()">
@@ -286,8 +288,8 @@
                         </div>
                     </td>
                 </tr>`;
-                }).join('')
-                : '<tr><td colspan="8" class="text-center py-5 text-muted">No issues found.</td></tr>';
+                }
+            });
         }
 
         window.openHandleModal = (id, currentStatus, currentRemarks) => {

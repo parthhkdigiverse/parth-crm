@@ -157,6 +157,7 @@
                             </tbody>
                         </table>
                     </div>
+                    <div id="feedback-pagination"></div>
                 </div>
             </div>
         </div><!-- /page-content -->
@@ -385,7 +386,6 @@
                 const matchesProduct = !productFilter || f.product === productFilter;
                 const matchesAgent = !agentFilter || f.agent_name === agentFilter;
                 
-                // Date Filtering Logic (SURGICAL)
                 let matchesDate = true;
                 if (dateRange !== 'ALL') {
                     const fDate = new Date(f.created_at);
@@ -431,55 +431,56 @@
             const countEl = document.getElementById('record-count');
             if (countEl) countEl.textContent = filteredData.length;
 
-            const tbody = document.getElementById('feedback-table');
-            if (filteredData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted">No records found.</td></tr>';
-                return;
-            }
+            renderPagination({
+                data: filteredData,
+                pageSize: 10,
+                tbodyId: 'feedback-table',
+                paginationId: 'feedback-pagination',
+                emptyMsg: '<tr><td colspan="6" class="text-center py-5 text-muted">No records found.</td></tr>',
+                renderRow: (f) => {
+                    const initials = (f.agent_name || '?').split(' ').map(n => n[0]).join('').toUpperCase();
+                    const createdDate = new Date(f.created_at);
+                    const dateStr = createdDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                    const timeStr = createdDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
-            tbody.innerHTML = filteredData.map(f => {
-                const initials = (f.agent_name || '?').split(' ').map(n => n[0]).join('').toUpperCase();
-                const createdDate = new Date(f.created_at);
-                const dateStr = createdDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-                const timeStr = createdDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-
-                return `
-                <tr>
-                    <td>
-                        <div class="fw-bold">${f.client_name || 'Guest'}</div>
-                        <div class="text-muted small">${f.shop_name || 'N/A'} • ${f.product || 'N/A'}</div>
-                        <div class="text-muted" style="font-size: 0.7rem;">${f.mobile || ''}</div>
-                    </td>
-                    <td>
-                        <div class="d-flex align-items-center gap-2">
-                            <div class="agent-avatar text-white border border-primary-ring">${initials}</div>
-                            <div>
-                                <div class="fw-medium">${f.agent_name || 'System'}</div>
-                                <div class="text-muted" style="font-size: 0.75rem;">${f.agent_role || 'Sales Executive'}</div>
+                    return `
+                    <tr>
+                        <td>
+                            <div class="fw-bold">${f.client_name || 'Guest'}</div>
+                            <div class="text-muted small">${f.shop_name || 'N/A'} • ${f.product || 'N/A'}</div>
+                            <div class="text-muted" style="font-size: 0.7rem;">${f.mobile || ''}</div>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="agent-avatar text-white border border-primary-ring">${initials}</div>
+                                <div>
+                                    <div class="fw-medium">${f.agent_name || 'System'}</div>
+                                    <div class="text-muted" style="font-size: 0.75rem;">${f.agent_role || 'Sales Executive'}</div>
+                                </div>
                             </div>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="text-muted small fw-bold" style="width: 45px;">Product Rating</span>
-                            <div class="star-rating text-warning" style="font-size: 0.8rem;">
-                                ${'★'.repeat(f.rating)}${'☆'.repeat(5 - f.rating)}
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="text-muted small fw-bold" style="width: 45px;">Product Rating</span>
+                                <div class="star-rating text-warning" style="font-size: 0.8rem;">
+                                    ${'★'.repeat(f.rating)}${'☆'.repeat(5 - f.rating)}
+                                </div>
                             </div>
-                        </div>
-                    </td>
-                    <td style="max-width: 200px;"><div class="text-muted small text-truncate-2">${f.comments || 'No comments provided'}</div></td>
-                    <td><div class="overall-score ${f.rating >= 4 ? 'bg-score-high' : (f.rating >= 2 ? 'bg-score-mid' : 'bg-score-low')}">${f.rating}.0</div></td>
-                    <td class="text-end">
-                        <div class="d-flex justify-content-end align-items-center gap-3">
-                            <div class="text-end">
-                                <div class="text-muted small fw-bold mb-0">${dateStr}</div>
-                                <div class="text-muted" style="font-size: 0.7rem;">${timeStr}</div>
+                        </td>
+                        <td style="max-width: 200px;"><div class="text-muted small text-truncate-2">${f.comments || 'No comments provided'}</div></td>
+                        <td><div class="overall-score ${f.rating >= 4 ? 'bg-score-high' : (f.rating >= 2 ? 'bg-score-mid' : 'bg-score-low')}">${f.rating}.0</div></td>
+                        <td class="text-end">
+                            <div class="d-flex justify-content-end align-items-center gap-3">
+                                <div class="text-end">
+                                    <div class="text-muted small fw-bold mb-0">${dateStr}</div>
+                                    <div class="text-muted" style="font-size: 0.7rem;">${timeStr}</div>
+                                </div>
+                                <button class="btn btn-link btn-sm p-0 mb-1" title="Delete" onclick="deleteFeedback('${f.id}')"><i class="bi bi-trash text-danger"></i></button>
                             </div>
-                            <button class="btn btn-link btn-sm p-0 mb-1" title="Delete" onclick="deleteFeedback('${f.id}')"><i class="bi bi-trash text-danger"></i></button>
-                        </div>
-                    </td>
-                </tr>
-            `}).join('');
+                        </td>
+                    </tr>`;
+                }
+            });
         };
 
         // Delete feedback — custom modal
