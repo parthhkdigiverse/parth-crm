@@ -481,21 +481,21 @@
 
                 <!-- Search input -->
                 <div class="input-group mb-3 shadow-sm" style="border-radius: 50px; overflow: hidden;">
-                    <span class="input-group-text bg-white border-0 ps-3 text-muted">
+                    <span class="input-group-text border-0 ps-3 text-muted" style="background: var(--surface);">
                         <i class="bi bi-search"></i>
                     </span>
-                    <input type="text" id="hub-search" class="form-control border-0 bg-white"
+                    <input type="text" id="hub-search" class="form-control border-0"
                         placeholder="Search leads..." oninput="handleSearch(event)"
-                        style="box-shadow: none;">
+                        style="box-shadow: none; background: var(--surface); color: var(--text-main);">
                 </div>
 
                 <!-- Filter pills -->
                 <div class="d-flex gap-2 overflow-auto pb-1" style="scrollbar-width: none; -ms-overflow-style: none;">
                     <button class="btn btn-sm btn-dark rounded-pill px-3 fw-medium filter-pill"
                         onclick="setFilter('ALL', this)">All Active</button>
-                    <button class="btn btn-sm btn-light border text-muted rounded-pill px-3 text-nowrap fw-medium bg-white filter-pill"
+                    <button class="btn btn-sm btn-light border rounded-pill px-3 text-nowrap fw-medium filter-pill"
                         onclick="setFilter('IN_PROGRESS', this)">In Progress</button>
-                    <button class="btn btn-sm btn-light border text-muted rounded-pill px-3 text-nowrap fw-medium bg-white filter-pill"
+                    <button class="btn btn-sm btn-light border rounded-pill px-3 text-nowrap fw-medium filter-pill"
                         onclick="setFilter('DEMO_SET', this)">Demo Set</button>
                 </div>
                 <style>.overflow-auto::-webkit-scrollbar { display: none; }</style>
@@ -609,7 +609,7 @@
                                     class="bi bi-clock-history me-2 text-primary"></i>Available Slots</label>
                             <div id="smart-time-slots-container" class="d-flex flex-wrap gap-2">
                                 <div class="text-muted small w-100 text-center py-4 fw-medium"
-                                    style="background: #f8fafc; border-radius: 12px; border: 1px dashed #cbd5e1;">
+                                    style="background: var(--bg-app); border-radius: 12px; border: 1px dashed var(--border);">
                                     <i class="bi bi-calendar-x opacity-50 d-block fs-3 mb-1"></i>
                                     Select PM and Date to unlock calendar
                                 </div>
@@ -650,7 +650,7 @@
                     <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"
                         style="margin-top: -20px;"></button>
                 </div>
-                <div class="modal-body p-4 bg-white">
+                <div class="modal-body p-4 bg-surface">
                     <input type="hidden" id="reschedule-meeting-id" value="">
                     <input type="hidden" id="train-shop-id">
                     <input type="hidden" id="train-client-id">

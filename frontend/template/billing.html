@@ -16,7 +16,7 @@
             border-radius: 24px !important;
             border: 1px solid rgba(226, 232, 240, 0.8) !important;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02) !important;
-            background: #ffffff !important;
+            background: var(--surface) !important;
         }
         .btn-pay-now {
             background: var(--accent-gradient) !important;
@@ -29,8 +29,8 @@
             box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3) !important;
         }
         .status-monitor-box {
-            background: #f8faff !important;
-            border: 1px dashed #cbd5e1 !important;
+            background: var(--bg-app) !important;
+            border: 1px dashed var(--border) !important;
             border-radius: 16px !important;
         }
         .status-pulse {
@@ -39,12 +39,12 @@
         .hub-title {
             font-family: 'Outfit', sans-serif !important;
             font-weight: 700 !important;
-            color: #1e293b !important;
+            color: var(--text-main) !important;
             letter-spacing: -0.01em;
         }
         .hub-badge {
-            background: #eff6ff !important;
-            color: #2563eb !important;
+            background: var(--primary-light) !important;
+            color: var(--primary) !important;
             font-weight: 600 !important;
             font-size: 11px !important;
             letter-spacing: 0.02em;
@@ -539,10 +539,10 @@
 
                 <!-- Info tip -->
                 <div
-                    style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 14px;margin-bottom:16px;">
+                    style="background: var(--primary-light); border: 1px solid var(--primary-ring); border-radius: 10px; padding: 12px 14px; margin-bottom: 16px;">
                     <div class="d-flex align-items-start gap-2">
                         <i class="bi bi-info-circle-fill text-primary mt-1"></i>
-                        <div class="small" style="color:#1d4ed8;">
+                        <div class="small" style="color: var(--primary);">
                             <strong>Show this QR to the client.</strong> Ask them to scan and complete the payment
                             <em>before</em> you click "Payment Done".
                             For cash transactions, just confirm and proceed.
@@ -574,10 +574,10 @@
 
                 <!-- Confirmation note -->
                 <div
-                    style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 14px;margin-bottom:16px;">
+                    style="background: var(--success-light); border: 1px solid var(--success-border); border-radius: 10px; padding: 12px 14px; margin-bottom: 16px;">
                     <div class="d-flex align-items-start gap-2">
                         <i class="bi bi-patch-check-fill text-success mt-1"></i>
-                        <div class="small" style="color:#15803d;">
+                        <div class="small" style="color: var(--success-text);">
                             <strong>Confirm invoice creation.</strong> The invoice will be saved as <em>Pending
                                 Verification</em>. Once verified, it can be sent to the client's WhatsApp.
                             The client will be <strong>auto-added to Clients</strong> on the first WhatsApp send.
@@ -680,7 +680,7 @@
                 <div class="modal-title-text"><i class="bi bi-file-earmark-text text-primary me-2"></i>Invoice Preview</div>
                 <button class="modal-close-x" onclick="closeViewModal()"><i class="bi bi-x-lg"></i></button>
             </div>
-            <div id="p3-preview-body" style="height: calc(100vh - 200px); overflow-y: auto; background: #f8fafc; padding: 20px;">
+            <div id="p3-preview-body" style="height: calc(100vh - 200px); overflow-y: auto; background: var(--bg-app); padding: 20px;">
                 <!-- HTML content injected here -->
             </div>
             <div class="modal-footer px-3 py-2 border-top text-end bg-light">

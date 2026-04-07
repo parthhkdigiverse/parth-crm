@@ -24,7 +24,7 @@
             text-transform: uppercase;
             letter-spacing: 0.05em;
             color: var(--text-muted);
-            background: #f8fafc;
+            background: var(--bg-app);
             border-bottom: 1.5px solid var(--border) !important;
         }
 
@@ -59,7 +59,7 @@
             position: sticky;
             left: 0;
             z-index: 10;
-            background: #fff;
+            background: var(--surface);
             border-right: 1.5px solid var(--border);
             min-width: 180px !important;
             box-shadow: 4px 0 10px rgba(0,0,0,0.02);
@@ -68,12 +68,12 @@
 
         #clients-table-container thead th:first-child {
             z-index: 11;
-            background: #f8fafc;
+            background: var(--bg-app);
         }
 
         /* Ensure smooth hover with sticky column */
         .table-hover tbody tr:hover td:first-child {
-            background-color: #f1f5f9 !important;
+            background-color: var(--primary-light) !important;
         }
 
         /* Sticky Column Content Wrapper (for truncation) */
@@ -124,7 +124,7 @@
         .table-section-header {
             display: flex; align-items: center; justify-content: space-between;
             padding: 14px 20px 12px; border-bottom: 1px solid var(--border);
-            background: linear-gradient(to right, rgba(248,250,252,0.8), rgba(255,255,255,0.9));
+            background: var(--surface);
             border-radius: 14px 14px 0 0;
         }
         .table-section-title {
@@ -191,7 +191,7 @@
 
         /* Fixed Table Header removed as page scrolls now */
         #clients-table-container thead {
-            background: #f8fafc;
+            background: var(--bg-app);
         }
         
         /* Dropdown fix for clipped menus and table stacking context */

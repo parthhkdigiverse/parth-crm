@@ -11,7 +11,7 @@ try:
 except: pass
 
 MONGODB_URI = "mongodb+srv://HK_Digiverse:HK%40Digiverse%40123@cluster0.lcbyqbq.mongodb.net/aisetu_srm?retryWrites=true&w=majority&appName=Cluster0"
-DB_NAME = "aisetu_srm"
+DB_NAME = "aisetu_db"
 
 async def normalize():
     client = motor.motor_asyncio.AsyncIOMotorClient(MONGODB_URI)

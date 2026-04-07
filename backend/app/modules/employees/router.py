@@ -33,35 +33,35 @@ async def list_employees(
     if current_user.role == UserRole.CLIENT:
         return []
 
-    q_filter = User.find(User.is_deleted == False)
+    query_obj = User.find(User.is_deleted == False)
     
     if department:
         import re
         pattern = re.compile(f".*{re.escape(department)}.*", re.IGNORECASE)
-        q_filter = q_filter.find({"department": pattern})
+        query_obj = query_obj.find({"department": pattern})
     if role:
-        q_filter = q_filter.find(User.role == role)
+        query_obj = query_obj.find(User.role == role)
     if is_active is not None:
-        q_filter = q_filter.find(User.is_active == is_active)
+        query_obj = query_obj.find(User.is_active == is_active)
     if q:
         import re
         pattern = re.compile(f".*{re.escape(q)}.*", re.IGNORECASE)
-        from beanie.operators import Or
-        q_filter = q_filter.find(Or(
-            {"name": pattern},
-            {"email": pattern},
-            {"employee_code": pattern}
-        ))
+        query_obj = query_obj.find({
+            "$or": [
+                {"name": pattern},
+                {"email": pattern},
+                {"employee_code": pattern}
+            ]
+        })
     if start_date:
-        q_filter = q_filter.find(User.joining_date >= start_date)
+        query_obj = query_obj.find(User.joining_date >= start_date)
     if end_date:
-        q_filter = q_filter.find(User.joining_date <= end_date)
-
+        query_obj = query_obj.find(User.joining_date <= end_date)
         
     if limit:
-        q_filter = q_filter.limit(limit)
+        query_obj = query_obj.limit(limit)
     
-    results = await q_filter.to_list()
+    results = await query_obj.to_list()
     
     # If not admin, mask sensitive data for others
     if current_user.role != UserRole.ADMIN:

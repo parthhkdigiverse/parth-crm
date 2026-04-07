@@ -408,7 +408,7 @@ window.injectTopHeader = function (pageTitle) {
                     <button class="btn p-0 position-absolute text-muted search-btn" style="left: 12px; top: 50%; transform: translateY(-50%); z-index: 10;" onclick="const val = document.getElementById('global-search-input').value.trim(); if(val) window.location.href = 'search.html?q=' + encodeURIComponent(val);">
                         <i class="bi bi-search" style="color: var(--nav-text-muted);"></i>
                     </button>
-                    <input type="text" id="global-search-input" class="form-control" placeholder="Search..." style="padding-left: 38px; border-radius: 20px; height: 38px; background: var(--bg-app); border: 1px solid var(--border); color: var(--text-main); font-weight: 500;">
+                    <input type="text" id="global-search-input" class="form-control" placeholder="Search..." autocomplete="new-password" readonly onfocus="this.removeAttribute('readonly')" style="padding-left: 38px; border-radius: 20px; height: 38px; background: var(--bg-app); border: 1px solid var(--border); color: var(--text-main); font-weight: 500;">
                     <div id="live-search-dropdown" class="search-results-dropdown"></div>
                 </div>
             </div>
@@ -494,7 +494,10 @@ window.injectTopHeader = function (pageTitle) {
 
     setTimeout(() => {
         if (window.checkUrlForQuickAdd) window.checkUrlForQuickAdd();
-    }, 500);
+        // Force-clear Chrome autofill on the global search bar
+        const gsi = document.getElementById('global-search-input');
+        if (gsi) { gsi.value = ''; }
+    }, 200);
 
     // Inject overlay if not present
     if (!document.getElementById('sb-overlay')) {
