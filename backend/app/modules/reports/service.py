@@ -146,6 +146,14 @@ class ReportService:
         r_chart_res = await Bill.get_pymongo_collection().aggregate(r_chart_pipeline).to_list(length=None)
         revenue_by_month = {datetime(r["_id"]["year"], r["_id"]["month"], 1).strftime("%b"): float(r["total"]) for r in r_chart_res}
 
+        # --- 8. Project Status Breakdown (for alternative/new chart) ---
+        p_status_pipeline = [
+            {"$match": {"is_deleted": False}},
+            {"$group": {"_id": "$status", "count": {"$sum": 1}}}
+        ]
+        project_status_res = await Project.get_pymongo_collection().aggregate(p_status_pipeline).to_list(length=None)
+        project_status_breakdown = {str(r["_id"]): r["count"] for r in project_status_res}
+
         return {
             "total_visits": total_visits,
             "active_clients": active_clients,
@@ -163,7 +171,8 @@ class ReportService:
             "visits_chart_title": 'Visits Overview',
             "revenue_by_month": revenue_by_month,
             "issue_severity_breakdown": {},
-            "visit_outcomes_breakdown": visit_status_breakdown
+            "visit_outcomes_breakdown": visit_status_breakdown,
+            "project_status_breakdown": project_status_breakdown
         }
 
     @staticmethod

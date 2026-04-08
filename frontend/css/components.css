@@ -122,9 +122,6 @@
 }
 
 /* ── Page Header ────────────────────────────────────────────── */
-.page-header-glass {
-    margin-bottom: 0 !important;
-}
 
 .page-header {
     display: flex;
@@ -447,7 +444,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 12px 16px;
+    padding: 11px 16px;
     border-bottom: 1px solid var(--border-subtle);
     background: var(--bg-app);
     cursor: pointer;
@@ -567,8 +564,7 @@
 
 .filter-panel-body {
     display: none;
-    padding: 16px 24px;
-    /* More compact vertical padding */
+    padding: 24px;
 }
 
 .filter-panel-body.open {
@@ -703,6 +699,11 @@
     .btn-filter-reset {
         flex: 1 1 140px;
     }
+}
+
+/* Consistent gap between stat-card rows and the next element */
+.row:has(.stat-card) {
+    margin-bottom: 1.25rem !important;
 }
 
 /* ── Kanban Card ────────────────────────────────────────── */
@@ -1963,4 +1964,479 @@ input[type="password"]::-ms-clear {
         width: 100%;
         text-align: center;
     }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   STAT CARD SYSTEM — Top Gradient Stripe + Icon Theme
+   Applied to .stat-card wrappers across projects_demo, leads,
+   and other pages. Dashboard overview cards only get the stripe.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Stat Card Wrapper ── */
+.stat-card,
+.kpi-card {
+    position: relative;
+    background: var(--surface) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04) !important;
+    overflow: hidden;
+    padding: 24px 20px 20px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.stat-card:hover,
+.kpi-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08) !important;
+    border-color: var(--border-subtle) !important;
+}
+
+/* ── Top Gradient Stripe (4px) applied to stat-card and kpi-card ── */
+/* Default: blue stripe when no icon color class detected */
+.stat-card::before,
+.kpi-card::before {
+    content: '';
+    display: block;
+    height: 4px;
+    background: linear-gradient(90deg, #1e3a8a, #2563eb);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1;
+}
+
+/* ── Auto-colored stripes via :has() — works on ALL pages without HTML changes ── */
+/* Detects the existing icon-* class, kpi-icon-bg-*, or card-* variations         */
+
+/* Purple / Violet */
+.stat-card:has(.icon-purple)::before,
+.stat-card:has(.stat-icon-wrapper.icon-purple)::before,
+.kpi-card:has(.kpi-icon-bg-4)::before,
+.stat-card.card-purple::before { background: linear-gradient(90deg, #4c1d95, #7c3aed); }
+
+/* Orange / Amber */
+.stat-card:has(.icon-orange)::before,
+.stat-card:has(.stat-icon-wrapper.icon-orange)::before,
+.kpi-card:has(.kpi-icon-bg-2)::before,
+.stat-card.card-warning::before { background: linear-gradient(90deg, #9a3412, #f97316); }
+
+/* Yellow */
+.stat-card:has(.icon-yellow)::before,
+.stat-card:has(.stat-icon-wrapper.icon-yellow)::before { background: linear-gradient(90deg, #78350f, #f59e0b); }
+
+/* Green / Emerald */
+.stat-card:has(.icon-green)::before,
+.stat-card:has(.stat-icon-wrapper.icon-green)::before,
+.kpi-card:has(.kpi-icon-bg-3)::before,
+.stat-card.card-success::before { background: linear-gradient(90deg, #065f46, #10b981); }
+
+/* Red / Rose */
+.stat-card:has(.icon-red)::before,
+.stat-card:has(.stat-icon-wrapper.icon-red)::before,
+.stat-card.card-danger::before { background: linear-gradient(90deg, #7f1d1d, #ef4444); }
+
+/* Teal / Cyan */
+.stat-card:has(.icon-teal)::before,
+.stat-card:has(.stat-icon-wrapper.icon-teal)::before,
+.stat-card.card-info::before { background: linear-gradient(90deg, #134e4a, #14b8a6); }
+
+/* Blue / Indigo */
+.stat-card:has(.icon-blue)::before,
+.stat-card:has(.stat-icon-wrapper.icon-blue)::before,
+.kpi-card:has(.kpi-icon-bg-1)::before,
+.stat-card.card-primary::before { background: linear-gradient(90deg, #1e3a8a, #2563eb); }
+
+/* ── Manual stripe classes (fallback for cards without icon-* inside) ── */
+.stat-card.stripe-purple::before  { background: linear-gradient(90deg, #4c1d95, #7c3aed); }
+.stat-card.stripe-orange::before  { background: linear-gradient(90deg, #9a3412, #f97316); }
+.stat-card.stripe-yellow::before  { background: linear-gradient(90deg, #78350f, #f59e0b); }
+.stat-card.stripe-green::before   { background: linear-gradient(90deg, #065f46, #10b981); }
+.stat-card.stripe-red::before     { background: linear-gradient(90deg, #7f1d1d, #ef4444); }
+.stat-card.stripe-teal::before    { background: linear-gradient(90deg, #134e4a, #14b8a6); }
+.stat-card.stripe-blue::before    { background: linear-gradient(90deg, #1e3a8a, #2563eb); }
+
+/* Ensure card content clears the stripe */
+.stat-card .stat-card-body {
+    padding: 16px 18px 14px;
+    position: relative;
+}
+
+/* ── Stat Card Icon (top-right, matching overview icon system) ── */
+.stat-card-icon {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+    z-index: 2;
+}
+
+/* Icon color variants using existing CSS variables */
+.stat-card-icon.icon-blue   { background: var(--icon-bg-blue);   color: var(--icon-text-blue); }
+.stat-card-icon.icon-green  { background: var(--icon-bg-green);  color: var(--icon-text-green); }
+.stat-card-icon.icon-purple { background: var(--icon-bg-purple); color: var(--icon-text-purple); }
+.stat-card-icon.icon-yellow { background: var(--icon-bg-yellow); color: var(--icon-text-yellow); }
+.stat-card-icon.icon-red    { background: var(--icon-bg-red);    color: var(--icon-text-red); }
+.stat-card-icon.icon-teal   { background: var(--icon-bg-teal);   color: var(--icon-text-teal); }
+
+/* ── Stat Card Trend Indicator (bottom) ── */
+.stat-card-trend {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-subtle);
+}
+
+.stat-card-trend.trend-up   { color: var(--success-text); }
+.stat-card-trend.trend-down { color: var(--danger-text); }
+.stat-card-trend.trend-neutral { color: var(--text-muted); }
+
+.stat-card-trend i { font-size: 0.78rem; }
+.stat-card-trend .trend-vs { color: var(--text-muted); font-weight: 500; }
+
+/* ── Bootstrap card helper: stripe-only for existing project_demo/overview cards ── */
+.card.has-stripe {
+    position: relative;
+    overflow: hidden;
+}
+.card.has-stripe::before {
+    content: '';
+    display: block;
+    height: 4px;
+    background: linear-gradient(90deg, #1e3a8a, #2563eb);
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    border-radius: inherit;
+    z-index: 1;
+}
+
+/* ── KPI card stripe (overview page — stripe only, no full-card gradient) ── */
+.kpi-card {
+    position: relative;
+    overflow: hidden;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   TABLE ROW: Avatar Initials + Hover Highlight
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Enhanced hover for all table rows ── */
+.srm-table tbody tr,
+.table tbody tr {
+    transition: background 0.14s ease;
+}
+
+/* ── Row Avatar Initials (.row-avatar) ── */
+.row-avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: white;
+    background: linear-gradient(135deg, #2563eb, #1e3a8a);
+    user-select: none;
+}
+
+/* Color variants for different users */
+.row-avatar.avatar-green  { background: linear-gradient(135deg, #10b981, #059669); }
+.row-avatar.avatar-purple { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+.row-avatar.avatar-orange { background: linear-gradient(135deg, #f59e0b, #d97706); }
+.row-avatar.avatar-red    { background: linear-gradient(135deg, #ef4444, #dc2626); }
+.row-avatar.avatar-teal   { background: linear-gradient(135deg, #14b8a6, #0d9488); }
+
+/* ═══════════════════════════════════════════════════════════════
+   PIPELINE STAGES: Context-Aware Progress Flow
+   Use .pipeline-flow ONLY in detail/single-record views.
+   Keep simple status badges in list/table views.
+   ═══════════════════════════════════════════════════════════════ */
+
+.pipeline-flow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 8px 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.pipeline-flow::-webkit-scrollbar { display: none; }
+
+.pipeline-stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-width: 80px;
+}
+
+.pipeline-stage-dot {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: var(--bg-app);
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    font-weight: 700;
+    position: relative;
+    z-index: 2;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.pipeline-stage-dot.done {
+    background: var(--success);
+    border-color: var(--success);
+    color: white;
+    box-shadow: 0 3px 10px rgba(16, 185, 129, 0.3);
+}
+
+.pipeline-stage-dot.active {
+    background: linear-gradient(135deg, #1e3a8a, #2563eb);
+    border-color: #2563eb;
+    color: white;
+    box-shadow: 0 3px 14px rgba(37, 99, 235, 0.4);
+    transform: scale(1.1);
+}
+
+.pipeline-stage-label {
+    font-size: 0.62rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-align: center;
+    white-space: nowrap;
+    max-width: 76px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.pipeline-stage-label.done   { color: var(--success-text); }
+.pipeline-stage-label.active { color: var(--primary); font-weight: 700; }
+
+/* Connector arrow between stages */
+.pipeline-connector {
+    flex: 1;
+    min-width: 20px;
+    height: 2px;
+    background: var(--border);
+    margin-bottom: 18px;
+    position: relative;
+    transition: background 0.3s ease;
+}
+
+.pipeline-connector::after {
+    content: '';
+    position: absolute;
+    right: -4px;
+    top: -4px;
+    width: 0;
+    height: 0;
+    border-top: 4px solid transparent;
+    border-bottom: 4px solid transparent;
+    border-left: 6px solid var(--border);
+    transition: border-left-color 0.3s ease;
+}
+
+.pipeline-connector.done { background: var(--success); }
+.pipeline-connector.done::after { border-left-color: var(--success); }
+
+/* ═══════════════════════════════════════════════════════════════
+   NOTIFICATIONS: Icon-Categorized Card Layout
+   Uses Bootstrap Icons (bi bi-*) — consistent with overview page
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Notification Context Card ── */
+.notif-context-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--surface);
+    cursor: pointer;
+    transition: background 0.15s ease;
+    position: relative;
+}
+
+.notif-context-card:last-child { border-bottom: none; }
+
+.notif-context-card:hover {
+    background: rgba(37, 99, 235, 0.03);
+}
+
+.notif-context-card.nc-unread {
+    background: rgba(37, 99, 235, 0.025);
+}
+
+.notif-context-card.nc-critical {
+    background: rgba(239, 68, 68, 0.03);
+    border-left: 3px solid var(--danger);
+}
+
+/* ── Icon Badge — card with rounded corners, icon-first design ── */
+.notif-icon-badge {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    flex-shrink: 0;
+    position: relative;
+    transition: transform 0.2s ease;
+    background: var(--icon-bg-blue);
+    color: var(--icon-text-blue);
+}
+
+.notif-context-card:hover .notif-icon-badge { transform: scale(1.06); }
+
+/* Category-specific icon badge colors */
+.notif-icon-badge.ni-alert    { background: var(--icon-bg-red);    color: var(--icon-text-red); }
+.notif-icon-badge.ni-meeting  { background: var(--icon-bg-blue);   color: var(--icon-text-blue); }
+.notif-icon-badge.ni-leave    { background: var(--icon-bg-teal);   color: var(--icon-text-teal); }
+.notif-icon-badge.ni-salary   { background: var(--icon-bg-green);  color: var(--icon-text-green); }
+.notif-icon-badge.ni-feedback { background: var(--icon-bg-teal);   color: var(--icon-text-teal); }
+.notif-icon-badge.ni-project  { background: var(--icon-bg-purple); color: var(--icon-text-purple); }
+.notif-icon-badge.ni-task     { background: #f1f5f9;               color: #475569; }
+.notif-icon-badge.ni-info     { background: var(--icon-bg-blue);   color: var(--icon-text-blue); }
+
+/* ── Unread dot overlay on icon badge ── */
+.notif-unread-dot {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    width: 10px;
+    height: 10px;
+    background: #4338ca;
+    border: 2px solid var(--surface);
+    border-radius: 50%;
+    box-shadow: 0 0 0 2px rgba(67, 56, 202, 0.2);
+}
+
+/* ── Notification body content ── */
+.notif-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.notif-meta-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 4px;
+    flex-wrap: wrap;
+}
+
+.notif-module-badge {
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.notif-title-text {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-main);
+    line-height: 1.3;
+}
+
+.notif-time-text {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.notif-message-text {
+    font-size: 0.84rem;
+    color: var(--text-3);
+    line-height: 1.5;
+    margin-top: 2px;
+}
+
+.notif-action-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+
+/* Generic action link */
+.notif-action-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    border: none;
+    background: var(--primary-light);
+    color: var(--primary);
+    border-radius: 6px;
+    padding: 4px 10px;
+    text-decoration: none !important;
+    transition: background 0.15s ease;
+}
+
+.notif-action-link:hover {
+    background: #dbeafe;
+    color: var(--primary);
+}
+
+/* Meeting "Join Meet" — filled blue */
+.notif-action-link.na-meeting {
+    background: var(--primary);
+    color: white;
+}
+
+.notif-action-link.na-meeting:hover {
+    background: #1d4ed8;
+    color: white;
+}
+
+.notif-date-full {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 5px;
+    font-weight: 500;
+    opacity: 0.8;
+}
+
+/* ── Responsive adjustments ── */
+@media (max-width: 575.98px) {
+    .notif-context-card { padding: 12px 14px; gap: 10px; }
+    .notif-icon-badge { width: 38px; height: 38px; font-size: 1rem; border-radius: 10px; }
+    .pipeline-flow { padding: 4px 0; }
+    .pipeline-stage { min-width: 62px; }
+    .pipeline-stage-label { max-width: 58px; font-size: 0.55rem; }
 }

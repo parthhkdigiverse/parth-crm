@@ -10,6 +10,8 @@ from app.core.dependencies import get_current_user, RoleChecker
 from app.modules.users.models import User, UserRole
 from app.modules.auth.schemas import Token, ChangePasswordRequest, UpdatePreferencesRequest
 from app.modules.users.schemas import UserCreate, UserRead, UserProfileUpdate
+from app.modules.auth.models import PasswordResetRequest
+from app.modules.notifications.models import Notification
 from app.modules.activity_logs.service import ActivityLogger
 from app.modules.activity_logs.models import ActionType, EntityType
 from app.modules.settings.models import SystemSettings
@@ -263,6 +265,88 @@ async def change_password(
         request=request
     )
     return {"message": "Password updated successfully"}
+
+@router.post("/forgot-password")
+async def forgot_password(
+    request: Request,
+    body: dict
+):
+    email = body.get("email")
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required")
+        
+    user = await User.find_one(User.email == email, User.is_deleted == False)
+    
+    # Always return 200 to prevent email enumeration, but only act if user exists
+    if user and user.role != UserRole.ADMIN:
+        # Check if a pending request already exists
+        existing_req = await PasswordResetRequest.find_one(
+            PasswordResetRequest.user_id == user.id,
+            PasswordResetRequest.status == "PENDING"
+        )
+        
+        if not existing_req:
+            new_req = PasswordResetRequest(user_id=user.id)
+            await new_req.insert()
+            
+        # Notify admins
+        admins = await User.find(User.role == UserRole.ADMIN, User.is_active == True, User.is_deleted == False).to_list()
+        for admin in admins:
+            notif = Notification(
+                user_id=admin.id,
+                title="[Request] Password Reset",
+                message=f"User {user.name} ({user.email}) has requested a password reset. Go to Users & Roles to action it.",
+                is_read=False
+            )
+            await notif.insert()
+            
+    return {"message": "If this email is registered, an admin has been notified."}
+
+@router.get("/reset-requests")
+async def get_reset_requests(
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
+    requests = await PasswordResetRequest.find(PasswordResetRequest.status == "PENDING").to_list()
+    
+    # Enrich with user details
+    result = []
+    for req in requests:
+        user = await User.get(req.user_id)
+        if user:
+            result.append({
+                "id": str(req.id),
+                "user_id": str(req.user_id),
+                "requested_at": req.requested_at,
+                "status": req.status,
+                "user_name": user.name,
+                "user_email": user.email,
+                "user_role": user.role.value if hasattr(user.role, "value") else str(user.role)
+            })
+            
+    return result
+
+@router.delete("/reset-requests/{request_id}")
+async def resolve_reset_request(
+    request_id: PydanticObjectId,
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
+    req = await PasswordResetRequest.get(request_id)
+    if not req:
+        raise HTTPException(status_code=404, detail="Request not found")
+        
+    from datetime import datetime, UTC
+    req.status = "RESOLVED"
+    req.resolved_by = current_user.id
+    req.resolved_at = datetime.now(UTC)
+    await req.save()
+    
+    return {"message": "Request resolved"}
 
 @router.patch("/preferences")
 async def update_preferences(

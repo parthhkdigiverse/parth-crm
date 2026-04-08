@@ -343,6 +343,13 @@ async def delete_archived_invoices_bulk(
     ids = [PydanticObjectId(i) for i in payload.get("ids", []) if i]
     return await BillingService().delete_archived_invoices_bulk(ids, current_user)
 
+@router.delete("/{bill_id}/permanent")
+async def permanent_delete_invoice(
+    bill_id: PydanticObjectId,
+    current_user: User = Depends(admin_only),
+) -> Any:
+    return await BillingService().permanent_delete_invoice(bill_id, current_user)
+
 @router.post("/{bill_id}/send-whatsapp")
 async def send_invoice_whatsapp(
     bill_id: PydanticObjectId,

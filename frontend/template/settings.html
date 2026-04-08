@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="/static/css/components.css?v=20260406">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/settings-access-control.css">
-    <link rel="stylesheet" href="/static/css/settings.css?v=20260403">
+    <link rel="stylesheet" href="/static/css/settings.css?v=20260408">
 </head>
 
 <body class="bg-light">
@@ -141,6 +141,22 @@
                                         onchange="saveSetting('animate_cards', this.checked)">
                                     <span class="toggle-slider"></span>
                                 </label>
+                            </div>
+
+                            <div class="setting-row">
+                                <div>
+                                    <div class="setting-label">Pagination Limit</div>
+                                    <div class="setting-desc">Number of records shown per table page</div>
+                                </div>
+                                <select class="select-clean" id="pagination-limit"
+                                    onchange="saveSetting('pagination_limit', this.value)">
+                                    <option value="5">5 records</option>
+                                    <option value="10" selected>10 records</option>
+                                    <option value="15">15 records</option>
+                                    <option value="20">20 records</option>
+                                    <option value="50">50 records</option>
+                                    <option value="100">100 records</option>
+                                </select>
                             </div>
                         </div>
 
@@ -938,12 +954,12 @@
         <span id="toast-text">Saved!</span>
     </div>
 
-    <script src="/static/js/utils.js?v=20260403"></script>
-    <script src="/static/js/api.js?v=20260403"></script>
-    <script src="/static/js/auth.js?v=20260403"></script>
-    <script src="/static/js/ui_components.js?v=20260403"></script>
-    <script src="/static/js/app.js?v=20260403"></script>
-    <script src="/static/js/settings.js?v=20260403"></script>
+    <script src="/static/js/utils.js?v=20260408"></script>
+    <script src="/static/js/api.js?v=20260408"></script>
+    <script src="/static/js/auth.js?v=20260408"></script>
+    <script src="/static/js/ui_components.js?v=20260408"></script>
+    <script src="/static/js/app.js?v=20260408"></script>
+    <script src="/static/js/settings.js?v=20260408"></script>
     <script src="/static/js/bootstrap.bundle.min.js"></script>
 </body>
 

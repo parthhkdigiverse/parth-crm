@@ -117,7 +117,8 @@ class IncentiveService:
 
             query = self._apply_role_scope_query(user).find(
                 Client.created_at >= eligibility_start,
-                Client.created_at < eligibility_end
+                Client.created_at < eligibility_end,
+                Client.status == "ACTIVE"
             )
             achieved = await query.count()
 

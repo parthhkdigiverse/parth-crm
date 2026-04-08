@@ -42,4 +42,4 @@ class Area(Document):
     assigned_users: List[dict] = Field(default_factory=list) # For UI enrichment
 
     class Settings:
-        name = "areas"
+        name = "srm_areas"
