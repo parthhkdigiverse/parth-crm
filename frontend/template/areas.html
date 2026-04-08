@@ -1415,10 +1415,10 @@
                     };
                     if (shopEditId) {
                         await ApiClient.updateShop(shopEditId, payload);
-                        toast('Shop updated!');
+                        showToast('Shop updated!');
                     } else {
                         await ApiClient.createShop(payload);
-                        toast('Shop added!');
+                        showToast('Shop added!');
                     }
                     // Clear all shop form fields including the hidden ID
                     document.getElementById('s-id').value = '';
@@ -1438,7 +1438,7 @@
                     }
                 }
             } catch (e) {
-                toast(e?.data?.detail || e?.message || 'Failed to save', 'error');
+                showToast(e?.data?.detail || e?.message || 'Failed to save', 'error');
             } finally {
                 btn.disabled = false;
             }
@@ -1474,7 +1474,7 @@
             if (!confirm(`Archive shop "${name}"? It will be hidden from normal views.`)) return;
             try {
                 await ApiClient.deleteShop(id); // backend uses delete router for soft delete
-                toast('Shop archived');
+                showToast('Shop archived');
                 await loadAll();
                 if (selectedAreaId) {
                     const a = allAreas.find(x => x.id === selectedAreaId);
@@ -1485,7 +1485,7 @@
                     shopsArchiveOffcanvas.loadData();
                 }
             } catch (e) {
-                toast(e?.data?.detail || 'Failed to archive', 'error');
+                showToast(e?.data?.detail || 'Failed to archive', 'error');
             }
         }
 
@@ -1494,7 +1494,7 @@
             if (!confirm(`Archive area "${name}"? This will also archive all associated shops.`)) return;
             try {
                 await ApiClient.deleteArea(id); // backend uses delete router for soft delete
-                toast(`Area "${name}" archived`);
+                showToast(`Area "${name}" archived`);
                 selectedAreaId = null;
                 // Reset right-hand panel to empty default
                 document.getElementById('shops-panel-title').innerHTML = '<i class="bi bi-shop text-muted"></i> Select an area';
@@ -1510,7 +1510,7 @@
                     areasArchiveOffcanvas.loadData();
                 }
             } catch (e) {
-                toast(e?.data?.detail || e?.message || 'Failed to archive area', 'error');
+                showToast(e?.data?.detail || e?.message || 'Failed to archive area', 'error');
             }
         }
 
@@ -1696,7 +1696,7 @@
             const selectAll = document.getElementById('assign-select-all').checked;
 
             if (allCbs.length > 0 && checkedCbs.length === 0) {
-                toast('Please select at least one shop to assign', 'warning');
+                showToast('Please select at least one shop to assign', 'warning');
                 return;
             }
 
@@ -1709,7 +1709,7 @@
             try {
                 // Pass array of userIds instead of single userId
                 await ApiClient.assignArea(assigningAreaId, window.selectedAssignUsers, shopIds);
-                toast(shopIds ? 'Specific shops successfully assigned' : 'Area and all shops successfully assigned');
+                showToast(shopIds ? 'Specific shops successfully assigned' : 'Area and all shops successfully assigned');
 
                 const modalEl = document.getElementById('assignModal');
                 const modal = bootstrap.Modal.getInstance(modalEl);
@@ -1719,7 +1719,7 @@
                 const area = allAreas.find(a => String(a.id) === String(assigningAreaId));
                 if (area) selectArea(area.id, area.name);
             } catch (e) {
-                toast(e?.data?.detail || e?.message || 'Failed to assign', 'error');
+                showToast(e?.data?.detail || e?.message || 'Failed to assign', 'error');
             }
         };
 
@@ -1727,7 +1727,7 @@
             if (!confirm(`Are you sure you want to accept this ${moduleName.slice(0, -1)}? All other assigned staff will be removed.`)) return;
             try {
                 await ApiClient.acceptItem(moduleName, id);
-                toast(`Successfully accepted the ${moduleName.slice(0, -1)}!`, 'success');
+                showToast(`Successfully accepted the ${moduleName.slice(0, -1)}!`, 'success');
                 await loadAll();
                 
                 // Re-render the side panel if appropriate
@@ -1739,7 +1739,7 @@
                     if (area) selectArea(area.id, area.name);
                 }
             } catch (e) {
-                toast(e?.data?.detail || e?.message || 'Failed to accept', 'error');
+                showToast(e?.data?.detail || e?.message || 'Failed to accept', 'error');
             }
         };
 
