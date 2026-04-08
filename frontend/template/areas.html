@@ -1014,6 +1014,8 @@
                 const isStaff = user && ['ADMIN', 'SALES', 'TELESALES', 'PROJECT_MANAGER', 'PROJECT_MANAGER_AND_SALES'].includes(user.role?.toUpperCase());
             } catch (e) {
                 console.error(e); // exact API error
+                allAreas = allAreas || [];
+                allShops = allShops || [];
                 allUsers = allUsers || [];
             }
             renderAreaList();
@@ -1098,7 +1100,7 @@
             }
             ul.innerHTML = filtered.map(a => {
                 const shopCount = a.shops_count || 0;
-                const isActive = a.id === selectedAreaId;
+                const isActive = String(a.id) === String(selectedAreaId);
                 // Only show Sourced badge if created by someone OTHER than the current user
                 const sourcedBadge = a.created_by_name && a.created_by_id && (!currentUser || a.created_by_id !== currentUser.id)
                     ? `<span class="badge bg-info-subtle text-info border-info-subtle ms-1" style="font-size:0.6rem;padding:1px 4px;">Sourced</span>`
@@ -1116,11 +1118,11 @@
         async function selectArea(areaId, areaName) {
             selectedAreaId = areaId;
             renderAreaList(currentFilters.search);
-            const shops = allShops.filter(s => s.area_id === areaId);
+            const shops = allShops.filter(s => String(s.area_id) === String(areaId));
             const user = ApiClient.getCurrentUser();
             const isAdmin = user && user.role && user.role.toUpperCase() === 'ADMIN';
 
-            const area = allAreas.find(a => a.id === areaId);
+            const area = allAreas.find(a => String(a.id) === String(areaId));
             let badgeHtml = '';
             if (area && area.priority_level) {
                 const p = area.priority_level.toUpperCase();
@@ -1624,7 +1626,7 @@
 
             // Populate Shops List for this area
             const shopsList = document.getElementById('assign-shops-list');
-            const areaShops = allShops.filter(s => s.area_id === areaId);
+            const areaShops = allShops.filter(s => String(s.area_id) === String(areaId));
             document.getElementById('assign-select-all').checked = true;
             document.getElementById('assign-shop-search').value = '';
 
@@ -1714,7 +1716,7 @@
                 if (modal) modal.hide();
 
                 await loadAll();
-                const area = allAreas.find(a => a.id === assigningAreaId);
+                const area = allAreas.find(a => String(a.id) === String(assigningAreaId));
                 if (area) selectArea(area.id, area.name);
             } catch (e) {
                 toast(e?.data?.detail || e?.message || 'Failed to assign', 'error');
@@ -1730,10 +1732,10 @@
                 
                 // Re-render the side panel if appropriate
                 if (moduleName === 'areas') {
-                    const area = allAreas.find(a => a.id === id);
+                    const area = allAreas.find(a => String(a.id) === String(id));
                     if (area) selectArea(area.id, area.name);
                 } else if (moduleName === 'shops' && selectedAreaId) {
-                    const area = allAreas.find(a => a.id === selectedAreaId);
+                    const area = allAreas.find(a => String(a.id) === String(selectedAreaId));
                     if (area) selectArea(area.id, area.name);
                 }
             } catch (e) {

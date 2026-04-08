@@ -247,7 +247,7 @@ window.handleModalSave = async function () {
 
         if (existingId) {
             // ── Edit Mode: update the existing record ──
-            savedArea = await ApiClient.updateArea(parseInt(existingId), payload);
+            savedArea = await ApiClient.updateArea(existingId, payload);
         } else {
             // ── Create Mode: make a new area ──
             savedArea = await ApiClient.createArea(payload);
