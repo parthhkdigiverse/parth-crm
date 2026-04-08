@@ -23,13 +23,15 @@
 
         .stat-card {
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            background: var(--surface) !important;    /* respects dark/light theme */
+            background: var(--surface) !important;
+            /* respects dark/light theme */
             border-radius: 16px !important;
             border: 1px solid var(--border) !important;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06) !important;
             position: relative;
             overflow: hidden;
-            padding: 32px 20px 24px !important; /* Moved content down by increasing top padding */
+            padding: 32px 20px 24px !important;
+            /* Moved content down by increasing top padding */
         }
 
         .stat-card::before {
@@ -42,11 +44,25 @@
             border-radius: 16px 16px 0 0;
         }
 
-        .stat-card.card-primary::before { background: var(--primary); }
-        .stat-card.card-success::before { background: var(--success); }
-        .stat-card.card-warning::before { background: var(--warning); }
-        .stat-card.card-info::before    { background: var(--info); }
-        .stat-card.card-purple::before  { background: #8b5cf6; }
+        .stat-card.card-primary::before {
+            background: var(--primary);
+        }
+
+        .stat-card.card-success::before {
+            background: var(--success);
+        }
+
+        .stat-card.card-warning::before {
+            background: var(--warning);
+        }
+
+        .stat-card.card-info::before {
+            background: var(--info);
+        }
+
+        .stat-card.card-purple::before {
+            background: #8b5cf6;
+        }
 
         .stat-card:hover {
             transform: translateY(-4px);
@@ -60,9 +76,10 @@
             overflow: hidden;
             border-radius: 14px !important;
         }
-        
+
         .premium-card .card-header {
-            padding: 32px 24px 20px !important; /* Moved header content down */
+            padding: 32px 24px 20px !important;
+            /* Moved header content down */
         }
 
         .premium-card::before {
@@ -674,118 +691,125 @@
                 <div class="row g-4">
 
                     <div class="col-xl-4">
-                    <div class="srm-data-card overflow-visible">
-                        <div class="srm-card-header">
-                            <span class="srm-card-title">
-                                <i class="bi bi-shield-lock"></i>Incentive Slabs
-                            </span>
-                            <button id="btn-add-slab" class="btn btn-sm btn-outline-primary"
-                                onclick="toggleAddSlabForm()" style="display:none; border-radius: 8px;">
-                                <i class="bi bi-plus-lg"></i>
-                            </button>
-                        </div>
+                        <div class="srm-data-card overflow-visible">
+                            <div class="srm-card-header">
+                                <span class="srm-card-title">
+                                    <i class="bi bi-shield-lock"></i>Incentive Slabs
+                                </span>
+                                <button id="btn-add-slab" class="btn btn-sm btn-outline-primary"
+                                    onclick="toggleAddSlabForm()" style="display:none; border-radius: 8px;">
+                                    <i class="bi bi-plus-lg"></i>
+                                </button>
+                            </div>
 
-                        <div id="add-slab-form" class="px-4 py-4 slab-form-shell" style="display:none;">
-                            <div class="row g-3 mb-3">
-                                <div class="col-6">
-                                    <label class="form-label slab-input-label">Min Tasks</label>
-                                    <input type="number" id="slab-min" class="form-control form-control-sm"
-                                        placeholder="e.g. 1" min="0">
+                            <div id="add-slab-form" class="px-4 py-4 slab-form-shell" style="display:none;">
+                                <div class="row g-3 mb-3">
+                                    <div class="col-6">
+                                        <label class="form-label slab-input-label">Min Tasks</label>
+                                        <input type="number" id="slab-min" class="form-control form-control-sm"
+                                            placeholder="e.g. 1" min="0">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label slab-input-label">Max Tasks</label>
+                                        <input type="number" id="slab-max" class="form-control form-control-sm"
+                                            placeholder="e.g. 10" min="1">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label slab-input-label">Incentive Per Task</label>
+                                        <input type="number" id="slab-per-unit" class="form-control form-control-sm"
+                                            placeholder="1200" min="0" step="0.01">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label slab-input-label">Slab Bonus</label>
+                                        <input type="number" id="slab-bonus" class="form-control form-control-sm"
+                                            placeholder="0" min="0" step="0.01">
+                                    </div>
                                 </div>
-                                <div class="col-6">
-                                    <label class="form-label slab-input-label">Max Tasks</label>
-                                    <input type="number" id="slab-max" class="form-control form-control-sm"
-                                        placeholder="e.g. 10" min="1">
+                                <div class="d-flex flex-wrap gap-2 mb-3">
+                                    <span class="slab-metric"><i class="bi bi-check2-square"></i> Task range
+                                        based</span>
+                                    <span class="slab-metric"><i class="bi bi-cash-stack"></i> Flat per-task rate</span>
+                                    <span class="slab-metric"><i class="bi bi-stars"></i> Optional slab bonus</span>
                                 </div>
-                                <div class="col-6">
-                                    <label class="form-label slab-input-label">Incentive Per Task</label>
-                                    <input type="number" id="slab-per-unit" class="form-control form-control-sm"
-                                        placeholder="1200" min="0" step="0.01">
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-sm btn-primary flex-grow-1" onclick="addSlab()">Save
+                                        Slab</button>
+                                    <button class="btn btn-sm btn-secondary"
+                                        onclick="toggleAddSlabForm()">Cancel</button>
                                 </div>
-                                <div class="col-6">
-                                    <label class="form-label slab-input-label">Slab Bonus</label>
-                                    <input type="number" id="slab-bonus" class="form-control form-control-sm"
-                                        placeholder="0" min="0" step="0.01">
-                                </div>
+                                <span id="slab-msg" class="small d-none mt-2 d-block"></span>
                             </div>
-                            <div class="d-flex flex-wrap gap-2 mb-3">
-                                <span class="slab-metric"><i class="bi bi-check2-square"></i> Task range based</span>
-                                <span class="slab-metric"><i class="bi bi-cash-stack"></i> Flat per-task rate</span>
-                                <span class="slab-metric"><i class="bi bi-stars"></i> Optional slab bonus</span>
-                            </div>
-                            <div class="d-flex gap-2">
-                                <button class="btn btn-sm btn-primary flex-grow-1" onclick="addSlab()">Save Slab</button>
-                                <button class="btn btn-sm btn-secondary" onclick="toggleAddSlabForm()">Cancel</button>
-                            </div>
-                            <span id="slab-msg" class="small d-none mt-2 d-block"></span>
-                        </div>
 
-                        <div class="srm-table-wrap">
-                            <table class="table table-hover align-middle srm-table slabs-table">
-                                <colgroup>
-                                    <col style="width:25%">
-                                    <col style="width:30%">
-                                    <col style="width:25%">
-                                    <col id="slab-actions-col-width" style="width:20%;display:none;">
-                                </colgroup>
-                                <thead>
-                                    <tr>
-                                        <th class="ps-3">Range</th>
-                                        <th>Per Task</th>
-                                        <th>Bonus</th>
-                                        <th id="slab-actions-col" class="text-center pe-3" style="display:none;">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="slabs-tbody">
-                                    <tr><td colspan="4" class="text-center py-4 text-muted small"><span class="spinner-border spinner-border-sm me-2"></span>Loading...</td></tr>
-                                </tbody>
-                            </table>
+                            <div class="srm-table-wrap">
+                                <table class="table table-hover align-middle srm-table slabs-table">
+                                    <colgroup>
+                                        <col style="width:25%">
+                                        <col style="width:30%">
+                                        <col style="width:25%">
+                                        <col id="slab-actions-col-width" style="width:20%;display:none;">
+                                    </colgroup>
+                                    <thead>
+                                        <tr>
+                                            <th class="ps-3">Range</th>
+                                            <th>Per Task</th>
+                                            <th>Bonus</th>
+                                            <th id="slab-actions-col" class="text-center pe-3" style="display:none;">
+                                                Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="slabs-tbody">
+                                        <tr>
+                                            <td colspan="4" class="text-center py-4 text-muted small"><span
+                                                    class="spinner-border spinner-border-sm me-2"></span>Loading...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    </div>
                     </div>
 
                     <div class="col-xl-8">
-                    <div class="srm-data-card">
-                        <div class="srm-card-header">
-                            <div>
-                                <span class="srm-card-title">
-                                    <i class="bi bi-table"></i>Incentive Slips
-                                </span>
-                                <div class="srm-card-meta mt-1" id="slip-filter-summary">0 slips</div>
+                        <div class="srm-data-card">
+                            <div class="srm-card-header">
+                                <div>
+                                    <span class="srm-card-title">
+                                        <i class="bi bi-table"></i>Incentive Slips
+                                    </span>
+                                    <div class="srm-card-meta mt-1" id="slip-filter-summary">0 slips</div>
+                                </div>
+                                <button id="btn-calc" class="btn btn-sm btn-primary" onclick="openCalcModal()"
+                                    style="display:none; border-radius: 8px;">
+                                    <i class="bi bi-lightning-charge-fill me-1"></i>Calculate Incentive
+                                </button>
                             </div>
-                            <button id="btn-calc" class="btn btn-sm btn-primary" onclick="openCalcModal()"
-                                style="display:none; border-radius: 8px;">
-                                <i class="bi bi-lightning-charge-fill me-1"></i>Calculate Incentive
-                            </button>
-                        </div>
 
-                        <div class="srm-table-wrap">
-                            <table class="table table-hover align-middle srm-table slips-table">
-                                <colgroup>
-                                    <col class="col-employee">
-                                    <col class="col-period">
-                                    <col class="col-tasks">
-                                    <col class="col-slab">
-                                    <col class="col-rate">
-                                    <col class="col-total">
-                                </colgroup>
-                                <thead>
-                                    <tr>
-                                        <th class="ps-3">Employee</th>
-                                        <th>Period / Time</th>
-                                        <th>Tasks</th>
-                                        <th>Slab</th>
-                                        <th class="text-end">Per Task</th>
-                                        <th class="pe-3 text-end">Total</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="slips-tbody">
-                                    <!-- Rendered dynamically -->
-                                </tbody>
-                            </table>
+                            <div class="srm-table-wrap">
+                                <table class="table table-hover align-middle srm-table slips-table">
+                                    <colgroup>
+                                        <col class="col-employee">
+                                        <col class="col-period">
+                                        <col class="col-tasks">
+                                        <col class="col-slab">
+                                        <col class="col-rate">
+                                        <col class="col-total">
+                                    </colgroup>
+                                    <thead>
+                                        <tr>
+                                            <th class="ps-3">Employee</th>
+                                            <th>Period / Time</th>
+                                            <th>Tasks</th>
+                                            <th>Slab</th>
+                                            <th class="text-end">Per Task</th>
+                                            <th class="pe-3 text-end">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="slips-tbody">
+                                        <!-- Rendered dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div id="slips-pagination"></div>
                         </div>
-                        <div id="slips-pagination"></div>
-                    </div>
                     </div>
 
                 </div>
@@ -1106,9 +1130,9 @@
         function showSlipBreakdown(slipJsonEnc) {
             const slip = JSON.parse(decodeURIComponent(slipJsonEnc));
             const fmt = n => 'Rs\u00a0' + Number(n).toLocaleString('en-IN', { maximumFractionDigits: 0 });
-            
+
             document.getElementById('breakdown-subtitle').innerText = `${slip.user_name} \u2022 ${slip.period}`;
-            
+
             let html = `
                 <div class="preview-breakdown mb-4">
                     <div class="preview-row">
@@ -1150,7 +1174,7 @@
                     <span class="value">${fmt(slip.total_incentive)}</span>
                 </div>
             `;
-            
+
             document.getElementById('breakdown-content').innerHTML = html;
             openBreakdownModal();
         }
@@ -1425,7 +1449,6 @@
 
                 renderPagination({
                     data: slips,
-                    pageSize: 10,
                     tbodyId: 'slips-tbody',
                     paginationId: 'slips-pagination',
                     emptyMsg: '<tr><td colspan="7" class="text-center py-5 text-muted">No incentive slips found.</td></tr>',

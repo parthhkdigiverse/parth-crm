@@ -580,6 +580,56 @@
                         </div>
             </div>
 
+            <div id="forgot-password-panel" style="display: none;">
+                <p class="form-eyebrow">Account Recovery</p>
+                <h2 class="form-title">Forgot Password</h2>
+                <p class="form-subtitle" style="margin-bottom: 1.25rem;">Enter your registered email and we'll notify an admin to reset it for you.</p>
+                <form id="forgot-password-form" novalidate>
+                    <div>
+                        <label class="form-label" for="fp-email">Email Address</label>
+                        <div class="input-wrapper">
+                            <i class="bi bi-envelope input-icon"></i>
+                            <input type="email" id="fp-email" class="input-field" placeholder="name@example.com" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-login" id="fp-submit-btn">
+                        <i class="bi bi-send"></i> Request Reset
+                    </button>
+                    <div class="text-center mt-3">
+                        <a href="#" id="fp-back-link" style="font-size: 0.82rem; font-weight: 500; color: var(--text-muted); text-decoration: none;">&larr; Back to login</a>
+                    </div>
+                </form>
+                <div id="fp-success" class="alert d-flex align-items-center gap-2 p-3 mt-3 shadow-sm" style="display: none !important; border-radius: 12px; font-size: 0.9rem; background: var(--success-light); border: 1px solid #10b981; color: var(--success-text);">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span>If this email is registered, an admin has been notified.</span>
+                </div>
+            </div>
+
+            <div id="forgot-password-panel" style="display: none;">
+                <p class="form-eyebrow">Account Recovery</p>
+                <h2 class="form-title">Forgot Password</h2>
+                <p class="form-subtitle" style="margin-bottom: 1.25rem;">Enter your registered email and we'll notify an admin to reset it for you.</p>
+                <form id="forgot-password-form" novalidate>
+                    <div>
+                        <label class="form-label" for="fp-email">Email Address</label>
+                        <div class="input-wrapper">
+                            <i class="bi bi-envelope input-icon"></i>
+                            <input type="email" id="fp-email" class="input-field" placeholder="name@example.com" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn-login" id="fp-submit-btn">
+                        <i class="bi bi-send"></i> Request Reset
+                    </button>
+                    <div class="text-center mt-3">
+                        <a href="#" id="fp-back-link" style="font-size: 0.82rem; font-weight: 500; color: var(--text-muted); text-decoration: none;">&larr; Back to login</a>
+                    </div>
+                </form>
+                <div id="fp-success" class="alert d-flex align-items-center gap-2 p-3 mt-3 shadow-sm" style="display: none !important; border-radius: 12px; font-size: 0.9rem; background: var(--success-light); border: 1px solid #10b981; color: var(--success-text);">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span>If this email is registered, an admin has been notified.</span>
+                </div>
+            </div>
+
             <form id="login-form" novalidate>
                 <div>
                     <label class="form-label" for="email">Email Address</label>
@@ -592,7 +642,10 @@
                 </div>
 
                 <div>
-                    <label class="form-label" for="password">Password</label>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="form-label mb-0" for="password">Password</label>
+                        <a href="#" id="forgot-pw-link" style="font-size: 0.8rem; font-weight: 500; color: var(--primary); text-decoration: none;">Forgot password?</a>
+                    </div>
                     <div class="input-wrapper">
                         <i class="bi bi-lock input-icon"></i>
                         <input type="password" id="password" class="input-field" placeholder="••••••••" required
@@ -778,6 +831,48 @@
                 if (val.includes('@') && val.split('@').length === 2 && val.split('@')[1].includes('.') && val.split('@')[0].length > 0) {
                     setEmailValid();
                 }
+            }
+        });
+
+        document.getElementById('forgot-pw-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('login-fields').style.display = 'none';
+            document.getElementById('login-form').style.display = 'none';
+            document.getElementById('forgot-password-panel').style.display = 'block';
+            document.getElementById('fp-success').style.setProperty('display', 'none', 'important');
+            document.querySelector('.card-trust-strip').style.display = 'none';
+        });
+
+        document.getElementById('fp-back-link').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('login-fields').style.display = 'block';
+            document.getElementById('login-form').style.display = 'block';
+            document.getElementById('forgot-password-panel').style.display = 'none';
+            document.querySelector('.card-trust-strip').style.display = 'flex';
+        });
+
+        document.getElementById('forgot-password-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('fp-submit-btn');
+            const email = document.getElementById('fp-email').value.trim();
+            if(!email) return;
+
+            btn.disabled = true;
+            btn.innerHTML = `<div class="spinner"></div> Requesting...`;
+
+            try {
+                await fetch(`${API}/auth/forgot-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email })
+                });
+                
+                document.getElementById('fp-success').style.setProperty('display', 'flex', 'important');
+            } catch(err) {
+                document.getElementById('fp-success').style.setProperty('display', 'flex', 'important');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="bi bi-send"></i> Request Reset`;
             }
         });
 

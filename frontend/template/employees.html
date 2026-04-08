@@ -25,33 +25,43 @@
             transition: all 0.3s ease;
         }
 
-        .table>thead {
-            background: var(--bg-app);
-            border-bottom: 1px solid var(--border);
-        }
-
         .table>thead th {
-            font-size: 0.75rem;
+            background: var(--bg-app);
+            color: var(--text-muted);
+            font-size: 0.72rem;
             font-weight: 700;
-            color: #64748b;
+            text-transform: uppercase;
             letter-spacing: 0.05em;
-            padding: 1rem 0.75rem;
-            border: none;
+            padding: 13px 14px;
+            border-bottom: 1.5px solid var(--border) !important;
+            white-space: nowrap;
+            text-align: center;
         }
 
         .table>tbody td {
-            padding: 1rem 0.75rem;
-            border-bottom: 1px solid #f1f5f9;
+            padding: 13px 14px;
+            border-bottom: 1px solid var(--border-subtle);
+            font-size: 0.85rem;
             vertical-align: middle;
-            transition: background 0.2s ease;
-        }
-
-        .table-hover>tbody>tr:hover {
-            background-color: var(--primary-light) !important;
+            text-align: center;
         }
 
         .table-hover>tbody>tr:hover td {
-            color: var(--primary);
+            background: rgba(37, 99, 235, 0.04) !important;
+        }
+
+        .employee-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--primary), #6366f1);
+            color: #fff;
+            font-weight: 800;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
         }
 
         /* ── Modern Badges ── */
@@ -195,19 +205,7 @@
             border-color: #ef4444;
         }
 
-        .employee-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            background: var(--primary-light);
-            color: var(--primary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 0.9rem;
-            border: 1px solid var(--border);
-        }
+
 
         @keyframes rotate-ring-emp {
             0% {
@@ -621,9 +619,7 @@
                 display: none !important;
             }
 
-            .page-header-glass {
-                margin-bottom: 0 !important;
-            }
+
         }
     </style>
 </head>
@@ -646,38 +642,39 @@
 
                 <!-- Employees Table -->
                 <div class="card shadow-sm grid-card">
-                    <div
-                        class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
-                        <div class="d-flex align-items-center gap-3">
-                            <h6 class="fw-bold mb-0">Employee Management</h6>
-                            <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 small"
-                                id="employee-count-badge">0 Employees</span>
+                    <div class="table-section-header">
+                        <div class="table-section-title">
+                            <i class="bi bi-people"></i>
+                            Employee Registry
+                            <span class="badge"
+                                style="background:var(--success-light);color:var(--success-text);font-size:0.65rem;border-radius:20px;padding:3px 8px;margin-left:8px;font-weight:800;">
+                                <i class="bi bi-circle-fill" style="font-size:0.4rem;margin-right:4px;"></i>LIVE
+                            </span>
                         </div>
-                        <button class="btn btn-sm btn-light border" id="employees-toggle-btn" title="Toggle Visibility">
-                            <i class="bi bi-chevron-up"></i>
-                        </button>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge rounded-pill px-3 py-1 small"
+                                style="background:var(--primary-light);color:var(--primary);font-weight:700;letter-spacing:0.02em;"
+                                id="employee-count-badge">0 Employees</span>
+                            <button class="btn btn-sm" id="employees-toggle-btn" title="Toggle Visibility"
+                                style="background:var(--bg-app);border:1px solid var(--border);color:var(--text-muted);border-radius:8px;">
+                                <i class="bi bi-chevron-up"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="card-body p-0" id="employees-table-container">
                         <div class="table-responsive">
                             <table class="table table-hover table-professional mb-0 align-middle">
                                 <thead>
                                     <tr>
-                                        <th class="ps-3" style="width: 40px;">
-                                            <input type="checkbox" class="form-check-input" id="emp-select-all"
-                                                onclick="toggleAllEmployees(this)">
-                                        </th>
-                                        <th class="py-2 px-3 text-uppercase small fw-bold text-muted"
-                                            style="min-width: 180px;">Employee</th>
-                                        <th class="py-2 px-3 text-uppercase small fw-bold text-muted d-mobile-none"
-                                            style="min-width: 140px;">Dept & Code</th>
-                                        <th class="py-2 px-3 text-uppercase small fw-bold text-muted d-mobile-none"
-                                            style="min-width: 100px;">Role</th>
-                                        <th class="py-2 px-3 text-uppercase small fw-bold text-muted d-mobile-none"
-                                            style="min-width: 130px;">Contact</th>
-                                        <th class="py-2 px-3 text-uppercase small fw-bold text-muted"
-                                            style="min-width: 80px;">Status</th>
-                                        <th class="py-2 px-3 text-end text-uppercase small fw-bold text-muted"
-                                            style="min-width: 100px;">Actions</th>
+                                        <th class="ps-3" style="width:40px;"><input type="checkbox"
+                                                class="form-check-input" id="emp-select-all"
+                                                onclick="toggleAllEmployees(this)"></th>
+                                        <th style="min-width:200px;">Employee</th>
+                                        <th class="d-mobile-none" style="min-width:130px;">Department</th>
+                                        <th class="d-mobile-none" style="min-width:110px;">Role</th>
+                                        <th class="d-mobile-none" style="min-width:130px;">Contact</th>
+                                        <th style="min-width:90px;">Status</th>
+                                        <th class="text-end pe-3" style="min-width:110px;">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="employees-tbody">
@@ -697,37 +694,41 @@
                 <div id="attendance-filter-wrapper" style="display:none;"></div>
 
                 <div class="card shadow-sm grid-card mt-2" id="attendance-admin-card" style="display:none;">
-                    <div
-                        class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
-                        <div>
-                            <h6 class="fw-bold mb-0">Workforce Attendance Management</h6>
-                            <div class="text-muted small">Daily punch logs and total hours</div>
+                    <div class="table-section-header">
+                        <div class="table-section-title">
+                            <i class="bi bi-clock-history"></i>
+                            Attendance Logs
                         </div>
-                        <button class="btn btn-sm btn-light border" id="attendance-toggle-btn"
-                            title="Toggle Visibility">
-                            <i class="bi bi-chevron-up"></i>
-                        </button>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge rounded-pill px-2 py-1"
+                                style="background:rgba(37,99,235,0.08);color:var(--primary);font-size:0.7rem;font-weight:700;"
+                                id="attendance-count-badge">0 Records</span>
+                            <span class="badge"
+                                style="background:var(--primary-light);color:var(--primary);font-weight:700;"
+                                id="attendance-total-hours">0.00 HRS</span>
+                            <button class="btn btn-sm" id="attendance-toggle-btn" title="Toggle"
+                                style="background:var(--bg-app);border:1px solid var(--border);color:var(--text-muted);border-radius:8px;">
+                                <i class="bi bi-chevron-up"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="card-body p-0" id="attendance-admin-body">
 
-                        <div class="px-3 pt-3">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <div class="text-muted small" id="attendance-count">0 record(s)</div>
-                                <div class="fw-bold text-primary" id="attendance-total-hours">Total: 0.00 hrs</div>
-                            </div>
+                        <div class="px-3">
+                            <!-- Helper margin for spacing -->
                         </div>
                         <div class="table-responsive">
                             <table class="table table-hover table-professional table-sm align-middle mb-0">
                                 <thead>
                                     <tr>
-                                        <th class="ps-3" style="white-space:nowrap;">Date</th>
-                                        <th style="white-space:nowrap;">Employee</th>
-                                        <th style="white-space:nowrap;" class="d-mobile-none">In</th>
-                                        <th style="white-space:nowrap;" class="d-mobile-none">Out</th>
-                                        <th style="white-space:nowrap;">Hours</th>
-                                        <th style="white-space:nowrap;">Status</th>
-                                        <th style="white-space:nowrap;" class="d-mobile-none">Leave</th>
-                                        <th style="white-space:nowrap; text-align:right;" class="pe-3">Action</th>
+                                        <th class="ps-3" style="text-align:left;">DATE</th>
+                                        <th>EMPLOYEE</th>
+                                        <th class="d-mobile-none">PUNCH IN</th>
+                                        <th class="d-mobile-none">PUNCH OUT</th>
+                                        <th>HOURS</th>
+                                        <th>STATUS</th>
+                                        <th class="d-mobile-none">LEAVE</th>
+                                        <th>DETAILS</th>
                                     </tr>
                                 </thead>
                                 <tbody id="attendance-admin-tbody">
@@ -746,45 +747,49 @@
                 <div id="self-attendance-filter-wrapper" style="display:none;"></div>
 
                 <div class="card shadow-sm grid-card mt-4" id="self-attendance-card" style="display:none;">
-                    <div
-                        class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
-                        <div>
-                            <h6 class="fw-bold mb-0">My Attendance Logs</h6>
-                            <div class="text-muted small">Your punch timing and attendance records</div>
+                    <div class="table-section-header">
+                        <div class="table-section-title">
+                            <i class="bi bi-person-check"></i>
+                            My Attendance
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge rounded-pill px-2 py-1"
+                                style="background:rgba(37,99,235,0.08);color:var(--primary);font-size:0.7rem;font-weight:700;"
+                                id="self-attendance-count-badge">0 Records</span>
+                            <span class="badge"
+                                style="background:var(--primary-light);color:var(--primary);font-weight:700;"
+                                id="self-attendance-total-hours">0.00 HRS</span>
                         </div>
                     </div>
                     <div class="card-body p-0" id="employee-self-body">
 
-                            <div class="px-3 pt-3">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <div class="text-muted small" id="self-attendance-count">0 record(s)</div>
-                                    <div class="fw-bold text-primary" id="self-attendance-total-hours">Total: 0.00 hrs</div>
-                                </div>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-hover table-professional table-sm align-middle mb-0">
-                                    <thead>
-                                        <tr>
-                                            <th class="ps-3" style="white-space:nowrap;">Date</th>
-                                            <th style="white-space:nowrap;" class="d-mobile-none">In</th>
-                                            <th style="white-space:nowrap;" class="d-mobile-none">Out</th>
-                                            <th style="white-space:nowrap;">Hours</th>
-                                            <th style="white-space:nowrap;">Status</th>
-                                            <th style="white-space:nowrap;" class="d-mobile-none">Leave</th>
-                                            <th style="white-space:nowrap; text-align:right;" class="pe-3">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="self-attendance-tbody">
-                                        <tr>
-                                            <td colspan="7" class="text-center py-4 text-muted">No data loaded.</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div id="self-attendance-pagination" class="px-3 pb-2"></div>
+                        <div class="px-3">
+                            <!-- Helper margin for spacing -->
                         </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover table-professional table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th class="ps-3" style="text-align:left;">DATE</th>
+                                        <th class="d-mobile-none">PUNCH IN</th>
+                                        <th class="d-mobile-none">PUNCH OUT</th>
+                                        <th>HOURS</th>
+                                        <th>STATUS</th>
+                                        <th class="d-mobile-none">LEAVE</th>
+                                        <th>DETAILS</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="self-attendance-tbody">
+                                    <tr>
+                                        <td colspan="7" class="text-center py-4 text-muted">No data loaded.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="self-attendance-pagination" class="px-3 pb-2"></div>
                     </div>
                 </div>
+            </div>
 
         </div>
     </div>
@@ -792,80 +797,131 @@
 
     <!-- ─── Edit Employee Modal ─────────────────────────────────── -->
     <div class="srm-overlay" id="editEmployeeModal">
-        <div class="srm-box" style="max-width: 650px;">
-            <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
-                <h5 class="fw-bold mb-0"><i class="bi bi-person-fill-gear text-primary me-2"></i>Edit Employee Profile
-                </h5>
-                <button class="btn-close" onclick="closeEditModal()"></button>
+        <div class="srm-box" style="max-width:680px;padding:0;overflow:hidden;border-radius:20px;">
+
+            <!-- Modal Header -->
+            <div style="background:linear-gradient(135deg,#1e3a8a,#4f46e5);padding:24px 28px;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-3">
+                        <div
+                            style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;">
+                            <i class="bi bi-person-fill-gear text-white fs-5"></i>
+                        </div>
+                        <div>
+                            <div style="font-size:1.05rem;font-weight:800;color:#fff;letter-spacing:-0.01em;">Edit
+                                Employee Profile</div>
+                            <div style="font-size:0.75rem;color:rgba(255,255,255,0.55);margin-top:1px;">Update employee
+                                details and permissions</div>
+                        </div>
+                    </div>
+                    <button class="btn-close btn-close-white" onclick="closeEditModal()"></button>
+                </div>
             </div>
-            <div class="row g-3">
+
+            <!-- Modal Body -->
+            <div style="padding:24px 28px;">
                 <input type="hidden" id="edit-id">
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold small">Full Name</label>
-                    <input type="text" id="edit-name" class="form-control" placeholder="e.g. John Doe">
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold small">Email (Cannot edit)</label>
-                    <input type="email" id="edit-email" class="form-control" disabled>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold small">Phone</label>
-                    <input type="text" id="edit-phone" class="form-control" placeholder="e.g. +91 9876543210">
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold small">Department</label>
-                    <input type="text" id="edit-department" class="form-control" placeholder="e.g. Sales">
-                </div>
-
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold small">Role</label>
-                    <select id="edit-role" class="form-select">
-                        <option value="ADMIN">Admin</option>
-                        <option value="SALES">Sales</option>
-                        <option value="TELESALES">Telesales</option>
-                        <option value="PROJECT_MANAGER">Project Manager</option>
-                        <option value="PROJECT_MANAGER_AND_SALES">PM & Sales</option>
-                        <option value="CLIENT">Client</option>
-                    </select>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold small">Employee Code</label>
-                    <input type="text" id="edit-emp-code" class="form-control" placeholder="e.g. EMP-1234">
-                </div>
-
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold small">Base Salary (₹)</label>
-                    <input type="number" id="edit-salary" class="form-control" step="0.01" min="0">
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold small">Target</label>
-                    <input type="number" id="edit-target" class="form-control" step="1" min="0">
-                </div>
-
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold small">Status</label>
-                    <select id="edit-status" class="form-select">
-                        <option value="true">Active</option>
-                        <option value="false">Inactive</option>
-                    </select>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold small">New Password (Leave blank to keep)</label>
-                    <div class="position-relative">
-                        <input type="password" id="edit-password" class="form-control"
-                            placeholder="Minimum 8 characters" style="padding-right: 40px;">
-                        <button type="button" class="password-toggle"
-                            onclick="togglePasswordVisibility('edit-password', 'edit-pwd-icon')">
-                            <i class="bi bi-eye" id="edit-pwd-icon"></i>
-                        </button>
+                <div class="col-12" id="editEmpResetBanner" style="display:none; margin-bottom:1rem;">
+                    <div class="alert alert-warning d-flex align-items-center gap-3 w-100 shadow-sm mb-0" style="border:1px solid #f59e0b; background:#fef3c7; color:#92400e; border-radius:12px;">
+                        <i class="bi bi-shield-exclamation fs-4"></i>
+                        <div>
+                            <h6 class="mb-0 fw-bold">Password Reset Requested</h6>
+                            <small>This user requested a password reset on <span id="editEmpResetTime"></span>. Changing their password now will automatically resolve this request.</small>
+                        </div>
                     </div>
                 </div>
-            </div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold small text-muted text-uppercase"
+                            style="font-size:0.68rem;letter-spacing:0.06em;"><i class="bi bi-person me-1"></i>Full
+                            Name</label>
+                        <input type="text" id="edit-name" class="form-control" placeholder="e.g. Arjun Mehta">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold small text-muted text-uppercase"
+                            style="font-size:0.68rem;letter-spacing:0.06em;"><i class="bi bi-envelope me-1"></i>Email
+                            <span class="text-muted fw-normal">(read-only)</span></label>
+                        <input type="email" id="edit-email" class="form-control" disabled
+                            style="background:var(--bg-app);">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold small text-muted text-uppercase"
+                            style="font-size:0.68rem;letter-spacing:0.06em;"><i
+                                class="bi bi-telephone me-1"></i>Phone</label>
+                        <input type="text" id="edit-phone" class="form-control" placeholder="+91 98765 43210">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold small text-muted text-uppercase"
+                            style="font-size:0.68rem;letter-spacing:0.06em;"><i
+                                class="bi bi-building me-1"></i>Department</label>
+                        <input type="text" id="edit-department" class="form-control" placeholder="e.g. Sales">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold small text-muted text-uppercase"
+                            style="font-size:0.68rem;letter-spacing:0.06em;"><i
+                                class="bi bi-shield-half me-1"></i>Role</label>
+                        <select id="edit-role" class="form-select">
+                            <option value="ADMIN">Admin</option>
+                            <option value="SALES">Sales</option>
+                            <option value="TELESALES">Telesales</option>
+                            <option value="PROJECT_MANAGER">Project Manager</option>
+                            <option value="PROJECT_MANAGER_AND_SALES">PM & Sales</option>
+                            <option value="CLIENT">Client</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold small text-muted text-uppercase"
+                            style="font-size:0.68rem;letter-spacing:0.06em;"><i class="bi bi-hash me-1"></i>Employee
+                            Code</label>
+                        <input type="text" id="edit-emp-code" class="form-control" placeholder="e.g. EMP-1234">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold small text-muted text-uppercase"
+                            style="font-size:0.68rem;letter-spacing:0.06em;"><i
+                                class="bi bi-currency-rupee me-1"></i>Base Salary (₹)</label>
+                        <input type="number" id="edit-salary" class="form-control" step="0.01" min="0"
+                            placeholder="0.00">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold small text-muted text-uppercase"
+                            style="font-size:0.68rem;letter-spacing:0.06em;"><i class="bi bi-bullseye me-1"></i>Target
+                            (Units)</label>
+                        <input type="number" id="edit-target" class="form-control" step="1" min="0" placeholder="0">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold small text-muted text-uppercase"
+                            style="font-size:0.68rem;letter-spacing:0.06em;"><i class="bi bi-toggle-on me-1"></i>Account
+                            Status</label>
+                        <select id="edit-status" class="form-select">
+                            <option value="true">✅ Active</option>
+                            <option value="false">❌ Inactive</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold small text-muted text-uppercase"
+                            style="font-size:0.68rem;letter-spacing:0.06em;"><i class="bi bi-key me-1"></i>New Password
+                            <span class="text-muted fw-normal">(leave blank to keep)</span></label>
+                        <div class="position-relative">
+                            <input type="password" id="edit-password" class="form-control"
+                                placeholder="Min. 8 characters" style="padding-right:40px;">
+                            <button type="button" class="password-toggle"
+                                onclick="togglePasswordVisibility('edit-password','edit-pwd-icon')">
+                                <i class="bi bi-eye" id="edit-pwd-icon"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
-            <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
-                <button class="btn btn-outline-secondary fw-semibold" onclick="closeEditModal()">Cancel</button>
-                <button class="btn btn-primary px-4 fw-semibold" id="edit-submit-btn"
-                    onclick="submitEditEmployee()">Save Changes</button>
+                <!-- Footer -->
+                <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                    <button class="btn btn-outline-secondary fw-semibold px-4" onclick="closeEditModal()">
+                        <i class="bi bi-x me-1"></i>Cancel
+                    </button>
+                    <button class="btn btn-primary px-4 fw-semibold" id="edit-submit-btn"
+                        onclick="submitEditEmployee()">
+                        <i class="bi bi-check2 me-1"></i>Save Changes
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -889,7 +945,7 @@
         const canManageEmployees = window.hasFeatureAccess ? window.hasFeatureAccess('employee_manage_roles') : isAdmin;
 
         // Modals
-        function openEditModal(id) {
+        async function openEditModal(id) {
             const emp = employeesData.find(e => e.id === id);
             if (!emp) return;
 
@@ -911,6 +967,17 @@
                 modalBody.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
                 modalBody.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
             }
+
+            const banner = document.getElementById('editEmpResetBanner');
+            if(banner) banner.style.display = 'none';
+            try {
+                const rr = await ApiClient.request('/auth/reset-requests');
+                const req = rr.find(r => r.user_id === id && r.status === 'PENDING');
+                if(req && banner) {
+                    banner.style.display = 'flex';
+                    document.getElementById('editEmpResetTime').textContent = new Date(req.requested_at).toLocaleString();
+                }
+            } catch(e) {}
 
             document.getElementById('editEmployeeModal').classList.add('show');
         }
@@ -1020,24 +1087,49 @@
 
                 populateAttendanceEmployeeFilter();
 
-                renderPagination({
+                window.EmpPagination = renderPagination({
                     data: employeesData,
-                    pageSize: 15,
                     tbodyId: 'employees-tbody',
                     paginationId: 'employees-pagination',
                     emptyMsg: '<tr><td colspan="7" class="text-center py-5 text-muted">No employees found.</td></tr>',
                     renderRow: (emp) => {
-                        const avatarLetter = (emp.name || emp.email || 'U')[0].toUpperCase();
-                        const statusClass = emp.is_active ? 'status-active' : 'status-inactive';
-                        const statusText = emp.is_active ? '<i class="bi bi-check-circle-fill"></i> Active' : '<i class="bi bi-x-circle-fill"></i> Inactive';
-                        const roleClass = (emp.role || 'CLIENT').toUpperCase();
+                        const palette = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
+                        const deptChar = (emp.department || 'X').toUpperCase().charCodeAt(0);
+                        const nameParts = (emp.name || '').split(' ');
+                        const secondChar = nameParts.length > 1 ? nameParts[1].toUpperCase().charCodeAt(0) : 0;
+                        const deptColor = palette[(deptChar + secondChar) % 6];
+
+                        let nameInitial = 'U';
+                        const nStr = (emp.name || emp.email || '').trim();
+                        if (nStr) {
+                            const parts = nStr.split(' ').filter(p => p.length > 0);
+                            nameInitial = parts.length > 1 ? (parts[0][0] + parts[1][0]).toUpperCase() : parts[0].substring(0, 2).toUpperCase();
+                        }
+
+                        const roleColors = {
+                            ADMIN: 'background:rgba(254,243,199,0.5);color:#92400e;border:1px solid rgba(254,226,138,0.5);',
+                            SALES: 'background:rgba(220,252,231,0.5);color:#166534;border:1px solid rgba(187,247,208,0.5);',
+                            TELESALES: 'background:rgba(219,234,254,0.5);color:#1e40af;border:1px solid rgba(191,219,254,0.5);',
+                            PROJECT_MANAGER: 'background:rgba(237,233,254,0.5);color:#5b21b6;border:1px solid rgba(221,214,254,0.5);',
+                            PROJECT_MANAGER_AND_SALES: 'background:rgba(252,231,243,0.5);color:#9d174d;border:1px solid rgba(251,207,232,0.5);',
+                            CLIENT: 'background:rgba(241,245,249,0.5);color:#475569;border:1px solid rgba(226,232,240,0.5);',
+                        };
+                        const roleStyle = roleColors[(emp.role || '').toUpperCase()] || roleColors.CLIENT;
+                        const roleName = (emp.role || 'Unknown').replace(/_/g, ' ');
 
                         let actions = `<span class="text-muted small">Viewer</span>`;
                         if (canManageEmployees) {
                             actions = `
-                                <button class="btn-action" onclick="viewEmployeeAttendance('${emp.id}', '${emp.name}')" title="Attendance History"><i class="bi bi-calendar-check"></i></button>
-                                <button class="btn-action" onclick="openEditModal('${emp.id}')" title="Edit"><i class="bi bi-pencil"></i></button>
-                                ${emp.role !== 'admin' ? `<button class="btn-action btn-action-danger" onclick="deleteEmployee('${emp.id}')" title="Delete"><i class="bi bi-trash"></i></button>` : ''}
+                                <button class="btn-action" onclick="viewEmployeeAttendance('${emp.id}', '${emp.name}')" title="Attendance History" style="width:30px;height:30px;border-radius:10px;background:rgba(37,99,235,0.1);color:var(--primary);border:none;">
+                                    <i class="bi bi-calendar2-check" style="font-size:0.85rem;"></i>
+                                </button>
+                                <button class="btn-action" onclick="openEditModal('${emp.id}')" title="Edit Employee" style="width:30px;height:30px;border-radius:10px;background:rgba(14,165,233,0.1);color:#0ea5e9;border:none;">
+                                    <i class="bi bi-pencil-square" style="font-size:0.85rem;"></i>
+                                </button>
+                                ${emp.role !== 'admin' ? `
+                                <button class="btn-action" onclick="deleteEmployee('${emp.id}')" title="Delete" style="width:30px;height:30px;border-radius:10px;background:rgba(239,68,68,0.1);color:#ef4444;border:none;">
+                                    <i class="bi bi-trash3" style="font-size:0.85rem;"></i>
+                                </button>` : ''}
                             `;
                         }
 
@@ -1047,34 +1139,46 @@
                                 <input type="checkbox" class="form-check-input emp-checkbox" value="${emp.id}" onclick="updateSelectedCount()">
                             </td>
                             <td class="px-3">
-                                <div class="d-flex align-items-center gap-2">
-                                    <div class="employee-avatar shadow-sm">${avatarLetter}</div>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="employee-avatar shadow-sm" style="background:${deptColor};color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;">${nameInitial}</div>
                                     <div class="min-w-0">
-                                        <h6 class="mb-0 fw-bold text-dark text-truncate" style="font-size: 0.875rem;">${emp.name || '<i>No Name</i>'}</h6>
-                                        <div class="text-muted text-truncate" style="font-size: 0.75rem;">${emp.email}</div>
+                                        <div class="fw-bold text-truncate" style="font-size:0.9rem;color:var(--text-1);">${emp.name || '<i>No Name</i>'}</div>
+                                        <div class="text-muted text-truncate" style="font-size:0.73rem;">${emp.email}</div>
                                     </div>
                                 </div>
                             </td>
                             <td class="px-3 d-mobile-none">
-                                <div class="fw-semibold text-dark small">${emp.department || '—'}</div>
-                                <div class="text-muted" style="font-size: 0.7rem;">${emp.employee_code || 'No Code'}</div>
+                                <div class="fw-semibold" style="font-size:0.82rem;color:var(--text-body);"><i class="bi bi-building me-1 opacity-50"></i>${emp.department || '—'}</div>
+                                <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">
+                                    <i class="bi bi-hash opacity-50"></i>${emp.employee_code || 'No Code'}
+                                </div>
                             </td>
                             <td class="px-3 d-mobile-none">
-                                <span class="role-badge role-${roleClass}" style="font-size: 0.65rem; padding: 2px 8px;">${(emp.role || 'Unknown').replace(/_/g, ' ')}</span>
+                                <span class="badge" style="display:inline-flex;align-items:center;gap:5px;font-size:0.68rem;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:0.04em;${roleStyle}">
+                                    ${roleName}
+                                </span>
                             </td>
-                            <td class="px-3 text-muted d-mobile-none" style="font-size: 0.8rem;">
-                                ${emp.phone ? `<i class="bi bi-telephone me-1 opacity-50"></i>${emp.phone}` : '—'}
+                            <td class="px-3 d-mobile-none">
+                                ${emp.phone
+                                ? `<a href="tel:${emp.phone}" class="d-flex align-items-center gap-2 text-decoration-none" style="color:var(--text-body);font-size:0.82rem;">
+                                        <i class="bi bi-telephone text-primary opacity-60"></i>${emp.phone}
+                                       </a>`
+                                : '<span class="text-muted">—</span>'}
+                                ${emp.joining_date
+                                ? `<div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;"><i class="bi bi-calendar-event opacity-50 me-1"></i>${new Date(emp.joining_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</div>`
+                                : ''}
                             </td>
                             <td class="px-3">
-                                <span class="status-badge ${statusClass}" style="padding: 2px 8px; font-size: 0.65rem;">${statusText}</span>
+                                ${emp.is_active
+                                ? `<span class="badge" style="background:rgba(16,185,129,0.1);color:#10b981;font-size:0.65rem;font-weight:800;border-radius:20px;padding:3px 10px;border:1px solid rgba(16,185,129,0.2);"><i class="bi bi-check-circle-fill me-1"></i>ACTIVE</span>`
+                                : `<span class="badge" style="background:rgba(239,68,68,0.1);color:#ef4444;font-size:0.65rem;font-weight:800;border-radius:20px;padding:3px 10px;border:1px solid rgba(239,68,68,0.2);"><i class="bi bi-x-circle-fill me-1"></i>INACTIVE</span>`}
                             </td>
                             <td class="px-3 text-end">
-                                <div class="d-flex justify-content-end gap-1">
+                                <div class="d-flex justify-content-end align-items-center gap-1">
                                     ${actions}
                                 </div>
                             </td>
-                        </tr>
-                        `;
+                        </tr>`;
                     }
                 });
             } catch (err) {
@@ -1258,7 +1362,7 @@
 
             tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading...</td></tr>';
             document.getElementById('self-attendance-pagination').innerHTML = '';
-            
+
             try {
                 const data = await ApiClient.getAttendanceSummary({
                     start_date: start,
@@ -1266,27 +1370,34 @@
                     reconcile: true
                 });
                 const records = (data.records || []).sort((a, b) => new Date(b.date) - new Date(a.date));
-                document.getElementById('self-attendance-count').textContent = `${records.length} record(s)`;
-                document.getElementById('self-attendance-total-hours').textContent = `Total: ${(data.total_hours || 0).toFixed(2)} hrs`;
+                const countBadge = document.getElementById('self-attendance-count-badge');
+                if (countBadge) countBadge.textContent = `${records.length} Records`;
+                const hoursBadge = document.getElementById('self-attendance-total-hours');
+                if (hoursBadge) hoursBadge.textContent = `${(data.total_hours || 0).toFixed(2)} HRS`;
 
                 renderPagination({
                     data: records,
-                    pageSize: 15,
                     tbodyId: 'self-attendance-tbody',
                     paginationId: 'self-attendance-pagination',
                     emptyMsg: '<tr><td colspan="7" class="text-center py-4 text-muted">No attendance records found.</td></tr>',
                     renderRow: (r) => {
                         const day = new Date(r.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
                         return `<tr>
-                            <td style="white-space:nowrap;">${day}</td>
-                            <td class="d-mobile-none">${formatTimeCell(r.first_punch_in)}</td>
-                            <td class="d-mobile-none">${formatTimeCell(r.last_punch_out)}</td>
-                            <td>${(r.total_hours || 0).toFixed(2)}</td>
+                            <td style="white-space:nowrap;font-weight:600;text-align:left;" class="ps-3"><i class="bi bi-calendar3 me-2 text-primary opacity-50"></i>${day}</td>
+                            <td class="d-mobile-none">
+                                <span class="px-2 py-1 rounded" style="background:var(--bg-app);font-size:0.75rem;"><i class="bi bi-box-arrow-in-right text-success me-1"></i>${formatTimeCell(r.first_punch_in)}</span>
+                            </td>
+                            <td class="d-mobile-none">
+                                <span class="px-2 py-1 rounded" style="background:var(--bg-app);font-size:0.75rem;"><i class="bi bi-box-arrow-right text-danger me-1"></i>${formatTimeCell(r.last_punch_out)}</span>
+                            </td>
+                            <td>
+                                <span class="fw-bold" style="font-family:'JetBrains Mono', monospace;color:var(--primary);">${(r.total_hours || 0).toFixed(2)}</span>
+                            </td>
                             <td>${statusBadge(r.day_status)}</td>
                             <td class="d-mobile-none">${leaveBadge(r.leave_status)}</td>
-                            <td class="text-end">
-                                <button class="btn-action" onclick="viewPunchLogs('${r.date}')" title="View Details">
-                                    <i class="bi bi-eye"></i>
+                            <td>
+                                <button class="btn-action" onclick="viewPunchLogs('${r.date}')" title="View Details" style="width:30px;height:30px;border-radius:10px;margin-left:12px;margin-right:auto;">
+                                    <i class="bi bi-eye" style="font-size:0.8rem;"></i>
                                 </button>
                             </td>
                         </tr>`;
@@ -1310,12 +1421,38 @@
         }
 
         function statusBadge(status) {
-            return `<span class="status-badge att-status-${status}">${status}</span>`;
+            const colors = {
+                'PRESENT': 'background:rgba(16,185,129,0.1);color:#10b981;border:1px solid rgba(16,185,129,0.2);',
+                'ABSENT': 'background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.2);',
+                'HALF_DAY': 'background:rgba(245,158,11,0.1);color:#f59e0b;border:1px solid rgba(245,158,11,0.2);',
+                'ON_LEAVE': 'background:rgba(59,130,246,0.1);color:#3b82f6;border:1px solid rgba(59,130,246,0.2);',
+                'WEEKLY_OFF': 'background:rgba(107,114,128,0.1);color:#6b7280;border:1px solid rgba(107,114,128,0.2);',
+                'HOLIDAY': 'background:rgba(139,92,246,0.1);color:#8b5cf6;border:1px solid rgba(139,92,246,0.2);'
+            };
+            const icons = {
+                'PRESENT': 'bi-check-circle-fill',
+                'ABSENT': 'bi-x-circle-fill',
+                'HALF_DAY': 'bi-pause-circle-fill',
+                'ON_LEAVE': 'bi-calendar-event-fill',
+                'WEEKLY_OFF': 'bi-calendar-x',
+                'HOLIDAY': 'bi-gift-fill'
+            };
+            const s = (status || '').toUpperCase();
+            const style = colors[s] || 'background:rgba(107,114,128,0.05);color:#6b7280;border:1px solid rgba(107,114,128,0.1);';
+            const icon = icons[s] || 'bi-info-circle';
+            return `<span class="badge" style="display:inline-flex;align-items:center;gap:5px;font-size:0.68rem;font-weight:700;padding:4px 10px;border-radius:20px;letter-spacing:0.04em;${style}"><i class="bi ${icon}"></i>${s.replace(/_/g, ' ')}</span>`;
         }
 
         function leaveBadge(status) {
-            if (!status) return '--';
-            return `<span class="status-badge leave-status-${status}">${status}</span>`;
+            if (!status || status === '--' || status === 'None') return '<span class="text-muted opacity-50"—</span>';
+            const colors = {
+                'APPROVED': 'background:rgba(16,185,129,0.1);color:#1b4332;border:1px solid rgba(16,185,129,0.2);',
+                'PENDING': 'background:rgba(245,158,11,0.1);color:#92400e;border:1px solid rgba(245,158,11,0.2);',
+                'REJECTED': 'background:rgba(239,68,68,0.1);color:#7f1d1d;border:1px solid rgba(239,68,68,0.2);'
+            };
+            const s = (status || '').toUpperCase();
+            const style = colors[s] || 'background:rgba(107,114,128,0.1);color:#374151;';
+            return `<span class="badge" style="font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:6px;${style}">${s}</span>`;
         }
 
         async function viewPunchLogs(dateStr, userId = null) {
@@ -1368,28 +1505,35 @@
 
                 const data = await ApiClient.getAttendanceSummary(params);
                 const records = (data.records || []).sort((a, b) => new Date(b.date) - new Date(a.date));
-                document.getElementById('attendance-count').textContent = `${records.length} record(s)`;
-                document.getElementById('attendance-total-hours').textContent = `Total: ${(data.total_hours || 0).toFixed(2)} hrs`;
+                const countBadge = document.getElementById('attendance-count-badge');
+                if (countBadge) countBadge.textContent = `${records.length} Records`;
+                const hoursBadge = document.getElementById('attendance-total-hours');
+                if (hoursBadge) hoursBadge.textContent = `${(data.total_hours || 0).toFixed(2)} HRS`;
 
                 renderPagination({
                     data: records,
-                    pageSize: 15,
                     tbodyId: 'attendance-admin-tbody',
                     paginationId: 'attendance-admin-pagination',
                     emptyMsg: '<tr><td colspan="8" class="text-center py-4 text-muted">No attendance records found.</td></tr>',
                     renderRow: (r) => {
                         const day = new Date(r.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
                         return `<tr>
-                            <td style="white-space:nowrap;">${day}</td>
-                            <td style="white-space:nowrap;">${r.user_name || 'User #' + r.user_id}</td>
-                            <td class="d-mobile-none">${formatTimeCell(r.first_punch_in)}</td>
-                            <td class="d-mobile-none">${formatTimeCell(r.last_punch_out)}</td>
-                            <td>${(r.total_hours || 0).toFixed(2)}</td>
+                            <td style="white-space:nowrap;font-weight:600;text-align:left;" class="ps-3"><i class="bi bi-calendar3 me-2 text-primary opacity-50"></i>${day}</td>
+                            <td style="white-space:nowrap;font-weight:700;color:var(--text-1);">${r.user_name || 'User #' + r.user_id}</td>
+                            <td class="d-mobile-none">
+                                <span class="px-2 py-1 rounded" style="background:var(--bg-app);font-size:0.75rem;"><i class="bi bi-box-arrow-in-right text-success me-1"></i>${formatTimeCell(r.first_punch_in)}</span>
+                            </td>
+                            <td class="d-mobile-none">
+                                <span class="px-2 py-1 rounded" style="background:var(--bg-app);font-size:0.75rem;"><i class="bi bi-box-arrow-right text-danger me-1"></i>${formatTimeCell(r.last_punch_out)}</span>
+                            </td>
+                            <td>
+                                <span class="fw-bold" style="font-family:'JetBrains Mono', monospace;color:var(--primary);">${(r.total_hours || 0).toFixed(2)}</span>
+                            </td>
                             <td>${statusBadge(r.day_status)}</td>
                             <td class="d-mobile-none">${leaveBadge(r.leave_status)}</td>
-                            <td class="text-end">
-                                <button class="btn-action" onclick="viewPunchLogs('${r.date}', '${r.user_id}')" title="View Details">
-                                    <i class="bi bi-eye"></i>
+                            <td>
+                                <button class="btn-action" onclick="viewPunchLogs('${r.date}', '${r.user_id}')" title="View Details" style="width:30px;height:30px;border-radius:10px;margin-left:12px;margin-right:auto;">
+                                    <i class="bi bi-eye" style="font-size:0.8rem;"></i>
                                 </button>
                             </td>
                         </tr>`;
@@ -1514,10 +1658,10 @@
                 tbody.innerHTML = records.map(r => {
                     const day = new Date(r.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
                     return `<tr>
-                        <td class="ps-3">${day}</td>
-                        <td>${formatTimeCell(r.first_punch_in)}</td>
-                        <td>${formatTimeCell(r.last_punch_out)}</td>
-                        <td class="fw-bold text-primary">${(r.total_hours || 0).toFixed(2)}</td>
+                        <td class="ps-3" style="white-space:nowrap;font-weight:600;"><i class="bi bi-calendar3 me-2 text-primary opacity-50"></i>${day}</td>
+                        <td><span class="px-2 py-1 rounded" style="background:var(--bg-app);font-size:0.75rem;"><i class="bi bi-box-arrow-in-right text-success me-1"></i>${formatTimeCell(r.first_punch_in)}</span></td>
+                        <td><span class="px-2 py-1 rounded" style="background:var(--bg-app);font-size:0.75rem;"><i class="bi bi-box-arrow-right text-danger me-1"></i>${formatTimeCell(r.last_punch_out)}</span></td>
+                        <td><span class="fw-bold" style="font-family:'JetBrains Mono', monospace;color:var(--primary);">${(r.total_hours || 0).toFixed(2)}</span></td>
                         <td>${statusBadge(r.day_status)}</td>
                         <td class="pe-3 text-end">${leaveBadge(r.leave_status)}</td>
                     </tr>`;
@@ -1618,11 +1762,18 @@
                     <div class="table-responsive rounded-3 border">
                         <table class="table table-hover table-sm mb-0 align-middle">
                             <thead class="bg-light">
-                                <tr>
-                                    <th class="ps-3 py-2">#</th>
-                                    <th class="py-2">Punch In</th>
-                                    <th class="py-2">Punch Out</th>
-                                    <th class="pe-3 py-2 text-end">Duration</th>
+                                <tr style="border-bottom: 1.5px solid var(--border);">
+                                    <th class="ps-3 py-2 text-uppercase"
+                                        style="font-size:0.72rem;letter-spacing:0.04em;color:var(--text-3);">#</th>
+                                    <th class="py-2 text-uppercase"
+                                        style="font-size:0.72rem;letter-spacing:0.04em;color:var(--text-3);">PUNCH IN
+                                    </th>
+                                    <th class="py-2 text-uppercase"
+                                        style="font-size:0.72rem;letter-spacing:0.04em;color:var(--text-3);">PUNCH OUT
+                                    </th>
+                                    <th class="pe-3 py-2 text-end text-uppercase"
+                                        style="font-size:0.72rem;letter-spacing:0.04em;color:var(--text-3);">DURATION
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody id="punch-detail-tbody" style="font-size:0.85rem;">
@@ -1654,13 +1805,21 @@
                     <div class="table-responsive rounded-3 border">
                         <table class="table table-hover table-sm mb-0 align-middle">
                             <thead class="bg-light">
-                                <tr>
-                                    <th class="ps-3 py-2">Date</th>
-                                    <th class="py-2">Punch In</th>
-                                    <th class="py-2">Punch Out</th>
-                                    <th class="py-2">Hours</th>
-                                    <th class="py-2">Status</th>
-                                    <th class="pe-3 py-2 text-end">Leave</th>
+                                <tr style="border-bottom: 1.5px solid var(--border);">
+                                    <th class="ps-3 py-2 text-uppercase"
+                                        style="font-size:0.72rem;letter-spacing:0.04em;color:var(--text-3);">DATE</th>
+                                    <th class="py-2 text-uppercase"
+                                        style="font-size:0.72rem;letter-spacing:0.04em;color:var(--text-3);">PUNCH IN
+                                    </th>
+                                    <th class="py-2 text-uppercase"
+                                        style="font-size:0.72rem;letter-spacing:0.04em;color:var(--text-3);">PUNCH OUT
+                                    </th>
+                                    <th class="py-2 text-uppercase"
+                                        style="font-size:0.72rem;letter-spacing:0.04em;color:var(--text-3);">HOURS</th>
+                                    <th class="py-2 text-uppercase"
+                                        style="font-size:0.72rem;letter-spacing:0.04em;color:var(--text-3);">STATUS</th>
+                                    <th class="pe-3 py-2 text-end text-uppercase"
+                                        style="font-size:0.72rem;letter-spacing:0.04em;color:var(--text-3);">LEAVE</th>
                                 </tr>
                             </thead>
                             <tbody id="att-hist-tbody" style="font-size:0.85rem;">

@@ -33,12 +33,30 @@
 
         /* ── Mobile KPI stat cards ─────────────── */
         .stat-card-mobile {
+            position: relative;
+            overflow: hidden;
             border-radius: 12px;
             flex-shrink: 1;
             /* Allow shrinking if needed */
             min-width: 120px;
             /* Safer min-width for 320px screens */
         }
+        
+        .stat-card-mobile::before {
+            content: '';
+            display: block;
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 4px;
+            z-index: 1;
+        }
+
+        .stat-card-mobile.card-primary::before { background: linear-gradient(90deg, #1e3a8a, #2563eb); }
+        .stat-card-mobile.card-warning::before { background: linear-gradient(90deg, #9a3412, #f97316); }
+        .stat-card-mobile.card-info::before { background: linear-gradient(90deg, #134e4a, #14b8a6); }
+        .stat-card-mobile.card-purple::before { background: linear-gradient(90deg, #4c1d95, #7c3aed); }
+        .stat-card-mobile.card-success::before { background: linear-gradient(90deg, #065f46, #10b981); }
+        .stat-card-mobile.card-danger::before { background: linear-gradient(90deg, #7f1d1d, #ef4444); }
 
         /* ── Mobile visit cards ─────────────────── */
         .visit-card-mobile {
@@ -94,7 +112,7 @@
                 <div class="row g-2 g-md-3 mb-3">
                     <div class="col-6 col-md-4 col-xl-2">
                         <div
-                            class="stat-card-mobile card border-0 shadow-sm bg-primary-subtle p-2 p-md-3 d-flex flex-row align-items-center gap-2 h-100 w-100">
+                            class="stat-card-mobile card border-0 shadow-sm card-primary p-2 p-md-3 d-flex flex-row align-items-center gap-2 h-100 w-100">
                             <div class="stat-icon icon-blue flex-shrink-0"><i class="bi bi-calendar-day"></i></div>
                             <div class="overflow-hidden w-100">
                                 <div class="stat-label text-truncate mb-1" style="font-size:0.65rem;">Today's Visits
@@ -105,7 +123,7 @@
                     </div>
                     <div class="col-6 col-md-4 col-xl-2">
                         <div
-                            class="stat-card-mobile card border-0 shadow-sm bg-warning-subtle p-2 p-md-3 d-flex flex-row align-items-center gap-2 h-100 w-100">
+                            class="stat-card-mobile card border-0 shadow-sm card-warning p-2 p-md-3 d-flex flex-row align-items-center gap-2 h-100 w-100">
                             <div class="stat-icon flex-shrink-0" style="color:var(--bs-warning,#ffc107);"><i
                                     class="bi bi-clock-history"></i></div>
                             <div class="overflow-hidden w-100">
@@ -117,7 +135,7 @@
                     </div>
                     <div class="col-6 col-md-4 col-xl-2">
                         <div
-                            class="stat-card-mobile card border-0 shadow-sm bg-info-subtle p-2 p-md-3 d-flex flex-row align-items-center gap-2 h-100 w-100">
+                            class="stat-card-mobile card border-0 shadow-sm card-info p-2 p-md-3 d-flex flex-row align-items-center gap-2 h-100 w-100">
                             <div class="stat-icon flex-shrink-0" style="color:var(--bs-info,#0dcaf0);"><i
                                     class="bi bi-graph-up-arrow"></i></div>
                             <div class="overflow-hidden w-100">
@@ -128,8 +146,7 @@
                         </div>
                     </div>
                     <div class="col-6 col-md-4 col-xl-2">
-                        <div class="stat-card-mobile card border-0 shadow-sm p-2 p-md-3 d-flex flex-row align-items-center gap-2 h-100 w-100"
-                            style="background:rgba(102,16,242,0.08);">
+                        <div class="stat-card-mobile card border-0 shadow-sm card-purple p-2 p-md-3 d-flex flex-row align-items-center gap-2 h-100 w-100">
                             <div class="stat-icon flex-shrink-0" style="color:var(--bs-indigo,#6610f2);"><i
                                     class="bi bi-shop"></i></div>
                             <div class="overflow-hidden w-100">
@@ -140,8 +157,7 @@
                         </div>
                     </div>
                     <div class="col-6 col-md-4 col-xl-2">
-                        <div class="stat-card-mobile card border-0 shadow-sm p-2 p-md-3 d-flex flex-row align-items-center gap-2 h-100 w-100"
-                            style="background:rgba(13,202,240,0.08);">
+                        <div class="stat-card-mobile card border-0 shadow-sm card-info p-2 p-md-3 d-flex flex-row align-items-center gap-2 h-100 w-100">
                             <div class="stat-icon flex-shrink-0" style="color:var(--bs-cyan,#0dcaf0);"><i
                                     class="bi bi-laptop"></i></div>
                             <div class="overflow-hidden w-100">
@@ -151,8 +167,7 @@
                         </div>
                     </div>
                     <div class="col-6 col-md-4 col-xl-2">
-                        <div class="stat-card-mobile card border-0 shadow-sm p-2 p-md-3 d-flex flex-row align-items-center gap-2 h-100 w-100"
-                            style="background:rgba(255,193,7,0.10);">
+                        <div class="stat-card-mobile card border-0 shadow-sm card-success p-2 p-md-3 d-flex flex-row align-items-center gap-2 h-100 w-100">
                             <div class="stat-icon flex-shrink-0" style="color:var(--bs-warning,#ffc107);"><i
                                     class="bi bi-trophy"></i></div>
                             <div class="overflow-hidden w-100">
@@ -751,7 +766,6 @@
 
             renderPagination({
                 data: visits,
-                pageSize: 15,
                 paginationId: 'visits-pagination',
                 targets: [
                     {
@@ -976,7 +990,6 @@
 
             renderPagination({
                 data: leads,
-                pageSize: 10,
                 paginationId: 'accepted-pagination',
                 targets: [
                     {

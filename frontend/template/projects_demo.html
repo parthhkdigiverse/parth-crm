@@ -145,40 +145,49 @@
                 <!-- KPIs -->
                 <div class="row g-3 mb-4">
                     <div class="col-12 col-md-4">
-                        <div class="card border-0 shadow-sm rounded-4 h-100">
-                            <div class="card-body p-3 d-flex align-items-center gap-3">
-                                <div class="bg-light text-secondary rounded-circle d-flex align-items-center justify-content-center" style="width:48px;height:48px;flex-shrink:0;">
-                                    <i class="bi bi-people fs-4"></i>
+                        <div class="card border-0 shadow-sm rounded-4 h-100 has-stripe">
+                            <div class="card-body p-3 pt-4 d-flex align-items-center gap-3">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width:44px;height:44px;background:var(--icon-bg-blue);color:var(--icon-text-blue);">
+                                    <i class="bi bi-people fs-5"></i>
                                 </div>
                                 <div>
                                     <div class="text-muted fw-bold" style="font-size:0.65rem;letter-spacing:0.5px;">TOTAL ASSIGNED LEADS</div>
                                     <h4 class="fw-bold mb-0 text-dark" id="kpi-total">0</h4>
+                                    <div class="d-flex align-items-center gap-1 mt-1" style="font-size:0.68rem;color:var(--text-muted);">
+                                        <i class="bi bi-bar-chart-line" style="font-size:0.7rem;"></i>&nbsp;Active pipeline
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="col-12 col-md-4">
-                        <div class="card border-0 shadow-sm rounded-4 h-100">
-                            <div class="card-body p-3 d-flex align-items-center gap-3">
-                                <div class="bg-warning-subtle text-warning rounded-circle d-flex align-items-center justify-content-center" style="width:48px;height:48px;flex-shrink:0;">
-                                    <i class="bi bi-hourglass-split fs-4"></i>
+                        <div class="card border-0 shadow-sm rounded-4 h-100 has-stripe">
+                            <div class="card-body p-3 pt-4 d-flex align-items-center gap-3">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width:44px;height:44px;background:var(--icon-bg-yellow);color:var(--icon-text-yellow);">
+                                    <i class="bi bi-hourglass-split fs-5"></i>
                                 </div>
                                 <div>
                                     <div class="text-muted fw-bold" style="font-size:0.65rem;letter-spacing:0.5px;">PENDING 1ST DEMO</div>
                                     <h4 class="fw-bold mb-0 text-dark" id="kpi-pending">0</h4>
+                                    <div class="d-flex align-items-center gap-1 mt-1" style="font-size:0.68rem;color:var(--warning-text);">
+                                        <i class="bi bi-clock" style="font-size:0.7rem;"></i>&nbsp;Awaiting schedule
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="col-12 col-md-4">
-                        <div class="card border-0 shadow-sm rounded-4 h-100">
-                            <div class="card-body p-3 d-flex align-items-center gap-3">
-                                <div class="bg-success-subtle text-success rounded-circle d-flex align-items-center justify-content-center" style="width:48px;height:48px;flex-shrink:0;">
-                                    <i class="bi bi-check-circle fs-4"></i>
+                        <div class="card border-0 shadow-sm rounded-4 h-100 has-stripe">
+                            <div class="card-body p-3 pt-4 d-flex align-items-center gap-3">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width:44px;height:44px;background:var(--icon-bg-green);color:var(--icon-text-green);">
+                                    <i class="bi bi-check-circle fs-5"></i>
                                 </div>
                                 <div>
                                     <div class="text-muted fw-bold" style="font-size:0.65rem;letter-spacing:0.5px;">COMPLETED DEMO</div>
                                     <h4 class="fw-bold mb-0 text-dark" id="kpi-completed">0</h4>
+                                    <div class="d-flex align-items-center gap-1 mt-1" style="font-size:0.68rem;color:var(--success-text);">
+                                        <i class="bi bi-graph-up-arrow" style="font-size:0.7rem;"></i>&nbsp;At least 1 demo done
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -367,7 +376,6 @@
 
             renderPagination({
                 data: shops,
-                pageSize: 15,
                 paginationId: 'demo-pagination',
                 targets: [
                     {

@@ -22,6 +22,7 @@ from fastapi.responses import JSONResponse, FileResponse, Response
 from beanie import init_beanie
 
 # Core Imports
+from app.modules.auth.models import PasswordResetRequest
 from app.api.router import api_router
 from app.core.config import settings
 from app.utils.scheduler import start_scheduler, stop_scheduler
@@ -54,7 +55,7 @@ DOCUMENT_MODELS = [
     Payment, Bill,
     LeaveRecord, SalarySlip, AppSetting,
     IncentiveSlab, EmployeePerformance, IncentiveSlip,
-    Notification, SystemSettings,
+    Notification, SystemSettings, PasswordResetRequest,
     Todo, TimetableEvent, Attendance, ActivityLog,
 ]
 

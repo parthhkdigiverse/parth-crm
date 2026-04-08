@@ -388,7 +388,12 @@ class BillingService:
              
         if "archived" in kwargs:
             val = kwargs["archived"]
-            filters["is_archived"] = str(val).lower() == "true"
+            if val == "ARCHIVED":
+                filters["is_archived"] = True
+            elif val == "ACTIVE":
+                filters["is_archived"] = False
+            else:
+                filters["is_archived"] = str(val).lower() == "true"
 
         # Build query — only apply limit when explicitly provided
         query = Bill.find(filters).sort("-created_at").skip(skip)
@@ -418,7 +423,7 @@ class BillingService:
 
     async def archive_invoice(self, bill_id: PydanticObjectId, current_user: User) -> Bill:
         bill = await self.get_bill(bill_id)
-        if not bill: raise HTTPException(status_code=44, detail="Not Found")
+        if not bill: raise HTTPException(status_code=404, detail="Not Found")
         bill.is_archived = True
         await bill.save()
         return bill
@@ -452,15 +457,22 @@ class BillingService:
         return {"bill": bill, "status": "sent"}
 
     async def refund_invoice(self, bill_id: PydanticObjectId, current_user: User) -> Bill:
-        # TODO: Implement MongoDB transactions for financial safety
+        """Marks an invoice as REFUNDED and synchronizes the associated client status."""
         bill = await self.get_bill(bill_id)
-        if not bill: raise HTTPException(status_code=404, detail="Not Found")
+        if not bill:
+            raise HTTPException(status_code=404, detail="Invoice Not Found")
+        
+        bill.status = "REFUNDED"
         bill.invoice_status = "REFUNDED"
+        
         if bill.client_id:
+            from app.modules.clients.models import Client
             c = await Client.get(bill.client_id)
             if c:
                 c.is_active = False
+                c.status = "REFUNDED"
                 await c.save()
+        
         await bill.save()
         return bill
 
@@ -707,6 +719,29 @@ class BillingService:
         await bill.save()
         return {"status": "success"}
 
+    async def permanent_delete_invoice(self, bill_id: PydanticObjectId, current_user: User) -> dict:
+        if current_user.role != UserRole.ADMIN:
+            raise HTTPException(status_code=403, detail="Permission Denied")
+        bill = await self.get_bill(bill_id)
+        if not bill: raise HTTPException(status_code=404, detail="Not Found")
+        if not bill.is_archived:
+            raise HTTPException(status_code=400, detail="Only archived invoices can be permanently deleted")
+        
+        await bill.delete()
+        return {"status": "success"}
+
+    async def permanent_delete_invoice(self, bill_id: PydanticObjectId, current_user: User) -> dict:
+        if current_user.role != UserRole.ADMIN:
+            raise HTTPException(status_code=403, detail="Permission Denied")
+        bill = await self.get_bill(bill_id)
+        if not bill: raise HTTPException(status_code=404, detail="Not Found")
+        # Ensure it's archived before permanent deletion as a safety measure
+        if not bill.is_archived:
+            raise HTTPException(status_code=400, detail="Only archived invoices can be permanently deleted")
+        
+        await bill.delete()
+        return {"status": "success"}
+
     async def delete_archived_invoices_bulk(self, ids: List[PydanticObjectId], current_user: User) -> dict:
         if current_user.role != UserRole.ADMIN:
             raise HTTPException(status_code=403, detail="Permission Denied")
@@ -724,3 +759,4 @@ class BillingService:
         bill.whatsapp_sent = True
         await bill.save()
         return bill
+

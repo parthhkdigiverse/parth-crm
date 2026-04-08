@@ -280,7 +280,7 @@ async function renderDashboard() {
         
         <!-- Row 2: KPI Grid of 4 (Lovable Style) -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; margin-bottom: 24px;">
-            <div class="stat-card" onclick="loadView('leads')" style="cursor:pointer;">
+            <div class="stat-card card-purple" onclick="loadView('leads')" style="cursor:pointer;">
                 <div class="stat-content-left">
                     <div class="stat-title">Total Leads</div>
                     <div class="stat-value">1,284</div>
@@ -291,7 +291,7 @@ async function renderDashboard() {
                 </div>
             </div>
             
-            <div class="stat-card" onclick="loadView('clients')" style="cursor:pointer;">
+            <div class="stat-card card-teal" onclick="loadView('clients')" style="cursor:pointer;">
                 <div class="stat-content-left">
                     <div class="stat-title">Active Clients</div>
                     <div class="stat-value">342</div>
@@ -302,7 +302,7 @@ async function renderDashboard() {
                 </div>
             </div>
             
-            <div class="stat-card" onclick="loadView('${kpi3.view}')" style="cursor:pointer;">
+            <div class="stat-card card-warning" onclick="loadView('${kpi3.view}')" style="cursor:pointer;">
                 <div class="stat-content-left">
                     <div class="stat-title">${kpi3.title}</div>
                     <div class="stat-value">${kpi3.value}</div>
@@ -313,7 +313,7 @@ async function renderDashboard() {
                 </div>
             </div>
             
-            <div class="stat-card" onclick="loadView('billing')" style="cursor:pointer;">
+            <div class="stat-card card-success" onclick="loadView('billing')" style="cursor:pointer;">
                 <div class="stat-content-left">
                     <div class="stat-title">Revenue (MTD)</div>
                     <div class="stat-value">₹24.5L</div>
@@ -2049,7 +2049,7 @@ async function renderDashboard() {
         </div>
         
         <div class="grid-4" style="margin-bottom:24px;">
-            <div class="stat-card card">
+            <div class="stat-card card card-primary">
                 <div class="stat-content-left">
                     <div class="stat-title">Total Clients</div>
                     <div class="stat-value">${totalClients}</div>
@@ -2058,7 +2058,7 @@ async function renderDashboard() {
                 <div class="stat-icon-wrapper icon-purple"><i class="fa-solid fa-building"></i></div>
             </div>
             
-            <div class="stat-card card">
+            <div class="stat-card card card-danger">
                 <div class="stat-content-left">
                     <div class="stat-title">Open Issues</div>
                     <div class="stat-value">${openIssues}</div>
@@ -2067,7 +2067,7 @@ async function renderDashboard() {
                 <div class="stat-icon-wrapper icon-red"><i class="fa-solid fa-bug"></i></div>
             </div>
             
-            <div class="stat-card card">
+            <div class="stat-card card card-success">
                 <div class="stat-content-left">
                     <div class="stat-title">Field Visits</div>
                     <div class="stat-value">${totalVisits}</div>
@@ -2076,7 +2076,7 @@ async function renderDashboard() {
                 <div class="stat-icon-wrapper icon-teal"><i class="fa-solid fa-route"></i></div>
             </div>
             
-            <div class="stat-card card">
+            <div class="stat-card card card-warning">
                 <div class="stat-content-left">
                     <div class="stat-title">Total Shops</div>
                     <div class="stat-value">${totalShops}</div>

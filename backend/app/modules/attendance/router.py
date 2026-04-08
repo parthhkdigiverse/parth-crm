@@ -26,6 +26,30 @@ async def get_punch_status(
 ):
     return await AttendanceService.get_punch_status(current_user)
 
+@router.get("/open-sessions")
+async def get_open_sessions(
+    current_user: User = Depends(get_current_active_user)
+):
+    open_sessions = await AttendanceService.get_open_sessions(current_user)
+    return [
+        {
+            "id": str(s.id), 
+            "date": str(AttendanceService._to_date(s.date)), 
+            "punch_in": s.punch_in.isoformat() if s.punch_in else None
+        } for s in open_sessions
+    ]
+
+@router.patch("/{record_id}/manual-punch-out", response_model=AttendanceResponse)
+async def manual_punch_out(
+    record_id: PydanticObjectId,
+    body: dict,
+    current_user: User = Depends(get_current_active_user)
+):
+    time_str = body.get("punch_out")
+    if not time_str:
+        raise HTTPException(status_code=400, detail="punch_out time is required")
+    return await AttendanceService.manual_punch_out(record_id, time_str, current_user)
+
 @router.get("/logs", response_model=List[AttendanceLog])
 async def get_attendance_logs(
     date: dt_date = Query(...),

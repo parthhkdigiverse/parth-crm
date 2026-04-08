@@ -1483,6 +1483,14 @@ window.initAttendance = async function () {
             punchBtn.textContent = '...';
             try {
                 const res = await window.ApiClient.punch();
+                if (res && res.requires_manual_punchout) {
+                    punchBtn.innerHTML = origHTML;
+                    punchBtn.classList.remove('loading');
+                    if(typeof window.showManualPunchOutModal === 'function') {
+                        window.showManualPunchOutModal(res.open_sessions);
+                    }
+                    return;
+                }
                 const newStatus = await window.ApiClient.getPunchStatus();
                 updateUI(newStatus);
                 if (typeof window.showToast === 'function') {
@@ -1507,6 +1515,72 @@ window.initAttendance = async function () {
 };
 
 
+
+window.showManualPunchOutModal = function(sessions) {
+    let modalEl = document.getElementById('manualPunchOutModal');
+    if (!modalEl) {
+        document.body.insertAdjacentHTML('beforeend', `
+            <div class="modal fade" id="manualPunchOutModal" tabindex="-1" aria-labelledby="manualPunchOutModalLabel" aria-hidden="true" data-bs-backdrop="static">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-0 shadow">
+                        <div class="modal-header border-bottom-0 pb-0">
+                            <h5 class="modal-title fw-bold" id="manualPunchOutModalLabel"><i class="bi bi-exclamation-triangle text-warning me-2"></i> Unclosed Sessions Detected</h5>
+                        </div>
+                        <div class="modal-body pb-0">
+                            <p class="text-muted small">You have open attendance sessions from previous days. You must manually close them before punching in today.</p>
+                            <div id="manualPunchOutContainer" class="d-flex flex-column gap-3 mt-3"></div>
+                        </div>
+                        <div class="modal-footer border-top-0 pt-3">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `);
+        modalEl = document.getElementById('manualPunchOutModal');
+    }
+    
+    const container = document.getElementById('manualPunchOutContainer');
+    container.innerHTML = sessions.map(s => {
+        const dateStr = window.formatDateToApp ? window.formatDateToApp(s.date) : s.date;
+        const timeIn = s.punch_in ? new Date(s.punch_in).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Unknown';
+        return `
+            <div class="card p-3 bg-light border-0 shadow-sm">
+                <h6 class="fw-bold mb-1">${dateStr}</h6>
+                <p class="mb-2 small text-muted">Started: ${timeIn}</p>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white">Out Time</span>
+                    <input type="time" class="form-control" id="punch_out_${s.id}" required>
+                    <button class="btn btn-primary fw-bold" onclick="window.submitManualPunchOut('${s.id}')">Close Session</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+    
+    window.submitManualPunchOut = async (recordId) => {
+        const timeInput = document.getElementById(`punch_out_${recordId}`).value;
+        if (!timeInput) {
+            window.showToast('Please select a punch-out time', 'warning');
+            return;
+        }
+        try {
+            await window.ApiClient.manualPunchOut(recordId, timeInput);
+            window.showToast('Session closed manually', 'success');
+            modal.hide();
+            // Automatically attempt to punch in again if that was the only session
+            setTimeout(() => {
+                const btn = document.getElementById('header-punch-btn-new');
+                if (btn) btn.click();
+            }, 500);
+        } catch(e) {
+            console.error('Manual punch out failed', e);
+            window.showToast(e.data?.detail || 'Failed to close session', 'error');
+        }
+    };
+};
 
 window.setTheme = function (mode) {
     let applyDark = false;
@@ -1652,7 +1726,7 @@ if (typeof window.showToast !== 'function') {
 window.renderPagination = function (options) {
     const {
         data = [],
-        pageSize = 15,
+        pageSize: explicitPageSize,
         tbodyId,
         paginationId,
         renderRow,
@@ -1661,6 +1735,10 @@ window.renderPagination = function (options) {
         colSpan = 10,
         currentPage: startPage = 1,
     } = options;
+
+    // Prioritize explicit pageSize, then user setting, then default (10)
+    const userPageSize = parseInt(localStorage.getItem('srm_setting_pagination_limit'));
+    const pageSize = explicitPageSize || userPageSize || 10;
 
     const paginationContainer = document.getElementById(paginationId);
 

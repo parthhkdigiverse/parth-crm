@@ -377,6 +377,15 @@
                             <input type="hidden" id="editUserId">
                             <div class="row g-4">
                                 <!-- Account Access Section -->
+                                <div class="col-12" id="editUserResetBanner" style="display:none; margin-bottom:1rem;">
+                                    <div class="alert alert-warning d-flex align-items-center gap-3 w-100 shadow-sm" style="border:1px solid #f59e0b; background:#fef3c7; color:#92400e; border-radius:12px; margin-bottom:0;">
+                                        <i class="bi bi-shield-exclamation fs-4"></i>
+                                        <div>
+                                            <h6 class="mb-0 fw-bold">Password Reset Requested</h6>
+                                            <small>This user requested a password reset on <span id="editUserResetTime"></span>. Changing their password now will resolve this request.</small>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div class="col-md-6 border-end pe-md-4">
                                     <h6 class="form-section-title"><i class="bi bi-person-badge"></i> Account Access</h6>
                                     
@@ -506,7 +515,6 @@
                 
                 renderPagination({
                     data: users,
-                    pageSize: 15,
                     paginationId: 'users-pagination',
                     tbodyId: 'users-table',
                     renderRow: (u) => {
@@ -869,7 +877,7 @@
                 }
             };
 
-            window.editUser = (id) => {
+            window.editUser = async (id) => {
                 const user = loadedUsers.find(u => u.id === id);
                 if (!user) {
                     showToast('User data not found for editing', 'error');
@@ -891,6 +899,18 @@
                     // Clear validation state
                     form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
                     form.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
+                    
+                    const banner = document.getElementById('editUserResetBanner');
+                    if(banner) banner.style.display = 'none';
+                    try {
+                        const rr = await apiGet('/auth/reset-requests');
+                        const req = rr.find(r => r.user_id === id && r.status === 'PENDING');
+                        if(req && banner) {
+                            banner.style.display = 'flex';
+                            document.getElementById('editUserResetTime').textContent = new Date(req.requested_at).toLocaleString();
+                        }
+                    } catch(e) {}
+
                     editUserModalInstance.show();
                 }
             };

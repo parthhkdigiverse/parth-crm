@@ -72,6 +72,7 @@
         .pill-verified   { background: var(--success-light); color: var(--success-text); border: 1px solid var(--success-ring); }
         .pill-sent       { background: var(--primary-light); color: var(--primary); border: 1px solid var(--primary-ring); }
         .pill-cancelled  { background: var(--danger-light); color: var(--danger-text); border: 1px solid var(--danger-ring); }
+        .pill-refunded   { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
 
         /* ── Filter tabs ──────────────────────────────────────── */
         .filter-tabs {
@@ -300,19 +301,15 @@
                     <p class="text-muted mb-0 small">Manage your financial records and invoice status.</p>
                 </div>
                 <div class="flex-shrink-0 d-flex gap-2">
-                    <button class="btn btn-light d-flex align-items-center gap-2" id="admin-settings-btn" onclick="openSettingsModal()" style="display:none; border:1px solid var(--border);">
-                        <i class="bi bi-gear"></i> <span class="d-none d-md-inline">Settings</span>
-                    </button>
                     <button class="btn btn-primary d-flex align-items-center gap-2" id="new-invoice-btn" onclick="openCreateModal()">
                         <i class="bi bi-plus-lg"></i> <span class="d-none d-md-inline">New Invoice</span><span class="d-inline d-md-none">New</span>
                     </button>
                 </div>
             </div>
 
-                <!-- ── Stats ────────────────────────────────────────── -->
                 <div class="row g-3 mb-2">
                     <div class="col-6 col-md-3">
-                        <div class="stat-card">
+                        <div class="stat-card card-purple">
                             <div class="stat-content-left">
                                 <div class="stat-label">Total</div>
                                 <div class="stat-value" id="stat-total">—</div>
@@ -321,7 +318,7 @@
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
-                        <div class="stat-card">
+                        <div class="stat-card card-warning">
                             <div class="stat-content-left">
                                 <div class="stat-label">Pending</div>
                                 <div class="stat-value" id="stat-pending">—</div>
@@ -330,7 +327,7 @@
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
-                        <div class="stat-card">
+                        <div class="stat-card card-success">
                             <div class="stat-content-left">
                                 <div class="stat-label">Sent</div>
                                 <div class="stat-value" id="stat-sent">—</div>
@@ -339,7 +336,7 @@
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
-                        <div class="stat-card">
+                        <div class="stat-card card-primary">
                             <div class="stat-content-left">
                                 <div class="stat-label">Revenue</div>
                                 <div class="stat-value" id="stat-revenue">—</div>
@@ -359,11 +356,17 @@
                             <span class="badge" style="background:var(--bg-app); color:var(--text-muted); border:1px solid var(--border);" id="billing-filter-summary">Loading...</span>
                         </div>
                         <div class="d-flex align-items-center gap-2">
-                            <button id="archive-selected-btn" class="btn btn-sm" style="display:none;background:var(--warning-light);color:var(--warning-text);border:1px solid var(--warning-ring);" onclick="archiveSelectedInvoices()">
-                                <i class="bi bi-archive me-1"></i>Archive Selected
+                            <!-- Toggle View Button (on the right) -->
+                            <button id="toggle-view-btn" class="btn btn-sm d-flex align-items-center gap-2 px-3 shadow-sm" style="background:var(--bg-app); color:var(--primary); border:1.5px solid var(--primary-ring); font-weight:700; border-radius:12px; transition:all 0.2s; height:36px;" onclick="switchToggleView()">
+                                <i class="bi bi-archive-fill"></i>
+                                <span id="toggle-view-text">View Archived</span>
                             </button>
-                            <button id="delete-selected-btn" class="btn btn-sm" style="display:none;background:var(--danger-light);color:var(--danger-text);border:1px solid var(--danger-ring);" onclick="deleteSelectedArchivedInvoices()">
-                                <i class="bi bi-trash me-1"></i>Delete Selected
+
+                            <button id="archive-selected-btn" class="btn btn-sm align-items-center justify-content-center" style="display:none;background:var(--warning-light);color:var(--warning-text);border:1px solid var(--warning-ring); font-weight:700; gap:6px; padding:6px 14px; height:36px; line-height:1;" onclick="archiveSelectedInvoices()">
+                                <i class="bi bi-archive" style="font-size: 15px; margin-top: -1px;"></i>Archive Selected
+                            </button>
+                            <button id="delete-selected-btn" class="btn btn-sm align-items-center justify-content-center" style="display:none;background:var(--danger-light);color:var(--danger-text);border:1px solid var(--danger-ring); font-weight:700; gap:6px; padding:6px 14px; height:36px; line-height:1;" onclick="deleteSelectedArchivedInvoices()">
+                                <i class="bi bi-trash" style="font-size: 15px; margin-top: -1px;"></i>Delete Selected
                             </button>
                             <button id="clear-selected-btn" class="btn btn-sm btn-light" style="display:none;" onclick="clearSelectedInvoices()">
                                 Clear Selection
@@ -374,17 +377,17 @@
                         <table class="table table-premium mb-0">
                             <thead>
                                 <tr>
-                                    <th style="width:40px;"><input type="checkbox" id="select-all-bills"
+                                    <th class="px-4" style="width:50px;"><input type="checkbox" id="select-all-bills"
                                             onchange="toggleSelectAllBills(this.checked)"></th>
-                                    <th>Invoice #</th>
-                                    <th>Client</th>
-                                    <th>Payment</th>
-                                    <th>GST</th>
-                                    <th>Amount</th>
-                                    <th>Status</th>
-                                    <th>GENERATED BY</th>
-                                    <th>Created</th>
-                                    <th class="text-end">Actions</th>
+                                    <th class="px-4 text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:130px;">Invoice #</th>
+                                    <th class="px-4 text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:20%;">Client</th>
+                                    <th class="px-4 text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:160px;">Payment</th>
+                                    <th class="px-4 text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:90px;">GST</th>
+                                    <th class="px-4 text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:120px;">Amount</th>
+                                    <th class="px-4 text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:130px;">Status</th>
+                                    <th class="px-4 text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:150px;">Generated By</th>
+                                    <th class="px-4 text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:130px;">Created</th>
+                                    <th class="px-4 text-end text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:110px;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="inv-tbody">
@@ -764,6 +767,7 @@
             SENT: { cls: 'pill-sent', icon: 'bi-whatsapp', label: 'Sent' },
             CONFIRMED: { cls: 'pill-sent', icon: 'bi-check-circle', label: 'Confirmed' },
             CANCELLED: { cls: 'pill-cancelled', icon: 'bi-x-circle', label: 'Cancelled' },
+            REFUNDED: { cls: 'pill-refunded', icon: 'bi-arrow-left-right', label: 'Refunded' },
         };
 
         function normalizeWhatsAppPhone(rawPhone) {
@@ -907,6 +911,45 @@
             archiveBtn.innerHTML = `<i class="bi bi-archive me-1"></i>Archive Selected (${count})`;
             deleteBtn.innerHTML = `<i class="bi bi-trash me-1"></i>Delete Selected (${count})`;
         }
+
+        async function switchToggleView() {
+            const current = currentFilters['inv-status'] || 'ALL';
+            const target = current === 'ARCHIVED' ? 'ALL' : 'ARCHIVED';
+            
+            const btn = document.getElementById('toggle-view-btn');
+            const txt = document.getElementById('toggle-view-text');
+            
+            if (target === 'ARCHIVED') {
+                btn.style.background = 'var(--primary)';
+                btn.style.color = '#fff';
+                txt.textContent = 'Back to Active';
+            } else {
+                btn.style.background = 'var(--bg-app)';
+                btn.style.color = 'var(--primary)';
+                txt.textContent = 'View Archived';
+            }
+            
+            currentFilters['inv-status'] = target;
+            showToast(`Switched to ${target === 'ARCHIVED' ? 'archived' : 'active'} view`, 'info');
+            await loadBills();
+        }
+
+        async function switchView(mode) {
+            // Internal helper to sync if filters change elsewhere
+            const btn = document.getElementById('toggle-view-btn');
+            const txt = document.getElementById('toggle-view-text');
+            if (!btn || !txt) return;
+
+            if (mode === 'ARCHIVED') {
+                btn.style.background = 'var(--primary)';
+                btn.style.color = '#fff';
+                txt.textContent = 'Back to Active';
+            } else {
+                btn.style.background = 'var(--bg-app)';
+                btn.style.color = 'var(--primary)';
+                txt.textContent = 'View Archived';
+            }
+        }
         function toggleBillSelection(billId, checked) {
             if (checked) selectedBillIds.add(billId); else selectedBillIds.delete(billId);
             syncSelectAllCheckbox(); updateBulkActionButtons();
@@ -943,7 +986,6 @@
             
             renderPagination({
                 data: list,
-                pageSize: 15,
                 tbodyId: 'inv-tbody',
                 paginationId: 'billing-pagination',
                 emptyMsg: `<tr><td colspan="10" class="text-center py-5 text-muted"><i class="bi ${isArchiveView ? 'bi-archive' : 'bi-receipt'}" style="font-size:2rem;display:block;margin-bottom:8px;color:#cbd5e1;"></i>${isArchiveView ? 'No archived invoices found.' : 'No invoices found.'}</td></tr>`,
@@ -967,28 +1009,38 @@
                     }
                     if (rowActions.can_archive) actions += `<button class="action-menu-btn ms-1" title="Archive" onclick="archiveInvoice('${b.id}','${b.invoice_number || ''}')" style="color:#92400e;border-color:#fde68a;background:#fffbeb;"><i class="bi bi-archive"></i></button>`;
                     if (rowActions.can_unarchive) actions += `<button class="action-menu-btn ms-1" title="Restore" onclick="unarchiveInvoice('${b.id}','${b.invoice_number || ''}')" style="color:#0369a1;border-color:#bae6fd;background:#f0f9ff;"><i class="bi bi-box-arrow-up"></i></button>`;
-                    if (rowActions.can_delete_archived) actions += `<button class="action-menu-btn ms-1" title="Delete" onclick="deleteArchivedInvoice('${b.id}','${b.invoice_number || ''}')" style="color:#b91c1c;border-color:#fecaca;background:#fef2f2;"><i class="bi bi-trash"></i></button>`;
+                    if (rowActions.can_delete_archived) {
+                        // Soft Delete (is_deleted=True)
+                        actions += `<button class="action-menu-btn ms-1" title="Soft Delete (Hide)" onclick="deleteArchivedInvoice('${b.id}','${b.invoice_number || ''}')" style="color:#b91c1c;border-color:#fecaca;background:#fef2f2;"><i class="bi bi-trash"></i></button>`;
+                        // Permanent Delete (DB removal)
+                        actions += `<button class="action-menu-btn ms-1" title="Permanent Delete (DB)" onclick="permanentDeleteInvoice('${b.id}','${b.invoice_number || ''}')" style="color:#7f1d1d;border-color:#fca5a5;background:#fee2e2;border-style:dashed;"><i class="bi bi-x-octagon"></i></button>`;
+                    }
                     
-                    return `<tr>
-                        <td data-label="Select"><input type="checkbox" ${selectedBillIds.has(b.id) ? 'checked' : ''} onchange="toggleBillSelection('${b.id}', this.checked)"></td>
-                        <td data-label="Invoice #" class="fw-semibold" style="font-family:monospace;color:var(--primary);">${b.invoice_number || '—'}</td>
-                        <td data-label="Client">
-                            <div class="tbl-client-name">${clientDisplay}</div>
-                            ${phone ? `<div class="tbl-phone"><i class="bi bi-telephone me-1"></i>${phone}</div>` : ''}
-                            ${b.invoice_client_org ? `<div class="tbl-phone"><i class="bi bi-building me-1"></i>${b.invoice_client_org}</div>` : ''}
+                    // Refund Action
+                    if (!b.is_archived && !b.is_deleted && st !== 'REFUNDED' && (st === 'SENT' || st === 'VERIFIED')) {
+                        actions += `<button class="action-menu-btn ms-1" title="Refund" onclick="refundInvoice('${b.id}','${b.invoice_number || ''}')" style="color:#dc2626;border-color:#fecaca;background:#fef2f2;"><i class="bi bi-arrow-left-right"></i></button>`;
+                    }
+                    
+                    return `<tr style="transition:all 0.2s;">
+                        <td class="px-4 py-3" data-label="Select"><input type="checkbox" ${selectedBillIds.has(b.id) ? 'checked' : ''} onchange="toggleBillSelection('${b.id}', this.checked)"></td>
+                        <td class="px-4 py-3 fw-bold" data-label="Invoice #" style="color:var(--primary);font-size:0.85rem;">${b.invoice_number || '—'}</td>
+                        <td class="px-4 py-3" data-label="Client">
+                            <div class="fw-bold" style="color:var(--text-main);font-size:0.9rem;">${clientDisplay}</div>
+                            ${phone ? `<div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;"><i class="bi bi-telephone text-primary opacity-50 me-1"></i>${phone}</div>` : ''}
+                            ${b.invoice_client_org ? `<div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;"><i class="bi bi-building text-primary opacity-50 me-1"></i>${b.invoice_client_org}</div>` : ''}
                         </td>
-                        <td data-label="Payment"><span class="inv-pill pill-draft">${paymentTypeLabel}</span></td>
-                        <td data-label="GST"><span class="inv-pill ${b.gst_type === 'WITHOUT_GST' ? 'pill-draft' : 'pill-verified'}">${gstTypeLabel}</span></td>
-                        <td data-label="Amount" class="amt-cell">₹${Number(b.amount || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
-                        <td data-label="Status">
+                        <td class="px-4 py-3" data-label="Payment"><span class="badge" style="background:var(--bg-app);color:var(--text-muted);padding:4px 10px;border-radius:20px;font-weight:600;border:1px solid var(--border);">${paymentTypeLabel}</span></td>
+                        <td class="px-4 py-3" data-label="GST"><span class="badge" style="background:${b.gst_type === 'WITHOUT_GST' ? 'var(--bg-app)' : 'var(--success-light)'};color:${b.gst_type === 'WITHOUT_GST' ? 'var(--text-muted)' : 'var(--success-text)'};padding:4px 10px;border-radius:20px;font-weight:600;border:1px solid ${b.gst_type === 'WITHOUT_GST' ? 'var(--border)' : 'var(--success-ring)'};">${gstTypeLabel}</span></td>
+                        <td class="px-4 py-3 fw-bold" data-label="Amount" style="color:var(--text-main);font-size:0.95rem;">₹${Number(b.amount || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+                        <td class="px-4 py-3" data-label="Status">
                             <div class="d-flex align-items-center">${statusPill(b, st, phone)}</div>
-                            ${b.billing_month ? `<div class="small text-muted mt-1 fw-medium" style="font-size:10px;"><i class="bi bi-calendar-event me-1"></i>${b.billing_month}</div>` : ''}
+                            ${b.billing_month ? `<div class="small fw-medium" style="color:var(--text-muted);font-size:0.7rem;margin-top:4px;"><i class="bi bi-calendar3 opacity-50 me-1"></i>${b.billing_month}</div>` : ''}
                         </td>
-                        <td data-label="Generated By">
-                            <div class="small text-secondary fw-medium"><i class="bi bi-person-fill me-1 opacity-50"></i>${b.creator_name || 'Admin'}</div>
+                        <td class="px-4 py-3" data-label="Generated By">
+                            <div class="fw-medium" style="color:var(--text-body);font-size:0.8rem;"><i class="bi bi-person-circle opacity-50 me-1"></i>${b.creator_name || 'Admin'}</div>
                         </td>
-                        <td data-label="Created Date" class="text-muted small">${dt}</td>
-                        <td data-label="Actions" class="text-end" style="white-space:nowrap;">${actions}</td>
+                        <td class="px-4 py-3 text-muted" data-label="Created Date" style="font-size:0.8rem;"><i class="bi bi-clock opacity-50 me-1"></i>${dt}</td>
+                        <td class="px-4 py-3 text-end" data-label="Actions" style="white-space:nowrap;">${actions}</td>
                     </tr>`;
                 }
             });
@@ -1017,6 +1069,7 @@
                             { value: 'VERIFIED', label: 'Verified' },
                             { value: 'SENT', label: 'Sent' },
                             { value: 'DRAFT', label: 'Draft' },
+                            { value: 'REFUNDED', label: 'Refunded' },
                             { value: 'ARCHIVED', label: 'Archived' }
                         ]
                     },
@@ -1044,10 +1097,16 @@
                 ],
                 onApply: (data) => {
                     currentFilters = data;
+                    
+                    // Sync the archived view toggle button
+                    const mode = data['inv-status'] || 'ALL';
+                    switchView(mode);
+
                     loadBills();
                 },
                 onReset: () => {
                     currentFilters = {};
+                    switchView('ALL');
                     loadBills();
                 }
             });
@@ -1918,7 +1977,7 @@
             const ids = Array.from(selectedBillIds);
             if (!ids.length) return;
             if (!confirm(`Archive ${ids.length} selected invoice(s)?`)) return;
-            try { const res = await ApiClient.archiveInvoicesBulk(ids); selectedBillIds.clear(); showToast(`Archived ${res?.archived ?? ids.length} invoice(s)`, 'success'); await loadBills(); }
+            try { const res = await ApiClient.archiveInvoicesBulk(ids); selectedBillIds.clear(); showToast(`Archived ${res?.count ?? ids.length} invoice(s)`, 'success'); await loadBills(); }
             catch (e) { showToast(e.data?.detail || e.message || 'Failed to archive selected', 'error'); }
         }
         async function unarchiveInvoice(billId, invNo) {
@@ -1927,16 +1986,40 @@
             catch (e) { showToast(e.data?.detail || e.message || 'Failed to restore', 'error'); }
         }
         async function deleteArchivedInvoice(billId, invNo) {
-            if (!confirm(`Delete archived invoice ${invNo || '#' + billId} permanently?`)) return;
-            try { await ApiClient.deleteArchivedInvoice(billId); selectedBillIds.delete(billId); showToast('Archived invoice deleted', 'success'); await loadBills(); }
-            catch (e) { showToast(e.data?.detail || e.message || 'Failed to delete', 'error'); }
+            if (!confirm(`Hide invoice ${invNo || '#' + billId}? It will still stay in the database but won't be visible anywhere.`)) return;
+            try { await ApiClient.request(`/billing/${billId}/archive-delete`, { method: 'DELETE' }); selectedBillIds.delete(billId); showToast('Invoice hidden', 'success'); await loadBills(); }
+            catch (e) { showToast(e.data?.detail || e.message || 'Failed to hide invoice', 'error'); }
+        }
+
+        async function permanentDeleteInvoice(billId, invNo) {
+            const confirmed = confirm(`CRITICAL WARNING: Are you sure you want to PERMANENTLY DELETE invoice ${invNo || '#' + billId}?\n\nThis action cannot be undone and the record will be completely removed from the database.`);
+            if (!confirmed) return;
+            try {
+                await ApiClient.request(`/billing/${billId}/permanent`, { method: 'DELETE' });
+                selectedBillIds.delete(billId);
+                showToast('Invoice permanently deleted from DB', 'success');
+                await loadBills();
+            } catch (e) {
+                showToast(e.data?.detail || e.message || 'Failed to permanently delete', 'error');
+            }
         }
         async function deleteSelectedArchivedInvoices() {
             const ids = Array.from(selectedBillIds);
             if (!ids.length) return;
             if (!confirm(`Delete ${ids.length} selected archived invoice(s)?`)) return;
-            try { const res = await ApiClient.deleteArchivedInvoicesBulk(ids); selectedBillIds.clear(); showToast(`Deleted ${res?.deleted ?? ids.length} archived invoice(s)`, 'success'); await loadBills(); }
+            try { const res = await ApiClient.deleteArchivedInvoicesBulk(ids); selectedBillIds.clear(); showToast(`Deleted ${res?.count ?? ids.length} archived invoice(s)`, 'success'); await loadBills(); }
             catch (e) { showToast(e.data?.detail || e.message || 'Failed to delete selected', 'error'); }
+        }
+
+        async function refundInvoice(billId, invNo) {
+            if (!confirm(`Are you sure you want to mark invoice ${invNo || '#' + billId} as REFUNDED? This status change is permanent.`)) return;
+            try {
+                await ApiClient.request(`/billing/${billId}/refund`, { method: 'PATCH' });
+                showToast('Invoice marked as REFUNDED', 'success');
+                await loadBills();
+            } catch (e) {
+                showToast(e.data?.detail || e.message || 'Failed to process refund', 'error');
+            }
         }
 
         async function submitVerifyInvoice() {

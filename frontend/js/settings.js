@@ -122,7 +122,8 @@ async function loadSettings() {
         'default-view': 'default_view',
         'date-format': 'date_format',
         'timezone-select': 'timezone',
-        'language-select': 'language'
+        'language-select': 'language',
+        'pagination-limit': 'pagination_limit'
     };
     Object.entries(selectMap).forEach(([elId, prefKey]) => {
         const el = document.getElementById(elId);

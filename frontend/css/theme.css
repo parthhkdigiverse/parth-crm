@@ -704,7 +704,7 @@ body.dark-theme .brand-text {
 
 .sb-section-items {
     list-style: none;
-    padding: 0;
+    padding: 0 0 0 4px;
     margin: 4px 0 0 0;
     max-height: 0;
     overflow: hidden;
@@ -722,8 +722,8 @@ body.dark-theme .brand-text {
     align-items: center;
     gap: 12px;
     padding: 10px 16px 10px 18px;
-    margin: 4px 12px;
-    border-radius: 50px;
+    margin: 2px 8px 2px 0;
+    border-radius: 0 8px 8px 0;
     font-size: 15px;
     font-weight: 500;
     color: var(--sb-text);
@@ -741,7 +741,10 @@ body.dark-theme .brand-text {
     justify-content: center;
 }
 
-
+/* Gradient Pill Active State — no left-bar indicator needed */
+.sb-link.active::before {
+    display: none;
+}
 
 .sb-link:hover {
     background: var(--sb-item-hover);
@@ -766,10 +769,12 @@ body.dark-theme .brand-text {
 }
 
 .sb-link.active {
-    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+    background: linear-gradient(90deg, #1e3a8a, #2563eb);
     color: #ffffff !important;
     font-weight: 700;
-    border-radius: 50px;
+    border-radius: 999px;
+    margin: 2px 8px 2px 0;
+    box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
 }
 
 .sb-link.active i {
@@ -1521,7 +1526,7 @@ h6 {
     /* More rounded premium feel */
     padding: 32px 40px;
     /* Slightly adjusted padding */
-    margin-bottom: 1.5rem !important;
+    margin-bottom: 40px !important;
     /* Gap above filter: 1.5rem + filter margin-top 2rem = 3.5rem total (matches gap below) */
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -2615,8 +2620,7 @@ label {
         gap: 0.75rem !important;
         padding: 24px 20px !important;
         margin-top: 8px !important;
-        margin-bottom: 24px !important;
-        border-radius: 20px !important;
+        margin-bottom: 40px !important;
     }
 
     .page-header-glass h2.page-section-title {
@@ -2650,9 +2654,9 @@ label {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
-    margin: 1.25rem 0;
     box-shadow: var(--shadow-xs);
-    overflow: visible;
+    overflow: hidden;
+    margin-bottom: 22px;
 }
 
 

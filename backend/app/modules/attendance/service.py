@@ -6,6 +6,7 @@ from app.modules.attendance.models import Attendance
 from app.modules.salary.models import LeaveStatus, LeaveRecord
 from app.modules.settings.models import AppSetting
 from app.modules.users.models import User, UserRole
+from beanie import PydanticObjectId
 
 class AttendanceService:
     @staticmethod
@@ -185,6 +186,72 @@ class AttendanceService:
             day += timedelta(days=1)
 
     @staticmethod
+    async def get_open_sessions(current_user: User):
+        today = AttendanceService.get_ist_today()
+        today_start, _ = AttendanceService._day_range(today)
+        return await Attendance.find(
+            Attendance.user_id == current_user.id,
+            Attendance.punch_out == None,
+            Attendance.date < today_start,
+            Attendance.is_deleted == False
+        ).sort("date").to_list()
+
+    @staticmethod
+    async def manual_punch_out(record_id: PydanticObjectId, punch_out_time: str, current_user: User):
+        from app.modules.activity_logs.service import ActivityLogger
+        from app.modules.activity_logs.models import ActionType, EntityType
+        from fastapi import HTTPException
+
+        record = await Attendance.get(record_id)
+        if not record or record.is_deleted:
+            raise HTTPException(status_code=404, detail="Attendance record not found")
+            
+        if record.user_id != current_user.id and current_user.role != UserRole.ADMIN:
+            raise HTTPException(status_code=403, detail="Not authorized")
+            
+        if record.punch_out is not None:
+            raise HTTPException(status_code=400, detail="Session is already closed")
+
+        try:
+            h, m = map(int, punch_out_time.split(':'))
+            d = AttendanceService._to_date(record.date)
+            dt_ist_naive = datetime.combine(d, time(h, m))
+            dt_ist = dt_ist_naive.replace(tzinfo=timezone(timedelta(hours=5, minutes=30)))
+            dt_utc = dt_ist.astimezone(UTC)
+
+            if record.punch_in:
+                p_in = record.punch_in
+                if p_in.tzinfo is None:
+                    p_in = p_in.replace(tzinfo=UTC)
+                if p_in > dt_utc:
+                    raise HTTPException(status_code=400, detail="Punch out time cannot be earlier than punch in time")
+
+            record.punch_out = dt_utc
+            
+            p_in = record.punch_in
+            if p_in and p_in.tzinfo is None:
+                p_in = p_in.replace(tzinfo=UTC)
+            
+            diff = dt_utc - p_in
+            record.total_hours = min(max(0.0, diff.total_seconds() / 3600.0), 23.99)
+            
+            await record.save()
+            
+            activity_logger = ActivityLogger()
+            await activity_logger.log_activity(
+                user_id=current_user.id,
+                user_role=current_user.role,
+                action=ActionType.UPDATE,
+                entity_type=EntityType.ATTENDANCE,
+                entity_id=record.id,
+                new_data={"manual_punch_out": punch_out_time, "total_hours": record.total_hours},
+            )
+            return record
+            
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid time format. Expected HH:MM")
+
+    @staticmethod
     async def punch_in_out(current_user: User):
         today = AttendanceService.get_ist_today()
         now   = datetime.now(UTC)
@@ -199,7 +266,7 @@ class AttendanceService:
             Attendance.is_deleted == False
         ).sort("-punch_in").first_or_none()
 
-        # If last record has no punch_out -> PUNCH OUT
+        # If last record has no punch_out -> PUNCH OUT OF TODAY
         if last_record and last_record.punch_out is None:
             last_record.punch_out = now
             p_in = last_record.punch_in
@@ -209,6 +276,24 @@ class AttendanceService:
             last_record.total_hours = max(0.0, diff.total_seconds() / 3600.0)
             await last_record.save()
             return last_record
+
+        # Check for open past sessions before creating a NEW PUNCH IN
+        open_sessions = await AttendanceService.get_open_sessions(current_user)
+        if open_sessions:
+            from fastapi.responses import JSONResponse
+            return JSONResponse(
+                status_code=200, 
+                content={
+                    "requires_manual_punchout": True, 
+                    "open_sessions": [
+                        {
+                            "id": str(s.id), 
+                            "date": str(AttendanceService._to_date(s.date)), 
+                            "punch_in": s.punch_in.isoformat() if s.punch_in else None
+                        } for s in open_sessions
+                    ]
+                }
+            )
 
         # Otherwise -> NEW PUNCH IN
         new_record = Attendance(

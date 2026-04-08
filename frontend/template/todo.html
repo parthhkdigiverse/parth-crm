@@ -904,7 +904,6 @@
 
             renderPagination({
                 data: filteredTasks,
-                pageSize: 15,
                 tbodyId: 'todo-tbody',
                 paginationId: 'todo-pagination',
                 emptyMsg: `<tr><td colspan="6" class="text-center text-muted py-5"><i class="bi bi-search fs-1 opacity-25"></i><br>No matching objectives found</td></tr>`,
@@ -1106,7 +1105,7 @@
             if (statsRow) {
                 statsRow.innerHTML = `
                 <div class="col-6 col-md-3">
-                    <div class="stat-card">
+                    <div class="stat-card card-primary">
                         <div class="stat-content-left">
                             <div class="stat-label">All Tasks</div>
                             <div class="stat-value">${total}</div>
@@ -1115,7 +1114,7 @@
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
-                    <div class="stat-card">
+                    <div class="stat-card card-danger">
                         <div class="stat-content-left">
                             <div class="stat-label">High Priority</div>
                             <div class="stat-value text-danger">${highPri}</div>
@@ -1124,7 +1123,7 @@
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
-                    <div class="stat-card">
+                    <div class="stat-card card-warning">
                         <div class="stat-content-left">
                             <div class="stat-label">Pending</div>
                             <div class="stat-value text-primary">${pending}</div>
@@ -1133,7 +1132,7 @@
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
-                    <div class="stat-card">
+                    <div class="stat-card card-success">
                         <div class="stat-content-left">
                             <div class="stat-label">Completed</div>
                             <div class="stat-value" style="color:var(--success) !important;">${completed}</div>

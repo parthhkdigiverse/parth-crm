@@ -118,6 +118,15 @@ async def update_employee(
     if "password" in update_data and update_data["password"]:
         from app.core.security import get_password_hash
         update_data["hashed_password"] = get_password_hash(update_data.pop("password"))
+        
+        from app.modules.auth.models import PasswordResetRequest
+        from datetime import datetime, UTC
+        pending_reqs = await PasswordResetRequest.find(PasswordResetRequest.user_id == user.id, PasswordResetRequest.status == "PENDING").to_list()
+        for req in pending_reqs:
+            req.status = "RESOLVED"
+            req.resolved_by = current_user.id
+            req.resolved_at = datetime.now(UTC)
+            await req.save()
     else:
         update_data.pop("password", None)
 

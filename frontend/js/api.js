@@ -278,6 +278,15 @@ class ApiClient {
     static async punch() {
         return this.request('/attendance/punch', { method: 'POST' });
     }
+    static async getOpenSessions() {
+        return this.request('/attendance/open-sessions');
+    }
+    static async manualPunchOut(recordId, punchOutTime) {
+        return this.request(`/attendance/${recordId}/manual-punch-out`, {
+            method: 'PATCH',
+            body: { punch_out: punchOutTime }
+        });
+    }
     static async getAttendanceSummary(params = {}) {
         const query = new URLSearchParams();
         Object.entries(params || {}).forEach(([k, v]) => {

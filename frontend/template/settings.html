@@ -142,6 +142,22 @@
                                     <span class="toggle-slider"></span>
                                 </label>
                             </div>
+
+                            <div class="setting-row">
+                                <div>
+                                    <div class="setting-label">Pagination Limit</div>
+                                    <div class="setting-desc">Number of records shown per table page</div>
+                                </div>
+                                <select class="select-clean" id="pagination-limit"
+                                    onchange="saveSetting('pagination_limit', this.value)">
+                                    <option value="5">5 records</option>
+                                    <option value="10" selected>10 records</option>
+                                    <option value="15">15 records</option>
+                                    <option value="20">20 records</option>
+                                    <option value="50">50 records</option>
+                                    <option value="100">100 records</option>
+                                </select>
+                            </div>
                         </div>
 
                         <!-- ── Notifications ───── -->

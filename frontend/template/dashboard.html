@@ -1709,15 +1709,26 @@
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="chart-card d-flex flex-column">
-                            <div class="chart-card-title">Visit Outcomes</div>
-                            <div class="chart-card-sub">Distribution of interaction results</div>
-                            <div class="d-flex justify-content-center flex-grow-1"
-                                style="position:relative;height:200px;">
+                        <div class="chart-card d-flex flex-column h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <div>
+                                    <div class="chart-card-title" id="outcomes-chart-title">Visit Outcomes</div>
+                                    <div class="chart-card-sub" id="outcomes-chart-sub">Distribution of results</div>
+                                </div>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-light py-0 px-2" type="button" data-bs-toggle="dropdown" style="border-radius:6px; font-size: 0.7rem;">
+                                        <i class="bi bi-three-dots-vertical"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="font-size: 0.75rem; border-radius: 8px;">
+                                        <li><a class="dropdown-item fw-medium" href="javascript:void(0)" onclick="switchOutcomesChart('visits')"><i class="bi bi-calendar-check me-2"></i>Visit Outcomes</a></li>
+                                        <li><a class="dropdown-item fw-medium" href="javascript:void(0)" onclick="switchOutcomesChart('projects')"><i class="bi bi-stack me-2"></i>Project Status</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-center flex-grow-1" style="position:relative;height:200px;">
                                 <canvas id="outcomesChart"></canvas>
                             </div>
-                            <div id="outcomes-legend" class="d-flex flex-wrap justify-content-center gap-3 mt-3"
-                                style="font-size:0.72rem;"></div>
+                            <div id="outcomes-legend" class="d-flex flex-wrap justify-content-center gap-2 mt-3" style="font-size:0.7rem;"></div>
                         </div>
                     </div>
                 </div>
@@ -2088,9 +2099,154 @@
         };
 
         let leadsChartObj, revenueChartObj, outcomesChartObj;
+        let currentOutcomesData = null;
+        let outcomesChartType = 'visits'; // 'visits' or 'projects'
+
+        function switchOutcomesChart(type) {
+            outcomesChartType = type;
+            if (currentOutcomesData) {
+                renderOutcomesChart(currentOutcomesData);
+            }
+        }
+
+        function renderOutcomesChart(stats) {
+            try {
+                const canvas = document.getElementById('outcomesChart');
+                if (!canvas) return;
+
+                let labels = [], data = [], colors = [], title = "", sub = "";
+
+                if (outcomesChartType === 'visits') {
+                    title = "Visit Outcomes";
+                    sub = "Grouped interaction results";
+                    const rawData = stats.visit_outcomes_breakdown || {};
+                    
+                    // Grouping Logic
+                    const groups = {
+                        'Success': { count: 0, color: '#10b981', statuses: ['COMPLETED', 'SATISFIED', 'ACCEPT', 'ACCEPTED'] },
+                        'Follow-up': { count: 0, color: '#8b5cf6', statuses: ['SCHEDULED', 'TAKE_TIME_TO_THINK', 'THINKING'] },
+                        'Rescheduled': { count: 0, color: '#f59e0b', statuses: ['DEMO_RESCHEDULED', 'MEETING_RESCHEDULED'] },
+                        'Negative': { count: 0, color: '#ef4444', statuses: ['CANCELLED', 'DECLINE', 'DECLINED', 'MISSED'] },
+                        'Other': { count: 0, color: '#94a3b8', statuses: ['OTHER'] }
+                    };
+
+                    Object.entries(rawData).forEach(([status, count]) => {
+                        const s = status.toUpperCase();
+                        let found = false;
+                        for (const [groupName, group] of Object.entries(groups)) {
+                            if (group.statuses.includes(s)) {
+                                group.count += count;
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found) groups['Other'].count += count;
+                    });
+
+                    Object.entries(groups).forEach(([name, group]) => {
+                        if (group.count > 0) {
+                            labels.push(name);
+                            data.push(group.count);
+                            colors.push(group.color);
+                        }
+                    });
+
+                } else {
+                    title = "Project Status";
+                    sub = "Current project health";
+                    const rawData = stats.project_status_breakdown || {};
+                    const projectColors = {
+                        'OPEN': '#6366f1',
+                        'IN_PROGRESS': '#3b82f6',
+                        'BLOCKED': '#f59e0b',
+                        'RESOLVED': '#10b981',
+                        'CANCELLED': '#ef4444'
+                    };
+                    
+                    Object.entries(rawData).forEach(([status, count]) => {
+                        labels.push(status.replace(/_/g, ' '));
+                        data.push(count);
+                        colors.push(projectColors[status.toUpperCase()] || '#94a3b8');
+                    });
+                }
+
+                document.getElementById('outcomes-chart-title').textContent = title;
+                document.getElementById('outcomes-chart-sub').textContent = sub;
+
+                if (outcomesChartObj) outcomesChartObj.destroy();
+                
+                if (data.length === 0) {
+                    labels = ['No Data'];
+                    data = [1];
+                    colors = ['#f1f5f9'];
+                }
+
+                outcomesChartObj = new Chart(canvas, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: colors,
+                            borderWidth: 2,
+                            borderColor: '#ffffff',
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: '#1e293b',
+                                padding: 10,
+                                cornerRadius: 8,
+                                displayColors: true,
+                                usePointStyle: true
+                            }
+                        },
+                        cutout: '72%',
+                        maintainAspectRatio: false,
+                        animation: { animateRotate: true, duration: 800 }
+                    },
+                    plugins: [{
+                        id: 'centerText',
+                        beforeDraw: function (chart) {
+                            const width = chart.width, height = chart.height, ctx = chart.ctx;
+                            ctx.restore();
+                            const total = data.reduce((a, b) => a + b, 0);
+                            const text = (labels[0] === 'No Data') ? '0' : total.toString();
+                            
+                            ctx.font = `700 1.8em 'Inter'`;
+                            ctx.textBaseline = "middle";
+                            ctx.fillStyle = '#1e293b';
+                            const textX = Math.round((width - ctx.measureText(text).width) / 2);
+                            ctx.fillText(text, textX, height / 2 - 5);
+
+                            ctx.font = `600 0.7rem 'Inter'`;
+                            ctx.fillStyle = '#64748b';
+                            const label = "TOTAL";
+                            const labelX = Math.round((width - ctx.measureText(label).width) / 2);
+                            ctx.fillText(label, labelX, height / 2 + 18);
+                            ctx.save();
+                        }
+                    }]
+                });
+
+                document.getElementById('outcomes-legend').innerHTML = labels.map((l, i) =>
+                    (l === 'No Data') ? '' : `
+                    <div class="d-flex align-items-center gap-1">
+                        <span style="width:7px;height:7px;background:${colors[i]};border-radius:2px;"></span>
+                        <span class="text-secondary fw-semibold">${l}</span>
+                    </div>`
+                ).join('');
+
+            } catch (e) { console.error("Outcomes Chart Render Error:", e); }
+        }
 
         function initCharts(stats) {
+            currentOutcomesData = stats;
             Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif";
+            Chart.defaults.color = '#64748b';
 
             // 1. Visits by Month (bar)
             try {
@@ -2219,87 +2375,8 @@
                 });
             } catch (e) { console.error("Revenue Chart Error:", e); }
 
-            // 3. Visit Outcomes (Donut)
-            try {
-                let sData = stats.visit_outcomes_breakdown || {};
-                if (Object.keys(sData).length === 0) { sData = { 'No Data': 1 }; }
-
-                const sLabels = Object.keys(sData);
-                const sValues = Object.values(sData);
-
-                // Map statuses to specific semantic colors
-                const colorMap = {
-                    'COMPLETED': '#10b981',          // Emerald Green
-                    'ACCEPTED': '#10b981',           // Emerald Green
-                    'SATISFIED': '#38bdf8',          // Light Blue
-                    'SCHEDULED': '#8b5cf6',          // Purple
-                    'TAKE_TIME_TO_THINK': '#f59e0b', // Amber/Orange
-                    'THINKING': '#f59e0b',           // Amber/Orange
-                    'CANCELLED': '#ef4444',          // Red
-                    'DECLINED': '#ef4444',           // Red
-                    'MISSED': '#64748b'              // Slate Gray
-                };
-
-                // Generate the colors array by looking up each label
-                const dynamicColors = sLabels.map(label => colorMap[label.toUpperCase()] || '#cbd5e1');
-
-                const outcomesCanvas = document.getElementById('outcomesChart');
-                if (outcomesCanvas) {
-                    if (outcomesChartObj) outcomesChartObj.destroy();
-                    outcomesChartObj = new Chart(outcomesCanvas, {
-                        type: 'doughnut',
-                        data: {
-                            labels: sLabels,
-                            datasets: [{
-                                data: sValues,
-                                backgroundColor: dynamicColors,
-                                borderWidth: 2,
-                                borderColor: '#ffffff',
-                                hoverOffset: 4
-                            }]
-                        },
-                        options: {
-                            plugins: {
-                                legend: { display: false },
-                                tooltip: { enabled: false, external: externalTooltipHandler }
-                            },
-                            cutout: '75%',
-                            maintainAspectRatio: false
-                        },
-                        plugins: [{
-                            id: 'centerText',
-                            beforeDraw: function (chart) {
-                                if (chart.config.type !== 'doughnut') return;
-                                const width = chart.width, height = chart.height, ctx = chart.ctx;
-                                ctx.restore();
-                                const fontSize = (height / 114).toFixed(2);
-                                ctx.font = `600 ${fontSize}em 'Inter'`;
-                                ctx.textBaseline = "middle";
-                                const text = sValues.reduce((a, b) => a + b, 0),
-                                    textX = Math.round((width - ctx.measureText(text).width) / 2),
-                                    textY = height / 2;
-                                ctx.fillStyle = '#1e293b';
-                                ctx.fillText(text, textX, textY);
-
-                                ctx.font = `500 0.75em 'Inter'`;
-                                const label = "TOTAL",
-                                    labelX = Math.round((width - ctx.measureText(label).width) / 2),
-                                    labelY = (height / 2) + 20;
-                                ctx.fillStyle = '#64748b';
-                                ctx.fillText(label, labelX, labelY);
-                                ctx.save();
-                            }
-                        }]
-                    });
-
-                    document.getElementById('outcomes-legend').innerHTML = sLabels.map((s, i) =>
-                        `<div class="d-flex align-items-center gap-2 fw-medium text-secondary" style="font-size: 0.7rem;">
-                            <span style="width:8px;height:8px;background:${dynamicColors[i]};border-radius:2px;display:inline-block;"></span> 
-                            <span>${s.replace(/_/g, ' ')}</span>
-                        </div>`
-                    ).join('');
-                }
-            } catch (e) { console.error("Outcomes Chart Error:", e); }
+            // 3. Outcomes (Donut) - Grouped or Project Status
+            renderOutcomesChart(stats);
         }
 
         // ── Activity Feed ─────────────────────────────────────────────────
