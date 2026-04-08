@@ -1339,7 +1339,7 @@
 
         // ── Transition: Edit Form → Discover Shops (user-initiated) ──
         function discoverShopsFromEdit() {
-            const areaId = parseInt(document.getElementById('a-id').value);
+            const areaId = document.getElementById('a-id').value;
             const area = allAreas.find(a => a.id === areaId);
             if (!area) return;
 
@@ -1404,9 +1404,9 @@
 
                     const shopEditId = document.getElementById('s-id').value;
                     const name = document.getElementById('s-name').value.trim();
-                    const areaId = parseInt(document.getElementById('s-area').value);
+                    const areaId = document.getElementById('s-area').value;
                     const payload = {
-                        name, area_id: areaId,
+                        name, area_id: areaId || null,
                         contact_person: document.getElementById('s-contact').value,
                         phone: document.getElementById('s-phone').value,
                         address: document.getElementById('s-addr').value,
@@ -1414,7 +1414,7 @@
                         project_type: document.getElementById('s-project').value || null,
                     };
                     if (shopEditId) {
-                        await ApiClient.updateShop(parseInt(shopEditId), payload);
+                        await ApiClient.updateShop(shopEditId, payload);
                         toast('Shop updated!');
                     } else {
                         await ApiClient.createShop(payload);
