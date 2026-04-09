@@ -154,6 +154,17 @@ async def get_timetable(
     def date_str(dt):
         return dt.strftime("%Y-%m-%d") if dt else ""
 
+    def get_hm(val, default_h=0):
+        if not val:
+            return default_h, 0
+        if isinstance(val, str):
+            parts = val.split(':')
+            return int(parts[0]), int(parts[1]) if len(parts) > 1 else 0
+        try:
+            return val.hour, val.minute
+        except Exception:
+            return default_h, 0
+
     user_id = current_user.id if current_user else None
     username = (current_user.name or current_user.email or "Unknown User") if current_user else "Demo Admin"
     is_admin = current_user.role == UserRole.ADMIN if current_user else True
@@ -283,11 +294,9 @@ async def get_timetable(
     for t in todos:
         if t.related_entity and "MEETING:" in t.related_entity: continue
             
-        h = t.due_date.hour if t.due_date and t.due_date.hour >= 7 else 9
-        sh = t.start_time.hour if t.start_time else h
-        sm = t.start_time.minute if t.start_time else 0
-        eh = t.end_time.hour if t.end_time else (sh + 1)
-        em = t.end_time.minute if t.end_time else 0
+        h = t.due_date.hour if t.due_date and hasattr(t.due_date, 'hour') else 9
+        sh, sm = get_hm(t.start_time, h)
+        eh, em = get_hm(t.end_time, sh + 1)
         
         real_user = t.assigned_to or user_name_map.get(t.user_id, username)
 
@@ -308,14 +317,17 @@ async def get_timetable(
     # --- Process Custom Events ---
     for c in custom_events:
         real_user = c.assignee_name or user_name_map.get(c.user_id, username)
+        
+        sh, sm = get_hm(c.start_time, 9)
+        eh, em = get_hm(c.end_time, sh + 1)
 
         events.append({
             "id": str(c.id),
             "title": c.title,
             "date": c.date.strftime("%Y-%m-%d"),
             "user": real_user,
-            "sh": c.start_time.hour, "sm": c.start_time.minute,
-            "eh": c.end_time.hour, "em": c.end_time.minute,
+            "sh": sh, "sm": sm,
+            "eh": eh, "em": em,
             "loc": c.location or "",
             "event_type": "TIMETABLE",
             "status": "PENDING",

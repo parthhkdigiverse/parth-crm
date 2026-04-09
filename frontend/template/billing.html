@@ -1809,7 +1809,7 @@
                     payment_type: pt,
                     gst_type: gt,
                     amount: amt,
-                    shop_id: autoConvertShopId ? parseInt(autoConvertShopId) : null,
+                    shop_id: autoConvertShopId || null,
                     transaction_id: wizardQRData?.transaction_id || null,
                     payment_gateway_status: wizardQRData?.payment_gateway_status || null
                 });
