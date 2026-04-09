@@ -236,7 +236,12 @@ class AreaService:
         if not area:
             raise HTTPException(status_code=404, detail="Area not found")
         
-        users = await User.find(In(User.id, user_ids)).to_list()
+        from bson import ObjectId
+        
+        # Cast string IDs to ObjectId for Beanie querying
+        user_obj_ids = [ObjectId(uid) if isinstance(uid, str) else uid for uid in user_ids]
+        
+        users = await User.find(In(User.id, user_obj_ids)).to_list()
         if not users or len(users) != len(user_ids):
             raise HTTPException(status_code=404, detail="One or more users not found")
 
@@ -252,10 +257,11 @@ class AreaService:
         area_filter = {"$or": [{"area_id": area_id}, {"area_id": str(area_id)}]}
         
         if shop_ids is not None:
+            shop_obj_ids = [ObjectId(sid) if isinstance(sid, str) else sid for sid in shop_ids]
             # Granular assignment: Update specific shops only
             shops_to_assign = await Shop.find(
                 area_filter,
-                In(Shop.id, shop_ids)
+                In(Shop.id, shop_obj_ids)
             ).to_list()
             
             for shop in shops_to_assign:
