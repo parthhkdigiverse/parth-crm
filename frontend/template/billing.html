@@ -684,7 +684,7 @@
                 <div class="modal-title-text"><i class="bi bi-file-earmark-text text-primary me-2"></i>Invoice Preview</div>
                 <button class="modal-close-x" onclick="closeViewModal()"><i class="bi bi-x-lg"></i></button>
             </div>
-            <div id="p3-preview-body" style="height: calc(100vh - 200px); overflow-y: auto; background: var(--bg-app); padding: 20px;">
+            <div id="invoice-view-body" style="height: calc(100vh - 200px); overflow-y: auto; background: var(--bg-app); padding: 0;">
                 <!-- HTML content injected here -->
             </div>
             <div class="modal-footer px-3 py-2 border-top text-end bg-light">
@@ -1945,14 +1945,14 @@
         function previewInvoice(billId) {
             const token = ApiClient.getAccessToken();
             const url = `${ApiClient.API_BASE_URL}/billing/${billId}/invoice-html`;
-            const previewBody = document.getElementById('p3-preview-body');
+            const previewBody = document.getElementById('invoice-view-body');
             previewBody.innerHTML = '<div class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading invoice preview...</div>';
             document.getElementById('viewModal').classList.remove('d-none');
             
             fetch(url, { headers: { 'Authorization': 'Bearer ' + token } })
                 .then(r => r.text())
                 .then(html => {
-                    previewBody.innerHTML = html;
+                    previewBody.innerHTML = `<iframe style="width: 100%; height: 100%; border: none;" srcdoc='${html.replace(/'/g, "&apos;")}'></iframe>`;
                 })
                 .catch(e => {
                     showToast('Failed to load invoice: ' + e.message, 'error');
