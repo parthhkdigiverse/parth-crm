@@ -243,52 +243,56 @@ class AreaService:
         current_user_ids = set(area.assigned_user_ids)
         new_user_ids = set(user_ids)
         
-        if len(new_user_ids) > 1 or new_user_ids != current_user_ids:
-            area.assignment_status = "PENDING"
-            area.assigned_by_id = current_user.id
-            area.accepted_at = None
+        # Determine if we need to reset acceptance status
+        status_change = len(new_user_ids) > 1 or new_user_ids != current_user_ids
 
         primary_owner_id = user_ids[0]
+        
+        # Query for shops: handle both string and ObjectId formats defensively
+        area_filter = {"$or": [{"area_id": area_id}, {"area_id": str(area_id)}]}
         
         if shop_ids is not None:
             # Granular assignment: Update specific shops only
             shops_to_assign = await Shop.find(
-                {"area_id": str(area_id)},
+                area_filter,
                 In(Shop.id, shop_ids)
             ).to_list()
             
             for shop in shops_to_assign:
                 shop.owner_id = primary_owner_id
-                shop.assigned_owner_ids = user_ids
-                if len(new_user_ids) > 1 or new_user_ids != current_user_ids:
+                shop.assigned_user_ids = user_ids
+                shop.assigned_owner_ids = user_ids # consistency
+                if status_change:
                     shop.assignment_status = "PENDING"
                     shop.assigned_by_id = current_user.id
                     shop.accepted_at = None
                 await shop.save()
             
-            # Update Area assignments
-            for uid in user_ids:
-                if uid not in area.assigned_user_ids:
-                    area.assigned_user_ids.append(uid)
-                    
-            if not getattr(area, 'assigned_user_id', None):
-                 area.assigned_user_id = primary_owner_id
-                 
+            # Update Area assignments: append if not already present or replace if new set
+            area.assigned_user_ids = list(new_user_ids)
+            area.assigned_user_id = primary_owner_id
+                     
         else:
             # Full assignment: Update area and ALL shops
             area.assigned_user_id = primary_owner_id
             area.assigned_user_ids = user_ids
             
-            all_shops = await Shop.find({"area_id": str(area_id)}).to_list()
+            all_shops = await Shop.find(area_filter).to_list()
             for shop in all_shops:
                 shop.owner_id = primary_owner_id
-                shop.assigned_owner_ids = user_ids
-                if len(new_user_ids) > 1 or new_user_ids != current_user_ids:
+                shop.assigned_user_ids = user_ids
+                shop.assigned_owner_ids = user_ids # consistency
+                if status_change:
                     shop.assignment_status = "PENDING"
                     shop.assigned_by_id = current_user.id
                     shop.accepted_at = None
                 await shop.save()
         
+        if status_change:
+            area.assignment_status = "PENDING"
+            area.assigned_by_id = current_user.id
+            area.accepted_at = None
+
         await area.save()
         
         area.shops_count = await Shop.find(

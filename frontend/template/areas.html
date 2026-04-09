@@ -893,7 +893,7 @@
             onRestore: async () => {
                 await loadAll();
                 if (selectedAreaId) {
-                    const a = allAreas.find(x => x.id === selectedAreaId);
+                    const a = allAreas.find(x => normalizeId(x.id) === normalizeId(selectedAreaId));
                     if (a) selectArea(a.id, a.name);
                 }
             }
@@ -934,6 +934,14 @@
         let selectedAreaId = null;
         let assigningAreaId = null;
         let modalTab = 'area';
+
+        // ── Helper: Normalize MongoDB IDs for matching ─────────────────
+        const normalizeId = v => {
+            if (!v) return '';
+            if (typeof v === 'object' && v.$oid) return v.$oid;
+            return String(v);
+        };
+
 
         // ── Reset modal to Create mode whenever it opens normally ──
         document.getElementById('addModal').addEventListener('show.bs.modal', function () {
@@ -1072,10 +1080,10 @@
                 // Source filter
                 if (sourceFilter === 'ADMIN') {
                     // Admin-assigned: no creator OR creator is the current admin user
-                    if (a.created_by_id && !(currentUser && a.created_by_id === currentUser.id && currentUser.role?.toUpperCase() === 'ADMIN')) return false;
+                    if (a.created_by_id && !(currentUser && normalizeId(a.created_by_id) === normalizeId(currentUser.id) && currentUser.role?.toUpperCase() === 'ADMIN')) return false;
                 } else if (sourceFilter === 'SELF') {
                     // Self-sourced: has a creator who is NOT the current user (or any staff-sourced lead)
-                    if (!a.created_by_id || (currentUser && a.created_by_id === currentUser.id && currentUser.role?.toUpperCase() === 'ADMIN')) return false;
+                    if (!a.created_by_id || (currentUser && normalizeId(a.created_by_id) === normalizeId(currentUser.id) && currentUser.role?.toUpperCase() === 'ADMIN')) return false;
                 }
                 
                 // Status filter
@@ -1118,7 +1126,7 @@
         async function selectArea(areaId, areaName) {
             selectedAreaId = areaId;
             renderAreaList(currentFilters.search);
-            const shops = allShops.filter(s => String(s.area_id) === String(areaId));
+            const shops = allShops.filter(s => normalizeId(s.area_id) === normalizeId(areaId));
             const user = ApiClient.getCurrentUser();
             const isAdmin = user && user.role && user.role.toUpperCase() === 'ADMIN';
 
@@ -1145,7 +1153,12 @@
 
             document.getElementById('shops-panel-title').innerHTML =
                 `<i class="bi bi-shop me-2"></i>Shops in ${areaName}${statusBadge}${sourcedByBadge}${badgeHtml}`;
-            document.getElementById('shops-panel-count').textContent = `${shops.length} shop${shops.length !== 1 ? 's' : ''}`;
+            document.getElementById('shops-panel-count').innerHTML = `
+                <div class="d-flex align-items-center gap-3">
+                    <span class="text-muted small fw-medium">${shops.length} shop${shops.length !== 1 ? 's' : ''}</span>
+                    ${isAdmin ? `<button class="btn btn-sm fw-semibold d-flex align-items-center gap-2" onclick="openAssignModal('${areaId}')" style="background:#4f46e5;color:white;border:none;border-radius:8px;padding:6px 14px;"><i class="bi bi-person-plus"></i> Assign</button>` : ''}
+                </div>
+            `;
             const body = document.getElementById('shops-panel-body');
 
             if (!shops.length) {
@@ -1184,7 +1197,7 @@
 
                 const actionButtons = isPendingShop && !isAdmin
                     ? `<button class="btn btn-success btn-sm" onclick="acceptAssignment('shops', '${s.id}')"><i class="bi bi-check-circle"></i> Accept</button>`
-                    : `<button class="btn-action text-primary" onclick="editShop('${s.id}')" title="Edit shop"><i class="bi bi-pencil"></i></button>${(isAdmin || (s.assigned_users && s.assigned_users.some(u => u.id === user?.id))) ? `<button class="btn-action text-danger" onclick="archiveShop('${s.id}', '${s.name.replace(/'/g, "\\'")}')"><i class="bi bi-archive"></i></button>` : ''}`;
+                    : `<button class="btn-action text-primary" onclick="editShop('${s.id}')" title="Edit shop"><i class="bi bi-pencil"></i></button>${(isAdmin || (s.assigned_users && s.assigned_users.some(u => normalizeId(u.id) === normalizeId(user?.id)))) ? `<button class="btn-action text-danger" onclick="archiveShop('${s.id}', '${s.name.replace(/'/g, "\\'")}')"><i class="bi bi-archive"></i></button>` : ''}`;
 
                 desktopRows += `<tr>
                     <td><span class="shop-name-primary">${s.name}</span><span class="shop-name-sub">${s.address || 'No address set'}</span>${sourcedByShop}${shopStatusBadge}</td>
@@ -1300,7 +1313,7 @@
 
         // ── Open modal in Edit Mode for an existing area ──
         function openEditAreaModal(areaId) {
-            const area = allAreas.find(a => a.id === areaId);
+            const area = allAreas.find(a => normalizeId(a.id) === normalizeId(areaId));
             if (!area) return;
 
             // Pre-fill hidden ID FIRST so show.bs.modal handler knows this is edit mode
@@ -1340,7 +1353,7 @@
         // ── Transition: Edit Form → Discover Shops (user-initiated) ──
         function discoverShopsFromEdit() {
             const areaId = document.getElementById('a-id').value;
-            const area = allAreas.find(a => a.id === areaId);
+            const area = allAreas.find(a => normalizeId(a.id) === normalizeId(areaId));
             if (!area) return;
 
             const lat = parseFloat(document.getElementById('a-lat').value) || area.lat;
@@ -1427,7 +1440,7 @@
                     document.getElementById('s-project').value = '';
                     await loadAll();
                     if (selectedAreaId) {
-                        const a = allAreas.find(x => x.id === selectedAreaId);
+                        const a = allAreas.find(x => normalizeId(x.id) === normalizeId(selectedAreaId));
                         if (a) selectArea(a.id, a.name);
                     }
                     // If from Discovered Shops list → go back to list; otherwise close modal
@@ -1446,7 +1459,7 @@
 
         // ── Edit Shop ──
         function editShop(shopId) {
-            const shop = allShops.find(s => s.id === shopId);
+            const shop = allShops.find(s => normalizeId(s.id) === normalizeId(shopId));
             if (!shop) return;
 
             // Pre-fill hidden ID so saveModalForm knows edit mode
@@ -1477,7 +1490,7 @@
                 showToast('Shop archived');
                 await loadAll();
                 if (selectedAreaId) {
-                    const a = allAreas.find(x => x.id === selectedAreaId);
+                    const a = allAreas.find(x => normalizeId(x.id) === normalizeId(selectedAreaId));
                     if (a) selectArea(a.id, a.name);
                 }
                 
@@ -1704,7 +1717,7 @@
             // 1. If "Select All" is checked AND (all shops are checked OR no shops exist), we send null 
             //    to trigger the cascading logic (Area + All Shops).
             // 2. Otherwise, we send ONLY the checked shop IDs.
-            const shopIds = (selectAll && checkedCbs.length === allCbs.length) ? null : Array.from(checkedCbs).map(cb => parseInt(cb.value));
+            const shopIds = (selectAll && checkedCbs.length === allCbs.length) ? null : Array.from(checkedCbs).map(cb => cb.value);
 
             try {
                 // Pass array of userIds instead of single userId
@@ -1716,7 +1729,7 @@
                 if (modal) modal.hide();
 
                 await loadAll();
-                const area = allAreas.find(a => String(a.id) === String(assigningAreaId));
+                const area = allAreas.find(a => normalizeId(a.id) === normalizeId(assigningAreaId));
                 if (area) selectArea(area.id, area.name);
             } catch (e) {
                 showToast(e?.data?.detail || e?.message || 'Failed to assign', 'error');
@@ -1735,7 +1748,7 @@
                     const area = allAreas.find(a => String(a.id) === String(id));
                     if (area) selectArea(area.id, area.name);
                 } else if (moduleName === 'shops' && selectedAreaId) {
-                    const area = allAreas.find(a => String(a.id) === String(selectedAreaId));
+                    const area = allAreas.find(a => normalizeId(a.id) === normalizeId(selectedAreaId));
                     if (area) selectArea(area.id, area.name);
                 }
             } catch (e) {
