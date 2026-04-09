@@ -11,7 +11,7 @@ class TodoBase(MongoBaseSchema):
     end_time: datetime.time | None = None
     status: TodoStatus | None = TodoStatus.PENDING
     priority: TodoPriority | None = TodoPriority.MEDIUM
-    assigned_to: PydanticObjectId | None = None
+    assigned_to: str | None = None
     related_entity: str | None = None
     evidence_url: str | None = None
     client_id: PydanticObjectId | None = None
@@ -27,7 +27,7 @@ class TodoUpdate(MongoBaseSchema):
     end_time: datetime.time | None = None
     status: TodoStatus | None = None
     priority: TodoPriority | None = None
-    assigned_to: PydanticObjectId | None = None
+    assigned_to: str | None = None
     related_entity: str | None = None
     evidence_url: str | None = None
     client_id: PydanticObjectId | None = None

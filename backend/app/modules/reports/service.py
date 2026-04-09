@@ -51,6 +51,8 @@ class ReportService:
         prev_month = 12 if curr_month == 1 else curr_month - 1
         prev_year = curr_year - 1 if curr_month == 1 else curr_year
         
+        import asyncio
+
         # Match expressions for date aggregation with type-safety
         curr_m_expr = {"$and": [{"$eq": [{"$type": "$created_at"}, "date"]}, {"$eq": [{"$month": "$created_at"}, curr_month]}, {"$eq": [{"$year": "$created_at"}, curr_year]}]}
         prev_m_expr = {"$and": [{"$eq": [{"$type": "$created_at"}, "date"]}, {"$eq": [{"$month": "$created_at"}, prev_month]}, {"$eq": [{"$year": "$created_at"}, prev_year]}]}
@@ -63,51 +65,56 @@ class ReportService:
              shop_ids = [PydanticObjectId(rid) for rid in raw_ids if rid]
              v_match["shop_id"] = {"$in": shop_ids}
         
-        total_visits = await Visit.find(v_match).count()
-        v_curr = await Visit.find(v_match, {"$expr": {"$and": [{"$eq": [{"$type": "$visit_date"}, "date"]}, {"$eq": [{"$month": "$visit_date"}, curr_month]}, {"$eq": [{"$year": "$visit_date"}, curr_year]}]}}).count()
-        v_prev = await Visit.find(v_match, {"$expr": {"$and": [{"$eq": [{"$type": "$visit_date"}, "date"]}, {"$eq": [{"$month": "$visit_date"}, prev_month]}, {"$eq": [{"$year": "$visit_date"}, prev_year]}]}}).count()
-        visits_mom_pct = ReportService._get_mom_pct(v_curr, v_prev)
-
-        # --- 2. Client Metrics ---
+        # Define expressions for Visit counts
+        v_expr_curr = {"$expr": {"$and": [{"$eq": [{"$type": "$visit_date"}, "date"]}, {"$eq": [{"$month": "$visit_date"}, curr_month]}, {"$eq": [{"$year": "$visit_date"}, curr_year]}]}}
+        v_expr_prev = {"$expr": {"$and": [{"$eq": [{"$type": "$visit_date"}, "date"]}, {"$eq": [{"$month": "$visit_date"}, prev_month]}, {"$eq": [{"$year": "$visit_date"}, prev_year]}]}}
+        
         c_match = {"status": "ACTIVE", "is_deleted": False}
         if user_id: c_match["owner_id"] = user_id
         if area_id: c_match["area_id"] = area_id
         
-        active_clients = await Client.find(c_match).count()
-        c_curr = await Client.find(c_match, {"$expr": curr_m_expr}).count()
-        c_prev = await Client.find(c_match, {"$expr": prev_m_expr}).count()
-        clients_mom_pct = ReportService._get_mom_pct(c_curr, c_prev)
-
-        # --- 3. Project Metrics ---
         p_match = {"status": GlobalTaskStatus.IN_PROGRESS, "is_deleted": False}
         if user_id: p_match["pm_id"] = user_id
-        
-        ongoing_projects = await Project.find(p_match).count()
-        p_curr = await Project.find(p_match, {"$expr": curr_m_expr}).count()
-        p_prev = await Project.find(p_match, {"$expr": prev_m_expr}).count()
-        projects_mom_pct = ReportService._get_mom_pct(p_curr, p_prev)
 
-        # --- 4. Revenue Aggregation (using Bill model) ---
         b_match = {"invoice_status": "SENT", "is_deleted": False}
         if user_id: b_match["created_by_id"] = user_id
-        
+
         rev_pipeline = [
             {"$match": b_match},
             {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
         ]
-        rev_res = await Bill.get_pymongo_collection().aggregate(rev_pipeline).to_list(length=None)
-        revenue_mtd = rev_res[0]["total"] if rev_res else 0.0
-
-        # --- 5. Staff Presence ---
         today_start = datetime.combine(now.date(), datetime.min.time())
-        employees_present = len(await Attendance.get_pymongo_collection().distinct("user_id", {"date": today_start, "is_deleted": False}))
-
-        # --- 6. Breakdown Analytics (Donut Chart) ---
         status_pipeline = [
             {"$match": v_match},
             {"$group": {"_id": "$status", "count": {"$sum": 1}}}
         ]
-        visit_status_res = await Visit.get_pymongo_collection().aggregate(status_pipeline).to_list(length=None)
+
+        # Fetch basic stats, revenue, and presence in parallel
+        (
+            total_visits, v_curr, v_prev,
+            active_clients, clients_curr, clients_prev,
+            projects_count, projects_curr, projects_prev,
+            rev_res,
+            present_user_ids,
+            open_issues_count,
+            visit_status_res
+        ) = await asyncio.gather(
+            Visit.find(v_match).count(), Visit.find(v_match, v_expr_curr).count(), Visit.find(v_match, v_expr_prev).count(),
+            Client.find(c_match).count(), Client.find(c_match, {"$expr": curr_m_expr}).count(), Client.find(c_match, {"$expr": prev_m_expr}).count(),
+            Project.find(p_match).count(), Project.find(p_match, {"$expr": curr_m_expr}).count(), Project.find(p_match, {"$expr": prev_m_expr}).count(),
+            Bill.get_pymongo_collection().aggregate(rev_pipeline).to_list(length=None),
+            Attendance.get_pymongo_collection().distinct("user_id", {"date": today_start, "is_deleted": False}),
+            Issue.find(Issue.status == GlobalTaskStatus.OPEN, Issue.is_deleted == False).count(),
+            Visit.get_pymongo_collection().aggregate(status_pipeline).to_list(length=None)
+        )
+
+        visits_mom_pct = ReportService._get_mom_pct(v_curr, v_prev)
+        active_clients = active_clients
+        clients_mom_pct = ReportService._get_mom_pct(clients_curr, clients_prev)
+        ongoing_projects = projects_count
+        projects_mom_pct = ReportService._get_mom_pct(projects_curr, projects_prev)
+        revenue_mtd = rev_res[0]["total"] if rev_res else 0.0
+        employees_present = len(present_user_ids)
         visit_status_breakdown = {str(r["_id"]): r["count"] for r in visit_status_res}
 
         # --- 7. Chart Data (Last 12 Months for better visibility) ---
@@ -117,35 +124,33 @@ class ReportService:
         v_chart_pipeline = [
             {"$addFields": {"v_date_dt": {"$toDate": "$visit_date"}}},
             {"$match": {**v_match, "v_date_dt": {"$gte": one_year_ago}}},
-            {"$group": {
-                "_id": {
-                    "year": {"$year": "$v_date_dt"},
-                    "month": {"$month": "$v_date_dt"}
-                },
-                "count": {"$sum": 1}
-            }},
-            {"$sort": {"_id.year": 1, "_id.month": 1}},
-            {"$limit": 12}
+            {"$group": {"_id": {"year": {"$year": "$v_date_dt"}, "month": {"$month": "$v_date_dt"}}, "count": {"$sum": 1}}},
+            {"$sort": {"_id.year": 1, "_id.month": 1}}, {"$limit": 12}
         ]
-        v_chart_res = await Visit.get_pymongo_collection().aggregate(v_chart_pipeline).to_list(length=None)
-        visits_chart_data = {datetime(r["_id"]["year"], r["_id"]["month"], 1).strftime("%b"): r["count"] for r in v_chart_res}
-
+        
         # Revenue Trend
         r_chart_pipeline = [
             {"$addFields": {"c_date_dt": {"$toDate": "$created_at"}}},
             {"$match": {**b_match, "c_date_dt": {"$gte": one_year_ago}}},
-            {"$group": {
-                "_id": {
-                    "year": {"$year": "$c_date_dt"},
-                    "month": {"$month": "$c_date_dt"}
-                },
-                "total": {"$sum": "$amount"}
-            }},
-            {"$sort": {"_id.year": 1, "_id.month": 1}},
-            {"$limit": 12}
+            {"$group": {"_id": {"year": {"$year": "$c_date_dt"}, "month": {"$month": "$c_date_dt"}}, "total": {"$sum": "$amount"}}},
+            {"$sort": {"_id.year": 1, "_id.month": 1}}, {"$limit": 12}
         ]
-        r_chart_res = await Bill.get_pymongo_collection().aggregate(r_chart_pipeline).to_list(length=None)
+
+        v_chart_res, r_chart_res = await asyncio.gather(
+            Visit.get_pymongo_collection().aggregate(v_chart_pipeline).to_list(length=None),
+            Bill.get_pymongo_collection().aggregate(r_chart_pipeline).to_list(length=None)
+        )
+
+        visits_chart_data = {datetime(r["_id"]["year"], r["_id"]["month"], 1).strftime("%b"): r["count"] for r in v_chart_res}
         revenue_by_month = {datetime(r["_id"]["year"], r["_id"]["month"], 1).strftime("%b"): float(r["total"]) for r in r_chart_res}
+
+        # --- 8. Project Status Breakdown (for alternative/new chart) ---
+        p_status_pipeline = [
+            {"$match": {"is_deleted": False}},
+            {"$group": {"_id": "$status", "count": {"$sum": 1}}}
+        ]
+        project_status_res = await Project.get_pymongo_collection().aggregate(p_status_pipeline).to_list(length=None)
+        project_status_breakdown = {str(r["_id"]): r["count"] for r in project_status_res}
 
         return {
             "total_visits": total_visits,
@@ -164,7 +169,8 @@ class ReportService:
             "visits_chart_title": 'Visits Overview',
             "revenue_by_month": revenue_by_month,
             "issue_severity_breakdown": {},
-            "visit_outcomes_breakdown": visit_status_breakdown
+            "visit_outcomes_breakdown": visit_status_breakdown,
+            "project_status_breakdown": project_status_breakdown
         }
 
     @staticmethod
@@ -317,17 +323,30 @@ class ReportService:
             q = q.find(Or(Project.pm_id == requesting_user.id, In(Project.client_id, owned_clients)))
         
         projects = await q.to_list()
+        if not projects:
+            return []
+
+        # --- BULK FETCH: Clients & Payments ---
+        client_ids = list(set(p.client_id for p in projects if p.client_id))
+        
+        # 1. Fetch Clients in bulk
+        clients_list = await Client.find(In(Client.id, client_ids)).to_list()
+        client_map = {c.id: c for c in clients_list}
+        
+        # 2. Aggregate Payments in bulk for all relevant clients
+        pay_pipeline = [
+            {"$match": {"client_id": {"$in": client_ids}, "status": "VERIFIED"}},
+            {"$group": {"_id": "$client_id", "total": {"$sum": "$amount"}}}
+        ]
+        pay_res = await Payment.get_pymongo_collection().aggregate(pay_pipeline).to_list(length=None)
+        payment_map = {r["_id"]: r["total"] for r in pay_res}
+
         portfolio = []
         for p in projects:
-            client = await Client.get(p.client_id)
+            client = client_map.get(p.client_id)
             if not client: continue
             
-            # Sum verified payments
-            paid_res = await Payment.get_pymongo_collection().aggregate([
-                {"$match": {"client_id": p.client_id, "status": "VERIFIED"}},
-                {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
-            ]).to_list(length=None)
-            paid_sum = paid_res[0]["total"] if paid_res else 0.0
+            paid_sum = payment_map.get(p.client_id, 0.0)
 
             portfolio.append({
                 "id": str(p.id),

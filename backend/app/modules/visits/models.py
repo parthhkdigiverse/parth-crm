@@ -2,7 +2,7 @@
 import enum
 from typing import Optional
 from datetime import datetime, UTC
-from pydantic import Field
+from pydantic import Field, field_validator
 from beanie import Document, Indexed, PydanticObjectId
 
 class VisitStatus(str, enum.Enum):
@@ -46,6 +46,26 @@ class Visit(Document):
     project_manager_name: Optional[str] = None
     shop_status: Optional[str] = None
     shop_demo_stage: int = 0
+
+    @field_validator("duration_seconds", mode="before")
+    @classmethod
+    def coerce_duration(cls, v):
+        if v is None:
+            return 0
+        try:
+            return int(v)
+        except (TypeError, ValueError):
+            return 0
+
+    @field_validator("shop_demo_stage", mode="before")
+    @classmethod
+    def coerce_demo_stage(cls, v):
+        if v is None:
+            return 0
+        try:
+            return int(v)
+        except (TypeError, ValueError):
+            return 0
 
     class Settings:
         name = "srm_visits"

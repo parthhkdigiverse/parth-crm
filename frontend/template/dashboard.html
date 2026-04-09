@@ -14,12 +14,12 @@
             console.error('DIAGNOSTIC GLOBAL ERROR:', msg, 'at', url, 'line', line);
         };
     </script>
-    <link rel="stylesheet" href="/static/css/bootstrap.min.css">
-    <link rel="stylesheet" href="/static/css/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="/static/css/theme.css?v=20260403">
-    <link rel="stylesheet" href="/static/css/components.css?v=20260403">
-    <script src="/static/js/chart.umd.min.js"></script>
-    <script src="/static/js/Sortable.min.js"></script>
+    <link rel="stylesheet" href="/frontend/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/frontend/css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/frontend/css/theme.css?v=20260406">
+    <link rel="stylesheet" href="/frontend/css/components.css?v=20260406">
+    <script src="/frontend/js/chart.umd.min.js"></script>
+    <script src="/frontend/js/Sortable.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
@@ -1139,6 +1139,10 @@
             padding-top: 0 !important;
         }
 
+        /* ── Unified Dashboard Section Gap ── */
+        :root { --dash-gap: 28px; }
+        .dash-section { margin-bottom: var(--dash-gap); }
+
         /* PREMIUM HEADER REDESIGN - ENHANCED PROPORTIONS */
         .header-outer {
             border-radius: 20px;
@@ -1379,8 +1383,8 @@
         }
 
         .pro-att-btn {
-            background: #fff;
-            color: #0d1f5c !important;
+            background: var(--surface);
+            color: var(--text-main) !important;
             border: none;
             padding: 8px 20px;
             border-radius: 10px;
@@ -1555,7 +1559,7 @@
 
 
                 <!-- Filter Panel (period picker integrated in header) -->
-                <div class="filter-panel">
+                <div class="filter-panel dash-section">
                     <div class="filter-panel-head" id="filter-panel-toggle">
                         <div class="filter-panel-head-left">
                             <i class="bi bi-sliders2"></i>
@@ -1609,7 +1613,7 @@
                 </div>
 
                 <!-- KPI Cards -->
-                <div class="row g-2 g-md-3 mb-4" id="admin-kpis">
+                <div class="row g-2 g-md-3 dash-section" id="admin-kpis">
                     <div class="col-6 col-sm-6 col-xl-3" data-widget-id="kpi-visits">
                         <a href="visits.html" class="text-decoration-none d-block h-100">
                             <div class="kpi-card kpi-visits h-100">
@@ -1686,7 +1690,7 @@
 
 
                 <!-- Charts Row -->
-                <div class="row g-3 mb-4">
+                <div class="row g-3 dash-section">
                     <div class="col-md-4">
                         <div class="chart-card">
                             <div class="chart-card-title" id="dynamic-visits-title">Visits by Month</div>
@@ -1706,21 +1710,32 @@
                         </div>
                     </div>
                     <div class="col-md-4">
-                        <div class="chart-card d-flex flex-column">
-                            <div class="chart-card-title">Visit Outcomes</div>
-                            <div class="chart-card-sub">Distribution of interaction results</div>
-                            <div class="d-flex justify-content-center flex-grow-1"
-                                style="position:relative;height:200px;">
+                        <div class="chart-card d-flex flex-column h-100">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <div>
+                                    <div class="chart-card-title" id="outcomes-chart-title">Visit Outcomes</div>
+                                    <div class="chart-card-sub" id="outcomes-chart-sub">Distribution of results</div>
+                                </div>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-light py-0 px-2" type="button" data-bs-toggle="dropdown" style="border-radius:6px; font-size: 0.7rem;">
+                                        <i class="bi bi-three-dots-vertical"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="font-size: 0.75rem; border-radius: 8px;">
+                                        <li><a class="dropdown-item fw-medium" href="javascript:void(0)" onclick="switchOutcomesChart('visits')"><i class="bi bi-calendar-check me-2"></i>Visit Outcomes</a></li>
+                                        <li><a class="dropdown-item fw-medium" href="javascript:void(0)" onclick="switchOutcomesChart('projects')"><i class="bi bi-stack me-2"></i>Project Status</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-center flex-grow-1" style="position:relative;height:200px;">
                                 <canvas id="outcomesChart"></canvas>
                             </div>
-                            <div id="outcomes-legend" class="d-flex flex-wrap justify-content-center gap-3 mt-3"
-                                style="font-size:0.72rem;"></div>
+                            <div id="outcomes-legend" class="d-flex flex-wrap justify-content-center gap-2 mt-3" style="font-size:0.7rem;"></div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Activity + Issues Row -->
-                <div class="row g-3 mb-4 dashboard-widget-row" id="widget-row-1">
+                <div class="row g-3 dash-section dashboard-widget-row" id="widget-row-1">
                     <div class="col-md-7" data-widget-id="activity">
                         <div class="section-card h-100">
                             <div class="section-card-header">
@@ -1785,7 +1800,7 @@
                 </div>
 
                 <!-- Clients + Employees Row -->
-                <div class="row g-3 dashboard-widget-row" id="widget-row-2">
+                <div class="row g-3 dash-section dashboard-widget-row" id="widget-row-2">
                     <div class="col-md-7" data-widget-id="clients">
                         <div class="section-card">
                             <div class="section-card-header">
@@ -1877,11 +1892,11 @@
         </div><!-- /.page-content-standard -->
     </div>
 
-    <script src="/static/js/utils.js?v=20260403"></script>
-    <script src="/static/js/api.js?v=20260403"></script>
-    <script src="/static/js/ui_components.js?v=20260403"></script>
-    <script src="/static/js/auth.js?v=20260403"></script>
-    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script src="/frontend/js/utils.js?v=20260403"></script>
+    <script src="/frontend/js/api.js?v=20260403"></script>
+    <script src="/frontend/js/ui_components.js?v=20260403"></script>
+    <script src="/frontend/js/auth.js?v=20260403"></script>
+    <script src="/frontend/js/bootstrap.bundle.min.js"></script>
     <script>
         requireAuth();
         const currentUser = typeof getUser === 'function' ? getUser() : (window.ApiClient ? window.ApiClient.getCurrentUser() : null);
@@ -2085,9 +2100,154 @@
         };
 
         let leadsChartObj, revenueChartObj, outcomesChartObj;
+        let currentOutcomesData = null;
+        let outcomesChartType = 'visits'; // 'visits' or 'projects'
+
+        function switchOutcomesChart(type) {
+            outcomesChartType = type;
+            if (currentOutcomesData) {
+                renderOutcomesChart(currentOutcomesData);
+            }
+        }
+
+        function renderOutcomesChart(stats) {
+            try {
+                const canvas = document.getElementById('outcomesChart');
+                if (!canvas) return;
+
+                let labels = [], data = [], colors = [], title = "", sub = "";
+
+                if (outcomesChartType === 'visits') {
+                    title = "Visit Outcomes";
+                    sub = "Grouped interaction results";
+                    const rawData = stats.visit_outcomes_breakdown || {};
+                    
+                    // Grouping Logic
+                    const groups = {
+                        'Success': { count: 0, color: '#10b981', statuses: ['COMPLETED', 'SATISFIED', 'ACCEPT', 'ACCEPTED'] },
+                        'Follow-up': { count: 0, color: '#8b5cf6', statuses: ['SCHEDULED', 'TAKE_TIME_TO_THINK', 'THINKING'] },
+                        'Rescheduled': { count: 0, color: '#f59e0b', statuses: ['DEMO_RESCHEDULED', 'MEETING_RESCHEDULED'] },
+                        'Negative': { count: 0, color: '#ef4444', statuses: ['CANCELLED', 'DECLINE', 'DECLINED', 'MISSED'] },
+                        'Other': { count: 0, color: '#94a3b8', statuses: ['OTHER'] }
+                    };
+
+                    Object.entries(rawData).forEach(([status, count]) => {
+                        const s = status.toUpperCase();
+                        let found = false;
+                        for (const [groupName, group] of Object.entries(groups)) {
+                            if (group.statuses.includes(s)) {
+                                group.count += count;
+                                found = true;
+                                break;
+                            }
+                        }
+                        if (!found) groups['Other'].count += count;
+                    });
+
+                    Object.entries(groups).forEach(([name, group]) => {
+                        if (group.count > 0) {
+                            labels.push(name);
+                            data.push(group.count);
+                            colors.push(group.color);
+                        }
+                    });
+
+                } else {
+                    title = "Project Status";
+                    sub = "Current project health";
+                    const rawData = stats.project_status_breakdown || {};
+                    const projectColors = {
+                        'OPEN': '#6366f1',
+                        'IN_PROGRESS': '#3b82f6',
+                        'BLOCKED': '#f59e0b',
+                        'RESOLVED': '#10b981',
+                        'CANCELLED': '#ef4444'
+                    };
+                    
+                    Object.entries(rawData).forEach(([status, count]) => {
+                        labels.push(status.replace(/_/g, ' '));
+                        data.push(count);
+                        colors.push(projectColors[status.toUpperCase()] || '#94a3b8');
+                    });
+                }
+
+                document.getElementById('outcomes-chart-title').textContent = title;
+                document.getElementById('outcomes-chart-sub').textContent = sub;
+
+                if (outcomesChartObj) outcomesChartObj.destroy();
+                
+                if (data.length === 0) {
+                    labels = ['No Data'];
+                    data = [1];
+                    colors = ['#f1f5f9'];
+                }
+
+                outcomesChartObj = new Chart(canvas, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: colors,
+                            borderWidth: 2,
+                            borderColor: '#ffffff',
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: {
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                backgroundColor: '#1e293b',
+                                padding: 10,
+                                cornerRadius: 8,
+                                displayColors: true,
+                                usePointStyle: true
+                            }
+                        },
+                        cutout: '72%',
+                        maintainAspectRatio: false,
+                        animation: { animateRotate: true, duration: 800 }
+                    },
+                    plugins: [{
+                        id: 'centerText',
+                        beforeDraw: function (chart) {
+                            const width = chart.width, height = chart.height, ctx = chart.ctx;
+                            ctx.restore();
+                            const total = data.reduce((a, b) => a + b, 0);
+                            const text = (labels[0] === 'No Data') ? '0' : total.toString();
+                            
+                            ctx.font = `700 1.8em 'Inter'`;
+                            ctx.textBaseline = "middle";
+                            ctx.fillStyle = '#1e293b';
+                            const textX = Math.round((width - ctx.measureText(text).width) / 2);
+                            ctx.fillText(text, textX, height / 2 - 5);
+
+                            ctx.font = `600 0.7rem 'Inter'`;
+                            ctx.fillStyle = '#64748b';
+                            const label = "TOTAL";
+                            const labelX = Math.round((width - ctx.measureText(label).width) / 2);
+                            ctx.fillText(label, labelX, height / 2 + 18);
+                            ctx.save();
+                        }
+                    }]
+                });
+
+                document.getElementById('outcomes-legend').innerHTML = labels.map((l, i) =>
+                    (l === 'No Data') ? '' : `
+                    <div class="d-flex align-items-center gap-1">
+                        <span style="width:7px;height:7px;background:${colors[i]};border-radius:2px;"></span>
+                        <span class="text-secondary fw-semibold">${l}</span>
+                    </div>`
+                ).join('');
+
+            } catch (e) { console.error("Outcomes Chart Render Error:", e); }
+        }
 
         function initCharts(stats) {
+            currentOutcomesData = stats;
             Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif";
+            Chart.defaults.color = '#64748b';
 
             // 1. Visits by Month (bar)
             try {
@@ -2297,6 +2457,8 @@
                     ).join('');
                 }
             } catch (e) { console.error("Outcomes Chart Error:", e); }
+            // 3. Outcomes (Donut) - Grouped or Project Status
+            renderOutcomesChart(stats);
         }
 
         // ── Activity Feed ─────────────────────────────────────────────────
@@ -2508,17 +2670,35 @@
 
         async function loadDashboardPipelineChart() {
             try {
+                console.log("PM Pipeline: Fetching data...");
                 const data = await apiGet('/shops/analytics/pm-pipeline');
-                if (!data || !data.length) return;
+                console.log("PM Pipeline: Data received:", data);
+                
+                if (!data || !data.length) {
+                    console.log("PM Pipeline: No data available for chart.");
+                    return;
+                }
 
-                const labels = data.map(item => item.pm_name);
-                const inDemoData = data.map(item => item.in_demo);
-                const meetingSetData = data.map(item => item.meeting_set);
-                const convertedData = data.map(item => item.converted);
+                const labels = data.map(item => item.pm_name || 'Unknown PM');
+                const inDemoData = data.map(item => item.in_demo || 0);
+                const meetingSetData = data.map(item => item.meeting_set || 0);
+                const convertedData = data.map(item => item.converted || 0);
 
-                const ctx = document.getElementById('dashboardPmPipelineChart').getContext('2d');
+                const canvas = document.getElementById('dashboardPmPipelineChart');
+                if (!canvas) {
+                    console.error("PM Pipeline: Canvas element 'dashboardPmPipelineChart' not found!");
+                    return;
+                }
+                const ctx = canvas.getContext('2d');
 
-                if (window._dashPmChart) window._dashPmChart.destroy();
+                if (window._dashPmChart) {
+                    window._dashPmChart.destroy();
+                }
+
+                if (typeof Chart === 'undefined') {
+                    console.error("PM Pipeline: Chart.js library is not loaded!");
+                    return;
+                }
 
                 window._dashPmChart = new Chart(ctx, {
                     type: 'bar',
@@ -2556,7 +2736,11 @@
                             y: {
                                 stacked: true,
                                 beginAtZero: true,
-                                ticks: { stepSize: 1 },
+                                min: 0,
+                                ticks: { 
+                                    stepSize: 1,
+                                    precision: 0
+                                },
                                 grid: { borderDash: [5, 5] }
                             }
                         },
@@ -2564,10 +2748,15 @@
                             legend: {
                                 position: 'bottom',
                                 labels: { usePointStyle: true, padding: 20 }
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false
                             }
                         }
                     }
                 });
+                console.log("PM Pipeline: Chart successfully initialized.");
             } catch (e) {
                 console.error("Error loading dashboard pipeline chart:", e);
             }

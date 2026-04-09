@@ -79,7 +79,7 @@ async def read_all_meetings(
 async def create_meeting_global(
     meeting_in: MeetingSummaryCreate,
     request: Request,
-    current_user: User = Depends(pm_checker)
+    current_user: User = Depends(staff_checker)  # Allow all staff (SALES, TELESALES, PM, ADMIN)
 ) -> Any:
     service = MeetingService()
     if meeting_in.client_id:

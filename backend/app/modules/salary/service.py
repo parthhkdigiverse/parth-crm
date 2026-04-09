@@ -682,7 +682,7 @@ class SalaryService:
         return html
 
     async def generate_bulk_salary(self, month: str, extra_deduction_default: float = 0.0) -> dict:
-        """Sequential bulk generation for all active employees."""
+        """Sequential bulk generation for all active employees (with optimized initial checks)."""
         from app.modules.users.models import User, UserRole
         from app.modules.salary.schemas import SalarySlipGenerate
         
@@ -693,20 +693,28 @@ class SalaryService:
             User.role != UserRole.CLIENT
         ).to_list()
 
+        # --- OPTIMIZATION: Bulk Check Existing Slips ---
+        user_ids = [u.id for u in users]
+        existing_slips = await SalarySlip.find(
+            In(SalarySlip.user_id, user_ids),
+            SalarySlip.month == month,
+            SalarySlip.is_deleted == False
+        ).to_list()
+        existing_user_ids = {s.user_id for s in existing_slips}
+
         generated = 0
         skipped = 0
         failed = 0
         failures = []
 
         for user in users:
-            # Check for duplication
-            existing = await SalarySlip.find_one(SalarySlip.user_id == user.id, SalarySlip.month == month)
-            if existing:
+            if user.id in existing_user_ids:
                 skipped += 1
                 continue
 
             try:
-                # Reuse generate_salary_slip logic
+                # Note: generate_salary_slip still does internal lookups, 
+                # but we've avoided the most redundant N+1 find_one() check.
                 await self.generate_salary_slip(SalarySlipGenerate(
                     user_id=user.id,
                     month=month,

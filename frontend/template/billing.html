@@ -16,7 +16,7 @@
             border-radius: 24px !important;
             border: 1px solid rgba(226, 232, 240, 0.8) !important;
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02) !important;
-            background: #ffffff !important;
+            background: var(--surface) !important;
         }
         .btn-pay-now {
             background: var(--accent-gradient) !important;
@@ -29,8 +29,8 @@
             box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3) !important;
         }
         .status-monitor-box {
-            background: #f8faff !important;
-            border: 1px dashed #cbd5e1 !important;
+            background: var(--bg-app) !important;
+            border: 1px dashed var(--border) !important;
             border-radius: 16px !important;
         }
         .status-pulse {
@@ -39,22 +39,22 @@
         .hub-title {
             font-family: 'Outfit', sans-serif !important;
             font-weight: 700 !important;
-            color: #1e293b !important;
+            color: var(--text-main) !important;
             letter-spacing: -0.01em;
         }
         .hub-badge {
-            background: #eff6ff !important;
-            color: #2563eb !important;
+            background: var(--primary-light) !important;
+            color: var(--primary) !important;
             font-weight: 600 !important;
             font-size: 11px !important;
             letter-spacing: 0.02em;
             padding: 6px 12px !important;
         }
     </style>
-    <link rel="stylesheet" href="/static/css/bootstrap.min.css">
-    <link rel="stylesheet" href="/static/css/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="/static/css/theme.css?v=20260403">
-    <link rel="stylesheet" href="/static/css/components.css?v=20260403">
+    <link rel="stylesheet" href="/frontend/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/frontend/css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/frontend/css/theme.css?v=20260406">
+    <link rel="stylesheet" href="/frontend/css/components.css?v=20260406">
     <style>
         /* ── Status Pills ─────────────────────────────────────── */
         .inv-pill {
@@ -72,6 +72,7 @@
         .pill-verified   { background: var(--success-light); color: var(--success-text); border: 1px solid var(--success-ring); }
         .pill-sent       { background: var(--primary-light); color: var(--primary); border: 1px solid var(--primary-ring); }
         .pill-cancelled  { background: var(--danger-light); color: var(--danger-text); border: 1px solid var(--danger-ring); }
+        .pill-refunded   { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
 
         /* ── Filter tabs ──────────────────────────────────────── */
         .filter-tabs {
@@ -299,17 +300,16 @@
                     <h2 class="page-section-title fw-bold mb-1">Billing & Invoices</h2>
                     <p class="text-muted mb-0 small">Manage your financial records and invoice status.</p>
                 </div>
-                <div class="flex-shrink-0">
+                <div class="flex-shrink-0 d-flex gap-2">
                     <button class="btn btn-primary d-flex align-items-center gap-2" id="new-invoice-btn" onclick="openCreateModal()">
                         <i class="bi bi-plus-lg"></i> <span class="d-none d-md-inline">New Invoice</span><span class="d-inline d-md-none">New</span>
                     </button>
                 </div>
             </div>
 
-                <!-- ── Stats ────────────────────────────────────────── -->
-                <div class="row g-3 mb-3">
+                <div class="row g-3 mb-2">
                     <div class="col-6 col-md-3">
-                        <div class="stat-card">
+                        <div class="stat-card card-purple">
                             <div class="stat-content-left">
                                 <div class="stat-label">Total</div>
                                 <div class="stat-value" id="stat-total">—</div>
@@ -318,7 +318,7 @@
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
-                        <div class="stat-card">
+                        <div class="stat-card card-warning">
                             <div class="stat-content-left">
                                 <div class="stat-label">Pending</div>
                                 <div class="stat-value" id="stat-pending">—</div>
@@ -327,7 +327,7 @@
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
-                        <div class="stat-card">
+                        <div class="stat-card card-success">
                             <div class="stat-content-left">
                                 <div class="stat-label">Sent</div>
                                 <div class="stat-value" id="stat-sent">—</div>
@@ -336,7 +336,7 @@
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
-                        <div class="stat-card">
+                        <div class="stat-card card-primary">
                             <div class="stat-content-left">
                                 <div class="stat-label">Revenue</div>
                                 <div class="stat-value" id="stat-revenue">—</div>
@@ -356,11 +356,17 @@
                             <span class="badge" style="background:var(--bg-app); color:var(--text-muted); border:1px solid var(--border);" id="billing-filter-summary">Loading...</span>
                         </div>
                         <div class="d-flex align-items-center gap-2">
-                            <button id="archive-selected-btn" class="btn btn-sm" style="display:none;background:var(--warning-light);color:var(--warning-text);border:1px solid var(--warning-ring);" onclick="archiveSelectedInvoices()">
-                                <i class="bi bi-archive me-1"></i>Archive Selected
+                            <!-- Toggle View Button (on the right) -->
+                            <button id="toggle-view-btn" class="btn btn-sm d-flex align-items-center gap-2 px-3 shadow-sm" style="background:var(--bg-app); color:var(--primary); border:1.5px solid var(--primary-ring); font-weight:700; border-radius:12px; transition:all 0.2s; height:36px;" onclick="switchToggleView()">
+                                <i class="bi bi-archive-fill"></i>
+                                <span id="toggle-view-text">View Archived</span>
                             </button>
-                            <button id="delete-selected-btn" class="btn btn-sm" style="display:none;background:var(--danger-light);color:var(--danger-text);border:1px solid var(--danger-ring);" onclick="deleteSelectedArchivedInvoices()">
-                                <i class="bi bi-trash me-1"></i>Delete Selected
+
+                            <button id="archive-selected-btn" class="btn btn-sm align-items-center justify-content-center" style="display:none;background:var(--warning-light);color:var(--warning-text);border:1px solid var(--warning-ring); font-weight:700; gap:6px; padding:6px 14px; height:36px; line-height:1;" onclick="archiveSelectedInvoices()">
+                                <i class="bi bi-archive" style="font-size: 15px; margin-top: -1px;"></i>Archive Selected
+                            </button>
+                            <button id="delete-selected-btn" class="btn btn-sm align-items-center justify-content-center" style="display:none;background:var(--danger-light);color:var(--danger-text);border:1px solid var(--danger-ring); font-weight:700; gap:6px; padding:6px 14px; height:36px; line-height:1;" onclick="deleteSelectedArchivedInvoices()">
+                                <i class="bi bi-trash" style="font-size: 15px; margin-top: -1px;"></i>Delete Selected
                             </button>
                             <button id="clear-selected-btn" class="btn btn-sm btn-light" style="display:none;" onclick="clearSelectedInvoices()">
                                 Clear Selection
@@ -371,17 +377,17 @@
                         <table class="table table-premium mb-0">
                             <thead>
                                 <tr>
-                                    <th style="width:40px;"><input type="checkbox" id="select-all-bills"
+                                    <th class="px-4" style="width:50px;"><input type="checkbox" id="select-all-bills"
                                             onchange="toggleSelectAllBills(this.checked)"></th>
-                                    <th>Invoice #</th>
-                                    <th>Client</th>
-                                    <th>Payment</th>
-                                    <th>GST</th>
-                                    <th>Amount</th>
-                                    <th>Status</th>
-                                    <th>GENERATED BY</th>
-                                    <th>Created</th>
-                                    <th class="text-end">Actions</th>
+                                    <th class="px-4 text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:130px;">Invoice #</th>
+                                    <th class="px-4 text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:20%;">Client</th>
+                                    <th class="px-4 text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:160px;">Payment</th>
+                                    <th class="px-4 text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:90px;">GST</th>
+                                    <th class="px-4 text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:120px;">Amount</th>
+                                    <th class="px-4 text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:130px;">Status</th>
+                                    <th class="px-4 text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:150px;">Generated By</th>
+                                    <th class="px-4 text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:130px;">Created</th>
+                                    <th class="px-4 text-end text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:110px;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="inv-tbody">
@@ -393,6 +399,7 @@
                             </tbody>
                         </table>
                     </div>
+                    <div id="billing-pagination"></div>
                 </div><!-- /grid-card -->
 
             </div><!-- /page-content -->
@@ -472,14 +479,11 @@
                     <div class="field-label">Service Description</div>
                     <input type="text" id="c-desc" class="field-input" placeholder="e.g. SRM AI SETU – Annual Subscription" value="SRM AI SETU Software – Annual Subscription">
                 </div>
-                <div class="mb-3">
-                    <div class="field-label">Billing Month <span class="required-star">*</span></div>
-                    <select id="c-billing-month" class="field-input">
-                        <!-- Populated via JS -->
-                    </select>
-                    <div class="small text-muted mt-1">Invoices can only be generated for past completed months.</div>
-                </div>
                 <div class="field-row2 mb-3">
+                    <div>
+                        <div class="field-label">Billing Month</div>
+                        <input type="month" id="c-billing-month" class="field-input">
+                    </div>
                     <div>
                         <div class="field-label">Payment Type <span class="required-star">*</span></div>
                         <select id="c-payment-type" class="field-input" onchange="onPaymentModeChanged()">
@@ -539,10 +543,10 @@
 
                 <!-- Info tip -->
                 <div
-                    style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:12px 14px;margin-bottom:16px;">
+                    style="background: var(--primary-light); border: 1px solid var(--primary-ring); border-radius: 10px; padding: 12px 14px; margin-bottom: 16px;">
                     <div class="d-flex align-items-start gap-2">
                         <i class="bi bi-info-circle-fill text-primary mt-1"></i>
-                        <div class="small" style="color:#1d4ed8;">
+                        <div class="small" style="color: var(--primary);">
                             <strong>Show this QR to the client.</strong> Ask them to scan and complete the payment
                             <em>before</em> you click "Payment Done".
                             For cash transactions, just confirm and proceed.
@@ -574,10 +578,10 @@
 
                 <!-- Confirmation note -->
                 <div
-                    style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 14px;margin-bottom:16px;">
+                    style="background: var(--success-light); border: 1px solid var(--success-border); border-radius: 10px; padding: 12px 14px; margin-bottom: 16px;">
                     <div class="d-flex align-items-start gap-2">
                         <i class="bi bi-patch-check-fill text-success mt-1"></i>
-                        <div class="small" style="color:#15803d;">
+                        <div class="small" style="color: var(--success-text);">
                             <strong>Confirm invoice creation.</strong> The invoice will be saved as <em>Pending
                                 Verification</em>. Once verified, it can be sent to the client's WhatsApp.
                             The client will be <strong>auto-added to Clients</strong> on the first WhatsApp send.
@@ -680,7 +684,7 @@
                 <div class="modal-title-text"><i class="bi bi-file-earmark-text text-primary me-2"></i>Invoice Preview</div>
                 <button class="modal-close-x" onclick="closeViewModal()"><i class="bi bi-x-lg"></i></button>
             </div>
-            <div id="p3-preview-body" style="height: calc(100vh - 200px); overflow-y: auto; background: #f8fafc; padding: 20px;">
+            <div id="invoice-view-body" style="height: calc(100vh - 200px); overflow-y: auto; background: var(--bg-app); padding: 0;">
                 <!-- HTML content injected here -->
             </div>
             <div class="modal-footer px-3 py-2 border-top text-end bg-light">
@@ -689,14 +693,39 @@
         </div>
         <div style="position:absolute;inset:0;z-index:-1;" onclick="closeViewModal()"></div>
     </div>
+    </div>
 
+    <!-- BILLING SETTINGS MODAL -->
+    <div class="modal-overlay d-none" id="settingsModal">
+        <div class="modal-box" style="max-width:500px;" onclick="event.stopPropagation()">
+            <div class="modal-header-row" style="margin-bottom:20px;">
+                <div class="modal-title-text"><i class="bi bi-gear text-primary me-2"></i>Invoice Settings</div>
+                <button class="modal-close-x" onclick="closeSettingsModal()"><i class="bi bi-x-lg"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Default Business Invoice Amount (Rs)</label>
+                    <input type="number" id="set-default-amt" class="form-control" placeholder="12000">
+                </div>
+                <div class="mb-4">
+                    <label class="form-label fw-bold">Default Personal / NO GST Amount (Rs)</label>
+                    <input type="number" id="set-personal-amt" class="form-control" placeholder="12000">
+                    <div class="small text-muted mt-1">This amount will auto-fill when 'Personal Bank' or 'GST 0%' is chosen.</div>
+                </div>
+            </div>
+            <div class="modal-footer px-0 pb-0 pt-3 border-top text-end">
+                <button class="btn btn-secondary me-2" onclick="closeSettingsModal()">Cancel</button>
+                <button class="btn btn-primary" id="save-settings-btn" onclick="submitSaveSettings()">Save Settings</button>
+            </div>
+        </div>
+    </div>
 
-    <script src="/static/js/utils.js?v=20260403"></script>
-    <script src="/static/js/api.js?v=20260403"></script>
-    <script src="/static/js/auth.js?v=20260403"></script>
-    <script src="/static/js/ui_components.js?v=20260403"></script>
-    <script src="/static/js/app.js?v=20260403"></script>
-    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script src="/frontend/js/utils.js?v=20260403"></script>
+    <script src="/frontend/js/api.js?v=20260403"></script>
+    <script src="/frontend/js/auth.js?v=20260403"></script>
+    <script src="/frontend/js/ui_components.js?v=20260403"></script>
+    <script src="/frontend/js/app.js?v=20260403"></script>
+    <script src="/frontend/js/bootstrap.bundle.min.js"></script>
     <script>
         requireAuth();
         const sb = document.getElementById('sidebar');
@@ -714,23 +743,6 @@
         // QR Caching to prevent PhonePe rate limiting during wizard navigation
         let lastQRParams = null; 
         let wizardQRData = null;  
-        function initBillingMonthDropdown() {
-            const select = document.getElementById('c-billing-month');
-            if (!select) return;
-            const now = new Date();
-            const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-            
-            select.innerHTML = '';
-            // Go back 1 to 6 months
-            for (let i = 1; i <= 6; i++) {
-                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-                const val = `${months[d.getMonth()]} ${d.getFullYear()}`;
-                const opt = document.createElement('option');
-                opt.value = val;
-                opt.textContent = val;
-                select.appendChild(opt);
-            }
-        }
         let pendingActionPhone = '';
         let invoiceSettings = {};
         let workflowOptions = null;
@@ -755,6 +767,7 @@
             SENT: { cls: 'pill-sent', icon: 'bi-whatsapp', label: 'Sent' },
             CONFIRMED: { cls: 'pill-sent', icon: 'bi-check-circle', label: 'Confirmed' },
             CANCELLED: { cls: 'pill-cancelled', icon: 'bi-x-circle', label: 'Cancelled' },
+            REFUNDED: { cls: 'pill-refunded', icon: 'bi-arrow-left-right', label: 'Refunded' },
         };
 
         function normalizeWhatsAppPhone(rawPhone) {
@@ -787,13 +800,23 @@
         async function init() {
             const urlParams = new URLSearchParams(window.location.search);
             const landingStatus = urlParams.get('status');
+            
+            // Exit early if in Redirect Landing mode to prevent console errors
+            // handlePaymentRedirect() will take care of the UI for these states
             if (landingStatus === 'success' || landingStatus === 'failed') {
-                console.log('init: Payment landing page detected, skipping authenticated data load.');
+                console.log('init: Redirect Landing mode detected. Skipping dashboard init.');
                 return;
             }
-            
+
             try {
                 currentUser = ApiClient.getCurrentUser();
+                if (!currentUser) {
+                    if (landingStatus) {
+                        // If we are in redirect mode but session is missing, stay on page for auth.js to handle
+                        console.log('init: Pending auth session check...');
+                    }
+                }
+
                 try {
                     const settings = await ApiClient.getInvoiceSettings();
                     invoiceSettings = settings || {};
@@ -801,12 +824,8 @@
                     personalWithoutGstDefaultAmount = settings.personal_without_gst_default_amount || 12000;
                     const amtEl = document.getElementById('c-amount');
                     if (amtEl) amtEl.value = defaultAmount;
-                    
-                    // NEW: Initialize Billing Month
-                    initBillingMonthDropdown();
                 } catch (e) { }
 
-                // Show/hide admin settings
                 const isAdmin = currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'PM');
                 const settingsBtn = document.getElementById('admin-settings-btn');
                 if (settingsBtn) settingsBtn.style.display = isAdmin ? 'flex' : 'none';
@@ -818,42 +837,34 @@
                     createBtn.disabled = true;
                     createBtn.title = 'You do not have permission to create invoices';
                 }
-                // ... existing init code ...
+
                 initFilters();
                 await loadBills();
 
-                // --- NEW: The Catch Logic ---
-                const urlParams = new URLSearchParams(window.location.search);
+                // Check for other standard landing cases (e.g. shop conversion)
                 const shopIdParam = urlParams.get('close_shop_id');
-
                 if (shopIdParam) {
                     autoConvertShopId = shopIdParam;
                     openCreateModal();
-
-                    // Fetch the shop details to autofill the form
                     try {
-                        // Assuming you have a standard GET /shops/{id} endpoint
                         const shopData = await ApiClient.request(`/shops/${autoConvertShopId}`);
                         if (shopData) {
                             document.getElementById('c-name').value = shopData.contact_person || '';
                             document.getElementById('c-phone').value = shopData.phone || '';
                             document.getElementById('c-org').value = shopData.name || '';
-                            document.getElementById('c-address').value = shopData.area_name || ''; // Or full address if available
+                            document.getElementById('c-address').value = shopData.area_name || '';
                             document.getElementById('autofill-note').textContent = '✓ Auto-filled from Performance Hub';
                         }
-                    } catch (err) {
-                        console.log("Could not auto-fetch shop details:", err);
-                    }
-
-                    // Clean the URL so if they refresh, it doesn't pop up again
+                    } catch (err) { console.log("Could not auto-fetch shop details:", err); }
                     window.history.replaceState({}, document.title, window.location.pathname);
                 }
 
             } catch (e) {
-                // ... existing catch block ...
+                console.error('init error:', e);
                 showToast('Failed to load page: ' + e.message, 'error');
             }
         }
+
 
         async function loadBills() {
             document.getElementById('inv-tbody').innerHTML = `<tr><td colspan="9" class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading invoices...</td></tr>`;
@@ -900,6 +911,45 @@
             archiveBtn.innerHTML = `<i class="bi bi-archive me-1"></i>Archive Selected (${count})`;
             deleteBtn.innerHTML = `<i class="bi bi-trash me-1"></i>Delete Selected (${count})`;
         }
+
+        async function switchToggleView() {
+            const current = currentFilters['inv-status'] || 'ALL';
+            const target = current === 'ARCHIVED' ? 'ALL' : 'ARCHIVED';
+            
+            const btn = document.getElementById('toggle-view-btn');
+            const txt = document.getElementById('toggle-view-text');
+            
+            if (target === 'ARCHIVED') {
+                btn.style.background = 'var(--primary)';
+                btn.style.color = '#fff';
+                txt.textContent = 'Back to Active';
+            } else {
+                btn.style.background = 'var(--bg-app)';
+                btn.style.color = 'var(--primary)';
+                txt.textContent = 'View Archived';
+            }
+            
+            currentFilters['inv-status'] = target;
+            showToast(`Switched to ${target === 'ARCHIVED' ? 'archived' : 'active'} view`, 'info');
+            await loadBills();
+        }
+
+        async function switchView(mode) {
+            // Internal helper to sync if filters change elsewhere
+            const btn = document.getElementById('toggle-view-btn');
+            const txt = document.getElementById('toggle-view-text');
+            if (!btn || !txt) return;
+
+            if (mode === 'ARCHIVED') {
+                btn.style.background = 'var(--primary)';
+                btn.style.color = '#fff';
+                txt.textContent = 'Back to Active';
+            } else {
+                btn.style.background = 'var(--bg-app)';
+                btn.style.color = 'var(--primary)';
+                txt.textContent = 'View Archived';
+            }
+        }
         function toggleBillSelection(billId, checked) {
             if (checked) selectedBillIds.add(billId); else selectedBillIds.delete(billId);
             syncSelectAllCheckbox(); updateBulkActionButtons();
@@ -929,59 +979,73 @@
         }
 
         function renderTable() {
-            const tbody = document.getElementById('inv-tbody');
             const list = allBills;
             const statusVal = currentFilters['inv-status'] || 'ALL';
             const isArchiveView = statusVal === 'ARCHIVED';
             document.getElementById('billing-filter-summary').textContent = list.length + (isArchiveView ? ' archived invoice' : ' invoice') + (list.length === 1 ? '' : 's');
-            if (!list.length) {
-                tbody.innerHTML = `<tr><td colspan="9" class="text-center py-5 text-muted"><i class="bi ${isArchiveView ? 'bi-archive' : 'bi-receipt'}" style="font-size:2rem;display:block;margin-bottom:8px;color:#cbd5e1;"></i>${isArchiveView ? 'No archived invoices found.' : 'No invoices found.'}</td></tr>`;
-                syncSelectAllCheckbox(); updateBulkActionButtons(); return;
-            }
-            tbody.innerHTML = list.map(b => {
-                const st = b.invoice_status || b.status || 'DRAFT';
-                const dt = b.created_at ? new Date(b.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
-                const clientDisplay = b.invoice_client_name || b.client_name || '—';
-                const phone = b.invoice_client_phone || '';
-                const paymentTypeLabel = { BUSINESS_ACCOUNT: 'Business Bank', PERSONAL_ACCOUNT: 'Personal Bank', CASH: 'Cash' }[b.payment_type] || '—';
-                const gstTypeLabel = b.gst_type === 'WITHOUT_GST' ? 'GST 0%' : 'GST 18%';
-                let actions = `<button class="action-menu-btn me-1" title="Preview Invoice" onclick="previewInvoice('${b.id}')"><i class="bi bi-eye"></i></button>`;
-                
-                const rowActions = invoiceActionsById[b.id] || {};
-                const canVerifyRow = Boolean(rowActions.can_verify);
-                const canSendRow = Boolean(rowActions.can_send_whatsapp);
-                if (canVerifyRow && (st === 'PENDING_VERIFICATION' || st === 'DRAFT')) {
-                    actions += `<button class="action-menu-btn me-1" title="Verify Invoice" onclick="openVerifyModal('${b.id}','${b.invoice_number}')" style="color:#15803D;border-color:#bbf7d0;background:#F0FDF4;"><i class="bi bi-patch-check"></i></button>`;
+            
+            renderPagination({
+                data: list,
+                tbodyId: 'inv-tbody',
+                paginationId: 'billing-pagination',
+                emptyMsg: `<tr><td colspan="10" class="text-center py-5 text-muted"><i class="bi ${isArchiveView ? 'bi-archive' : 'bi-receipt'}" style="font-size:2rem;display:block;margin-bottom:8px;color:#cbd5e1;"></i>${isArchiveView ? 'No archived invoices found.' : 'No invoices found.'}</td></tr>`,
+                renderRow: (b) => {
+                    const st = b.invoice_status || b.status || 'DRAFT';
+                    const dt = b.created_at ? new Date(b.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+                    const clientDisplay = b.invoice_client_name || b.client_name || '—';
+                    const phone = b.invoice_client_phone || '';
+                    const paymentTypeLabel = { BUSINESS_ACCOUNT: 'Business Bank', PERSONAL_ACCOUNT: 'Personal Bank', CASH: 'Cash' }[b.payment_type] || '—';
+                    const gstTypeLabel = b.gst_type === 'WITHOUT_GST' ? 'GST 0%' : 'GST 18%';
+                    let actions = `<button class="action-menu-btn me-1" title="Preview Invoice" onclick="previewInvoice('${b.id}')"><i class="bi bi-eye"></i></button>`;
+                    
+                    const rowActions = invoiceActionsById[b.id] || {};
+                    const canVerifyRow = Boolean(rowActions.can_verify);
+                    const canSendRow = Boolean(rowActions.can_send_whatsapp);
+                    if (canVerifyRow && (st === 'PENDING_VERIFICATION' || st === 'DRAFT')) {
+                        actions += `<button class="action-menu-btn me-1" title="Verify Invoice" onclick="openVerifyModal('${b.id}','${b.invoice_number}')" style="color:#15803D;border-color:#bbf7d0;background:#F0FDF4;"><i class="bi bi-patch-check"></i></button>`;
+                    }
+                    if (canSendRow && (st === 'VERIFIED' || st === 'SENT')) {
+                        actions += `<button class="action-menu-btn" title="Send via WhatsApp" onclick="openWAModal('${b.id}',\`${clientDisplay}\`,\`${b.invoice_number}\`,\`${phone}\`)" style="color:#1565C0;border-color:#bfdbfe;background:#EFF6FF;"><i class="bi bi-whatsapp"></i></button>`;
+                    }
+                    if (rowActions.can_archive) actions += `<button class="action-menu-btn ms-1" title="Archive" onclick="archiveInvoice('${b.id}','${b.invoice_number || ''}')" style="color:#92400e;border-color:#fde68a;background:#fffbeb;"><i class="bi bi-archive"></i></button>`;
+                    if (rowActions.can_unarchive) actions += `<button class="action-menu-btn ms-1" title="Restore" onclick="unarchiveInvoice('${b.id}','${b.invoice_number || ''}')" style="color:#0369a1;border-color:#bae6fd;background:#f0f9ff;"><i class="bi bi-box-arrow-up"></i></button>`;
+                    if (rowActions.can_delete_archived) {
+                        // Soft Delete (is_deleted=True)
+                        actions += `<button class="action-menu-btn ms-1" title="Soft Delete (Hide)" onclick="deleteArchivedInvoice('${b.id}','${b.invoice_number || ''}')" style="color:#b91c1c;border-color:#fecaca;background:#fef2f2;"><i class="bi bi-trash"></i></button>`;
+                        // Permanent Delete (DB removal)
+                        actions += `<button class="action-menu-btn ms-1" title="Permanent Delete (DB)" onclick="permanentDeleteInvoice('${b.id}','${b.invoice_number || ''}')" style="color:#7f1d1d;border-color:#fca5a5;background:#fee2e2;border-style:dashed;"><i class="bi bi-x-octagon"></i></button>`;
+                    }
+                    
+                    // Refund Action
+                    if (!b.is_archived && !b.is_deleted && st !== 'REFUNDED' && (st === 'SENT' || st === 'VERIFIED')) {
+                        actions += `<button class="action-menu-btn ms-1" title="Refund" onclick="refundInvoice('${b.id}','${b.invoice_number || ''}')" style="color:#dc2626;border-color:#fecaca;background:#fef2f2;"><i class="bi bi-arrow-left-right"></i></button>`;
+                    }
+                    
+                    return `<tr style="transition:all 0.2s;">
+                        <td class="px-4 py-3" data-label="Select"><input type="checkbox" ${selectedBillIds.has(b.id) ? 'checked' : ''} onchange="toggleBillSelection('${b.id}', this.checked)"></td>
+                        <td class="px-4 py-3 fw-bold" data-label="Invoice #" style="color:var(--primary);font-size:0.85rem;">${b.invoice_number || '—'}</td>
+                        <td class="px-4 py-3" data-label="Client">
+                            <div class="fw-bold" style="color:var(--text-main);font-size:0.9rem;">${clientDisplay}</div>
+                            ${phone ? `<div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;"><i class="bi bi-telephone text-primary opacity-50 me-1"></i>${phone}</div>` : ''}
+                            ${b.invoice_client_org ? `<div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;"><i class="bi bi-building text-primary opacity-50 me-1"></i>${b.invoice_client_org}</div>` : ''}
+                        </td>
+                        <td class="px-4 py-3" data-label="Payment"><span class="badge" style="background:var(--bg-app);color:var(--text-muted);padding:4px 10px;border-radius:20px;font-weight:600;border:1px solid var(--border);">${paymentTypeLabel}</span></td>
+                        <td class="px-4 py-3" data-label="GST"><span class="badge" style="background:${b.gst_type === 'WITHOUT_GST' ? 'var(--bg-app)' : 'var(--success-light)'};color:${b.gst_type === 'WITHOUT_GST' ? 'var(--text-muted)' : 'var(--success-text)'};padding:4px 10px;border-radius:20px;font-weight:600;border:1px solid ${b.gst_type === 'WITHOUT_GST' ? 'var(--border)' : 'var(--success-ring)'};">${gstTypeLabel}</span></td>
+                        <td class="px-4 py-3 fw-bold" data-label="Amount" style="color:var(--text-main);font-size:0.95rem;">₹${Number(b.amount || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+                        <td class="px-4 py-3" data-label="Status">
+                            <div class="d-flex align-items-center">${statusPill(b, st, phone)}</div>
+                            ${b.billing_month ? `<div class="small fw-medium" style="color:var(--text-muted);font-size:0.7rem;margin-top:4px;"><i class="bi bi-calendar3 opacity-50 me-1"></i>${b.billing_month}</div>` : ''}
+                        </td>
+                        <td class="px-4 py-3" data-label="Generated By">
+                            <div class="fw-medium" style="color:var(--text-body);font-size:0.8rem;"><i class="bi bi-person-circle opacity-50 me-1"></i>${b.creator_name || 'Admin'}</div>
+                        </td>
+                        <td class="px-4 py-3 text-muted" data-label="Created Date" style="font-size:0.8rem;"><i class="bi bi-clock opacity-50 me-1"></i>${dt}</td>
+                        <td class="px-4 py-3 text-end" data-label="Actions" style="white-space:nowrap;">${actions}</td>
+                    </tr>`;
                 }
-                if (canSendRow && (st === 'VERIFIED' || st === 'SENT')) {
-                    actions += `<button class="action-menu-btn" title="Send via WhatsApp" onclick="openWAModal('${b.id}',\`${clientDisplay}\`,\`${b.invoice_number}\`,\`${phone}\`)" style="color:#1565C0;border-color:#bfdbfe;background:#EFF6FF;"><i class="bi bi-whatsapp"></i></button>`;
-                }
-                if (rowActions.can_archive) actions += `<button class="action-menu-btn ms-1" title="Archive" onclick="archiveInvoice('${b.id}','${b.invoice_number || ''}')" style="color:#92400e;border-color:#fde68a;background:#fffbeb;"><i class="bi bi-archive"></i></button>`;
-                if (rowActions.can_unarchive) actions += `<button class="action-menu-btn ms-1" title="Restore" onclick="unarchiveInvoice('${b.id}','${b.invoice_number || ''}')" style="color:#0369a1;border-color:#bae6fd;background:#f0f9ff;"><i class="bi bi-box-arrow-up"></i></button>`;
-                if (rowActions.can_delete_archived) actions += `<button class="action-menu-btn ms-1" title="Delete" onclick="deleteArchivedInvoice('${b.id}','${b.invoice_number || ''}')" style="color:#b91c1c;border-color:#fecaca;background:#fef2f2;"><i class="bi bi-trash"></i></button>`;
-                return `<tr>
-            <td data-label="Select"><input type="checkbox" ${selectedBillIds.has(b.id) ? 'checked' : ''} onchange="toggleBillSelection('${b.id}', this.checked)"></td>
-            <td data-label="Invoice #" class="fw-semibold" style="font-family:monospace;color:var(--primary);">${b.invoice_number || '—'}</td>
-            <td data-label="Client">
-                <div class="tbl-client-name">${clientDisplay}</div>
-                ${phone ? `<div class="tbl-phone"><i class="bi bi-telephone me-1"></i>${phone}</div>` : ''}
-                ${b.invoice_client_org ? `<div class="tbl-phone"><i class="bi bi-building me-1"></i>${b.invoice_client_org}</div>` : ''}
-            </td>
-            <td data-label="Payment"><span class="inv-pill pill-draft">${paymentTypeLabel}</span></td>
-            <td data-label="GST"><span class="inv-pill ${b.gst_type === 'WITHOUT_GST' ? 'pill-draft' : 'pill-verified'}">${gstTypeLabel}</span></td>
-            <td data-label="Amount" class="amt-cell">₹${Number(b.amount || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
-            <td data-label="Status">
-                <div class="d-flex align-items-center">${statusPill(b, st, phone)}</div>
-                ${b.billing_month ? `<div class="small text-muted mt-1 fw-medium" style="font-size:10px;"><i class="bi bi-calendar-event me-1"></i>${b.billing_month}</div>` : ''}
-            </td>
-            <td data-label="Generated By">
-                <div class="small text-secondary fw-medium"><i class="bi bi-person-fill me-1 opacity-50"></i>${b.creator_name || 'Admin'}</div>
-            </td>
-            <td data-label="Created Date" class="text-muted small">${dt}</td>
-            <td data-label="Actions" class="text-end" style="white-space:nowrap;">${actions}</td>
-        </tr>`;
-            }).join('');
-            syncSelectAllCheckbox(); updateBulkActionButtons();
+            });
+            syncSelectAllCheckbox();
+            updateBulkActionButtons();
         }
 
         function initFilters() {
@@ -998,13 +1062,14 @@
                     {
                         type: 'select',
                         label: 'Status',
-                        id: 'filter-inv-status',
+                        id: 'inv-status',
                         options: [
                             { value: 'ALL', label: 'All Invoices' },
                             { value: 'PENDING_VERIFICATION', label: 'Pending' },
                             { value: 'VERIFIED', label: 'Verified' },
                             { value: 'SENT', label: 'Sent' },
                             { value: 'DRAFT', label: 'Draft' },
+                            { value: 'REFUNDED', label: 'Refunded' },
                             { value: 'ARCHIVED', label: 'Archived' }
                         ]
                     },
@@ -1032,10 +1097,16 @@
                 ],
                 onApply: (data) => {
                     currentFilters = data;
+                    
+                    // Sync the archived view toggle button
+                    const mode = data['inv-status'] || 'ALL';
+                    switchView(mode);
+
                     loadBills();
                 },
                 onReset: () => {
                     currentFilters = {};
+                    switchView('ALL');
                     loadBills();
                 }
             });
@@ -1052,10 +1123,97 @@
             });
         }
 
-        function openCreateModal() {
-            // Grab the logged-in user's name directly from the session
-            const loggedInName = (typeof currentUser !== 'undefined' && currentUser && currentUser.name) ? currentUser.name : 'System';
+        // ── Wizard: draft persistence & resume ────────────────────────────────────────
+        function saveInvoiceWizardDraft() {
+            const draft = {
+                name: document.getElementById('c-name').value,
+                phone: document.getElementById('c-phone').value,
+                email: document.getElementById('c-email').value,
+                org: document.getElementById('c-org').value,
+                address: document.getElementById('c-address').value,
+                amount: document.getElementById('c-amount').value,
+                payment_type: document.getElementById('c-payment-type').value,
+                gst_type: document.getElementById('c-gst-type').value,
+                description: document.getElementById('c-desc').value,
+                qr_data: wizardQRData, // Capture payment transaction details
+                timestamp: Date.now()
+            };
+            localStorage.setItem('invoice_wizard_draft', JSON.stringify(draft));
+        }
+
+        async function resumeInvoiceAfterPayment(status, txnId) {
+            console.log('resumeInvoiceAfterPayment: Resuming wizard...', { status, txnId });
             
+            const draftStr = localStorage.getItem('invoice_wizard_draft');
+            if (draftStr) {
+                try {
+                    const draft = JSON.parse(draftStr);
+                    // 1. Open modal & restore draft data
+                    openCreateModal(true, draft);
+                    
+                    if (status === 'success') {
+                        // 2a. Jump to Step 3 for review & generate
+                        _setWizardStep(3);
+                        // Trigger verification check automatically
+                        if (typeof manualCheckStatus === 'function') {
+                            manualCheckStatus(txnId);
+                        }
+                    } else {
+                        // 2b. Jump to Step 2 for retry/status check
+                        _setWizardStep(2);
+                        // Show visible failure notice in Step 2 zone
+                        const monitor = document.getElementById('payment-status-monitor');
+                        const errorZone = document.getElementById('p2-error-zone');
+                        if (errorZone) {
+                            errorZone.style.display = 'block';
+                            errorZone.innerHTML = `
+                                <div class="alert alert-danger border-0 rounded-4 py-3 px-3 small">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="bi bi-exclamation-triangle-fill me-2" style="font-size:1.2rem;"></i>
+                                        <strong class="text-uppercase" style="letter-spacing:0.05em;">Payment Verification Failed</strong>
+                                    </div>
+                                    <div class="mb-3 opacity-75">We couldn't confirm your transaction (ID: <code>${txnId}</code>). If you paid already, please check status manually.</div>
+                                    <button onclick="manualCheckStatus('${txnId}')" class="btn btn-sm btn-danger w-100" style="border-radius:10px; font-weight:700; padding:8px;">
+                                        <i class="bi bi-arrow-clockwise me-1"></i> Check Status Again
+                                    </button>
+                                </div>
+                            `;
+                        }
+                        if (monitor) monitor.style.opacity = '0.5';
+                    }
+                    
+                    const cleanUrl = window.location.pathname;
+                    window.history.replaceState({}, document.title, cleanUrl);
+                } catch (e) {
+                    console.error('Failed to parse draft for resume:', e);
+                }
+            } else {
+                console.warn('No draft found to resume.');
+            }
+        }
+
+        function getBillingMonthFormatted() {
+            let bmRaw = document.getElementById('c-billing-month').value;
+            if (bmRaw) {
+                const [yyyy, mm] = bmRaw.split('-');
+                return new Date(parseInt(yyyy), parseInt(mm) - 1, 1).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+            }
+            return new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+        }
+
+        function initBillingMonthDropdown() {
+            const el = document.getElementById('c-billing-month');
+            if (el && !el.value) {
+                const now = new Date();
+                const yyyy = now.getFullYear();
+                const mm = String(now.getMonth() + 1).padStart(2, '0');
+                el.value = `${yyyy}-${mm}`;
+            }
+        }
+
+        function openCreateModal(isResume = false, draftData = null) {
+            initBillingMonthDropdown();
+            const loggedInName = (typeof currentUser !== 'undefined' && currentUser && currentUser.name) ? currentUser.name : 'System';
             const nameSpan = document.getElementById('modal-generator-name');
             if (nameSpan) nameSpan.innerText = loggedInName;
             
@@ -1063,40 +1221,66 @@
                 showToast('You do not have permission to create invoices', 'error');
                 return;
             }
-            // Always reset _everything_ so old data never leaks
+
             wizardQRData = null;
-            
-            // Clear validation state
             const wizardBox = document.querySelector('#createModal .modal-box');
             if (wizardBox) {
                 wizardBox.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
                 wizardBox.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
             }
 
-            ['c-name', 'c-phone', 'c-email', 'c-org', 'c-address'].forEach(id => {
-                const el = document.getElementById(id); if (el) el.value = '';
-            });
-            document.getElementById('c-desc').value = 'SRM AI SETU Software – Annual Subscription';
-            document.getElementById('c-payment-type').value = '';
-            document.getElementById('c-gst-type').value = '';
-            const amtEl = document.getElementById('c-amount');
-            if (amtEl) { amtEl.value = defaultAmount; amtEl.disabled = false; }
+            if (isResume && draftData) {
+                // Populate from draft
+                document.getElementById('c-name').value = draftData.name || '';
+                document.getElementById('c-phone').value = draftData.phone || '';
+                document.getElementById('c-email').value = draftData.email || '';
+                document.getElementById('c-org').value = draftData.org || '';
+                document.getElementById('c-address').value = draftData.address || '';
+                document.getElementById('c-amount').value = draftData.amount || defaultAmount;
+                document.getElementById('c-payment-type').value = draftData.payment_type || '';
+                document.getElementById('c-gst-type').value = draftData.gst_type || '';
+                document.getElementById('c-desc').value = draftData.description || 'SRM AI SETU Software – Annual Subscription';
+                
+                // Restore the payment transaction context
+                if (draftData.qr_data) {
+                    wizardQRData = draftData.qr_data;
+                }
+            } else {
+                // Standard reset
+                ['c-name', 'c-phone', 'c-email', 'c-org', 'c-address'].forEach(id => {
+                    const el = document.getElementById(id); if (el) el.value = '';
+                });
+                document.getElementById('c-desc').value = 'SRM AI SETU Software – Annual Subscription';
+                document.getElementById('c-payment-type').value = '';
+                document.getElementById('c-gst-type').value = '';
+                const amtEl = document.getElementById('c-amount');
+                if (amtEl) { amtEl.value = defaultAmount; amtEl.disabled = false; }
+            }
+
             document.getElementById('default-amount-chip').textContent = '₹' + Number(defaultAmount).toLocaleString('en-IN');
-            document.getElementById('autofill-note').textContent = '';
+            document.getElementById('autofill-note').textContent = isResume ? '✓ Resumed from payment redirect' : '';
+            
             _setWizardStep(1);
             document.getElementById('createModal').querySelector('.modal-box').style.width = '680px';
             document.getElementById('createModal').classList.remove('d-none');
         }
+
         function closeCreateModal() {
             document.getElementById('createModal').classList.add('d-none');
             wizardQRData = null;
+            // Clear draft when manually closed or completed
+            localStorage.removeItem('invoice_wizard_draft');
         }
 
         let amountPreviewTimer = null;
         function updateAmountPreview(val) {
             clearTimeout(amountPreviewTimer);
-            amountPreviewTimer = setTimeout(() => onPaymentModeChanged(), 400);
+            amountPreviewTimer = setTimeout(() => {
+                onPaymentModeChanged();
+                saveInvoiceWizardDraft(); // Auto-save on amount change
+            }, 400);
         }
+
 
         function setGstTypeOptions(paymentType) {
             const gstSelect = document.getElementById('c-gst-type');
@@ -1175,7 +1359,10 @@
                 return;
             }
 
+            // Save draft before moving to Step 2
+            saveInvoiceWizardDraft();
             _setWizardStep(2);
+
 
             // Show amount breakdown
             const isCash = (pt === 'CASH');
@@ -1251,7 +1438,7 @@
                                 <p class="text-muted small mb-5 px-3">Share this link with your client or complete the payment directly from this device.</p>
                                 
                                 <div class="d-grid gap-3 mb-5">
-                                    <a href="${qr.pay_url}" target="_blank" class="btn btn-pay-now btn-lg py-3 d-flex align-items-center justify-content-center" style="border-radius: 14px; font-size: 1.1rem;">
+                                    <a href="${qr.pay_url}" onclick="saveInvoiceWizardDraft()" target="_blank" class="btn btn-pay-now btn-lg py-3 d-flex align-items-center justify-content-center" style="border-radius: 14px; font-size: 1.1rem;">
                                         <i class="bi bi-wallet2 me-2"></i> Pay Now
                                     </a>
                                     
@@ -1325,7 +1512,7 @@
                                 </div>
 
                                 <div class="d-grid gap-3">
-                                    <a href="${qr.dynamic_upi_link}" target="_blank" class="btn btn-pay-now btn-lg py-3 rounded-4 shadow-sm" style="font-size:1rem;">
+                                    <a href="${qr.dynamic_upi_link}" onclick="saveInvoiceWizardDraft()" target="_blank" class="btn btn-pay-now btn-lg py-3 rounded-4 shadow-sm" style="font-size:1rem;">
                                         <i class="bi bi-phone me-2"></i> Pay via Mobile App
                                     </a>
                                     <div class="row g-2">
@@ -1471,10 +1658,11 @@
         }
         
         // ── Payment Redirect Handler ───────────────────────────────────────────────────
+        // ── Payment Redirect Handler ───────────────────────────────────────────────────
         (function handlePaymentRedirect() {
             const params = new URLSearchParams(window.location.search);
             const status = params.get('status');
-            const txnId = params.get('txnId');
+            const txnId = params.get('txnId') || params.get('txnid'); // Support both case styles
 
             if (status === 'success' || status === 'failed') {
                 const isSuccess = status === 'success';
@@ -1497,10 +1685,10 @@
                             <p style="color:#64748b; font-size:1rem; line-height:1.6; margin-bottom:32px; font-weight:500;">${msg}</p>
                             
                             <div class="d-grid gap-2">
-                                <button onclick="window.close()" id="return-btn" style="padding:14px 28px; background:${isSuccess ? '#10b981' : '#1e293b'}; color:#fff; border:none; border-radius:14px; font-weight:700; font-size:15px; cursor:pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);">
-                                    ${isSuccess ? '<i class="bi bi-x-circle me-2"></i>Close Window' : '<i class="bi bi-arrow-left me-2"></i>Back to Billing'}
+                                <button onclick="if('${isSuccess}' === 'true') { try { window.close(); } catch(e) {} setTimeout(() => { window.location.href='billing.html?status=${status}&txnId=${txnId}'; }, 200); } else { window.location.href='billing.html?status=${status}&txnId=${txnId}'; }" id="return-btn" style="padding:14px 28px; background:${isSuccess ? '#10b981' : '#1e293b'}; color:#fff; border:none; border-radius:14px; font-weight:700; font-size:15px; cursor:pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);">
+                                    ${isSuccess ? '<i class="bi bi-patch-check me-2"></i>Confirm & Return' : '<i class="bi bi-arrow-left me-2"></i>Back to Retry'}
                                 </button>
-                                <a href="billing.html" style="font-size:13px; color:#94a3b8; text-decoration:none; margin-top:10px; font-weight:600;">Not closing? Click here</a>
+                                <a href="billing.html?status=${status}&txnId=${txnId}" onclick="window.location.href='billing.html?status=${status}&txnId=${txnId}'; return false;" style="font-size:13px; color:#94a3b8; text-decoration:none; margin-top:10px; font-weight:600;">Not closing? Click here</a>
                             </div>
 
                             <div id="status-tag" style="margin-top:32px; font-size:11px; color:${themeColor}; font-weight:800; letter-spacing:0.1em; text-transform:uppercase; background:${themeBg}; padding:6px 16px; border-radius:100px; display:inline-block;">
@@ -1589,7 +1777,7 @@
             <div><div style="font-size:10px;color:#94a3b8;font-weight:700;text-transform:uppercase;">Phone</div><div style="font-size:0.95rem;">${phone}</div>${email ? `<div class="small text-muted">${email}</div>` : ''}</div>
             <div><div style="font-size:10px;color:#94a3b8;font-weight:700;text-transform:uppercase;">Address</div><div class="small">${addr}</div></div>
             <div><div style="font-size:10px;color:#94a3b8;font-weight:700;text-transform:uppercase;">Payment Type</div><div class="small">${ptLabel} · ${gtLabel}</div></div>
-            <div><div style="font-size:10px;color:#94a3b8;font-weight:700;text-transform:uppercase;">Billing For</div><div class="small fw-bold text-primary">${document.getElementById('c-billing-month').value}</div></div>
+            <div><div style="font-size:10px;color:#94a3b8;font-weight:700;text-transform:uppercase;">Billing For</div><div class="small fw-bold text-primary">${getBillingMonthFormatted()}</div></div>
             <div><div style="font-size:10px;color:#94a3b8;font-weight:700;text-transform:uppercase;">Total Payable</div><div style="font-size:1.2rem;font-weight:900;color:#2e5b82;">₹${fmtMoney(total)}</div></div>
         </div>`;
             _setWizardStep(3);
@@ -1617,11 +1805,11 @@
                     invoice_client_org: org || null,
                     invoice_client_address: addr || null,
                     service_description: desc || null,
-                    billing_month: document.getElementById('c-billing-month').value,
+                    billing_month: getBillingMonthFormatted(),
                     payment_type: pt,
                     gst_type: gt,
                     amount: amt,
-                    shop_id: autoConvertShopId ? parseInt(autoConvertShopId) : null,
+                    shop_id: autoConvertShopId || null,
                     transaction_id: wizardQRData?.transaction_id || null,
                     payment_gateway_status: wizardQRData?.payment_gateway_status || null
                 });
@@ -1631,7 +1819,21 @@
                 closeCreateModal();
                 await loadBills();
             } catch (e) {
-                showToast(e.data?.detail || e.message || 'Failed to create invoice', 'error');
+                const errorMsg = e.data?.detail || e.message || 'Failed to create invoice';
+                showToast(errorMsg, 'error');
+                
+                // If it's a strict payment verification failure, jump back to Step 2
+                if (e.status === 402) {
+                    _setWizardStep(2);
+                    if (wizardQRData) {
+                        wizardQRData.payment_gateway_status = 'PENDING';
+                    }
+                    const errorZone = document.getElementById('p2-error-zone');
+                    if (errorZone) {
+                        errorZone.style.display = 'block';
+                        errorZone.querySelector('span').textContent = errorMsg;
+                    }
+                }
             } finally {
                 btn.disabled = false;
                 btn.innerHTML = '<i class="bi bi-receipt me-2"></i>Confirm & Generate Invoice';
@@ -1743,14 +1945,19 @@
         function previewInvoice(billId) {
             const token = ApiClient.getAccessToken();
             const url = `${ApiClient.API_BASE_URL}/billing/${billId}/invoice-html`;
+            const previewBody = document.getElementById('invoice-view-body');
+            previewBody.innerHTML = '<div class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading invoice preview...</div>';
+            document.getElementById('viewModal').classList.remove('d-none');
+            
             fetch(url, { headers: { 'Authorization': 'Bearer ' + token } })
                 .then(r => r.text())
                 .then(html => {
-                    const blob = new Blob([html], { type: 'text/html' });
-                    const blobUrl = URL.createObjectURL(blob);
-                    window.open(blobUrl, '_blank');
+                    previewBody.innerHTML = `<iframe style="width: 100%; height: 100%; border: none;" srcdoc='${html.replace(/'/g, "&apos;")}'></iframe>`;
                 })
-                .catch(e => showToast('Failed to load invoice: ' + e.message, 'error'));
+                .catch(e => {
+                    showToast('Failed to load invoice: ' + e.message, 'error');
+                    closeViewModal();
+                });
         }
 
         // ── Verify ────────────────────────────────────────────────────────────────────
@@ -1770,7 +1977,7 @@
             const ids = Array.from(selectedBillIds);
             if (!ids.length) return;
             if (!confirm(`Archive ${ids.length} selected invoice(s)?`)) return;
-            try { const res = await ApiClient.archiveInvoicesBulk(ids); selectedBillIds.clear(); showToast(`Archived ${res?.archived ?? ids.length} invoice(s)`, 'success'); await loadBills(); }
+            try { const res = await ApiClient.archiveInvoicesBulk(ids); selectedBillIds.clear(); showToast(`Archived ${res?.count ?? ids.length} invoice(s)`, 'success'); await loadBills(); }
             catch (e) { showToast(e.data?.detail || e.message || 'Failed to archive selected', 'error'); }
         }
         async function unarchiveInvoice(billId, invNo) {
@@ -1779,16 +1986,40 @@
             catch (e) { showToast(e.data?.detail || e.message || 'Failed to restore', 'error'); }
         }
         async function deleteArchivedInvoice(billId, invNo) {
-            if (!confirm(`Delete archived invoice ${invNo || '#' + billId} permanently?`)) return;
-            try { await ApiClient.deleteArchivedInvoice(billId); selectedBillIds.delete(billId); showToast('Archived invoice deleted', 'success'); await loadBills(); }
-            catch (e) { showToast(e.data?.detail || e.message || 'Failed to delete', 'error'); }
+            if (!confirm(`Hide invoice ${invNo || '#' + billId}? It will still stay in the database but won't be visible anywhere.`)) return;
+            try { await ApiClient.request(`/billing/${billId}/archive-delete`, { method: 'DELETE' }); selectedBillIds.delete(billId); showToast('Invoice hidden', 'success'); await loadBills(); }
+            catch (e) { showToast(e.data?.detail || e.message || 'Failed to hide invoice', 'error'); }
+        }
+
+        async function permanentDeleteInvoice(billId, invNo) {
+            const confirmed = confirm(`CRITICAL WARNING: Are you sure you want to PERMANENTLY DELETE invoice ${invNo || '#' + billId}?\n\nThis action cannot be undone and the record will be completely removed from the database.`);
+            if (!confirmed) return;
+            try {
+                await ApiClient.request(`/billing/${billId}/permanent`, { method: 'DELETE' });
+                selectedBillIds.delete(billId);
+                showToast('Invoice permanently deleted from DB', 'success');
+                await loadBills();
+            } catch (e) {
+                showToast(e.data?.detail || e.message || 'Failed to permanently delete', 'error');
+            }
         }
         async function deleteSelectedArchivedInvoices() {
             const ids = Array.from(selectedBillIds);
             if (!ids.length) return;
             if (!confirm(`Delete ${ids.length} selected archived invoice(s)?`)) return;
-            try { const res = await ApiClient.deleteArchivedInvoicesBulk(ids); selectedBillIds.clear(); showToast(`Deleted ${res?.deleted ?? ids.length} archived invoice(s)`, 'success'); await loadBills(); }
+            try { const res = await ApiClient.deleteArchivedInvoicesBulk(ids); selectedBillIds.clear(); showToast(`Deleted ${res?.count ?? ids.length} archived invoice(s)`, 'success'); await loadBills(); }
             catch (e) { showToast(e.data?.detail || e.message || 'Failed to delete selected', 'error'); }
+        }
+
+        async function refundInvoice(billId, invNo) {
+            if (!confirm(`Are you sure you want to mark invoice ${invNo || '#' + billId} as REFUNDED? This status change is permanent.`)) return;
+            try {
+                await ApiClient.request(`/billing/${billId}/refund`, { method: 'PATCH' });
+                showToast('Invoice marked as REFUNDED', 'success');
+                await loadBills();
+            } catch (e) {
+                showToast(e.data?.detail || e.message || 'Failed to process refund', 'error');
+            }
         }
 
         async function submitVerifyInvoice() {

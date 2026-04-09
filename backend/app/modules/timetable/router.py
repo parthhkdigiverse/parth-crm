@@ -154,76 +154,131 @@ async def get_timetable(
     def date_str(dt):
         return dt.strftime("%Y-%m-%d") if dt else ""
 
+    def get_hm(val, default_h=0):
+        if not val:
+            return default_h, 0
+        if isinstance(val, str):
+            parts = val.split(':')
+            return int(parts[0]), int(parts[1]) if len(parts) > 1 else 0
+        try:
+            return val.hour, val.minute
+        except Exception:
+            return default_h, 0
+
     user_id = current_user.id if current_user else None
     username = (current_user.name or current_user.email or "Unknown User") if current_user else "Demo Admin"
     is_admin = current_user.role == UserRole.ADMIN if current_user else True
 
-    # 1. Fetch Visits
+    # 1. Fetch all data sources first
     v_query = Visit.find(Visit.is_deleted == False, Visit.visit_date >= start_date, Visit.visit_date <= end_date)
     if not is_admin:
         v_query = v_query.find(Visit.user_id == user_id)
-        
     visits = await v_query.to_list()
-    # Filter by Shop deleted status requires manual lookup
-    valid_shop_ids = await Shop.get_pymongo_collection().distinct("_id", {"is_deleted": False})
-    valid_shop_str = [str(x) for x in valid_shop_ids]
+
+    m_query = MeetingSummary.find(MeetingSummary.is_deleted == False, MeetingSummary.date >= start_date, MeetingSummary.date <= end_date)
+    meetings = await m_query.to_list()
+
+    t_query = Todo.find(Todo.is_deleted == False, Todo.due_date >= start_date, Todo.due_date <= end_date)
+    if not is_admin:
+        t_query = t_query.find(Todo.user_id == user_id)
+    todos = await t_query.to_list()
+
+    s_date, e_date = start_date.date(), end_date.date()
+    tt_query = TimetableEvent.find(TimetableEvent.is_deleted == False, TimetableEvent.date >= s_date, TimetableEvent.date <= e_date)
+    if not is_admin:
+        tt_query = tt_query.find(TimetableEvent.user_id == user_id)
+    custom_events = await tt_query.to_list()
+
+    demo_query = Shop.find(Shop.demo_scheduled_at != None)
+    if not is_admin:
+        demo_query = demo_query.find(Shop.project_manager_id == user_id)
+    demo_shops = await demo_query.to_list()
+
+    # 2. Collect IDs for bulk fetching
+    collected_shop_ids = set()
+    collected_user_ids = set()
+    collected_client_ids = set()
 
     for v in visits:
-        if str(v.shop_id) not in valid_shop_str:
-            continue
-            
-        shop = await Shop.get(v.shop_id)
-        h = v.visit_date.hour if v.visit_date.hour >= 7 else 10
+        if v.shop_id: collected_shop_ids.add(v.shop_id)
+        if v.user_id: collected_user_ids.add(v.user_id)
+    
+    for m in meetings:
+        if m.client_id: collected_client_ids.add(m.client_id)
+    
+    for t in todos:
+        if t.user_id: collected_user_ids.add(t.user_id)
         
-        real_user = username
-        try:
-            if v.user_id:
-                u = await User.get(v.user_id)
-                if u: real_user = u.name or u.email
-        except:
-            pass
+    for c in custom_events:
+        if c.user_id: collected_user_ids.add(c.user_id)
+        
+    for s in demo_shops:
+        collected_shop_ids.add(s.id)
+        if s.project_manager_id: collected_user_ids.add(s.project_manager_id)
+
+    # 3. Bulk Fetch
+    shops_task = Shop.find(In(Shop.id, list(collected_shop_ids)), Shop.is_deleted == False).to_list()
+    clients_task = Client.find(In(Client.id, list(collected_client_ids)), Client.is_deleted == False).to_list()
+    users_task = User.find(In(User.id, list(collected_user_ids))).to_list()
+
+    # Optional: could use asyncio.gather for even more speed
+    import asyncio
+    shops_list, clients_list, users_list = await asyncio.gather(shops_task, clients_task, users_task)
+
+    # 4. Create Maps
+    shop_map = {s.id: s for s in shops_list}
+    client_map = {c.id: c for c in clients_list}
+    user_name_map = {u.id: (u.name or u.email or "Unknown") for u in users_list}
+    
+    # Also need Client owner_ids for meeting user mapping
+    for c in clients_list:
+        if c.owner_id: collected_user_ids.add(c.owner_id)
+    
+    # If we found new user IDs (client owners), fetch again or just include them initially
+    # Improving step 2 to include client owners
+    for c in clients_list:
+        if c.owner_id and c.owner_id not in user_name_map:
+             u = await User.get(c.owner_id)
+             if u: user_name_map[u.id] = (u.name or u.email)
+
+    # 5. Process Events
+    # --- Process Visits ---
+    for v in visits:
+        shop = shop_map.get(v.shop_id)
+        if not shop: continue
+        
+        h = v.visit_date.hour if v.visit_date.hour >= 7 else 10
+        real_user = user_name_map.get(v.user_id, username)
 
         events.append({
             "id": str(v.id),
-            "title": f"Visit: {shop.name if shop else 'Unknown Shop'}",
+            "title": f"Visit: {shop.name}",
             "date": date_str(v.visit_date),
             "user": real_user,
             "sh": h, "sm": 0, "eh": h+1, "em": 0,
-            "loc": (shop.area.name if shop and getattr(shop, 'area', None) else "Shop"),
+            "loc": (shop.area_name if hasattr(shop, 'area_name') and shop.area_name else "Shop"),
             "event_type": "VISIT",
             "status": v.status,
             "reference_id": str(v.shop_id),
             "description": v.remarks
         })
 
-    # 2. Fetch Meetings
-    m_query = MeetingSummary.find(MeetingSummary.is_deleted == False, MeetingSummary.date >= start_date, MeetingSummary.date <= end_date)
-    meetings = await m_query.to_list()
-    
-    valid_client_ids = await Client.get_pymongo_collection().distinct("_id", {"is_deleted": False})
-    valid_client_str = [str(x) for x in valid_client_ids]
-    
+    # --- Process Meetings ---
     for m in meetings:
-        if m.client_id and str(m.client_id) not in valid_client_str:
-            continue
-            
-        client = await Client.get(m.client_id) if m.client_id else None
+        client = client_map.get(m.client_id)
+        if not client: continue
         
-        # Admin or specific PM/Owner filters
-        if not is_admin and client:
+        if not is_admin:
             role_val = current_user.role.value
             if role_val in ["PROJECT_MANAGER", "PROJECT_MANAGER_AND_SALES"] and client.pm_id != user_id: continue
             if role_val not in ["PROJECT_MANAGER", "PROJECT_MANAGER_AND_SALES"] and client.owner_id != user_id: continue
 
         h = m.date.hour if m.date.hour >= 7 else 14
-        real_user = username
-        if client and client.owner_id:
-            u = await User.get(client.owner_id)
-            if u: real_user = u.name or u.email
+        real_user = user_name_map.get(client.owner_id, username)
 
         events.append({
             "id": str(m.id),
-            "title": f"Meeting: {client.name if client else 'Unknown Client'}",
+            "title": f"Meeting: {client.name}",
             "date": date_str(m.date),
             "user": real_user,
             "sh": h, "sm": 0, "eh": h+1, "em": 30,
@@ -235,26 +290,15 @@ async def get_timetable(
             "description": m.content
         })
 
-    # 3. Fetch Todos
-    t_query = Todo.find(Todo.is_deleted == False, Todo.due_date >= start_date, Todo.due_date <= end_date)
-    if not is_admin:
-        t_query = t_query.find(Todo.user_id == user_id)
-        
-    todos = await t_query.to_list()
+    # --- Process Todos ---
     for t in todos:
-        if t.related_entity and "MEETING:" in t.related_entity:
-            continue
+        if t.related_entity and "MEETING:" in t.related_entity: continue
             
-        h = t.due_date.hour if t.due_date and t.due_date.hour >= 7 else 9
-        sh = t.start_time.hour if t.start_time else h
-        sm = t.start_time.minute if t.start_time else 0
-        eh = t.end_time.hour if t.end_time else (sh + 1)
-        em = t.end_time.minute if t.end_time else 0
+        h = t.due_date.hour if t.due_date and hasattr(t.due_date, 'hour') else 9
+        sh, sm = get_hm(t.start_time, h)
+        eh, em = get_hm(t.end_time, sh + 1)
         
-        real_user = t.assigned_to or username
-        if not t.assigned_to and is_admin:
-            u = await User.get(t.user_id)
-            if u: real_user = u.name or u.email
+        real_user = t.assigned_to or user_name_map.get(t.user_id, username)
 
         events.append({
             "id": str(t.id),
@@ -270,33 +314,20 @@ async def get_timetable(
             "description": t.description
         })
 
-    # 4. Fetch Custom Timetable Events
-    # Map UTC start_date and end_date to exact dates
-    s_date = start_date.date()
-    e_date = end_date.date()
-    
-    tt_query = TimetableEvent.find(
-        TimetableEvent.is_deleted == False,
-        TimetableEvent.date >= s_date,
-        TimetableEvent.date <= e_date
-    )
-    if not is_admin:
-        tt_query = tt_query.find(TimetableEvent.user_id == user_id)
-        
-    custom_events = await tt_query.to_list()
+    # --- Process Custom Events ---
     for c in custom_events:
-        real_user = c.assignee_name or username
-        if not c.assignee_name and is_admin:
-            u = await User.get(c.user_id)
-            if u: real_user = u.name or u.email
+        real_user = c.assignee_name or user_name_map.get(c.user_id, username)
+        
+        sh, sm = get_hm(c.start_time, 9)
+        eh, em = get_hm(c.end_time, sh + 1)
 
         events.append({
             "id": str(c.id),
             "title": c.title,
             "date": c.date.strftime("%Y-%m-%d"),
             "user": real_user,
-            "sh": c.start_time.hour, "sm": c.start_time.minute,
-            "eh": c.end_time.hour, "em": c.end_time.minute,
+            "sh": sh, "sm": sm,
+            "eh": eh, "em": em,
             "loc": c.location or "",
             "event_type": "TIMETABLE",
             "status": "PENDING",
@@ -305,45 +336,31 @@ async def get_timetable(
             "description": None
         })
 
-    # 5. Fetch Scheduled Shop Demos
-    demo_query = Shop.find(Shop.demo_scheduled_at != None)
-    if not is_admin:
-        demo_query = demo_query.find(Shop.project_manager_id == user_id)
-        
-    demo_shops = await demo_query.to_list()
+    # --- Process Demos ---
     ist_tz = timezone(timedelta(hours=5, minutes=30))
-
     for shop in demo_shops:
         start_dt = shop.demo_scheduled_at
         if not start_dt: continue
         
-        if start_dt.tzinfo:
-            local_start = start_dt.astimezone(ist_tz)
-        else:
-            local_start = start_dt.replace(tzinfo=UTC).astimezone(ist_tz)
-            
+        local_start = (start_dt if start_dt.tzinfo else start_dt.replace(tzinfo=UTC)).astimezone(ist_tz)
         local_end = local_start + timedelta(hours=1)
         
-        pm_name = username
-        if shop.project_manager_id:
-            pm_user = await User.get(shop.project_manager_id)
-            if pm_user: pm_name = pm_user.name or pm_user.email
-            
+        pm_name = user_name_map.get(shop.project_manager_id, username)
         status_val = "COMPLETED" if shop.demo_stage and shop.demo_stage > 0 else "OPEN"
-        loc_val = shop.demo_meet_link or "Scheduled Demo"
         
         events.append({
-            "id": str(shop.id), # Avoiding math collision, strings are safe in Pydantic
+            "id": str(shop.id),
             "title": f"Demo: {shop.name}",
             "date": local_start.strftime("%Y-%m-%d"),
             "user": pm_name,
             "sh": local_start.hour, "sm": local_start.minute,
             "eh": local_end.hour, "em": local_end.minute,
-            "loc": loc_val,
+            "loc": shop.demo_meet_link or "Scheduled Demo",
             "event_type": "MEETING",
             "status": status_val,
             "reference_id": str(shop.id),
             "description": "Demo session for new lead"
         })
 
+    return {"events": events}
     return {"events": events}

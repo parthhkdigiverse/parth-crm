@@ -2,11 +2,13 @@
 from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Request, Response
 from beanie import PydanticObjectId
+from beanie.operators import In
 from app.core.dependencies import RoleChecker, get_current_active_user
 from app.modules.users.models import User, UserRole
 from app.modules.users.schemas import UserRead, UserProfileUpdate
 from app.modules.activity_logs.service import ActivityLogger
 from app.modules.activity_logs.models import ActionType, EntityType
+from app.core.cache import get_or_set, invalidate
 from pydantic import BaseModel
 import uuid
 from datetime import date as dt_date
@@ -63,42 +65,45 @@ def _normalize_role_list(roles: Any, fallback: list[str]) -> list[str]:
     return normalized
 
 async def _load_access_policy() -> dict:
-    row = await SystemSettings.find_one()
-    if not row or not row.access_policy:
-        return DEFAULT_ACCESS_POLICY
-    try:
-        data = row.access_policy
-        if not isinstance(data, dict):
+    async def _fetch():
+        row = await SystemSettings.find_one()
+        if not row or not row.access_policy:
             return DEFAULT_ACCESS_POLICY
-        page_access = data.get("page_access") or {}
-        feature_access = data.get("feature_access") or {}
+        try:
+            data = row.access_policy
+            if not isinstance(data, dict):
+                return DEFAULT_ACCESS_POLICY
+            page_access = data.get("page_access") or {}
+            feature_access = data.get("feature_access") or {}
 
-        merged_page_access = {}
-        for role, pages in DEFAULT_ACCESS_POLICY["page_access"].items():
-            custom_pages = page_access.get(role)
-            if isinstance(custom_pages, list):
-                merged = [str(p).strip() for p in custom_pages if str(p).strip()]
-                if ("salary.html" in merged or "salary" in merged) and "salary_slip_view.html" not in merged:
-                    merged.append("salary_slip_view.html")
-                merged_page_access[role] = merged
-            else:
-                merged_page_access[role] = pages
+            merged_page_access = {}
+            for role, pages in DEFAULT_ACCESS_POLICY["page_access"].items():
+                custom_pages = page_access.get(role)
+                if isinstance(custom_pages, list):
+                    merged = [str(p).strip() for p in custom_pages if str(p).strip()]
+                    if ("salary.html" in merged or "salary" in merged) and "salary_slip_view.html" not in merged:
+                        merged.append("salary_slip_view.html")
+                    merged_page_access[role] = merged
+                else:
+                    merged_page_access[role] = pages
 
-        merged_feature_access = {}
-        for key, roles in DEFAULT_ACCESS_POLICY["feature_access"].items():
-            merged_feature_access[key] = _normalize_role_list(feature_access.get(key), roles)
+            merged_feature_access = {}
+            for key, roles in DEFAULT_ACCESS_POLICY["feature_access"].items():
+                merged_feature_access[key] = _normalize_role_list(feature_access.get(key), roles)
 
-        if "ADMIN" not in merged_feature_access["invoice_verifier_roles"]:
-            merged_feature_access["invoice_verifier_roles"].append("ADMIN")
-        if "ADMIN" not in merged_feature_access["invoice_creator_roles"]:
-            merged_feature_access["invoice_creator_roles"].append("ADMIN")
+            if "ADMIN" not in merged_feature_access["invoice_verifier_roles"]:
+                merged_feature_access["invoice_verifier_roles"].append("ADMIN")
+            if "ADMIN" not in merged_feature_access["invoice_creator_roles"]:
+                merged_feature_access["invoice_creator_roles"].append("ADMIN")
 
-        return {
-            "page_access": merged_page_access,
-            "feature_access": merged_feature_access,
-        }
-    except Exception:
-        return DEFAULT_ACCESS_POLICY
+            return {
+                "page_access": merged_page_access,
+                "feature_access": merged_feature_access,
+            }
+        except Exception:
+            return DEFAULT_ACCESS_POLICY
+    # Cache access policy for 60 seconds
+    return await get_or_set("access_policy", _fetch, ttl_seconds=60)
 
 async def _save_access_policy(policy: dict) -> None:
     row = await SystemSettings.find_one()
@@ -215,10 +220,16 @@ async def list_users(
     try:
         if current_user.role != UserRole.ADMIN:
             return [current_user]
-        users = await User.find(
-            {"is_deleted": {"$ne": True}}
-        ).to_list()
+
+        # Cached for 90 seconds — invalidated on any user mutation
+        # This is the main logic which includes both caching and the is_deleted check
+        users = await get_or_set(
+            "all_users_list",
+            lambda: User.find(User.is_deleted != True).to_list(),
+            ttl_seconds=90
+        )
         return users
+
     except Exception as e:
         import logging
         logging.error(f"list_users error: {e}")
@@ -228,12 +239,12 @@ async def list_users(
 async def list_project_managers(
     current_user: User = Depends(get_current_active_user)
 ) -> Any:
-    from beanie.operators import In
     pm_roles = [UserRole.PROJECT_MANAGER, UserRole.PROJECT_MANAGER_AND_SALES, UserRole.ADMIN]
-    return await User.find(
-        User.is_deleted != True,
-        In(User.role, pm_roles)
-    ).to_list()
+    return await get_or_set(
+        "pm_users_list",
+        lambda: User.find(User.is_deleted != True, In(User.role, pm_roles)).to_list(),
+        ttl_seconds=90
+    )
 
 @router.patch("/incentive-eligibility/by-role")
 async def update_role_incentive_eligibility(
@@ -284,6 +295,7 @@ async def update_user_role(
     old_role = user.role
     user.role = role_in.role
     await user.save()
+    invalidate("all_users_list"); invalidate("pm_users_list"); invalidate("user_map:")
 
     activity_logger = ActivityLogger()
     await activity_logger.log_activity(
@@ -313,6 +325,7 @@ async def update_user_status(
     old_status = user.is_active
     user.is_active = status_in.is_active
     await user.save()
+    invalidate("all_users_list"); invalidate("user_map:")
 
     activity_logger = ActivityLogger()
     await activity_logger.log_activity(
@@ -367,6 +380,21 @@ async def admin_update_user_profile(
 
     old_name = user.name
     update_data = profile_in.model_dump(exclude_unset=True)
+    if "password" in update_data and update_data["password"]:
+        from app.core.security import get_password_hash
+        update_data["hashed_password"] = get_password_hash(update_data.pop("password"))
+        
+        from app.modules.auth.models import PasswordResetRequest
+        from datetime import datetime, UTC
+        pending_reqs = await PasswordResetRequest.find(PasswordResetRequest.user_id == user.id, PasswordResetRequest.status == "PENDING").to_list()
+        for req in pending_reqs:
+            req.status = "RESOLVED"
+            req.resolved_by = current_user.id
+            req.resolved_at = datetime.now(UTC)
+            await req.save()
+    else:
+        update_data.pop("password", None)
+
     for field, value in update_data.items():
         setattr(user, field, value)
 

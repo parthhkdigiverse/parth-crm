@@ -29,6 +29,8 @@ class DashboardStats(MongoBaseSchema):
     visit_status_breakdown: dict
     issue_severity_breakdown: dict
     visit_outcomes_breakdown: dict
+    project_status_breakdown: dict # Added new field
+
 
 class EmployeePerformance(BaseModel):
     user_id: str

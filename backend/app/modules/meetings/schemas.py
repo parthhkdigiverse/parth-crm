@@ -23,7 +23,7 @@ class MeetingSummaryCreate(BaseModel):
     meeting_type: typing.Optional[str] = "In-Person"
     status: typing.Optional[GlobalTaskStatus] = GlobalTaskStatus.OPEN
     host_id: typing.Optional[PydanticObjectId] = None
-    attendee_ids: typing.Optional[list[int]] = []
+    attendee_ids: typing.Optional[list[PydanticObjectId]] = []
     client_id: typing.Optional[PydanticObjectId] = None
     target_type: typing.Optional[str] = "CLIENT" # CLIENT, ALL_STAFF, ROLE_BASED
     target_role: typing.Optional[str] = None
@@ -59,5 +59,5 @@ class MeetingSummaryRead(MeetingSummaryBase):
     cancellation_reason: typing.Optional[str] = None
     todo_id: typing.Optional[PydanticObjectId] = None
     host_id: typing.Optional[PydanticObjectId] = None
-    attendee_ids: typing.Optional[list[int]] = []
+    attendee_ids: typing.Optional[list[PydanticObjectId]] = []
     priority: typing.Any = None

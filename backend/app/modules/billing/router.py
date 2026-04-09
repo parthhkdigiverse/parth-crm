@@ -224,9 +224,20 @@ async def phonepe_payment_callback(
     try:
         decoded = _json.loads(_b64.b64decode(data_b64).decode())
         txn_id  = decoded.get("data", {}).get("merchantTransactionId", "")
-        print(f"[PhonePe Callback] txn={txn_id} ok={sig_ok}")
+        code    = decoded.get("code", "")
+        print(f"[PhonePe Callback] txn={txn_id} code={code} ok={sig_ok}")
+
+        if code == "PAYMENT_SUCCESS" and txn_id:
+             from app.modules.billing.models import Bill
+             bill = await Bill.find_one(Bill.transaction_id == txn_id)
+             if bill and bill.invoice_status != "VERIFIED":
+                 bill.invoice_status = "VERIFIED"
+                 bill.status = "SUCCESS"
+                 bill.payment_gateway_status = "SUCCESS"
+                 await bill.save()
+                 print(f"[PhonePe Callback] Updated Bill {bill.invoice_number} to VERIFIED state.")
     except Exception as exc:
-        print(f"[PhonePe Callback] Parse error: {exc}")
+        print(f"[PhonePe Callback] Parse/Update error: {exc}")
 
     return {"status": "received"}
 
@@ -331,6 +342,13 @@ async def delete_archived_invoices_bulk(
  ) -> Any:
     ids = [PydanticObjectId(i) for i in payload.get("ids", []) if i]
     return await BillingService().delete_archived_invoices_bulk(ids, current_user)
+
+@router.delete("/{bill_id}/permanent")
+async def permanent_delete_invoice(
+    bill_id: PydanticObjectId,
+    current_user: User = Depends(admin_only),
+) -> Any:
+    return await BillingService().permanent_delete_invoice(bill_id, current_user)
 
 @router.post("/{bill_id}/send-whatsapp")
 async def send_invoice_whatsapp(

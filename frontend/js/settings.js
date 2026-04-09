@@ -78,7 +78,7 @@ function initThemeCards() {
  */
 async function loadSettings() {
     let backendPrefs = {};
-    const u = JSON.parse(sessionStorage.getItem('srm_user') || '{}');
+    const u = JSON.parse(localStorage.getItem('srm_user') || sessionStorage.getItem('srm_user') || '{}');
 
     // Try fetching from backend first
     if (u.id) {
@@ -122,7 +122,8 @@ async function loadSettings() {
         'default-view': 'default_view',
         'date-format': 'date_format',
         'timezone-select': 'timezone',
-        'language-select': 'language'
+        'language-select': 'language',
+        'pagination-limit': 'pagination_limit'
     };
     Object.entries(selectMap).forEach(([elId, prefKey]) => {
         const el = document.getElementById(elId);
@@ -221,7 +222,7 @@ async function clearAllSettings() {
  * ── System Initialization ───────────────────────────────────────────────────
  */
 function initSystem() {
-    const u = JSON.parse(sessionStorage.getItem('srm_user') || '{}');
+    const u = JSON.parse(localStorage.getItem('srm_user') || sessionStorage.getItem('srm_user') || '{}');
     const isAdmin = u?.role === 'ADMIN';
 
     if (isAdmin) {
@@ -672,7 +673,7 @@ async function uploadPaymentQR(inputEle, urlInputId, previewImgId) {
     const formData = new FormData();
     formData.append('file', file);
     try {
-        const token = sessionStorage.getItem('access_token');
+        const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
         if (!token) return;
         const apiBase = window.API_BASE || (window.location.origin + '/api');
         const res = await fetch(apiBase + '/billing/settings/upload-qr', {
@@ -1153,7 +1154,7 @@ async function saveAccessPolicy() {
             const profile = await window.ApiClient.getProfile().catch(() => null);
             if (profile) {
                 const userData = { id: profile.id, name: profile.name || profile.email, email: profile.email, role: profile.role };
-                sessionStorage.setItem('srm_user', JSON.stringify(userData));
+                localStorage.setItem('srm_user', JSON.stringify(userData));
             }
         }
 
@@ -1161,7 +1162,7 @@ async function saveAccessPolicy() {
             const effective = await window.ApiClient.getEffectiveAccessPolicy().catch(() => null);
             if (effective) {
                 window.__crmEffectiveAccessPolicy = effective;
-                sessionStorage.setItem('crm_access_policy', JSON.stringify(effective));
+                localStorage.setItem('crm_access_policy', JSON.stringify(effective));
             }
         }
 

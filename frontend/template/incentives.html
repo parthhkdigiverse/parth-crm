@@ -8,10 +8,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Incentives — SRM AI SETU</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/bootstrap.min.css">
-    <link rel="stylesheet" href="/static/css/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="/static/css/theme.css?v=20260403">
-    <link rel="stylesheet" href="/static/css/components.css?v=20260403">
+    <link rel="stylesheet" href="/frontend/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/frontend/css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/frontend/css/theme.css?v=20260406">
+    <link rel="stylesheet" href="/frontend/css/components.css?v=20260406">
 </head>
 
 <body>
@@ -23,12 +23,15 @@
 
         .stat-card {
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            background: #ffffff !important;
+            background: var(--surface) !important;
+            /* respects dark/light theme */
             border-radius: 16px !important;
-            border: 1px solid rgba(0, 0, 0, 0.05) !important;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02) !important;
+            border: 1px solid var(--border) !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06) !important;
             position: relative;
             overflow: hidden;
+            padding: 32px 20px 24px !important;
+            /* Moved content down by increasing top padding */
         }
 
         .stat-card::before {
@@ -58,19 +61,25 @@
         }
 
         .stat-card.card-purple::before {
-            background: #8b5cf6; /* Violet-500 */
+            background: #8b5cf6;
         }
 
         .stat-card:hover {
             transform: translateY(-4px);
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.06) !important;
-            border-color: rgba(0, 0, 0, 0.1) !important;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12) !important;
+            border-color: var(--border-subtle) !important;
         }
+
 
         .premium-card {
             position: relative;
             overflow: hidden;
             border-radius: 14px !important;
+        }
+
+        .premium-card .card-header {
+            padding: 32px 24px 20px !important;
+            /* Moved header content down */
         }
 
         .premium-card::before {
@@ -84,9 +93,17 @@
             z-index: 10;
         }
 
-        .premium-card.card-primary::before { background: var(--primary); }
-        .premium-card.card-info::before { background: var(--info); }
-        .premium-card.card-success::before { background: var(--success); }
+        .premium-card.card-primary::before {
+            background: var(--primary);
+        }
+
+        .premium-card.card-info::before {
+            background: var(--info);
+        }
+
+        .premium-card.card-success::before {
+            background: var(--success);
+        }
 
         .stat-value {
             font-size: 1.5rem;
@@ -202,10 +219,10 @@
         }
 
         .preview-breakdown {
-            background: #f8fafc;
+            background: var(--surface-raised);
             border-radius: 16px;
             padding: 24px;
-            border: 1px solid rgba(0,0,0,0.05);
+            border: 1px solid var(--border);
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 16px;
@@ -458,7 +475,7 @@
             border: 1px solid var(--border);
             border-radius: 14px;
             padding: 18px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.01);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.01);
             transition: all 0.3s ease;
         }
 
@@ -487,22 +504,22 @@
 
         /* New Preview Aesthetics */
         .premium-preview-container {
-            background: #ffffff;
+            background: var(--surface);
             border-radius: 20px;
             padding: 0;
             overflow: hidden;
-            border: 1px solid rgba(0,0,0,0.06);
+            border: 1px solid var(--border);
         }
 
         .preview-summary-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 1px;
-            background: rgba(0,0,0,0.05);
+            background: rgba(0, 0, 0, 0.05);
         }
 
         .preview-summary-item {
-            background: white;
+            background: var(--surface);
             padding: 20px;
             display: flex;
             flex-direction: column;
@@ -614,40 +631,56 @@
                 </div>
 
                 <!-- Filter Panel Wrapper -->
-                <div id="filter-wrapper" style="margin-top: 40px !important; margin-bottom: 16px !important;"></div>
+                <div id="filter-wrapper" class="mb-4"></div>
 
                 <!-- Employee Life Progress (Personal Dashboard) -->
                 <div id="employee-progress-row" class="row g-4 mb-4" style="display:none;">
                     <div class="col-12">
-                        <div class="card premium-card card-primary border-0 shadow-sm p-4" style="background: var(--surface); border-radius: 20px !important;">
+                        <div class="card premium-card card-primary border-0 shadow-sm p-4"
+                            style="background: var(--surface); border-radius: 20px !important;">
                             <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
                                 <div class="d-flex align-items-center gap-3">
-                                    <div class="bg-primary-light text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 52px; height: 52px; background: var(--bg-app); border: 1px solid var(--border);">
+                                    <div class="bg-primary-light text-primary rounded-circle d-flex align-items-center justify-content-center"
+                                        style="width: 52px; height: 52px; background: var(--bg-app); border: 1px solid var(--border);">
                                         <i class="bi bi-graph-up-arrow fs-4"></i>
                                     </div>
                                     <div>
-                                        <h5 class="fw-800 mb-0" style="letter-spacing:-0.01em;">Live Performance <span class="text-primary" id="progress-month-year"></span></h5>
-                                        <p class="text-muted small mb-0" id="progress-summary">Tracking your incentive journey</p>
+                                        <h5 class="fw-800 mb-0" style="letter-spacing:-0.01em;">Live Performance <span
+                                                class="text-primary" id="progress-month-year"></span></h5>
+                                        <p class="text-muted small mb-0" id="progress-summary">Tracking your incentive
+                                            journey</p>
                                     </div>
                                 </div>
                                 <div class="text-md-end">
                                     <div class="stat-label mb-1">Total Impact</div>
-                                    <div class="stat-value text-primary" id="progress-cumulative-total" style="font-size:1.8rem;">-</div>
+                                    <div class="stat-value text-primary" id="progress-cumulative-total"
+                                        style="font-size:1.8rem;">-</div>
                                 </div>
                             </div>
-                            
+
                             <div class="mt-4 pt-2">
                                 <div class="d-flex justify-content-between align-items-end mb-2">
-                                    <span class="small fw-700 text-muted text-uppercase" style="letter-spacing:0.05em;" id="progress-start-label">Start of Month</span>
-                                    <span class="small fw-800 text-primary" id="progress-next-milestone">Next Slab Milestone</span>
+                                    <span class="small fw-700 text-muted text-uppercase" style="letter-spacing:0.05em;"
+                                        id="progress-start-label">Start of Month</span>
+                                    <span class="small fw-800 text-primary" id="progress-next-milestone">Next Slab
+                                        Milestone</span>
                                 </div>
-                                <div class="progress" style="height: 12px; border-radius: 100px; background: var(--bg-app); border: 1px solid var(--border);">
-                                    <div id="progress-bar-history" class="progress-bar" role="progressbar" style="width: 0%; background: var(--text-muted); opacity:0.3;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-                                    <div id="progress-bar-current" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%; background: linear-gradient(90deg, var(--primary), #4338ca);" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                <div class="progress"
+                                    style="height: 12px; border-radius: 100px; background: var(--bg-app); border: 1px solid var(--border);">
+                                    <div id="progress-bar-history" class="progress-bar" role="progressbar"
+                                        style="width: 0%; background: var(--text-muted); opacity:0.3;" aria-valuenow="0"
+                                        aria-valuemin="0" aria-valuemax="100"></div>
+                                    <div id="progress-bar-current"
+                                        class="progress-bar progress-bar-striped progress-bar-animated"
+                                        role="progressbar"
+                                        style="width: 0%; background: linear-gradient(90deg, var(--primary), #4338ca);"
+                                        aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
                                 </div>
                                 <div class="d-flex justify-content-between mt-2">
-                                    <span class="text-muted" style="font-size:0.75rem;"><strong id="progress-history-count">0</strong> tasks history</span>
-                                    <span class="text-primary fw-bold" style="font-size:0.75rem;" id="progress-remaining-text">--</span>
+                                    <span class="text-muted" style="font-size:0.75rem;"><strong
+                                            id="progress-history-count">0</strong> tasks history</span>
+                                    <span class="text-primary fw-bold" style="font-size:0.75rem;"
+                                        id="progress-remaining-text">--</span>
                                 </div>
                             </div>
                         </div>
@@ -658,12 +691,11 @@
                 <div class="row g-4">
 
                     <div class="col-xl-4">
-                        <div class="card premium-card card-primary border-0 shadow-sm overflow-visible">
-                            <div class="card-header bg-surface border-bottom d-flex justify-content-between align-items-center"
-                                style="padding: 14px 20px 12px; background: linear-gradient(to right, rgba(248,250,252,0.8), rgba(255,255,255,0.9)); border-radius: 14px 14px 0 0;">
-                                <h6 class="fw-bold mb-0 text-muted text-uppercase"
-                                    style="font-size: 0.78rem; letter-spacing: 0.07em;"><i
-                                        class="bi bi-shield-lock me-2 text-primary"></i>Incentive Slabs</h6>
+                        <div class="srm-data-card overflow-visible">
+                            <div class="srm-card-header">
+                                <span class="srm-card-title">
+                                    <i class="bi bi-shield-lock"></i>Incentive Slabs
+                                </span>
                                 <button id="btn-add-slab" class="btn btn-sm btn-outline-primary"
                                     onclick="toggleAddSlabForm()" style="display:none; border-radius: 8px;">
                                     <i class="bi bi-plus-lg"></i>
@@ -708,9 +740,8 @@
                                 <span id="slab-msg" class="small d-none mt-2 d-block"></span>
                             </div>
 
-                            <!-- Slab table - standard Bootstrap utility -->
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle small mb-0 slabs-table">
+                            <div class="srm-table-wrap">
+                                <table class="table table-hover align-middle srm-table slabs-table">
                                     <colgroup>
                                         <col style="width:25%">
                                         <col style="width:30%">
@@ -734,21 +765,17 @@
                                     </tbody>
                                 </table>
                             </div>
-
                         </div>
                     </div>
 
                     <div class="col-xl-8">
-                        <div class="card premium-card card-info border-0 shadow-sm">
-                            <div class="card-header bg-surface border-bottom d-flex justify-content-between align-items-center gap-2 flex-wrap"
-                                style="padding: 14px 20px 12px; background: linear-gradient(to right, rgba(248,250,252,0.8), rgba(255,255,255,0.9)); border-radius: 14px 14px 0 0;">
+                        <div class="srm-data-card">
+                            <div class="srm-card-header">
                                 <div>
-                                    <h6 class="fw-bold mb-0 incentive-card-title text-muted text-uppercase"
-                                        style="font-size: 0.78rem; letter-spacing: 0.07em;">
-                                        <i class="bi bi-table me-2"></i>Incentive Slips
-                                    </h6>
-                                    <div class="text-muted mt-1" id="slip-filter-summary" style="font-size:0.75rem;">All
-                                        slips</div>
+                                    <span class="srm-card-title">
+                                        <i class="bi bi-table"></i>Incentive Slips
+                                    </span>
+                                    <div class="srm-card-meta mt-1" id="slip-filter-summary">0 slips</div>
                                 </div>
                                 <button id="btn-calc" class="btn btn-sm btn-primary" onclick="openCalcModal()"
                                     style="display:none; border-radius: 8px;">
@@ -756,9 +783,8 @@
                                 </button>
                             </div>
 
-                            <!-- Slips table -->
-                            <div class="table-responsive">
-                                <table class="table table-hover align-middle mb-0 slips-table">
+                            <div class="srm-table-wrap">
+                                <table class="table table-hover align-middle srm-table slips-table">
                                     <colgroup>
                                         <col class="col-employee">
                                         <col class="col-period">
@@ -771,22 +797,18 @@
                                         <tr>
                                             <th class="ps-3">Employee</th>
                                             <th>Period / Time</th>
-                                            <th class="ps-4">Tasks</th>
+                                            <th>Tasks</th>
                                             <th>Slab</th>
                                             <th class="text-end">Per Task</th>
                                             <th class="pe-3 text-end">Total</th>
                                         </tr>
                                     </thead>
                                     <tbody id="slips-tbody">
-                                        <tr>
-                                            <td colspan="6" class="text-center py-5 text-muted">
-                                                <span class="spinner-border spinner-border-sm me-2"></span>Loading...
-                                            </td>
-                                        </tr>
+                                        <!-- Rendered dynamically -->
                                     </tbody>
                                 </table>
                             </div>
-
+                            <div id="slips-pagination"></div>
                         </div>
                     </div>
 
@@ -797,7 +819,8 @@
 
     <!-- Unified Modern Calculate Incentive Modal -->
     <div class="srm-overlay" id="calcModal">
-        <div class="srm-box" style="max-width:540px; padding: 20px; border-radius: 20px; max-height: 90vh; overflow-y: auto; scrollbar-width: thin;">
+        <div class="srm-box"
+            style="max-width:540px; padding: 20px; border-radius: 20px; max-height: 90vh; overflow-y: auto; scrollbar-width: thin;">
             <div class="d-flex align-items-center gap-3 mb-3">
                 <div class="calc-header-icon">
                     <i class="bi bi-calculator"></i>
@@ -824,32 +847,44 @@
                 <div class="calc-input-card mb-3">
                     <div class="row g-3">
                         <div class="col-12" id="calc-user-row">
-                            <label class="form-label fw-bold text-muted small text-uppercase" style="letter-spacing: 0.05em; font-size: 0.65rem;">Target Employee</label>
+                            <label class="form-label fw-bold text-muted small text-uppercase"
+                                style="letter-spacing: 0.05em; font-size: 0.65rem;">Target Employee</label>
                             <div class="input-group">
-                                <span class="input-group-text bg-transparent border-end-0 py-2" style="border-radius: 10px 0 0 10px;"><i class="bi bi-person text-muted small"></i></span>
-                                <select id="calc-user" class="form-select border-start-0 ps-0 py-2" style="border-radius: 0 10px 10px 0; font-size: 0.9rem;">
+                                <span class="input-group-text bg-transparent border-end-0 py-2"
+                                    style="border-radius: 10px 0 0 10px;"><i
+                                        class="bi bi-person text-muted small"></i></span>
+                                <select id="calc-user" class="form-select border-start-0 ps-0 py-2"
+                                    style="border-radius: 0 10px 10px 0; font-size: 0.9rem;">
                                     <option value="">Loading...</option>
                                 </select>
                             </div>
                         </div>
                         <div class="col-12">
-                            <label class="form-label fw-bold text-muted small text-uppercase" style="letter-spacing: 0.05em; font-size: 0.65rem;">Calculation Period</label>
+                            <label class="form-label fw-bold text-muted small text-uppercase"
+                                style="letter-spacing: 0.05em; font-size: 0.65rem;">Calculation Period</label>
                             <div class="input-group">
-                                <span class="input-group-text bg-transparent border-end-0 py-2" style="border-radius: 10px 0 0 10px;"><i class="bi bi-calendar3 text-muted small"></i></span>
-                                <input type="month" id="calc-period" class="form-control border-start-0 ps-0 py-2" style="border-radius: 0 10px 10px 0; font-size: 0.9rem;">
+                                <span class="input-group-text bg-transparent border-end-0 py-2"
+                                    style="border-radius: 10px 0 0 10px;"><i
+                                        class="bi bi-calendar3 text-muted small"></i></span>
+                                <input type="month" id="calc-period" class="form-control border-start-0 ps-0 py-2"
+                                    style="border-radius: 0 10px 10px 0; font-size: 0.9rem;">
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="alert alert-info border-0 rounded-4 d-flex align-items-center gap-3 py-3 px-4 mb-4" id="bulk-info-alert" style="display:none !important; background: rgba(79, 70, 229, 0.08); color: var(--primary);">
+                <div class="alert alert-info border-0 rounded-4 d-flex align-items-center gap-3 py-3 px-4 mb-4"
+                    id="bulk-info-alert"
+                    style="display:none !important; background: rgba(79, 70, 229, 0.08); color: var(--primary);">
                     <i class="bi bi-info-circle-fill fs-5"></i>
-                    <div class="small fw-600">This will generate incentive slips for all eligible employees for the selected month.</div>
+                    <div class="small fw-600">This will generate incentive slips for all eligible employees for the
+                        selected month.</div>
                 </div>
 
                 <div class="d-flex justify-content-end gap-2">
                     <button class="btn py-2 px-3 fw-800 text-muted small" onclick="closeCalcModal()">Cancel</button>
-                    <button class="btn btn-primary py-2 px-4 fw-800 rounded-3 shadow-sm small" id="calc-preview-btn" onclick="previewCalcIncentive()">
+                    <button class="btn btn-primary py-2 px-4 fw-800 rounded-3 shadow-sm small" id="calc-preview-btn"
+                        onclick="previewCalcIncentive()">
                         <span id="btn-calc-text">Proceed to Preview</span>
                         <i class="bi bi-arrow-right-short ms-1 fs-5"></i>
                     </button>
@@ -862,15 +897,18 @@
                     <div class="preview-summary-grid" style="background: var(--border);">
                         <div class="preview-summary-item border-end" style="background: var(--surface); flex: 1.2;">
                             <span class="label">Employee</span>
-                            <span class="value text-truncate" id="prev-employee" style="color: var(--primary);">Loading...</span>
+                            <span class="value text-truncate" id="prev-employee"
+                                style="color: var(--primary);">Loading...</span>
                         </div>
-                        <div class="preview-summary-item" style="background: var(--surface); border-left: 1px solid var(--border);">
+                        <div class="preview-summary-item"
+                            style="background: var(--surface); border-left: 1px solid var(--border);">
                             <span class="label">Payable Month</span>
                             <span class="value" id="prev-period">-</span>
                         </div>
                     </div>
 
-                    <div class="px-3 py-2 border-top border-bottom bg-light d-flex align-items-center justify-content-between" style="font-size: 0.72rem; letter-spacing: 0.02em;">
+                    <div class="px-3 py-2 border-top border-bottom bg-light d-flex align-items-center justify-content-between"
+                        style="font-size: 0.72rem; letter-spacing: 0.02em;">
                         <span class="text-muted fw-600"><i class="bi bi-clock-history me-1"></i>ANALYSIS WINDOW:</span>
                         <span class="fw-800 text-main" id="prev-audit-window">Checking history...</span>
                     </div>
@@ -879,7 +917,7 @@
                         <div id="prev-breakdown-container">
                             <!-- Monthly breakdown will be injected here -->
                         </div>
-                        
+
                         <div class="mt-3 pt-2 border-top border-light">
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <span class="small fw-700 text-muted text-uppercase">Payable Clients (Settled)</span>
@@ -899,18 +937,22 @@
                             <span class="small fw-700 text-muted text-uppercase">Performance Bonuses</span>
                             <span class="fw-800 text-primary" id="prev-slab-bonus">-</span>
                         </div>
-                        <div class="preview-total-card p-2 rounded-3 mt-3" style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid rgba(255,255,255,0.1);">
+                        <div class="preview-total-card p-2 rounded-3 mt-3"
+                            style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid rgba(255,255,255,0.1);">
                             <div class="d-flex justify-content-between align-items-center gap-2">
                                 <div style="min-width: 120px;">
-                                    <div class="label opacity-75 small fw-700 text-white" style="font-size: 0.7rem; letter-spacing: 0.05em;">GRAND TOTAL</div>
-                                    <div class="small opacity-50 text-white" style="font-size: 0.6rem;">Ready for confirmation</div>
+                                    <div class="label opacity-75 small fw-700 text-white"
+                                        style="font-size: 0.7rem; letter-spacing: 0.05em;">GRAND TOTAL</div>
+                                    <div class="small opacity-50 text-white" style="font-size: 0.6rem;">Ready for
+                                        confirmation</div>
                                 </div>
                                 <div class="value fs-3 fw-800 text-white" id="prev-total" style="line-height:1;">-</div>
                             </div>
                         </div>
                     </div>
-                    
-                    <div id="slip-exists-warning" class="preview-footer-bulk" style="display:none; color: #92400e; background: #fffbeb;">
+
+                    <div id="slip-exists-warning" class="preview-footer-bulk"
+                        style="display:none; color: #92400e; background: #fffbeb;">
                         <i class="bi bi-exclamation-triangle-fill text-warning"></i>
                         A slip already exists for this period.
                     </div>
@@ -920,7 +962,8 @@
                     <button class="btn py-2 px-3 fw-800 text-muted small" onclick="backToCalcInputs()">
                         <i class="bi bi-arrow-left me-1"></i>Back
                     </button>
-                    <button class="btn btn-success py-2 px-4 fw-800 rounded-3 shadow-sm small" id="calc-submit-btn" onclick="calcIncentive()">
+                    <button class="btn btn-success py-2 px-4 fw-800 rounded-3 shadow-sm small" id="calc-submit-btn"
+                        onclick="calcIncentive()">
                         <i class="bi bi-check-circle-fill me-2"></i>Confirm & Save
                     </button>
                 </div>
@@ -929,11 +972,13 @@
             <!-- Bulk Confirm State -->
             <div id="calc-step-bulk-confirm" style="display:none;">
                 <div class="text-center py-4 mb-4">
-                    <div class="bg-primary-light text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 80px; height: 80px;">
+                    <div class="bg-primary-light text-primary rounded-circle d-inline-flex align-items-center justify-content-center mb-4"
+                        style="width: 80px; height: 80px;">
                         <i class="bi bi-layers-fill fs-1"></i>
                     </div>
                     <h5 class="fw-800">Review Bulk Generation</h5>
-                    <p class="text-muted px-4">Generating slips for all employees can take a few seconds. This action will process all eligible tasks for the selected month.</p>
+                    <p class="text-muted px-4">Generating slips for all employees can take a few seconds. This action
+                        will process all eligible tasks for the selected month.</p>
                 </div>
 
                 <div class="calc-input-card mb-4 bg-light border-0">
@@ -945,7 +990,8 @@
 
                 <div class="d-flex justify-content-end gap-2">
                     <button class="btn py-3 px-4 fw-800 text-muted" onclick="backToCalcInputs()">Cancel</button>
-                    <button class="btn btn-primary py-3 px-5 fw-800 rounded-4 shadow-sm" id="calc-bulk-confirm-btn" onclick="calcIncentive()">
+                    <button class="btn btn-primary py-3 px-5 fw-800 rounded-4 shadow-sm" id="calc-bulk-confirm-btn"
+                        onclick="calcIncentive()">
                         <i class="bi bi-lightning-fill me-2"></i>Run Engine Now
                     </button>
                 </div>
@@ -990,12 +1036,36 @@
         </div>
     </div>
 
-    <script src="/static/js/utils.js?v=20260403"></script>
-    <script src="/static/js/api.js?v=20260403"></script>
-    <script src="/static/js/auth.js?v=20260403"></script>
-    <script src="/static/js/ui_components.js?v=20260403"></script>
-    <script src="/static/js/app.js?v=20260403"></script>
-    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <!-- Breakdown Modal -->
+    <div class="srm-overlay" id="breakdownModal">
+        <div class="srm-box" style="max-width: 600px; padding: 28px;">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <div class="calc-header-icon" style="background: var(--primary-light); color: var(--primary);">
+                    <i class="bi bi-layers"></i>
+                </div>
+                <div>
+                    <h5 class="fw-800 mb-0">Incentive Breakdown</h5>
+                    <p class="text-muted small mb-0" id="breakdown-subtitle">Detailed task & rate analysis</p>
+                </div>
+                <button class="btn-close ms-auto" onclick="closeBreakdownModal()"></button>
+            </div>
+
+            <div id="breakdown-content">
+                <!-- Data injected via JS -->
+            </div>
+
+            <div class="d-flex justify-content-end mt-4">
+                <button class="btn btn-light px-4 fw-bold" onclick="closeBreakdownModal()">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/frontend/js/utils.js?v=20260403"></script>
+    <script src="/frontend/js/api.js?v=20260403"></script>
+    <script src="/frontend/js/auth.js?v=20260403"></script>
+    <script src="/frontend/js/ui_components.js?v=20260403"></script>
+    <script src="/frontend/js/app.js?v=20260403"></script>
+    <script src="/frontend/js/bootstrap.bundle.min.js"></script>
     <script>
         requireAuth();
         const sb = document.getElementById('sidebar');
@@ -1029,7 +1099,7 @@
             document.getElementById('mode-bulk').classList.toggle('active', mode === 'bulk');
             document.getElementById('calc-user-row').style.display = (mode === 'single' ? 'block' : 'none');
             document.getElementById('bulk-info-alert').style.setProperty('display', mode === 'bulk' ? 'flex' : 'none', mode === 'bulk' ? 'important' : '');
-            
+
             const btnText = document.getElementById('btn-calc-text');
             if (btnText) {
                 btnText.textContent = mode === 'single' ? 'Proceed to Preview' : 'Configure Bulk Scan';
@@ -1037,6 +1107,78 @@
         }
 
         // Modal helpers
+        function openEditSlabModal() {
+            document.getElementById('editSlabModal').classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeEditSlabModal() {
+            document.getElementById('editSlabModal').classList.remove('show');
+            document.body.style.overflow = 'auto';
+        }
+
+        function openBreakdownModal() {
+            document.getElementById('breakdownModal').classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeBreakdownModal() {
+            document.getElementById('breakdownModal').classList.remove('show');
+            document.body.style.overflow = 'auto';
+        }
+
+        function showSlipBreakdown(slipJsonEnc) {
+            const slip = JSON.parse(decodeURIComponent(slipJsonEnc));
+            const fmt = n => 'Rs\u00a0' + Number(n).toLocaleString('en-IN', { maximumFractionDigits: 0 });
+
+            document.getElementById('breakdown-subtitle').innerText = `${slip.user_name} \u2022 ${slip.period}`;
+
+            let html = `
+                <div class="preview-breakdown mb-4">
+                    <div class="preview-row">
+                        <span class="label">Confirmed Tasks</span>
+                        <span class="value">${slip.achieved}</span>
+                    </div>
+                    <div class="preview-row">
+                        <span class="label">Applied Slab</span>
+                        <span class="value">${slip.applied_slab || 'None'}</span>
+                    </div>
+                    <div class="preview-row">
+                        <span class="label">Base Rate</span>
+                        <span class="value">${fmt(slip.amount_per_unit || 0)} / Task</span>
+                    </div>
+                    <div class="preview-row">
+                        <span class="label">Slab Bonus</span>
+                        <span class="value">${fmt(slip.slab_bonus_amount || 0)}</span>
+                    </div>
+                    <div class="preview-row full-width">
+                        <span class="label">Calculation Window</span>
+                        <span class="value" style="font-size:0.8rem;">${fmtDateTime(slip.generated_at)}</span>
+                    </div>
+                </div>
+                
+                <h6 class="fw-800 small text-muted text-uppercase mb-3" style="letter-spacing:0.05em;">Performance Audit</h6>
+                <div id="slip-breakdown-audit" class="slab-modal-grid">
+                    <div class="d-flex justify-content-between py-2 border-bottom border-light">
+                        <span class="small fw-700 text-muted">BASE INCENTIVE</span>
+                        <span class="fw-800 text-main">${fmt(slip.total_incentive - (slip.slab_bonus_amount || 0))}</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-2">
+                        <span class="small fw-700 text-muted">SLAB BONUS</span>
+                        <span class="fw-800 text-success">+ ${fmt(slip.slab_bonus_amount || 0)}</span>
+                    </div>
+                </div>
+
+                <div class="preview-total-card">
+                    <span class="label">TOTAL INCENTIVE</span>
+                    <span class="value">${fmt(slip.total_incentive)}</span>
+                </div>
+            `;
+
+            document.getElementById('breakdown-content').innerHTML = html;
+            openBreakdownModal();
+        }
+
         function openCalcModal() {
             if (!canManageIncentive) {
                 showToast('You do not have permission to calculate incentives', 'error');
@@ -1045,7 +1187,7 @@
             // Reset to step 1
             setCalcMode('single');
             backToCalcInputs();
-            
+
             // Clear validation state
             const calcBox = document.getElementById('calcModal');
             if (calcBox) {
@@ -1200,6 +1342,8 @@
                 return;
             }
             const id = document.getElementById('edit-slab-id').value;
+            const min = parseInt(document.getElementById('edit-slab-min').value);
+            const max = parseInt(document.getElementById('edit-slab-max').value);
             const perUnit = parseFloat(document.getElementById('edit-slab-per-unit').value);
             const bonus = parseFloat(document.getElementById('edit-slab-bonus').value || '0');
             const btn = document.getElementById('edit-slab-submit-btn');
@@ -1267,7 +1411,6 @@
         async function loadSlips() {
             const userId = currentFilters['slip-user-filter'] === 'ALL' ? '' : (currentFilters['slip-user-filter'] || '');
             const tbody = document.getElementById('slips-tbody');
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading...</td></tr>';
             try {
                 let slips;
                 if (userId) {
@@ -1304,47 +1447,55 @@
                     if (desc) desc.textContent = 'View your personal tasks, achievements and incentive history.';
                 }
 
-                if (!slips.length) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">No incentive slips found.</td></tr>';
-                    return;
-                }
-
-                tbody.innerHTML = slips.map(s => {
-                    const name = s.user_name || ('Employee #' + s.user_id);
-                    const parts = name.split(' ');
-                    const firstName = parts[0];
-                    const lastName = parts.slice(1).join(' ');
-                    const perTask = Number(s.amount_per_unit || 0);
-                    const slabBonus = Number(s.slab_bonus_amount || 0);
-                    const rawAppliedSlab = s.applied_slab == null ? '' : String(s.applied_slab).trim();
-                    const hasValidSlab = rawAppliedSlab !== '' && rawAppliedSlab !== '0' && rawAppliedSlab !== '0.0' && rawAppliedSlab.toLowerCase() !== 'none';
-                    const slabLabel = hasValidSlab ? rawAppliedSlab : 'No slab matched';
-                    const managerRemarkEnc = encodeURIComponent(s.manager_remarks || '');
-                    return `<tr>
-                        <td class="ps-3 slip-employee-cell">
-                            <div class="d-flex flex-column">
-                                <span class="fw-bold text-main" style="font-size:0.9rem; line-height:1.2;">${firstName}</span>
-                                ${lastName ? `<span class="text-muted" style="font-size:0.8rem; line-height:1.1;">${lastName}</span>` : ''}
-                            </div>
-                        </td>
-                        <td class="slip-period-cell text-nowrap" style="line-height:1.3;">
-                            <span class="fw-semibold text-main" style="font-size:0.82rem;">${s.period}</span>
-                            <span class="text-muted d-block" style="font-size:0.72rem;">${fmtDateTime(s.generated_at)}</span>
-                        </td>
-                        <td class="slip-task-cell text-nowrap ps-4">
-                            <span class="fw-bold" style="font-size:0.88rem;">${s.achieved}</span>
-                            <span class="text-muted" style="font-size:0.72rem; display:block;">Tasks</span>
-                        </td>
-                        <td>
-                            <span class="fw-semibold text-main slip-slab-label" style="font-size:0.75rem; display:block; line-height:1.2;">${slabLabel}</span>
-                            <span class="text-muted d-block" style="font-size:0.68rem;">Bonus: Rs&nbsp;${fmt(slabBonus)}</span>
-                        </td>
-                        <td class="text-end slip-rate-cell text-nowrap">
-                            <span class="text-primary fw-semibold">Rs&nbsp;${fmt(perTask)}</span>
-                        </td>
-                        <td class="pe-3 text-end fw-bold slip-total-cell text-nowrap">Rs&nbsp;${fmt(s.total_incentive)}</td>
-                    </tr>`;
-                }).join('');
+                renderPagination({
+                    data: slips,
+                    tbodyId: 'slips-tbody',
+                    paginationId: 'slips-pagination',
+                    emptyMsg: '<tr><td colspan="7" class="text-center py-5 text-muted">No incentive slips found.</td></tr>',
+                    renderRow: (s) => {
+                        const name = s.user_name || ('Employee #' + s.user_id);
+                        const parts = name.split(' ');
+                        const firstName = parts[0];
+                        const lastName = parts.slice(1).join(' ');
+                        const perTask = Number(s.amount_per_unit || 0);
+                        const slabBonus = Number(s.slab_bonus_amount || 0);
+                        const rawAppliedSlab = s.applied_slab == null ? '' : String(s.applied_slab).trim();
+                        const hasValidSlab = rawAppliedSlab !== '' && rawAppliedSlab !== '0' && rawAppliedSlab !== '0.0' && rawAppliedSlab.toLowerCase() !== 'none';
+                        const slabLabel = hasValidSlab ? rawAppliedSlab : 'No slab matched';
+                        const slipJsonEnc = encodeURIComponent(JSON.stringify(s));
+                        return `<tr class="hover-row">
+                            <td class="ps-3 slip-employee-cell">
+                                <div class="d-flex flex-column">
+                                    <span class="fw-bold text-main" style="font-size:0.9rem; line-height:1.2;">${firstName}</span>
+                                    ${lastName ? `<span class="text-muted" style="font-size:0.8rem; line-height:1.1;">${lastName}</span>` : ''}
+                                </div>
+                            </td>
+                            <td class="slip-period-cell text-nowrap" style="line-height:1.3;">
+                                <span class="fw-semibold text-main" style="font-size:0.82rem;">${s.period}</span>
+                                <span class="text-muted d-block" style="font-size:0.72rem;">${fmtDateTime(s.generated_at)}</span>
+                            </td>
+                            <td class="slip-task-cell text-nowrap ps-4">
+                                <span class="fw-bold" style="font-size:0.88rem;">${s.achieved}</span>
+                                <span class="text-muted" style="font-size:0.72rem; display:block;">Tasks</span>
+                            </td>
+                            <td>
+                                <span class="fw-semibold text-main slip-slab-label" style="font-size:0.75rem; display:block; line-height:1.2;">${slabLabel}</span>
+                                <span class="text-muted d-block" style="font-size:0.68rem;">Bonus: Rs&nbsp;${fmt(slabBonus)}</span>
+                            </td>
+                            <td class="text-end slip-rate-cell text-nowrap">
+                                <span class="text-primary fw-semibold">Rs&nbsp;${fmt(perTask)}</span>
+                            </td>
+                            <td class="pe-3 text-end fw-bold slip-total-cell text-nowrap">
+                                <div class="d-flex align-items-center justify-content-end gap-2">
+                                    <span>Rs&nbsp;${fmt(s.total_incentive)}</span>
+                                    <button class="btn btn-sm p-0 text-primary border-0" onclick="showSlipBreakdown('${slipJsonEnc}')">
+                                        <i class="bi bi-info-circle"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>`;
+                    }
+                });
             } catch (e) {
                 tbody.innerHTML = `<tr><td colspan="7" class="text-center py-5 text-danger small">${e.message || 'Error'}</td></tr>`;
                 document.getElementById('stat-tasks').innerText = '-';
@@ -1404,7 +1555,7 @@
 
             const period = document.getElementById('calc-period').value;
             const rules = { 'calc-period': 'Select a period' };
-            
+
             if (currentCalcMode === 'single') {
                 rules['calc-user'] = 'Select an employee';
             }
@@ -1430,7 +1581,7 @@
             try {
                 const prev = await ApiClient.previewIncentive({ user_id: userId, period });
                 const fmt = n => 'Rs\u00a0' + Number(n).toLocaleString('en-IN', { maximumFractionDigits: 0 });
-                
+
                 document.getElementById('prev-employee').textContent = prev.user_name;
                 document.getElementById('prev-period').textContent = prev.period;
                 document.getElementById('prev-confirmed').textContent = `${prev.confirmed_tasks} Client${prev.confirmed_tasks !== 1 ? 's' : ''}`;
@@ -1438,7 +1589,7 @@
                 document.getElementById('prev-base').textContent = fmt(prev.base_incentive);
                 document.getElementById('prev-slab-bonus').textContent = fmt(prev.slab_bonus);
                 document.getElementById('prev-total').textContent = fmt(prev.total_incentive);
-                
+
                 // Set Audit Window
                 const winStart = prev.audit_window_start || 'History Start';
                 const winEnd = prev.audit_window_end || 'Today';
@@ -1472,7 +1623,7 @@
                 document.getElementById('calc-step-preview').style.display = 'block';
                 const stepLabel = document.querySelector('.calc-step-label');
                 if (stepLabel) stepLabel.textContent = 'Step 2 of 2';
-                
+
                 if (prev.confirmed_tasks === 0) {
                     showToast('Note: No eligible clients found in this period (Check 10-day buffer)', 'warning');
                 }
@@ -1496,7 +1647,7 @@
             const isBulk = currentCalcMode === 'bulk';
             const btnId = isBulk ? 'calc-bulk-confirm-btn' : 'calc-submit-btn';
             const btn = document.getElementById(btnId);
-            
+
             btn.disabled = true;
             const originalHtml = btn.innerHTML;
             btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
@@ -1562,45 +1713,45 @@
         // Employee Specific: Load current progress for the dashboard
         async function loadEmployeeProgress() {
             if (isAdmin && !canManageIncentive) return; // Admins see everything, but this is a 'Personal' tracker
-            
+
             const row = document.getElementById('employee-progress-row');
             if (!row) return;
 
             try {
                 const now = new Date();
                 const period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-                
+
                 // Reuse preview endpoint for live status
-                const res = await ApiClient.previewIncentive({ 
-                    user_id: user.id, 
-                    period 
+                const res = await ApiClient.previewIncentive({
+                    user_id: user.id,
+                    period
                 });
 
                 row.style.display = 'flex';
                 document.getElementById('progress-month-year').innerText = `— ${now.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}`;
                 document.getElementById('progress-cumulative-total').innerText = (res.offset + res.confirmed_tasks);
                 document.getElementById('progress-history-count').innerText = res.offset;
-                
+
                 // Calculate next milestone
                 const slabs = window.__incentiveSlabsCache || [];
                 let nextSlab = slabs.find(s => s.min_units > (res.offset + res.confirmed_tasks));
-                
+
                 const totalReached = res.offset + res.confirmed_tasks;
-                
+
                 if (nextSlab) {
                     const remaining = nextSlab.min_units - totalReached;
                     document.getElementById('progress-next-milestone').innerText = `Next Milestone: ${nextSlab.min_units} Tasks`;
                     document.getElementById('progress-remaining-text').innerText = `${remaining} more tasks to unlock Slab ${slabs.indexOf(nextSlab) + 1}`;
-                    
+
                     // Progress bar math
                     const prevMax = slabs[slabs.indexOf(nextSlab) - 1]?.max_units || 0;
                     const range = nextSlab.min_units - prevMax;
                     const historyInSlab = Math.max(0, Math.min(res.offset, nextSlab.min_units) - prevMax);
                     const currentInSlab = Math.max(0, Math.min(totalReached, nextSlab.min_units) - Math.max(res.offset, prevMax));
-                    
+
                     const historyPct = (historyInSlab / range) * 100;
                     const currentPct = (currentInSlab / range) * 100;
-                    
+
                     document.getElementById('progress-bar-history').style.width = `${historyPct}%`;
                     document.getElementById('progress-bar-current').style.width = `${currentPct}%`;
                 } else {

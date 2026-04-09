@@ -927,10 +927,11 @@ async function submitFinalVisit(event) {
     const sFrontPhoto = typeof storefrontBlob !== 'undefined' ? storefrontBlob : null;
     const sFiePhoto = typeof selfieBlob !== 'undefined' ? selfieBlob : null;
 
-    // 3. UI Safety Check
-    if (!isFollowUp && !sFrontPhoto && !sFiePhoto) {
+    // 3. UI Safety Check — photos required only for standard field visits (not follow-ups or ACCEPT)
+    const photoRequired = !isFollowUp && outcome !== 'ACCEPT';
+    if (photoRequired && !sFrontPhoto && !sFiePhoto) {
         alert("Wait! You must snap at least one photo (Storefront or Selfie) before saving.");
-        return; // Stops here, no crash!
+        return;
     }
 
     // 4. Build FormData
@@ -974,6 +975,10 @@ async function submitFinalVisit(event) {
 
         // 7. Handle Success UI Transition
         if (outcome === 'ACCEPT') {
+            // Refresh data so the progress bar and queue reflect DELIVERY stage
+            await loadHubData();
+            renderProgressBar('DELIVERY');
+
             document.querySelector('.action-center').innerHTML = `
                 <div class="text-center py-5">
                     <i class="bi bi-trophy-fill text-warning" style="font-size: 4rem;"></i>

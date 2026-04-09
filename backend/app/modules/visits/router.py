@@ -39,9 +39,9 @@ async def create_visit(
     """
     follow_up = str(is_follow_up).lower() == "true"
     
-    # Validation for Sales visits
+    # Validation for Sales visits — photos required for all outcomes EXCEPT ACCEPT (deal won)
     if current_user.role in [UserRole.SALES, UserRole.PROJECT_MANAGER_AND_SALES]:
-        if not follow_up and not (storefront_photo or selfie_photo):
+        if not follow_up and status != 'ACCEPT' and not (storefront_photo or selfie_photo):
             raise HTTPException(status_code=400, detail="At least one photo (Storefront or Selfie) is mandatory for Sales visits")
 
     # Date Parsing

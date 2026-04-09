@@ -1,8 +1,7 @@
-# backend/app/modules/users/models.py
 import enum
 from typing import Optional, Dict, Any
 from datetime import date
-from pydantic import Field
+from pydantic import Field, field_validator  # Aa line dhyan thi chek karjo
 from beanie import Document, Indexed
 
 class UserRole(str, enum.Enum):
@@ -28,10 +27,25 @@ class User(Document):
     # --- Employee / HR Profile ---
     employee_code: Optional[str] = None
     joining_date: Optional[date] = None
-    base_salary: Optional[float] = 0.0
-    target: Optional[int] = 0
+    base_salary: float | None = None
+    target: int | None = None
     incentive_enabled: bool = True
     department: Optional[str] = None
+
+    # --- Validators (Aa nava code ma chhe, etle aa rakvu jaruri chhe) ---
+    @field_validator("base_salary", mode="before")
+    @classmethod
+    def coerce_salary(cls, v):
+        if v is None: return None
+        try: return float(v)
+        except (TypeError, ValueError): return 0.0
+
+    @field_validator("target", mode="before")
+    @classmethod
+    def coerce_target(cls, v):
+        if v is None: return None
+        try: return int(v)
+        except (TypeError, ValueError): return 0
 
     class Settings:
         name = "srm_users"

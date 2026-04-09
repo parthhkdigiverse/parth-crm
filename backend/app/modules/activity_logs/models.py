@@ -35,8 +35,8 @@ class ActivityLog(Document):
     action: Any = "UNKNOWN"
     entity_type: Any = "UNKNOWN"
     entity_id: Any = None
-    old_data: Optional[Dict[str, Any]] = None
-    new_data: Optional[Dict[str, Any]] = None
+    old_data: Any = None
+    new_data: Any = None
     ip_address: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 

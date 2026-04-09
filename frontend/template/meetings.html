@@ -9,11 +9,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Meetings | SRM AI SETU</title>
     <!-- Combined Stylesheets -->
-    <link rel="stylesheet" href="/static/css/bootstrap.min.css">
-    <link rel="stylesheet" href="/static/css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/frontend/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/frontend/css/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/theme.css?v=20260403">
-    <link rel="stylesheet" href="/static/css/components.css?v=20260403">
+    <link rel="stylesheet" href="/frontend/css/theme.css?v=20260406">
+    <link rel="stylesheet" href="/frontend/css/components.css?v=20260406">
     <style>
         .page-content-standard {
             padding: 40px;
@@ -23,22 +23,27 @@
         .premium-card-modal .modal-content {
             border-radius: 24px;
             border: none;
-            box-shadow: 0 25px 80px rgba(0,0,0,0.15);
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.15);
             overflow: hidden;
             background: var(--surface);
         }
+
         .premium-card-modal .modal-header-strip {
             background: linear-gradient(135deg, #2563eb, #4f46e5);
             padding: 1.5rem 2rem;
             color: white;
-            display: flex; justify-content: space-between; align-items: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
+
         .premium-card-modal .modal-body {
             max-height: calc(100vh - 180px);
             overflow-y: auto;
             padding: 2rem;
             scrollbar-width: thin;
         }
+
         .category-toggle-card {
             display: flex;
             gap: 15px;
@@ -47,25 +52,60 @@
             background: var(--bg-app);
             border-radius: 15px;
         }
-        .category-toggle-card input { display: none; }
-        .category-toggle-card label {
-            flex: 1; text-align: center; padding: 12px; border-radius: 12px;
-            cursor: pointer; font-weight: 600; transition: 0.3s;
-            color: var(--text-muted); border: 2px solid transparent;
+
+        .category-toggle-card input {
+            display: none;
         }
-        .category-toggle-card input:checked + label {
-            background: white; color: var(--primary);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+
+        .category-toggle-card label {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.3s;
+            color: var(--text-muted);
+            border: 2px solid transparent;
+        }
+
+        .category-toggle-card input:checked+label {
+            background: var(--surface);
+            color: var(--primary);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
             border-color: var(--primary);
         }
+
         .slot-pill {
-            padding: 8px 12px; border-radius: 10px; border: 2px solid var(--border);
-            cursor: pointer; transition: 0.2s; font-weight: 600;
-            background: white; flex: 1; min-width: 100px; text-align: center; font-size: 0.8rem;
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 2px solid var(--border);
+            cursor: pointer;
+            transition: 0.2s;
+            font-weight: 600;
+            background: var(--surface);
+            flex: 1;
+            min-width: 100px;
+            text-align: center;
+            font-size: 0.8rem;
         }
-        .slot-pill:hover { border-color: var(--primary); }
-        .slot-pill.active { background: var(--primary); color: white; border-color: var(--primary); }
-        .slot-pill.disabled { opacity: 0.3; text-decoration: line-through; cursor: not-allowed; border-style: dashed; }
+
+        .slot-pill:hover {
+            border-color: var(--primary);
+        }
+
+        .slot-pill.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .slot-pill.disabled {
+            opacity: 0.3;
+            text-decoration: line-through;
+            cursor: not-allowed;
+            border-style: dashed;
+        }
 
         @media (min-width: 992px) {
             .premium-card-modal .modal-dialog {
@@ -73,19 +113,23 @@
                 max-width: 850px;
             }
         }
-        
+
         /* [START] - Added compact modal tweaks for fit-to-screen */
         .premium-card-modal .modal-body {
             padding: 1.5rem !important;
             font-size: 0.9rem;
         }
-        .premium-card-modal .form-control, .premium-card-modal .form-select {
+
+        .premium-card-modal .form-control,
+        .premium-card-modal .form-select {
             padding: 0.6rem 0.8rem;
             font-size: 0.85rem;
         }
+
         .premium-card-modal .category-toggle-card {
             margin-bottom: 1.5rem;
         }
+
         /* [END] */
     </style>
 </head>
@@ -102,12 +146,14 @@
                 <div class="page-header-glass">
                     <div class="min-w-0">
                         <h2 class="page-section-title fw-bold mb-1">Meetings</h2>
-                        <p class="text-muted mb-0 small">Plan future sessions, track confirmed appointments, and review AI-generated meeting summaries.</p>
-                        <p class="text-muted mb-0 small d-none d-sm-block mt-1" id="meeting-count">Analyzing scheduled sessions...</p>
+                        <p class="text-muted mb-0 small">Plan future sessions, track confirmed appointments, and review
+                            AI-generated meeting summaries.</p>
+                        <p class="text-muted mb-0 small d-none d-sm-block mt-1" id="meeting-count">Analyzing scheduled
+                            sessions...</p>
                     </div>
                     <div class="flex-shrink-0">
-                        <button class="btn btn-primary d-flex align-items-center gap-2 fw-semibold px-3 px-sm-4" style="border-radius:10px;"
-                            data-bs-toggle="modal" data-bs-target="#addMeetingModal">
+                        <button class="btn btn-primary d-flex align-items-center gap-2 fw-semibold px-3 px-sm-4"
+                            style="border-radius:10px;" data-bs-toggle="modal" data-bs-target="#addMeetingModal">
                             <i class="bi bi-plus-lg"></i>
                             <span class="d-none d-md-inline">Schedule Session</span>
                             <span class="d-inline d-md-none">Schedule</span>
@@ -116,7 +162,7 @@
                 </div>
 
                 <!-- Filter Panel Wrapper -->
-                <div id="filter-wrapper"></div>
+                <div id="filter-wrapper" class="mb-4"></div>
 
                 <div class="card meeting-card border-0 shadow-sm" style="overflow: visible; border-radius: 20px;">
                     <div class="card-body p-0">
@@ -151,6 +197,7 @@
                                 </tbody>
                             </table>
                         </div>
+                        <div id="meetings-pagination"></div>
                     </div>
                 </div>
             </div>
@@ -171,11 +218,13 @@
                 <div class="modal-body">
                     <!-- Session Category Selector -->
                     <div class="category-toggle-card">
-                        <input type="radio" name="meetCategory" id="cat-client" value="CLIENT" checked onchange="switchMeetCategory('CLIENT')">
+                        <input type="radio" name="meetCategory" id="cat-client" value="CLIENT" checked
+                            onchange="switchMeetCategory('CLIENT')">
                         <label for="cat-client"><i class="bi bi-people me-2"></i>External (Client)</label>
-                        
+
                         <div id="internal-toggle-wrapper" style="display:inline-block;">
-                            <input type="radio" name="meetCategory" id="cat-internal" value="INTERNAL" onchange="switchMeetCategory('INTERNAL')">
+                            <input type="radio" name="meetCategory" id="cat-internal" value="INTERNAL"
+                                onchange="switchMeetCategory('INTERNAL')">
                             <label for="cat-internal"><i class="bi bi-person-workspace me-2"></i>Internal (Team)</label>
                         </div>
                     </div>
@@ -183,12 +232,15 @@
                     <div class="row g-4">
                         <div class="col-md-7">
                             <div class="mb-4">
-                                <label class="form-label text-muted small text-uppercase fw-bold">Session Objective</label>
-                                <input id="m-title" class="form-control border-2" placeholder="e.g. Sales Review or Onboarding Stage 2">
+                                <label class="form-label text-muted small text-uppercase fw-bold">Session
+                                    Objective</label>
+                                <input id="m-title" class="form-control border-2"
+                                    placeholder="e.g. Sales Review or Onboarding Stage 2">
                             </div>
 
-                            <div id="filter-wrapper">
-                                <label class="form-label text-muted small text-uppercase fw-bold">Select Client <span class="text-danger">*</span></label>
+                            <div id="client-select-wrapper" class="mb-4">
+                                <label class="form-label text-muted small text-uppercase fw-bold">Select Client <span
+                                        class="text-danger">*</span></label>
                                 <select id="m-client" class="form-select border-2"></select>
                             </div>
 
@@ -202,7 +254,8 @@
                             </div>
 
                             <div id="role-select-wrapper" class="mb-4" style="display:none;">
-                                <label class="form-label text-muted small text-uppercase fw-bold">Target Department / Role</label>
+                                <label class="form-label text-muted small text-uppercase fw-bold">Target Department /
+                                    Role</label>
                                 <select id="m-role" class="form-select border-2">
                                     <option value="SALES">Sales Team</option>
                                     <option value="PROJECT_MANAGER">Project Managers</option>
@@ -213,7 +266,8 @@
 
                             <div class="row g-3 mb-4">
                                 <div class="col-6">
-                                    <label class="form-label text-muted small text-uppercase fw-bold">Host / Assignee</label>
+                                    <label class="form-label text-muted small text-uppercase fw-bold">Host /
+                                        Assignee</label>
                                     <select id="m-host" class="form-select border-2">
                                         <option value="">-- Me (Self) --</option>
                                     </select>
@@ -229,7 +283,8 @@
                             </div>
 
                             <div class="mb-4">
-                                <label class="form-label text-muted small text-uppercase fw-bold">Intensity / Priority</label>
+                                <label class="form-label text-muted small text-uppercase fw-bold">Intensity /
+                                    Priority</label>
                                 <select id="m-priority" class="form-select border-2">
                                     <option value="LOW">Low - Routine</option>
                                     <option value="MEDIUM" selected>Medium - Balanced</option>
@@ -238,28 +293,35 @@
                             </div>
 
                             <div class="mb-0">
-                                <label class="form-label text-muted small text-uppercase fw-bold">Contextual Notes</label>
-                                <textarea id="m-notes" class="form-control border-2" rows="3" placeholder="Define clear goals for this session..."></textarea>
+                                <label class="form-label text-muted small text-uppercase fw-bold">Contextual
+                                    Notes</label>
+                                <textarea id="m-notes" class="form-control border-2" rows="3"
+                                    placeholder="Define clear goals for this session..."></textarea>
                             </div>
                         </div>
 
                         <div class="col-md-5">
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <label class="form-label text-muted small text-uppercase fw-bold mb-0">Participants</label>
-                                <button class="btn btn-link btn-sm text-primary p-0 text-decoration-none fw-bold" onclick="checkConflict()">Check Free Slots</button>
+                                <label
+                                    class="form-label text-muted small text-uppercase fw-bold mb-0">Participants</label>
+                                <button class="btn btn-link btn-sm text-primary p-0 text-decoration-none fw-bold"
+                                    onclick="checkConflict()">Check Free Slots</button>
                             </div>
-                            <div id="m-attendees-container" class="border rounded-4 p-3 bg-app" style="height: 180px; overflow-y: auto; border: 2px solid var(--border) !important;">
+                            <div id="m-attendees-container" class="border rounded-4 p-3 bg-app"
+                                style="height: 180px; overflow-y: auto; border: 2px solid var(--border) !important;">
                                 <div class="text-muted small">Loading staff index...</div>
                             </div>
-                            
+
                             <div class="mt-4 pt-3 border-top">
                                 <div class="row g-2 mb-3">
                                     <div class="col-7">
                                         <label class="form-label text-muted small text-uppercase fw-bold">Date</label>
-                                        <input type="date" id="m-date" class="form-control border-2" onchange="checkConflict()">
+                                        <input type="date" id="m-date" class="form-control border-2"
+                                            onchange="checkConflict()">
                                     </div>
                                     <div class="col-5">
-                                        <label class="form-label text-muted small text-uppercase fw-bold">Start Time</label>
+                                        <label class="form-label text-muted small text-uppercase fw-bold">Start
+                                            Time</label>
                                         <input type="time" id="m-time" class="form-control border-2">
                                     </div>
                                 </div>
@@ -272,7 +334,9 @@
                 </div>
                 <div class="modal-footer border-0 p-4 pt-0">
                     <button class="btn btn-light px-4 rounded-pill" data-bs-dismiss="modal">Close</button>
-                    <button class="btn btn-primary px-5 rounded-pill fw-bold" id="save-meeting-btn" style="background: linear-gradient(135deg, #2563eb, #4f46e5); border: none;">Schedule Session</button>
+                    <button class="btn btn-primary px-5 rounded-pill fw-bold" id="save-meeting-btn"
+                        style="background: linear-gradient(135deg, #2563eb, #4f46e5); border: none;">Schedule
+                        Session</button>
                 </div>
             </div>
         </div>
@@ -292,7 +356,8 @@
                     <input type="hidden" id="res-selected-time">
                     <div class="mb-3">
                         <label class="form-label fw-semibold">New Date</label>
-                        <input type="date" id="res-date" class="form-control border-2 shadow-none" onchange="fetchRescheduleSlots()">
+                        <input type="date" id="res-date" class="form-control border-2 shadow-none"
+                            onchange="fetchRescheduleSlots()">
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Available Slots</label>
@@ -339,12 +404,12 @@
     </div>
 
     <!-- Scripts -->
-    <script src="/static/js/utils.js?v=20260403"></script>
-    <script src="/static/js/api.js?v=20260403"></script>
-    <script src="/static/js/auth.js?v=20260403"></script>
-    <script src="/static/js/ui_components.js?v=20260403"></script>
-    <script src="/static/js/app.js?v=20260403"></script>
-    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script src="/frontend/js/utils.js?v=20260403"></script>
+    <script src="/frontend/js/api.js?v=20260403"></script>
+    <script src="/frontend/js/auth.js?v=20260403"></script>
+    <script src="/frontend/js/ui_components.js?v=20260403"></script>
+    <script src="/frontend/js/app.js?v=20260403"></script>
+    <script src="/frontend/js/bootstrap.bundle.min.js"></script>
 
     <script>
         // Security & Layout Init
@@ -408,12 +473,12 @@
 
                 const statusBadge = s => {
                     const map = {
-                        RESOLVED:    'bg-success bg-opacity-10 text-success border-success border-opacity-25',
-                        OPEN:        'bg-warning bg-opacity-10 text-dark border-warning border-opacity-25',
+                        RESOLVED: 'bg-success bg-opacity-10 text-success border-success border-opacity-25',
+                        OPEN: 'bg-warning bg-opacity-10 text-dark border-warning border-opacity-25',
                         IN_PROGRESS: 'bg-info bg-opacity-10 text-info border-info border-opacity-25',
-                        BLOCKED:     'bg-danger bg-opacity-10 text-danger border-danger border-opacity-25',
-                        CANCEL:      'bg-danger bg-opacity-10 text-danger border-danger border-opacity-25',
-                        CANCELLED:   'bg-danger bg-opacity-10 text-danger border-danger border-opacity-25',
+                        BLOCKED: 'bg-danger bg-opacity-10 text-danger border-danger border-opacity-25',
+                        CANCEL: 'bg-danger bg-opacity-10 text-danger border-danger border-opacity-25',
+                        CANCELLED: 'bg-danger bg-opacity-10 text-danger border-danger border-opacity-25',
                     };
                     return map[s] || 'bg-secondary text-white';
                 };
@@ -497,7 +562,7 @@
         window.switchMeetCategory = (cat) => {
             currentCategory = cat;
             const isClient = cat === 'CLIENT';
-            document.getElementById('client-select-wrapper').style.display = isClient ? 'block' : 'none';
+            document.getElementById('filter-wrapper').style.display = isClient ? 'block' : 'none';
             document.getElementById('internal-scope-wrapper').style.display = isClient ? 'none' : 'block';
             if (isClient) {
                 document.getElementById('role-select-wrapper').style.display = 'none';
@@ -510,7 +575,7 @@
             const scope = document.getElementById('m-scope').value;
             const roleWrapper = document.getElementById('role-select-wrapper');
             const attendeeWrapper = document.getElementById('m-attendees-container').parentElement;
-            
+
             roleWrapper.style.display = scope === 'ROLE_BASED' ? 'block' : 'none';
             attendeeWrapper.style.opacity = scope === 'MANUAL' ? '1' : '0.5';
             attendeeWrapper.style.pointerEvents = scope === 'MANUAL' ? 'auto' : 'none';
@@ -520,7 +585,7 @@
             const date = document.getElementById('m-date').value;
             const attendeeChecks = document.querySelectorAll('.m-attendee-check:checked');
             const grid = document.getElementById('availability-grid');
-            
+
             if (!date) {
                 grid.innerHTML = '<p class="text-muted small w-100 text-center py-3">Select a date first</p>';
                 return;
@@ -544,7 +609,7 @@
                 });
 
                 grid.innerHTML = res.slots.map(s => `
-                    <div class="slot-pill ${s.is_available ? '' : 'disabled'}" onclick="'${s.is_available ? `selectSlot('${s.time}')` : ''}">
+                    <div class="slot-pill ${s.is_available ? '' : 'disabled'}" onclick="${s.is_available ? `selectSlot('${s.time}')` : ''}">
                         ${s.time}
                     </div>
                 `).join('');
@@ -559,7 +624,7 @@
             if (hours === '12') hours = '00';
             if (modifier === 'PM') hours = parseInt(hours, 10) + 12;
             const formatted = `${String(hours).padStart(2, '0')}:${minutes}`;
-            
+
             document.getElementById('m-time').value = formatted;
             document.querySelectorAll('.slot-pill').forEach(p => {
                 p.classList.remove('active');
@@ -572,7 +637,7 @@
             const modal = new bootstrap.Modal(document.getElementById('aiSummaryModal'));
             const body = document.getElementById('ai-summary-body');
             const label = document.getElementById('ai-meeting-label');
-            
+
             label.textContent = "Analyzing session #" + id;
             body.innerHTML = `
                 <div class="text-center py-5">
@@ -585,13 +650,13 @@
             try {
                 const analysis = await apiPost(`/meetings/${id}/generate-ai-summary`);
                 let html = '<div class="ai-report-content">';
-                
+
                 if (analysis.highlights && analysis.highlights.length) {
                     html += '<h6 class="fw-bold text-primary mb-3"><i class="bi bi-stars me-2"></i>Key Highlights</h6><ul class="ps-3 mb-4">';
                     analysis.highlights.forEach(h => html += `<li class="mb-2">${h}</li>`);
                     html += '</ul>';
                 }
-                
+
                 if (analysis.next_steps) {
                     html += '<h6 class="fw-bold text-info mb-3"><i class="bi bi-arrow-right-circle me-2"></i>Action Items / Next Steps</h6>';
                     html += `<div class="p-3 bg-light rounded-3 border-start border-4 border-info">${analysis.next_steps}</div>`;
@@ -622,7 +687,7 @@
             const date = document.getElementById('res-date').value;
             const pmId = document.getElementById('res-pm-id').value;
             const container = document.getElementById('reschedule-slots-container');
-            
+
             if (!date) return;
             container.innerHTML = '<div class="w-100 text-center py-3"><div class="spinner-border spinner-border-sm text-primary"></div></div>';
 
@@ -630,9 +695,9 @@
                 // Fetch availability for the host
                 const userIds = pmId ? [parseInt(pmId)] : [];
                 const res = await apiPost('/users/availability/group', { user_ids: userIds, date: date });
-                
+
                 container.innerHTML = res.slots.map(s => `
-                    <div class="slot-pill res-slot ${s.is_available ? '' : 'disabled'}" onclick="'${s.is_available ? `selectResSlot('${s.time}')` : ''}">
+                    <div class="slot-pill res-slot ${s.is_available ? '' : 'disabled'}" onclick="${s.is_available ? `selectResSlot('${s.time}')` : ''}">
                         ${s.time}
                     </div>
                 `).join('') || '<div class="text-muted small w-100 text-center">No slots available</div>';
@@ -692,66 +757,69 @@
                 allClients.forEach(c => clientMap[c.id] = c.name);
 
                 resMeetings.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
-                
+
                 const tableBody = document.getElementById('meetings-table');
-                tableBody.innerHTML = resMeetings.map(m => {
-                    const clientName = m.client_id ? (clientMap[m.client_id] || `Client #${m.client_id}`) : '<span class="text-primary fw-bold"><i class="bi bi-person-workspace me-1"></i>Internal Team</span>';
-                    const isFinished = m.status === 'RESOLVED';
-                    const badgeClass = m.status === 'RESOLVED' ? 'bg-success' : (m.status === 'CANCELLED' ? 'bg-danger' : 'bg-info');
+                tableBody.innerHTML = '';
 
-                    const dateObj = m.date ? new Date(m.date) : null;
-                    const dStr = dateObj ? dateObj.toLocaleDateString() : 'N/A';
-                    const tStr = dateObj ? dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-
-                    // [START] - Direct Join Button
-                    const meetBtn = !isFinished && m.meet_link ? `
-                        <a href="${m.meet_link}" target="_blank" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1 shadow-sm px-3" style="font-size:11px; border-radius:8px; font-weight:700;">
-                            <i class="bi bi-camera-video-fill"></i> Join Now
-                        </a>
-                    ` : '';
-                    // [END]
-
-                    return `
-                    <tr>
-                        <td class="ps-4">
-                            <input type="checkbox" class="form-check-input meeting-row-check" data-id="${m.id}">
-                        </td>
-                        <td>
-                            <div class="fw-bold text-dark">${clientName}</div>
-                            <div class="extra-small text-muted">${m.meeting_type || 'Virtual'}</div>
-                        </td>
-                        <td>
-                            <div class="fw-semibold text-dark">${m.title || 'Untitled'}</div>
-                            <div class="extra-small text-primary" style="font-weight:700; font-size:9px;">${m.priority || 'MEDIUM'}</div>
-                        </td>
-                        <td>
-                            <div class="extra-small fw-bold text-dark">${dStr}</div>
-                            <div class="extra-small text-muted">${tStr}</div>
-                        </td>
-                        <td><span class="badge ${badgeClass} extra-small">${m.status}</span></td>
-                        <td>
-                            ${isFinished ?
-                            `<button class="btn btn-sm btn-light-soft text-primary fw-bold extra-small" onclick="fetchAISummary('${m.id}')"><i class="bi bi-stars me-1"></i>Report</button>` :
-                            '<span class="text-muted extra-small italic">Pending...</span>'}
-                        </td>
-                        <td class="pe-4 text-end">
-                            <div class="d-flex justify-content-end align-items-center gap-2">
-                                ${meetBtn}
-                                <div class="dropdown">
-                                    <button class="btn btn-icon-soft" data-bs-toggle="dropdown">
-                                        <i class="bi bi-three-dots-vertical"></i>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end shadow border-0">
-                                        <li><a class="dropdown-item" href="meeting_strategy.html?id=${m.id}"><i class="bi bi-eye me-2"></i>Detailed View</a></li>
-                                        ${!isFinished ? `<li><a class="dropdown-item" href="javascript:void(0)" onclick="openRescheduleModal('${m.id}', '${m.host_id || ''}')"><i class="bi bi-calendar2-range me-2"></i>Reschedule</a></li>` : ''}
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li><a class="dropdown-item text-danger" href="javascript:void(0)" onclick="deleteMeeting('${m.id}')"><i class="bi bi-trash me-2"></i>Delete</a></li>
-                                    </ul>
+                renderPagination({
+                    data: resMeetings,
+                    tbodyId: 'meetings-tbody',
+                    paginationId: 'meetings-pagination',
+                    emptyMsg: '<tr><td colspan="7" class="text-center py-5">No meetings found</td></tr>',
+                    renderRow: (m) => {
+                        const clientName = m.client_id ? (clientMap[m.client_id] || `Client #${m.client_id}`) : '<span class="text-primary fw-bold"><i class="bi bi-person-workspace me-1"></i>Internal Team</span>';
+                        const isFinished = m.status === 'RESOLVED';
+                        const badgeClass = m.status === 'RESOLVED' ? 'bg-success' : (m.status === 'CANCELLED' ? 'bg-danger' : 'bg-info');
+                        const dateObj = m.date ? new Date(m.date) : null;
+                        const dStr = dateObj ? dateObj.toLocaleDateString() : 'N/A';
+                        const tStr = dateObj ? dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+                        const meetBtn = !isFinished && m.meet_link ? `
+                            <a href="${m.meet_link}" target="_blank" class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1 shadow-sm px-3" style="font-size:11px; border-radius:8px; font-weight:700;">
+                                <i class="bi bi-camera-video-fill"></i> Join Now
+                            </a>
+                        ` : '';
+                        return `
+                        <tr>
+                            <td class="ps-4">
+                                <input type="checkbox" class="form-check-input meeting-row-check" data-id="${m.id}">
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark">${clientName}</div>
+                                <div class="extra-small text-muted">${m.meeting_type || 'Virtual'}</div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-dark">${m.title || 'Untitled'}</div>
+                                <div class="extra-small text-primary" style="font-weight:700; font-size:9px;">${m.priority || 'MEDIUM'}</div>
+                            </td>
+                            <td>
+                                <div class="extra-small fw-bold text-dark">${dStr}</div>
+                                <div class="extra-small text-muted">${tStr}</div>
+                            </td>
+                            <td><span class="badge ${badgeClass} extra-small">${m.status}</span></td>
+                            <td>
+                                ${isFinished ?
+                                `<button class="btn btn-sm btn-light-soft text-primary fw-bold extra-small" onclick="fetchAISummary('${m.id}')"><i class="bi bi-stars me-1"></i>Report</button>` :
+                                '<span class="text-muted extra-small italic">Pending...</span>'}
+                            </td>
+                            <td class="pe-4 text-end">
+                                <div class="d-flex justify-content-end align-items-center gap-2">
+                                    ${meetBtn}
+                                    <div class="dropdown">
+                                        <button class="btn btn-icon-soft" data-bs-toggle="dropdown">
+                                            <i class="bi bi-three-dots-vertical"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+                                            <li><a class="dropdown-item" href="meeting_strategy.html?id=${m.id}"><i class="bi bi-eye me-2"></i>Detailed View</a></li>
+                                            ${!isFinished ? `<li><a class="dropdown-item" href="javascript:void(0)" onclick="openRescheduleModal('${m.id}', '${m.host_id || ''}')"><i class="bi bi-calendar2-range me-2"></i>Reschedule</a></li>` : ''}
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><a class="dropdown-item text-danger" href="javascript:void(0)" onclick="deleteMeeting('${m.id}')"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                                        </ul>
+                                    </div>
                                 </div>
-                            </div>
-                        </td>
-                    </tr>`;
-                }).join('') || '<tr><td colspan="7" class="text-center py-5">No meetings found</td></tr>';
+                            </td>
+                        </tr>`;
+                    }
+                });
             } catch (e) {
                 console.error("Meetings Load Failed", e);
             }
@@ -760,7 +828,7 @@
         document.getElementById('save-meeting-btn').addEventListener('click', async () => {
             const category = document.querySelector('input[name="meetCategory"]:checked').value;
             const scope = document.getElementById('m-scope').value;
-            
+
             const payload = {
                 title: document.getElementById('m-title').value || 'Meeting',
                 date: `${document.getElementById('m-date').value}T${document.getElementById('m-time').value || '10:00'}:00`,
@@ -840,19 +908,23 @@
                 containerId: 'filter-wrapper',
                 filters: [
                     { type: 'select', label: 'Client', id: 'filter-client', options: [{ value: 'ALL', label: 'All Clients' }, ...allClients.map(c => ({ value: c.id, label: c.name }))] },
-                    { type: 'select', label: 'Type', id: 'filter-type', options: [
-                        { value: 'ALL', label: 'All Types' },
-                        { value: 'In-Person', label: 'In-Person' },
-                        { value: 'Google Meet', label: 'Google Meet' },
-                        { value: 'Virtual', label: 'Virtual' }
-                    ]},
-                    { type: 'select', label: 'Status', id: 'filter-status', options: [
-                        { value: 'ALL', label: 'All Status' },
-                        { value: 'OPEN', label: 'Open' },
-                        { value: 'IN_PROGRESS', label: 'In Progress' },
-                        { value: 'RESOLVED', label: 'Resolved' },
-                        { value: 'CANCELLED', label: 'Cancelled' }
-                    ]},
+                    {
+                        type: 'select', label: 'Type', id: 'filter-type', options: [
+                            { value: 'ALL', label: 'All Types' },
+                            { value: 'In-Person', label: 'In-Person' },
+                            { value: 'Google Meet', label: 'Google Meet' },
+                            { value: 'Virtual', label: 'Virtual' }
+                        ]
+                    },
+                    {
+                        type: 'select', label: 'Status', id: 'filter-status', options: [
+                            { value: 'ALL', label: 'All Status' },
+                            { value: 'OPEN', label: 'Open' },
+                            { value: 'IN_PROGRESS', label: 'In Progress' },
+                            { value: 'RESOLVED', label: 'Resolved' },
+                            { value: 'CANCELLED', label: 'Cancelled' }
+                        ]
+                    },
                     { type: 'date', label: 'Start Date', id: 'filter-start' },
                     { type: 'date', label: 'End Date', id: 'filter-end' }
                 ],
@@ -874,7 +946,5 @@
         });
     </script>
 </body>
+
 </html>
-
-
-

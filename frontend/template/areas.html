@@ -8,8 +8,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Areas & Shops — SRM AI SETU</title>
-    <link rel="stylesheet" href="../css/bootstrap.min.css">
-    <link rel="stylesheet" href="../css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/frontend/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/frontend/css/bootstrap-icons.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
         rel="stylesheet">
@@ -396,12 +396,6 @@
                 font-size: 0.85rem;
                 color: var(--text-muted);
             }
-            .shops-header-actions {
-                display: flex !important;
-                flex-wrap: wrap;
-                gap: 8px;
-                width: 100%;
-            }
             
             .shop-card-mobile {
                 background: var(--surface);
@@ -471,8 +465,8 @@
             .area-mobile-actions { display: none !important; }
         }
     </style>
-    <link rel="stylesheet" href="../css/theme.css?v=20260321">
-    <link rel="stylesheet" href="../css/components.css?v=20260321">
+    <link rel="stylesheet" href="/frontend/css/theme.css?v=20260406">
+    <link rel="stylesheet" href="/frontend/css/components.css?v=20260406">
 </head>
 
 <body>
@@ -547,10 +541,8 @@
                                         <span id="shops-panel-count" class="text-muted small"></span>
                                     </div>
                                     <div id="shops-panel-body" class="flex-grow-1" style="overflow-y: auto;">
-                                        <div
-                                            class="h-100 d-flex flex-column align-items-center justify-content-center p-5 text-muted opacity-50">
-                                            <i class="bi bi-geo-alt"
-                                                style="font-size: 4rem; display: block; margin-bottom: 1rem;"></i>
+                                        <div class="h-100 d-flex flex-column align-items-center justify-content-center p-5 text-muted opacity-50">
+                                            <i class="bi bi-geo-alt" style="font-size: 4rem; display: block; margin-bottom: 1rem;"></i>
                                             <p>Click an area on the left to view its shops</p>
                                         </div>
                                     </div>
@@ -864,12 +856,13 @@
         </div>
     </div>
 
-    <script src="../js/utils.js?v=20260326"></script>
-    <script src="../js/api.js?v=20260321"></script>
-    <script src="../js/auth.js?v=20260321"></script>
-    <script src="../js/ui_components.js?v=20260321"></script>
-    <script src="../js/app.js?v=20260321"></script>
-    <script src="../js/bootstrap.bundle.min.js"></script>
+    <script src="/frontend/js/utils.js?v=20260403"></script>
+    <script src="/frontend/js/api.js?v=20260403"></script>
+    <script src="/frontend/js/auth.js?v=20260403"></script>
+    <script src="/frontend/js/ui_components.js?v=20260403"></script>
+    <script src="/frontend/js/app.js?v=20260403"></script>
+    <script src="/frontend/js/bootstrap.bundle.min.js"></script>
+    <script src="/frontend/js/areas.js?v=20260403"></script>
     <script>
         requireAuth();
         injectTopHeader('Areas & Shops');
@@ -900,7 +893,7 @@
             onRestore: async () => {
                 await loadAll();
                 if (selectedAreaId) {
-                    const a = allAreas.find(x => x.id === selectedAreaId);
+                    const a = allAreas.find(x => normalizeId(x.id) === normalizeId(selectedAreaId));
                     if (a) selectArea(a.id, a.name);
                 }
             }
@@ -941,6 +934,14 @@
         let selectedAreaId = null;
         let assigningAreaId = null;
         let modalTab = 'area';
+
+        // ── Helper: Normalize MongoDB IDs for matching ─────────────────
+        const normalizeId = v => {
+            if (!v) return '';
+            if (typeof v === 'object' && v.$oid) return v.$oid;
+            return String(v);
+        };
+
 
         // ── Reset modal to Create mode whenever it opens normally ──
         document.getElementById('addModal').addEventListener('show.bs.modal', function () {
@@ -1021,6 +1022,8 @@
                 const isStaff = user && ['ADMIN', 'SALES', 'TELESALES', 'PROJECT_MANAGER', 'PROJECT_MANAGER_AND_SALES'].includes(user.role?.toUpperCase());
             } catch (e) {
                 console.error(e); // exact API error
+                allAreas = allAreas || [];
+                allShops = allShops || [];
                 allUsers = allUsers || [];
             }
             renderAreaList();
@@ -1077,10 +1080,10 @@
                 // Source filter
                 if (sourceFilter === 'ADMIN') {
                     // Admin-assigned: no creator OR creator is the current admin user
-                    if (a.created_by_id && !(currentUser && a.created_by_id === currentUser.id && currentUser.role?.toUpperCase() === 'ADMIN')) return false;
+                    if (a.created_by_id && !(currentUser && normalizeId(a.created_by_id) === normalizeId(currentUser.id) && currentUser.role?.toUpperCase() === 'ADMIN')) return false;
                 } else if (sourceFilter === 'SELF') {
                     // Self-sourced: has a creator who is NOT the current user (or any staff-sourced lead)
-                    if (!a.created_by_id || (currentUser && a.created_by_id === currentUser.id && currentUser.role?.toUpperCase() === 'ADMIN')) return false;
+                    if (!a.created_by_id || (currentUser && normalizeId(a.created_by_id) === normalizeId(currentUser.id) && currentUser.role?.toUpperCase() === 'ADMIN')) return false;
                 }
                 
                 // Status filter
@@ -1105,7 +1108,7 @@
             }
             ul.innerHTML = filtered.map(a => {
                 const shopCount = a.shops_count || 0;
-                const isActive = a.id === selectedAreaId;
+                const isActive = String(a.id) === String(selectedAreaId);
                 // Only show Sourced badge if created by someone OTHER than the current user
                 const sourcedBadge = a.created_by_name && a.created_by_id && (!currentUser || a.created_by_id !== currentUser.id)
                     ? `<span class="badge bg-info-subtle text-info border-info-subtle ms-1" style="font-size:0.6rem;padding:1px 4px;">Sourced</span>`
@@ -1114,8 +1117,6 @@
                         ondblclick="openEditAreaModal('${a.id}')" title="Double-click to edit">
                     <span class="area-info"><i class="bi bi-geo-alt-fill"></i><span>${a.name}${sourcedBadge}</span></span>
                     <span class="area-count-pill">${shopCount} Shops</span>
-                    <div class="area-mobile-actions d-none">
-                        <button class="btn btn-sm btn-light border p-1 px-2 shadow-sm rounded-3" onclick="event.stopPropagation(); window.openEditAreaModal('${a.id}')"><i class="bi bi-pencil mb-0"></i></button>
                     </div>
                 </li>`;
             }).join('');
@@ -1125,249 +1126,133 @@
         async function selectArea(areaId, areaName) {
             selectedAreaId = areaId;
             renderAreaList(currentFilters.search);
-            const shops = allShops.filter(s => s.area_id === areaId);
+            const shops = allShops.filter(s => normalizeId(s.area_id) === normalizeId(areaId));
             const user = ApiClient.getCurrentUser();
             const isAdmin = user && user.role && user.role.toUpperCase() === 'ADMIN';
 
-            const area = allAreas.find(a => a.id === areaId);
+            const area = allAreas.find(a => String(a.id) === String(areaId));
             let badgeHtml = '';
             if (area && area.priority_level) {
                 const p = area.priority_level.toUpperCase();
-                if (p === 'HIGH') {
-                    badgeHtml = `<span class="badge bg-danger-subtle text-danger ms-2 d-flex align-items-center" style="font-size:0.75rem;padding:4px 8px;"><i class="bi bi-flag-fill me-1"></i> High Priority</span>`;
-                } else if (p === 'MEDIUM') {
-                    badgeHtml = `<span class="badge bg-warning-subtle text-warning-emphasis ms-2 d-flex align-items-center" style="font-size:0.75rem;padding:4px 8px;"><i class="bi bi-flag-fill me-1"></i> Medium Priority</span>`;
-                } else if (p === 'LOW') {
-                    badgeHtml = `<span class="badge bg-secondary-subtle text-secondary ms-2 d-flex align-items-center" style="font-size:0.75rem;padding:4px 8px;"><i class="bi bi-flag-fill me-1"></i> Low Priority</span>`;
-                }
+                if (p === 'HIGH') badgeHtml = `<span class="badge bg-danger-subtle text-danger ms-2 d-flex align-items-center" style="font-size:0.75rem;padding:4px 8px;"><i class="bi bi-flag-fill me-1"></i> High Priority</span>`;
+                else if (p === 'MEDIUM') badgeHtml = `<span class="badge bg-warning-subtle text-warning-emphasis ms-2 d-flex align-items-center" style="font-size:0.75rem;padding:4px 8px;"><i class="bi bi-flag-fill me-1"></i> Medium Priority</span>`;
+                else if (p === 'LOW') badgeHtml = `<span class="badge bg-secondary-subtle text-secondary ms-2 d-flex align-items-center" style="font-size:0.75rem;padding:4px 8px;"><i class="bi bi-flag-fill me-1"></i> Low Priority</span>`;
             }
 
             const isPendingArea = area && area.assignment_status === 'PENDING';
             const isAcceptedArea = area && area.assignment_status === 'ACCEPTED';
             let statusBadge = '';
-            // Only show 'Sourced by' badge when the creator is a different person from the viewer
             let sourcedByBadge = area && area.created_by_name && area.created_by_id && (!user || area.created_by_id !== user.id)
                 ? `<span class="badge bg-info text-dark ms-2 align-self-center" style="font-size:0.75rem;"><i class="bi bi-person-plus"></i> Sourced by: ${area.created_by_name}</span>`
-                : "";
-            
+                : '';
             if (isPendingArea) {
-                if (isAdmin) {
-                    statusBadge = `<span class="badge bg-warning text-dark ms-2 align-self-center">Pending Staff Acceptance</span>`;
-                } else {
-                    statusBadge = `<span class="badge rounded-pill bg-warning text-dark placeholder-glow ms-2 align-self-center">Pending Acceptance</span>`;
-                }
-            } else if (isAcceptedArea) {
-                if (isAdmin) {
-                    statusBadge = `<span class="badge bg-success ms-2 align-self-center">Claimed / Accepted</span>`;
-                }
+                statusBadge = isAdmin ? `<span class="badge bg-warning text-dark ms-2 align-self-center">Pending Staff Acceptance</span>` : `<span class="badge rounded-pill bg-warning text-dark placeholder-glow ms-2 align-self-center">Pending Acceptance</span>`;
+            } else if (isAcceptedArea && isAdmin) {
+                statusBadge = `<span class="badge bg-success ms-2 align-self-center">Claimed / Accepted</span>`;
             }
 
             document.getElementById('shops-panel-title').innerHTML =
-                `<div class="d-flex flex-column w-100">
-                    <div class="d-flex flex-column flex-lg-row align-items-start align-items-lg-center gap-2 gap-lg-3 mb-3 mb-lg-2">
-                        <span class="d-none d-lg-inline fw-bold fs-5"><i class="bi bi-shop"></i> Shops in ${areaName}</span>
-                        <span class="d-inline d-lg-none fw-bold fs-5" style="color: var(--text-1);">Shops in ${areaName}</span>
-                        
-                        <div class="d-flex align-items-center gap-2 flex-wrap mt-1 mt-lg-0">
-                            ${statusBadge}
-                            ${sourcedByBadge}
-                            ${badgeHtml}
-                        </div>
-                    </div>
-
-                    <div class="shops-header-actions d-flex flex-wrap gap-2">
-                        ${isPendingArea && !isAdmin ? `
-                            <button class="btn btn-sm btn-success" style="font-size:0.75rem;padding:5px 12px;border-radius:6px;" onclick="acceptAssignment('areas', '${areaId}')">
-                                <i class="bi bi-check-circle me-1"></i> Accept Lead
-                            </button>
-                        ` : ''}
-                        ${!isPendingArea && isAdmin ? `
-                            <button class="btn btn-sm btn-outline-info" style="font-size:0.75rem;padding:5px 12px;border-radius:6px;" onclick="openAssignModal('${areaId}')" title="Assign area to user">
-                                <i class="bi bi-person-plus-fill me-1"></i> Assign
-                            </button>
-                        ` : ''}
-                        <button class="btn btn-sm btn-outline-secondary" style="font-size:0.75rem;padding:5px 12px;border-radius:6px;background:var(--surface);" onclick="openEditAreaModal('${areaId}')" title="Edit area">
-                            <i class="bi bi-pencil-fill me-1"></i> Edit
-                        </button>
-                        ${(isAdmin || (area && area.assigned_users && area.assigned_users.some(u => u.id === user?.id))) ? `
-                        <button class="btn btn-sm btn-outline-danger ms-2" style="font-size:0.7rem;padding:2px 8px;border-radius:6px;"
-                        onclick="archiveArea('${areaId}', '${areaName.replace(/'/g, "\\'")}')" title="Archive area"><i class="bi bi-archive"></i> Archive</button>` : ''}
-                    </div>
-                 </div>`;
-            document.getElementById('shops-panel-count').textContent = `${shops.length} shop${shops.length !== 1 ? 's' : ''}`;
+                `<i class="bi bi-shop me-2"></i>Shops in ${areaName}${statusBadge}${sourcedByBadge}${badgeHtml}`;
+            document.getElementById('shops-panel-count').innerHTML = `
+                <div class="d-flex align-items-center gap-3">
+                    <span class="text-muted small fw-medium">${shops.length} shop${shops.length !== 1 ? 's' : ''}</span>
+                    ${isAdmin ? `<button class="btn btn-sm fw-semibold d-flex align-items-center gap-2" onclick="openAssignModal('${areaId}')" style="background:#4f46e5;color:white;border:none;border-radius:8px;padding:6px 14px;"><i class="bi bi-person-plus"></i> Assign</button>` : ''}
+                </div>
+            `;
             const body = document.getElementById('shops-panel-body');
+
             if (!shops.length) {
                 body.innerHTML = `<div class="p-5 text-center"><i class="bi bi-shop opacity-25" style="font-size:3rem;"></i><p class="text-muted mt-3">No shops in this area yet.<br><a href="javascript:void(0)" onclick="switchAddShopForArea('${areaId}')" class="text-primary fw-bold">Add one now?</a></p></div>`;
                 return;
             }
-            const desktopRows = shops.map(s => {
+
+            let desktopRows = '';
+            let mobileCards = '';
+
+            shops.forEach(s => {
                 let assignedHtml = '';
                 if (s.assigned_users && s.assigned_users.length > 0) {
                     const primaryUser = s.assigned_users[0].name;
-                    const allNames = s.assigned_users.map(u => u.name).join(', ');
                     const ownerInit = (primaryUser || 'U')[0].toUpperCase();
-
                     if (s.assigned_users.length === 1) {
                         assignedHtml = `<div class="d-flex align-items-center gap-2"><div class="avatar-owner">${ownerInit}</div><span class="fw-medium">${primaryUser}</span></div>`;
                     } else {
-                        const othersCount = s.assigned_users.length - 1;
-                        assignedHtml = `
-                            <div class="d-flex align-items-center gap-2 flex-wrap" title="${allNames}">
-                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle rounded-pill d-flex align-items-center gap-1 p-1 pe-2">
-                                    <div class="avatar-owner" style="width:20px;height:20px;font-size:0.7rem;">${ownerInit}</div>
-                                    <span style="font-size: 0.85rem; font-weight: 500;">${primaryUser}</span>
-                                </span>
-                                <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle rounded-pill px-2 py-1" style="font-size: 0.75rem;">
-                                    +${othersCount} others
-                                </span>
-                            </div>
-                        `;
+                        assignedHtml = `<div class="d-flex align-items-center gap-2 flex-wrap" title="${s.assigned_users.map(u=>u.name).join(', ')}"><span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle rounded-pill d-flex align-items-center gap-1 p-1 pe-2"><div class="avatar-owner" style="width:20px;height:20px;font-size:0.7rem;">${ownerInit}</div><span style="font-size: 0.85rem; font-weight: 500;">${primaryUser}</span></span><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle rounded-pill px-2 py-1" style="font-size: 0.75rem;">+${s.assigned_users.length - 1} others</span></div>`;
                     }
                 } else {
                     assignedHtml = `<div class="d-flex align-items-center gap-2"><span class="text-muted"><i class="bi bi-person-dash me-1"></i>Unassigned</span></div>`;
                 }
 
-                let shopStatusBadge = '';
                 const isPendingShop = s.assignment_status === 'PENDING';
-                const isAcceptedShop = s.assignment_status === 'ACCEPTED';
-                if (isPendingShop) {
-                    shopStatusBadge = isAdmin 
-                        ? `<br><span class="badge bg-warning text-dark mt-1">Pending Staff Acceptance</span>`
-                        : `<br><span class="badge rounded-pill bg-warning text-dark placeholder-glow mt-1">Pending Acceptance</span>`;
-                } else if (isAcceptedShop && isAdmin) {
-                    shopStatusBadge = `<br><span class="badge bg-success mt-1">Claimed / Accepted</span>`;
-                }
-
-                // Hide 'Sourced by' badge for the user who created the shop themselves
+                const shopStatusBadge = isPendingShop
+                    ? `<br><span class="badge bg-warning text-dark mt-1">${isAdmin ? 'Pending Staff Acceptance' : 'Pending Acceptance'}</span>`
+                    : (s.assignment_status === 'ACCEPTED' && isAdmin ? `<br><span class="badge bg-success mt-1">Claimed / Accepted</span>` : '');
                 const sourcedByShop = s.created_by_name && s.created_by_id && (!user || s.created_by_id !== user.id)
                     ? `<div class="mt-1"><span class="badge bg-info text-dark" style="font-size:0.7rem;"><i class="bi bi-person-plus"></i> Sourced by: ${s.created_by_name}</span></div>`
-                    : "";
+                    : '';
 
-                return `<tr>
-                        <td>
-                            <span class="shop-name-primary">${s.name}</span>
-                            <span class="shop-name-sub">${s.address || 'No address set'}</span>
-                            ${sourcedByShop}
-                            ${shopStatusBadge}
-                        </td>
-                        <td>${assignedHtml}</td>
-                        <td>
-                            <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.name + ' ' + (s.address || ''))}" 
-                               target="_blank" 
-                               class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
-                               title="Open in Google Maps">
-                                <i class="bi bi-map-fill"></i> Map
-                            </a>
-                        </td>
-                        <td>
-                            ${s.phone ? `
-                                <div class="d-flex flex-column gap-1">
-                                    <a href="tel:${s.phone}" class="text-decoration-none fw-bold text-primary mb-1 d-inline-flex align-items-center gap-2" title="Call Shop">
-                                        <i class="bi bi-telephone-outbound"></i>${s.phone}
-                                    </a>
-                                    <a href="https://wa.me/${s.phone.replace(/[^0-9]/g, '')}" target="_blank" class="text-success small fw-medium text-decoration-none d-inline-flex align-items-center gap-2" title="WhatsApp Shop">
-                                        <i class="bi bi-whatsapp"></i>WhatsApp
-                                    </a>
-                                </div>
-                            ` : `<span class="text-muted small fst-italic">No number logged</span>`}
-                        </td>
-                        <td>
-                            <div class="d-flex justify-content-end gap-2">
-                                ${isPendingShop && !isAdmin ? `
-                                    <button class="btn btn-success btn-sm" onclick="acceptAssignment('shops', '${s.id}')"><i class="bi bi-check-circle"></i> Accept</button>
-                                ` : `
-                                    <button class="btn-action text-primary" onclick="editShop('${s.id}')" title="Edit shop"><i class="bi bi-pencil"></i></button>
-                                    ${(isAdmin || (s.assigned_users && s.assigned_users.some(u => u.id === user?.id))) ? `
-                                    <button class="btn-action text-danger" onclick="archiveShop('${s.id}', '${s.name.replace(/'/g, "\\'")}')" title="Archive shop"><i class="bi bi-archive"></i></button>` : ''}
-                                `}
-                            </div>
-                        </td>
-                    </tr>`;
-            }).join('');
+                const phoneCell = s.phone
+                    ? `<div class="d-flex flex-column gap-1"><a href="tel:${s.phone}" class="text-decoration-none fw-bold text-primary mb-1 d-inline-flex align-items-center gap-2" title="Call Shop"><i class="bi bi-telephone-outbound"></i>${s.phone}</a><a href="https://wa.me/${s.phone.replace(/[^0-9]/g, '')}" target="_blank" class="text-success small fw-medium text-decoration-none d-inline-flex align-items-center gap-2" title="WhatsApp Shop"><i class="bi bi-whatsapp"></i>WhatsApp</a></div>`
+                    : `<span class="text-muted small fst-italic">No number logged</span>`;
 
-            const desktopTable = `<table class="shops-table d-none d-lg-table w-100">
-                <thead><tr><th>Shop Details</th><th>Assigned To</th><th>Location</th><th>Contact</th><th></th></tr></thead>
-                <tbody>${desktopRows}</tbody>
-            </table>`;
+                const actionButtons = isPendingShop && !isAdmin
+                    ? `<button class="btn btn-success btn-sm" onclick="acceptAssignment('shops', '${s.id}')"><i class="bi bi-check-circle"></i> Accept</button>`
+                    : `<button class="btn-action text-primary" onclick="editShop('${s.id}')" title="Edit shop"><i class="bi bi-pencil"></i></button>${(isAdmin || (s.assigned_users && s.assigned_users.some(u => normalizeId(u.id) === normalizeId(user?.id)))) ? `<button class="btn-action text-danger" onclick="archiveShop('${s.id}', '${s.name.replace(/'/g, "\\'")}')"><i class="bi bi-archive"></i></button>` : ''}`;
 
-            const mobileCardsHtml = `<div class="mobile-shops-list d-block d-lg-none mt-3 p-3 pt-0">
-                ${shops.map(s => {
-                    const isPendingShop = s.assignment_status === 'PENDING';
-                    const isAcceptedShop = s.assignment_status === 'ACCEPTED';
-                    
-                    let statusHtml = '';
-                    if (isPendingShop) {
-                        statusHtml = isAdmin 
-                            ? `<span class="badge bg-warning text-dark border border-warning-subtle fw-semibold mt-2">Pending Staff Acceptance</span>`
-                            : `<span class="badge rounded-pill bg-warning text-dark placeholder-glow mt-2">Pending Acceptance</span>`;
-                    } else if (isAcceptedShop && isAdmin) {
-                        statusHtml = `<span class="badge bg-success border border-success-subtle fw-semibold mt-2">Claimed / Accepted</span>`;
-                    } else if (s.pipeline_stage) {
-                        statusHtml = `<span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold mt-2">${s.pipeline_stage}</span>`;
-                    }
+                desktopRows += `<tr>
+                    <td><span class="shop-name-primary">${s.name}</span><span class="shop-name-sub">${s.address || 'No address set'}</span>${sourcedByShop}${shopStatusBadge}</td>
+                    <td>${assignedHtml}</td>
+                    <td><a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.name + ' ' + (s.address || ''))}" target="_blank" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"><i class="bi bi-map-fill"></i> Map</a></td>
+                    <td>${phoneCell}</td>
+                    <td><div class="d-flex justify-content-end gap-2">${actionButtons}</div></td>
+                </tr>`;
 
-                    const sourcedByBadge = s.created_by_name && s.created_by_id && (!user || s.created_by_id !== user.id)
-                        ? `<span class="badge bg-info text-dark ms-1 mt-1" style="font-size:0.75rem;"><i class="bi bi-person-plus"></i> Sourced by: ${s.created_by_name}</span>`
-                        : "";
-                    
-                    let assignedHtml = '';
-                    if (s.assigned_users && s.assigned_users.length > 0) {
-                        const primaryUser = s.assigned_users[0].name;
-                        const allNames = s.assigned_users.map(u => u.name).join(', ');
-                        const ownerInit = (primaryUser || 'U')[0].toUpperCase();
+                const isAcceptedShop = s.assignment_status === 'ACCEPTED';
+                let mobileStatusHtml = '';
+                if (isPendingShop) mobileStatusHtml = isAdmin ? `<span class="badge bg-warning text-dark border border-warning-subtle fw-semibold mt-2">Pending Staff Acceptance</span>` : `<span class="badge rounded-pill bg-warning text-dark mt-2">Pending Acceptance</span>`;
+                else if (isAcceptedShop && isAdmin) mobileStatusHtml = `<span class="badge bg-success border border-success-subtle fw-semibold mt-2">Claimed / Accepted</span>`;
+                else if (s.pipeline_stage) mobileStatusHtml = `<span class="badge bg-primary-subtle text-primary border border-primary-subtle fw-semibold mt-2">${s.pipeline_stage}</span>`;
+                const mobileSourcingBadge = s.created_by_name && s.created_by_id && (!user || s.created_by_id !== user.id) ? `<span class="badge bg-info text-dark ms-1 mt-1" style="font-size:0.75rem;"><i class="bi bi-person-plus"></i> Sourced by: ${s.created_by_name}</span>` : '';
 
-                        if (s.assigned_users.length === 1) {
-                            assignedHtml = `<div class="d-flex align-items-center gap-2"><div class="avatar-owner" style="width:24px;height:24px;font-size:0.8rem;">${ownerInit}</div><span class="fw-medium text-dark small">${primaryUser}</span></div>`;
-                        } else {
-                            const othersCount = s.assigned_users.length - 1;
-                            assignedHtml = `
-                                <div class="d-flex align-items-center gap-2 flex-wrap" title="${allNames}">
-                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle rounded-pill d-flex align-items-center gap-1 p-1 pe-2">
-                                        <div class="avatar-owner" style="width:20px;height:20px;font-size:0.7rem;">${ownerInit}</div>
-                                        <span style="font-size: 0.85rem; font-weight: 500;">${primaryUser}</span>
-                                    </span>
-                                    <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle rounded-pill px-2 py-1" style="font-size: 0.75rem;">
-                                        +${othersCount} others
-                                    </span>
-                                </div>
-                            `;
-                        }
-                    } else {
-                        assignedHtml = `<div class="d-flex align-items-center gap-2"><span class="text-muted small fst-italic"><i class="bi bi-person-dash me-1"></i>Unassigned</span></div>`;
-                    }
+                let mobileAssignedHtml = '';
+                if (s.assigned_users && s.assigned_users.length > 0) {
+                    const pu = s.assigned_users[0].name;
+                    const oi = (pu || 'U')[0].toUpperCase();
+                    if (s.assigned_users.length === 1) mobileAssignedHtml = `<div class="d-flex align-items-center gap-2"><div class="avatar-owner" style="width:24px;height:24px;font-size:0.8rem;">${oi}</div><span class="fw-medium text-dark small">${pu}</span></div>`;
+                    else mobileAssignedHtml = `<div class="d-flex align-items-center gap-2 flex-wrap" title="${s.assigned_users.map(u=>u.name).join(', ')}"><span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle rounded-pill d-flex align-items-center gap-1 p-1 pe-2"><div class="avatar-owner" style="width:20px;height:20px;font-size:0.7rem;">${oi}</div><span style="font-size:0.85rem;font-weight:500;">${pu}</span></span><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle rounded-pill px-2 py-1" style="font-size:0.75rem;">+${s.assigned_users.length-1} others</span></div>`;
+                } else mobileAssignedHtml = `<div class="d-flex align-items-center gap-2"><span class="text-muted small fst-italic"><i class="bi bi-person-dash me-1"></i>Unassigned</span></div>`;
 
-                    return `
-                    <div class="shop-card-mobile p-3 border rounded shadow-sm" style="background: var(--surface);">
-                        <div class="d-flex flex-column gap-1 border-bottom pb-3 mb-3 px-1">
-                            <h6 class="card-title text-dark mb-1 d-flex align-items-center flex-wrap gap-1">${s.name} ${sourcedByBadge}</h6>
-                            <div class="text-muted small mb-1">
-                                <i class="bi bi-geo-alt text-muted me-1"></i>${s.address || 'No address set'}
-                            </div>
-                            <div class="d-flex align-items-center flex-wrap gap-2 mt-1">
-                                ${statusHtml ? statusHtml : ''}
-                                ${assignedHtml}
-                            </div>
-                        </div>
-                        <div class="mb-3 px-1 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                            <div class="text-muted small fw-medium"><i class="bi bi-person text-muted me-1"></i>${s.contact_person || 'No Contact Person'}</div>
-                            <div class="text-muted small fw-medium"><i class="bi bi-telephone text-muted me-1"></i>${s.phone || 'No Phone Logged'}</div>
-                        </div>
-                        <div class="card-footer d-grid gap-2 border-0 bg-transparent p-0" style="grid-template-columns: 1fr 1fr;">
-                            ${s.phone ? `<a href="tel:${s.phone}" class="btn btn-sm d-flex align-items-center justify-content-center fw-semibold py-2" style="background:#eef2ff;color:#4f46e5;border:1px solid #e0e7ff;" title="Call"><i class="bi bi-telephone-outbound me-2 mb-0"></i> Call</a>` : `<button class="btn btn-sm btn-light fw-semibold d-flex align-items-center justify-content-center text-muted border-secondary-subtle py-2" disabled title="No Phone"><i class="bi bi-telephone-x me-2 mb-0"></i> Call</button>`}
-                            
-                            ${s.phone ? `<a href="https://wa.me/${s.phone.replace(/[^0-9]/g, '')}" target="_blank" class="btn btn-sm d-flex align-items-center justify-content-center fw-semibold text-success py-2" style="background:#f0fdf4;border:1px solid #dcfce7;" title="WhatsApp"><i class="bi bi-whatsapp me-2 mb-0"></i> WhatsApp</a>` : `<button class="btn btn-sm btn-light fw-semibold d-flex align-items-center justify-content-center text-muted border-secondary-subtle py-2" disabled title="No Phone"><i class="bi bi-whatsapp me-2 mb-0"></i> WhatsApp</button>`}
-                            
-                            <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.name + ' ' + (s.address || ''))}" target="_blank" class="btn btn-sm bg-light fw-semibold d-flex align-items-center justify-content-center text-dark border py-2" title="Map"><i class="bi bi-geo-alt me-2 mb-0"></i> Map</a>
-                            
-                            <button onclick="editShop('${s.id}')" class="btn btn-sm d-flex align-items-center justify-content-center fw-semibold py-2" style="background:#f8fafc;color:#0ea5e9;border:1px solid #e0f2fe;" title="Update"><i class="bi bi-pencil me-2 mb-0"></i> Update</button>
-                        </div>
+                const mobilePhoneBtns = s.phone
+                    ? `<a href="tel:${s.phone}" class="btn btn-sm d-flex align-items-center justify-content-center fw-semibold py-2" style="background:#eef2ff;color:#4f46e5;border:1px solid #e0e7ff;"><i class="bi bi-telephone-outbound me-2 mb-0"></i> Call</a><a href="https://wa.me/${s.phone.replace(/[^0-9]/g, '')}" target="_blank" class="btn btn-sm d-flex align-items-center justify-content-center fw-semibold text-success py-2" style="background:#f0fdf4;border:1px solid #dcfce7;"><i class="bi bi-whatsapp me-2 mb-0"></i> WhatsApp</a>`
+                    : `<button class="btn btn-sm btn-light fw-semibold d-flex align-items-center justify-content-center text-muted border-secondary-subtle py-2" disabled><i class="bi bi-telephone-x me-2 mb-0"></i> Call</button><button class="btn btn-sm btn-light fw-semibold d-flex align-items-center justify-content-center text-muted border-secondary-subtle py-2" disabled><i class="bi bi-whatsapp me-2 mb-0"></i> WhatsApp</button>`;
+
+                mobileCards += `<div class="shop-card-mobile p-3 border rounded shadow-sm" style="background: var(--surface);">
+                    <div class="d-flex flex-column gap-1 border-bottom pb-3 mb-3 px-1">
+                        <h6 class="card-title text-dark mb-1 d-flex align-items-center flex-wrap gap-1">${s.name} ${mobileSourcingBadge}</h6>
+                        <div class="text-muted small mb-1"><i class="bi bi-geo-alt text-muted me-1"></i>${s.address || 'No address set'}</div>
+                        <div class="d-flex align-items-center flex-wrap gap-2 mt-1">${mobileStatusHtml}${mobileAssignedHtml}</div>
                     </div>
-                    `;
-                }).join('')}
-            </div>`;
+                    <div class="mb-3 px-1 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div class="text-muted small fw-medium"><i class="bi bi-person text-muted me-1"></i>${s.contact_person || '—'}</div>
+                        <div class="text-muted small fw-medium"><i class="bi bi-telephone text-muted me-1"></i>${s.phone || '—'}</div>
+                    </div>
+                    <div class="card-footer d-grid gap-2 border-0 bg-transparent p-0" style="grid-template-columns: 1fr 1fr;">
+                        ${mobilePhoneBtns}
+                        <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.name + ' ' + (s.address || ''))}" target="_blank" class="btn btn-sm bg-light fw-semibold d-flex align-items-center justify-content-center text-dark border py-2"><i class="bi bi-geo-alt me-2 mb-0"></i> Map</a>
+                        <button onclick="editShop('${s.id}')" class="btn btn-sm d-flex align-items-center justify-content-center fw-semibold py-2" style="background:var(--bg-app);color:#0ea5e9;border:1px solid var(--border);"><i class="bi bi-pencil me-2 mb-0"></i> Update</button>
+                    </div>
+                </div>`;
+            });
 
-            body.innerHTML = desktopTable + mobileCardsHtml;
+            body.innerHTML = `
+                <table class="shops-table d-none d-lg-table w-100">
+                    <thead><tr><th>Shop Details</th><th>Assigned To</th><th>Location</th><th>Contact</th><th></th></tr></thead>
+                    <tbody>${desktopRows}</tbody>
+                </table>
+                <div class="mobile-shops-list d-block d-lg-none mt-3 p-3 pt-0">${mobileCards}</div>
+            `;
         }
+
 
         // ── Search & Source Filter ──
         // Search & Source Filter removed because they are handled by initFilters()
@@ -1428,7 +1313,7 @@
 
         // ── Open modal in Edit Mode for an existing area ──
         function openEditAreaModal(areaId) {
-            const area = allAreas.find(a => a.id === areaId);
+            const area = allAreas.find(a => normalizeId(a.id) === normalizeId(areaId));
             if (!area) return;
 
             // Pre-fill hidden ID FIRST so show.bs.modal handler knows this is edit mode
@@ -1467,8 +1352,8 @@
 
         // ── Transition: Edit Form → Discover Shops (user-initiated) ──
         function discoverShopsFromEdit() {
-            const areaId = parseInt(document.getElementById('a-id').value);
-            const area = allAreas.find(a => a.id === areaId);
+            const areaId = document.getElementById('a-id').value;
+            const area = allAreas.find(a => normalizeId(a.id) === normalizeId(areaId));
             if (!area) return;
 
             const lat = parseFloat(document.getElementById('a-lat').value) || area.lat;
@@ -1532,9 +1417,9 @@
 
                     const shopEditId = document.getElementById('s-id').value;
                     const name = document.getElementById('s-name').value.trim();
-                    const areaId = parseInt(document.getElementById('s-area').value);
+                    const areaId = document.getElementById('s-area').value;
                     const payload = {
-                        name, area_id: areaId,
+                        name, area_id: areaId || null,
                         contact_person: document.getElementById('s-contact').value,
                         phone: document.getElementById('s-phone').value,
                         address: document.getElementById('s-addr').value,
@@ -1542,11 +1427,11 @@
                         project_type: document.getElementById('s-project').value || null,
                     };
                     if (shopEditId) {
-                        await ApiClient.updateShop(parseInt(shopEditId), payload);
-                        toast('Shop updated!');
+                        await ApiClient.updateShop(shopEditId, payload);
+                        showToast('Shop updated!');
                     } else {
                         await ApiClient.createShop(payload);
-                        toast('Shop added!');
+                        showToast('Shop added!');
                     }
                     // Clear all shop form fields including the hidden ID
                     document.getElementById('s-id').value = '';
@@ -1555,7 +1440,7 @@
                     document.getElementById('s-project').value = '';
                     await loadAll();
                     if (selectedAreaId) {
-                        const a = allAreas.find(x => x.id === selectedAreaId);
+                        const a = allAreas.find(x => normalizeId(x.id) === normalizeId(selectedAreaId));
                         if (a) selectArea(a.id, a.name);
                     }
                     // If from Discovered Shops list → go back to list; otherwise close modal
@@ -1566,7 +1451,7 @@
                     }
                 }
             } catch (e) {
-                toast(e?.data?.detail || e?.message || 'Failed to save', 'error');
+                showToast(e?.data?.detail || e?.message || 'Failed to save', 'error');
             } finally {
                 btn.disabled = false;
             }
@@ -1574,7 +1459,7 @@
 
         // ── Edit Shop ──
         function editShop(shopId) {
-            const shop = allShops.find(s => s.id === shopId);
+            const shop = allShops.find(s => normalizeId(s.id) === normalizeId(shopId));
             if (!shop) return;
 
             // Pre-fill hidden ID so saveModalForm knows edit mode
@@ -1602,10 +1487,10 @@
             if (!confirm(`Archive shop "${name}"? It will be hidden from normal views.`)) return;
             try {
                 await ApiClient.deleteShop(id); // backend uses delete router for soft delete
-                toast('Shop archived');
+                showToast('Shop archived');
                 await loadAll();
                 if (selectedAreaId) {
-                    const a = allAreas.find(x => x.id === selectedAreaId);
+                    const a = allAreas.find(x => normalizeId(x.id) === normalizeId(selectedAreaId));
                     if (a) selectArea(a.id, a.name);
                 }
                 
@@ -1613,7 +1498,7 @@
                     shopsArchiveOffcanvas.loadData();
                 }
             } catch (e) {
-                toast(e?.data?.detail || 'Failed to archive', 'error');
+                showToast(e?.data?.detail || 'Failed to archive', 'error');
             }
         }
 
@@ -1622,7 +1507,7 @@
             if (!confirm(`Archive area "${name}"? This will also archive all associated shops.`)) return;
             try {
                 await ApiClient.deleteArea(id); // backend uses delete router for soft delete
-                toast(`Area "${name}" archived`);
+                showToast(`Area "${name}" archived`);
                 selectedAreaId = null;
                 // Reset right-hand panel to empty default
                 document.getElementById('shops-panel-title').innerHTML = '<i class="bi bi-shop text-muted"></i> Select an area';
@@ -1638,7 +1523,7 @@
                     areasArchiveOffcanvas.loadData();
                 }
             } catch (e) {
-                toast(e?.data?.detail || e?.message || 'Failed to archive area', 'error');
+                showToast(e?.data?.detail || e?.message || 'Failed to archive area', 'error');
             }
         }
 
@@ -1754,7 +1639,7 @@
 
             // Populate Shops List for this area
             const shopsList = document.getElementById('assign-shops-list');
-            const areaShops = allShops.filter(s => s.area_id === areaId);
+            const areaShops = allShops.filter(s => String(s.area_id) === String(areaId));
             document.getElementById('assign-select-all').checked = true;
             document.getElementById('assign-shop-search').value = '';
 
@@ -1824,7 +1709,7 @@
             const selectAll = document.getElementById('assign-select-all').checked;
 
             if (allCbs.length > 0 && checkedCbs.length === 0) {
-                toast('Please select at least one shop to assign', 'warning');
+                showToast('Please select at least one shop to assign', 'warning');
                 return;
             }
 
@@ -1832,22 +1717,22 @@
             // 1. If "Select All" is checked AND (all shops are checked OR no shops exist), we send null 
             //    to trigger the cascading logic (Area + All Shops).
             // 2. Otherwise, we send ONLY the checked shop IDs.
-            const shopIds = (selectAll && checkedCbs.length === allCbs.length) ? null : Array.from(checkedCbs).map(cb => parseInt(cb.value));
+            const shopIds = (selectAll && checkedCbs.length === allCbs.length) ? null : Array.from(checkedCbs).map(cb => cb.value);
 
             try {
                 // Pass array of userIds instead of single userId
                 await ApiClient.assignArea(assigningAreaId, window.selectedAssignUsers, shopIds);
-                toast(shopIds ? 'Specific shops successfully assigned' : 'Area and all shops successfully assigned');
+                showToast(shopIds ? 'Specific shops successfully assigned' : 'Area and all shops successfully assigned');
 
                 const modalEl = document.getElementById('assignModal');
                 const modal = bootstrap.Modal.getInstance(modalEl);
                 if (modal) modal.hide();
 
                 await loadAll();
-                const area = allAreas.find(a => a.id === assigningAreaId);
+                const area = allAreas.find(a => normalizeId(a.id) === normalizeId(assigningAreaId));
                 if (area) selectArea(area.id, area.name);
             } catch (e) {
-                toast(e?.data?.detail || e?.message || 'Failed to assign', 'error');
+                showToast(e?.data?.detail || e?.message || 'Failed to assign', 'error');
             }
         };
 
@@ -1855,19 +1740,19 @@
             if (!confirm(`Are you sure you want to accept this ${moduleName.slice(0, -1)}? All other assigned staff will be removed.`)) return;
             try {
                 await ApiClient.acceptItem(moduleName, id);
-                toast(`Successfully accepted the ${moduleName.slice(0, -1)}!`, 'success');
+                showToast(`Successfully accepted the ${moduleName.slice(0, -1)}!`, 'success');
                 await loadAll();
                 
                 // Re-render the side panel if appropriate
                 if (moduleName === 'areas') {
-                    const area = allAreas.find(a => a.id === id);
+                    const area = allAreas.find(a => String(a.id) === String(id));
                     if (area) selectArea(area.id, area.name);
                 } else if (moduleName === 'shops' && selectedAreaId) {
-                    const area = allAreas.find(a => a.id === selectedAreaId);
+                    const area = allAreas.find(a => normalizeId(a.id) === normalizeId(selectedAreaId));
                     if (area) selectArea(area.id, area.name);
                 }
             } catch (e) {
-                toast(e?.data?.detail || e?.message || 'Failed to accept', 'error');
+                showToast(e?.data?.detail || e?.message || 'Failed to accept', 'error');
             }
         };
 
@@ -1880,7 +1765,7 @@
     </script>
     <script async
         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBygpEQiPfF15EghJWMWFlmejZ19b3mVzE&loading=async&v=weekly&libraries=places,marker&callback=initMap"></script>
-    <script src="../js/areas.js?v=20260321"></script>
+    <script src="/frontend/js/areas.js?v=20260321"></script>
 </body>
 
 </html>

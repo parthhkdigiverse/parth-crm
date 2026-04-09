@@ -285,6 +285,27 @@ class BillingService:
         if not await self._can_create_invoice(current_user):
             raise HTTPException(status_code=403, detail="Permission Denied")
 
+        # ─── Strict Payment Gateway Verification ───
+        if bill_in.payment_type == "BUSINESS_ACCOUNT":
+            if not bill_in.transaction_id:
+                raise HTTPException(status_code=400, detail="Transaction ID is required for Business Account payments")
+            
+            # Re-verify with PhonePe Server-to-Server
+            try:
+                pp_status = await self.check_phonepe_payment_status(bill_in.transaction_id, current_user)
+                if pp_status.get("code") != "PAYMENT_SUCCESS":
+                    # Strictly block creation if payment is not confirmed
+                    raise HTTPException(
+                        status_code=402, 
+                        detail=f"Payment for transaction {bill_in.transaction_id} is {pp_status.get('state', 'FAILED')}. Invoice cannot be created."
+                    )
+                # Success - we can proceed to record it
+            except HTTPException:
+                raise # Re-raise if it's already an HTTPException
+            except Exception as e:
+                print(f"[Strict Verify Error] {e}")
+                raise HTTPException(status_code=502, detail="Failed to verify payment status with provider. Please try again.")
+
         resolved = await self.resolve_workflow(
             BillingWorkflowResolveRequest(payment_type=bill_in.payment_type, gst_type=bill_in.gst_type, amount=bill_in.amount)
         )
@@ -309,10 +330,10 @@ class BillingService:
             service_description=bill_in.service_description,
             billing_month=bill_in.billing_month,
             invoice_number=invoice_number,
-            invoice_status="PENDING_VERIFICATION",
-            status="PENDING",
+            invoice_status="VERIFIED" if bill_in.payment_type == "BUSINESS_ACCOUNT" else "PENDING_VERIFICATION",
+            status="SUCCESS" if bill_in.payment_type == "BUSINESS_ACCOUNT" else "PENDING",
             transaction_id=bill_in.transaction_id,
-            payment_gateway_status=bill_in.payment_gateway_status,
+            payment_gateway_status="SUCCESS" if bill_in.payment_type == "BUSINESS_ACCOUNT" else bill_in.payment_gateway_status,
             created_by_id=current_user.id,
         )
         await db_bill.insert()
@@ -367,7 +388,12 @@ class BillingService:
              
         if "archived" in kwargs:
             val = kwargs["archived"]
-            filters["is_archived"] = str(val).lower() == "true"
+            if val == "ARCHIVED":
+                filters["is_archived"] = True
+            elif val == "ACTIVE":
+                filters["is_archived"] = False
+            else:
+                filters["is_archived"] = str(val).lower() == "true"
 
         # Build query — only apply limit when explicitly provided
         query = Bill.find(filters).sort("-created_at").skip(skip)
@@ -397,7 +423,7 @@ class BillingService:
 
     async def archive_invoice(self, bill_id: PydanticObjectId, current_user: User) -> Bill:
         bill = await self.get_bill(bill_id)
-        if not bill: raise HTTPException(status_code=44, detail="Not Found")
+        if not bill: raise HTTPException(status_code=404, detail="Not Found")
         bill.is_archived = True
         await bill.save()
         return bill
@@ -431,15 +457,22 @@ class BillingService:
         return {"bill": bill, "status": "sent"}
 
     async def refund_invoice(self, bill_id: PydanticObjectId, current_user: User) -> Bill:
-        # TODO: Implement MongoDB transactions for financial safety
+        """Marks an invoice as REFUNDED and synchronizes the associated client status."""
         bill = await self.get_bill(bill_id)
-        if not bill: raise HTTPException(status_code=404, detail="Not Found")
+        if not bill:
+            raise HTTPException(status_code=404, detail="Invoice Not Found")
+        
+        bill.status = "REFUNDED"
         bill.invoice_status = "REFUNDED"
+        
         if bill.client_id:
+            from app.modules.clients.models import Client
             c = await Client.get(bill.client_id)
             if c:
                 c.is_active = False
+                c.status = "REFUNDED"
                 await c.save()
+        
         await bill.save()
         return bill
 
@@ -486,7 +519,8 @@ class BillingService:
                 "redirectMode": "REDIRECT",
                 "callbackUrl": dummy_callback,
                 "mobileNumber": phone[-10:],
-                "expiresIn": 180,
+                "expiresIn": 200,
+
                 "paymentInstrument": {"type": "PAY_PAGE"}
             }
             
@@ -685,6 +719,29 @@ class BillingService:
         await bill.save()
         return {"status": "success"}
 
+    async def permanent_delete_invoice(self, bill_id: PydanticObjectId, current_user: User) -> dict:
+        if current_user.role != UserRole.ADMIN:
+            raise HTTPException(status_code=403, detail="Permission Denied")
+        bill = await self.get_bill(bill_id)
+        if not bill: raise HTTPException(status_code=404, detail="Not Found")
+        if not bill.is_archived:
+            raise HTTPException(status_code=400, detail="Only archived invoices can be permanently deleted")
+        
+        await bill.delete()
+        return {"status": "success"}
+
+    async def permanent_delete_invoice(self, bill_id: PydanticObjectId, current_user: User) -> dict:
+        if current_user.role != UserRole.ADMIN:
+            raise HTTPException(status_code=403, detail="Permission Denied")
+        bill = await self.get_bill(bill_id)
+        if not bill: raise HTTPException(status_code=404, detail="Not Found")
+        # Ensure it's archived before permanent deletion as a safety measure
+        if not bill.is_archived:
+            raise HTTPException(status_code=400, detail="Only archived invoices can be permanently deleted")
+        
+        await bill.delete()
+        return {"status": "success"}
+
     async def delete_archived_invoices_bulk(self, ids: List[PydanticObjectId], current_user: User) -> dict:
         if current_user.role != UserRole.ADMIN:
             raise HTTPException(status_code=403, detail="Permission Denied")
@@ -702,3 +759,4 @@ class BillingService:
         bill.whatsapp_sent = True
         await bill.save()
         return bill
+

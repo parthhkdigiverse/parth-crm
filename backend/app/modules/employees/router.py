@@ -24,6 +24,7 @@ async def list_employees(
     department: Optional[str] = Query(None),
     role: Optional[UserRole] = Query(None),
     is_active: Optional[bool] = Query(None),
+    q: Optional[str] = Query(None),
     start_date: Optional[dt_date] = Query(None),
     end_date: Optional[dt_date] = Query(None),
     current_user: User = Depends(get_current_active_user),
@@ -32,25 +33,35 @@ async def list_employees(
     if current_user.role == UserRole.CLIENT:
         return []
 
-    q = User.find(User.is_deleted == False)
+    query_obj = User.find(User.is_deleted == False)
     
     if department:
         import re
         pattern = re.compile(f".*{re.escape(department)}.*", re.IGNORECASE)
-        q = q.find({"department": pattern})
+        query_obj = query_obj.find({"department": pattern})
     if role:
-        q = q.find(User.role == role)
+        query_obj = query_obj.find(User.role == role)
     if is_active is not None:
-        q = q.find(User.is_active == is_active)
+        query_obj = query_obj.find(User.is_active == is_active)
+    if q:
+        import re
+        pattern = re.compile(f".*{re.escape(q)}.*", re.IGNORECASE)
+        query_obj = query_obj.find({
+            "$or": [
+                {"name": pattern},
+                {"email": pattern},
+                {"employee_code": pattern}
+            ]
+        })
     if start_date:
-        q = q.find(User.joining_date >= start_date)
+        query_obj = query_obj.find(User.joining_date >= start_date)
     if end_date:
-        q = q.find(User.joining_date <= end_date)
+        query_obj = query_obj.find(User.joining_date <= end_date)
         
     if limit:
-        q = q.limit(limit)
+        query_obj = query_obj.limit(limit)
     
-    results = await q.to_list()
+    results = await query_obj.to_list()
     
     # If not admin, mask sensitive data for others
     if current_user.role != UserRole.ADMIN:
@@ -107,6 +118,15 @@ async def update_employee(
     if "password" in update_data and update_data["password"]:
         from app.core.security import get_password_hash
         update_data["hashed_password"] = get_password_hash(update_data.pop("password"))
+        
+        from app.modules.auth.models import PasswordResetRequest
+        from datetime import datetime, UTC
+        pending_reqs = await PasswordResetRequest.find(PasswordResetRequest.user_id == user.id, PasswordResetRequest.status == "PENDING").to_list()
+        for req in pending_reqs:
+            req.status = "RESOLVED"
+            req.resolved_by = current_user.id
+            req.resolved_at = datetime.now(UTC)
+            await req.save()
     else:
         update_data.pop("password", None)
 

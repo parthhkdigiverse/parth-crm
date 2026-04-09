@@ -1,6 +1,6 @@
 # backend/app/modules/shops/service.py
-# from sqlalchemy.orm import Session # Removed for Beanie migration
-from beanie import PydanticObjectId # Added for Mongo ID support
+from beanie import PydanticObjectId
+from beanie.operators import In
 from fastapi import HTTPException, status
 from app.modules.shops.models import Shop
 from app.core.enums import MasterPipelineStage, GlobalTaskStatus
@@ -9,10 +9,31 @@ from app.modules.clients.models import Client
 from app.modules.users.models import User
 from app.modules.notifications.models import Notification
 from app.modules.areas.models import Area
+from app.core.cache import get_or_set, invalidate
 from typing import Dict, Any, Optional
 import logging
 
 logger = logging.getLogger(__name__)
+
+# ── Cached Helpers (shared across ShopService methods) ───────────────────────
+async def _get_user_map(user_ids: list) -> dict:
+    """Fetch users by IDs, served from 90-second RAM cache."""
+    if not user_ids: return {}
+    cache_key = "user_map:" + ",".join(sorted(str(i) for i in user_ids))
+    async def _fetch():
+        users = await User.find(In(User.id, user_ids)).to_list()
+        return {str(u.id): u.name for u in users}
+    return await get_or_set(cache_key, _fetch, ttl_seconds=90)
+
+async def _get_area_map(area_ids: list) -> dict:
+    """Fetch areas by IDs, served from 5-minute RAM cache (areas rarely change)."""
+    if not area_ids: return {}
+    cache_key = "area_map:" + ",".join(sorted(str(i) for i in area_ids))
+    async def _fetch():
+        areas = await Area.find(In(Area.id, area_ids)).to_list()
+        return {str(a.id): a.name for a in areas}
+    return await get_or_set(cache_key, _fetch, ttl_seconds=300)
+# ─────────────────────────────────────────────────────────────────────────────
 
 class ShopService:
     @staticmethod
@@ -79,10 +100,18 @@ class ShopService:
             executable_query = executable_query.limit(limit)
         results = await executable_query.to_list()
         
-        all_users = await User.find_all().to_list()
-        user_map = {str(u.id): u.name for u in all_users if u.id}
+        # --- OPTIMIZATION: Cached bulk fetch of required users ---
+        user_ids = set()
+        for shop in results:
+            if shop.owner_id: user_ids.add(shop.owner_id)
+            if shop.project_manager_id: user_ids.add(shop.project_manager_id)
+            if shop.created_by_id: user_ids.add(shop.created_by_id)
+            for uid in getattr(shop, 'assigned_user_ids', []):
+                if uid: user_ids.add(uid)
         
-        # Sequential enrichment for Shop attributes (NoSQL replacement for joins)
+        user_map = await _get_user_map(list(user_ids))
+        
+        # Sequential enrichment for Shop attributes
         for shop in results:
             # 1. Owner Name
             if shop.owner_id:
@@ -90,7 +119,7 @@ class ShopService:
             else:
                 shop.owner_name = "Unassigned"
             
-            # 2. PM Name (using explicit project_manager_name field)
+            # 2. PM Name
             if shop.project_manager_id:
                 shop.project_manager_name = user_map.get(str(shop.project_manager_id), "Unassigned")
                 shop.pm_name = shop.project_manager_name
@@ -106,7 +135,7 @@ class ShopService:
             else:
                 shop.created_by_name = "System"
 
-            # 4. Map assigned users for frontend UI
+            # 4. Map assigned users
             shop.assigned_users = [
                 {
                     "id": str(uid), 
@@ -137,18 +166,30 @@ class ShopService:
         results = await query.to_list()
         
         kanban = {
-            "LEAD": [],
-            "PITCHING": [],
-            "NEGOTIATION": [],
-            "DELIVERY": [],
-            "MAINTENANCE": []
+            "LEAD": [], "PITCHING": [], "NEGOTIATION": [], "DELIVERY": [], "MAINTENANCE": []
         }
         
-        all_areas = await Area.find_all().to_list()
-        area_map = {str(a.id): a.name for a in all_areas if a.id}
-        
-        all_users = await User.find_all().to_list()
-        user_map = {str(u.id): u.name for u in all_users if u.id}
+        # --- BULK FETCH ---
+        user_ids = set()
+        area_ids = set()
+        for shop in results:
+            if shop.owner_id: user_ids.add(shop.owner_id)
+            if shop.project_manager_id: user_ids.add(shop.project_manager_id)
+            if shop.created_by_id: user_ids.add(shop.created_by_id)
+            if shop.area_id: area_ids.add(shop.area_id)
+            for uid in getattr(shop, 'assigned_user_ids', []):
+                if uid: user_ids.add(uid)
+
+        from beanie.operators import In
+        user_map = {}
+        if user_ids:
+            users = await User.find(In(User.id, list(user_ids))).to_list()
+            user_map = {str(u.id): u.name for u in users}
+            
+        area_map = {}
+        if area_ids:
+            areas = await Area.find(In(Area.id, list(area_ids))).to_list()
+            area_map = {str(a.id): a.name for a in areas}
         
         for shop in results:
             shop_data = shop.model_dump()
@@ -156,7 +197,7 @@ class ShopService:
             shop_data["owner_name"] = user_map.get(str(shop.owner_id), "Unassigned") if shop.owner_id else "Unassigned"
             shop_data["area_name"] = area_map.get(str(shop.area_id), "No Area Assigned") if shop.area_id else "No Area Assigned"
             shop_data["last_visitor_name"] = getattr(shop, "last_visitor_name", None)
-            shop_data["last_visit_status"] = None # Needs visit lookup
+            shop_data["last_visit_status"] = None 
             
             shop_data["assigned_users"] = [
                 {
@@ -259,8 +300,18 @@ class ShopService:
 
         results = await query.to_list()
         
-        all_users = await User.find_all().to_list()
-        user_map = {str(u.id): u.name for u in all_users if u.id}
+        # --- BULK FETCH ---
+        user_ids = set()
+        for shop in results:
+            if shop.owner_id: user_ids.add(shop.owner_id)
+            for uid in getattr(shop, 'assigned_user_ids', []):
+                if uid: user_ids.add(uid)
+        
+        user_map = {}
+        if user_ids:
+            from beanie.operators import In
+            users = await User.find(In(User.id, list(user_ids))).to_list()
+            user_map = {str(u.id): u.name for u in users}
         
         shops = []
         for shop in results:
@@ -367,22 +418,30 @@ class ShopService:
 
         results = await query.sort(-Shop.accepted_at).to_list()
 
+        # --- BULK FETCH USERS ---
+        needed_uids = set()
+        for shop in results:
+            if shop.assigned_user_ids:
+                needed_uids.add(shop.assigned_user_ids[0])
+        
+        from beanie.operators import In
+        user_objects_map = {}
+        if needed_uids:
+            users_list = await User.find(In(User.id, list(needed_uids))).to_list()
+            user_objects_map = {u.id: u.name for u in users_list}
+
         history = []
         for shop in results:
-            # Note: assigned_users is populated in the model or returned by logic
             assigned_to_name = "Unknown"
             if shop.assigned_user_ids:
-                # We assume the first user is the main owner for history display
-                from app.modules.users.models import User as UserModel
-                u = await UserModel.get(shop.assigned_user_ids[0])
-                assigned_to_name = u.name if u else "Unknown"
+                assigned_to_name = user_objects_map.get(shop.assigned_user_ids[0], "Unknown")
 
             history.append({
                 "shop_id": str(shop.id),
                 "area_name": shop.area_name or "N/A",
                 "shop_name": shop.name,
                 "assigned_to_name": assigned_to_name,
-                "assigned_by_name": "System", # Default for now
+                "assigned_by_name": "System", 
                 "accepted_at": shop.accepted_at
             })
         return history
@@ -635,14 +694,29 @@ class ShopService:
             query = query.find(Shop.project_manager_id == current_user.id)
 
         results = await query.sort(-Shop.id).to_list()
+        
+        # --- BULK FETCH ---
+        user_ids = set()
+        area_ids = set()
+        for shop in results:
+            if shop.owner_id: user_ids.add(shop.owner_id)
+            if shop.project_manager_id: user_ids.add(shop.project_manager_id)
+            if shop.area_id: area_ids.add(shop.area_id)
+            for uid in getattr(shop, 'assigned_user_ids', []):
+                if uid: user_ids.add(uid)
+
+        from beanie.operators import In
+        user_map = {}
+        if user_ids:
+            users_list = await User.find(In(User.id, list(user_ids))).to_list()
+            user_map = {str(u.id): u.name for u in users_list}
+            
+        area_map = {}
+        if area_ids:
+            areas_list = await Area.find(In(Area.id, list(area_ids))).to_list()
+            area_map = {str(a.id): a.name for a in areas_list}
+
         shops = []
-        
-        all_areas = await Area.find_all().to_list()
-        area_map = {str(a.id): a.name for a in all_areas if a.id}
-        
-        all_users = await User.find_all().to_list()
-        user_map = {str(u.id): u.name for u in all_users if u.id}
-        
         for shop in results:
             shop_data = shop.model_dump()
             shop_data["id"] = shop.id
@@ -658,7 +732,6 @@ class ShopService:
             shop_data["archived_by_name"] = "System"
             shop_data["last_visitor_name"] = getattr(shop, "last_visitor_name", None)
             
-            # Map assigned owners for frontend UI
             shop_data["assigned_users"] = [
                 {
                     "id": str(uid), 
@@ -678,15 +751,15 @@ class ShopService:
         pipeline = [
             {"$match": {"is_deleted": False, "project_manager_id": {"$ne": None}}},
             {"$lookup": {
-                "from": "users",
+                "from": "srm_users",
                 "localField": "project_manager_id",
                 "foreignField": "_id",
                 "as": "pm"
             }},
             {"$unwind": "$pm"},
             {"$group": {
-                "_id": "$pm.name",
-                "in_demo": {"$sum": {"$cond": [{"$not": {"$in": ["$pipeline_stage", ["DELIVERY", "PITCHING"]]}}, 1, 0]}},
+                "_id": {"$ifNull": ["$pm.name", "$pm.email"]},
+                "in_demo": {"$sum": {"$cond": [{"$eq": ["$pipeline_stage", "NEGOTIATION"]}, 1, 0]}},
                 "meeting_set": {"$sum": {"$cond": [{"$eq": ["$pipeline_stage", "PITCHING"]}, 1, 0]}},
                 "converted": {"$sum": {"$cond": [{"$eq": ["$pipeline_stage", "DELIVERY"]}, 1, 0]}}
             }},
@@ -696,7 +769,8 @@ class ShopService:
                 "meeting_set": 1,
                 "converted": 1,
                 "_id": 0
-            }}
+            }},
+            {"$sort": {"pm_name": 1}}
         ]
         
         results = await Shop.get_pymongo_collection().aggregate(pipeline).to_list(length=None)

@@ -117,15 +117,21 @@ class IncentiveService:
 
             query = self._apply_role_scope_query(user).find(
                 Client.created_at >= eligibility_start,
-                Client.created_at < eligibility_end
+                Client.created_at < eligibility_end,
+                Client.status == "ACTIVE"
             )
             achieved = await query.count()
 
         calc_result = await self._calculate_stepped_incentive(achieved, offset=0)
 
+        user_target = getattr(user, "target", 0) or 0
+        percentage = (achieved / user_target * 100) if user_target > 0 else 0.0
+
         if existing_slip and force_recalculate:
             db_slip = existing_slip
             db_slip.achieved = achieved
+            db_slip.target = user_target
+            db_slip.percentage = percentage
             db_slip.applied_slab = calc_result["applied_slab_label"]
             db_slip.amount_per_unit = calc_result["incentive_per_unit"]
             db_slip.slab_bonus_amount = calc_result["slab_bonus"]
@@ -136,9 +142,9 @@ class IncentiveService:
             db_slip = IncentiveSlip(
                 user_id=calc_in.user_id,
                 period=calc_in.period,
-                target=0,
+                target=user_target,
                 achieved=achieved,
-                percentage=0.0,
+                percentage=percentage,
                 applied_slab=calc_result["applied_slab_label"],
                 amount_per_unit=calc_result["incentive_per_unit"],
                 slab_bonus_amount=calc_result["slab_bonus"],
@@ -233,7 +239,7 @@ class IncentiveService:
         if not user:
             raise HTTPException(status_code=404, detail="Employee not found")
         
-        target = getattr(user, "target", 0)
+        target = getattr(user, "target", 0) or 0
         
         period_start, _ = self._get_period_bounds(period)
         

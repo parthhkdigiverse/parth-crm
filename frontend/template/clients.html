@@ -8,10 +8,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Clients — SRM AI SETU</title>
-    <link rel="stylesheet" href="/static/css/bootstrap.min.css">
-    <link rel="stylesheet" href="/static/css/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="/static/css/theme.css?v=20260403">
-    <link rel="stylesheet" href="/static/css/components.css?v=20260403">
+    <link rel="stylesheet" href="/frontend/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/frontend/css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/frontend/css/theme.css?v=20260406">
+    <link rel="stylesheet" href="/frontend/css/components.css?v=20260406">
     <style>
         /* ── Table & Layout Fundamentals ─────────────────────── */
         .table th, .table td {
@@ -24,7 +24,7 @@
             text-transform: uppercase;
             letter-spacing: 0.05em;
             color: var(--text-muted);
-            background: #f8fafc;
+            background: var(--bg-app);
             border-bottom: 1.5px solid var(--border) !important;
         }
 
@@ -59,7 +59,7 @@
             position: sticky;
             left: 0;
             z-index: 10;
-            background: #fff;
+            background: var(--surface);
             border-right: 1.5px solid var(--border);
             min-width: 180px !important;
             box-shadow: 4px 0 10px rgba(0,0,0,0.02);
@@ -68,12 +68,12 @@
 
         #clients-table-container thead th:first-child {
             z-index: 11;
-            background: #f8fafc;
+            background: var(--bg-app);
         }
 
         /* Ensure smooth hover with sticky column */
         .table-hover tbody tr:hover td:first-child {
-            background-color: #f1f5f9 !important;
+            background-color: var(--primary-light) !important;
         }
 
         /* Sticky Column Content Wrapper (for truncation) */
@@ -124,7 +124,7 @@
         .table-section-header {
             display: flex; align-items: center; justify-content: space-between;
             padding: 14px 20px 12px; border-bottom: 1px solid var(--border);
-            background: linear-gradient(to right, rgba(248,250,252,0.8), rgba(255,255,255,0.9));
+            background: var(--surface);
             border-radius: 14px 14px 0 0;
         }
         .table-section-title {
@@ -191,7 +191,7 @@
 
         /* Fixed Table Header removed as page scrolls now */
         #clients-table-container thead {
-            background: #f8fafc;
+            background: var(--bg-app);
         }
         
         /* Dropdown fix for clipped menus and table stacking context */
@@ -251,7 +251,7 @@
                 </div>
 
                 <!-- Filter Panel Wrapper -->
-                <div id="filter-wrapper"></div>
+                <div id="filter-wrapper" class="mb-4"></div>
                 <div class="card shadow-sm grid-card" style="border-radius: 14px; overflow: visible;">
                     <!-- Table Section Header -->
                     <div class="table-section-header">
@@ -288,6 +288,7 @@
                                 </tbody>
                             </table>
                         </div>
+                        <div id="clients-pagination"></div>
                     </div>
                 </div>
             </div><!-- /page-content -->
@@ -450,12 +451,12 @@
             <div style="position:absolute;inset:0;z-index:-1;" onclick="closeAutofillModal()"></div>
         </div>
 
-        <script src="/static/js/utils.js?v=20260403"></script>
-        <script src="/static/js/api.js?v=20260403"></script>
-        <script src="/static/js/auth.js?v=20260403"></script>
-        <script src="/static/js/ui_components.js?v=20260403"></script>
-        <script src="/static/js/app.js?v=20260403"></script>
-        <script src="/static/js/bootstrap.bundle.min.js"></script>
+        <script src="/frontend/js/utils.js?v=20260403"></script>
+        <script src="/frontend/js/api.js?v=20260403"></script>
+        <script src="/frontend/js/auth.js?v=20260403"></script>
+        <script src="/frontend/js/ui_components.js?v=20260403"></script>
+        <script src="/frontend/js/app.js?v=20260403"></script>
+        <script src="/frontend/js/bootstrap.bundle.min.js"></script>
         <script>
             requireAuth();
             const sb = document.getElementById('sidebar');
@@ -523,101 +524,91 @@
                 const countEl = document.getElementById('client-count');
                 if (countEl) countEl.textContent = clients.length;
 
-                if (!clients.length) {
-                    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-5 text-muted">No clients found matching "${searchQuery || 'your criteria'}".</td></tr>`;
-                    return;
-                }
-
-                tbody.innerHTML = clients.map(c => `
-                <tr>
-                    <td>
-                        <div class="sticky-col-content fw-bold text-main" style="font-size: 0.95rem;" title="${c.name}">${c.name}</div>
-                        <div class="sticky-col-content text-muted small" title="${c.organization || 'Individual'}">${c.organization || 'Individual'}</div>
-                    </td>
-                    <td>
-                        <div class="small mb-1"><i class="bi bi-envelope me-2 opacity-50"></i>${c.email || '—'}</div>
-                        <div class="small">
-                            <i class="bi bi-phone me-2 opacity-50"></i>
-                            ${c.phone ? `<a href="https://wa.me/${c.phone.replace(/[^0-9]/g, '')}" target="_blank" class="text-decoration-none fw-semibold text-primary">${c.phone} <i class="bi bi-whatsapp text-success ms-1"></i></a>` : '—'}
-                        </div>
-                    </td>
-                    <td>${c.organization || '—'}</td>
-                    
-                    <td>
-                        ${(() => {
-                            const assignerName = c.pm_assigned_by_name; 
-                                        const pmTypeLabel = assignerName ? 'Manual' : 'Auto-Assign';
-                                        const pmName = c.pm_name || pmMap[String(c.pm_id)] || 'ID: ' + c.pm_id;
-                                        
-                                        return `<div class="pm-name-container">
-                                                    <span class="badge" style="background:var(--bg-app); color:var(--text-muted); font-size:0.65rem; border: 1px solid var(--border); padding: 3px 8px;">
-                                                        <i class="bi ${assignerName ? 'bi-person-gear' : 'bi-robot'} me-1"></i>${pmTypeLabel} : ${pmName}
-                                                    </span>
-                                                </div>`;
-                        })()}
-                    </td>
-
-                    <td>
-                        <span class="badge ${
-                            c.status === 'REFUNDED' ? 'bg-danger-subtle text-danger' :
-                            c.status === 'ARCHIVED' ? 'bg-secondary-subtle text-secondary' :
-                            'bg-success-subtle text-success'
-                        }" style="font-size: 0.7rem; padding: 4px 10px; border-radius: 6px;">
-                            ${c.status || 'Active'}
-                        </span>
-                    </td>
-                    <td style="text-align: right; padding-right: 16px !important;">
-                        <div class="d-flex align-items-center justify-content-end gap-2">
-                             <!-- Primary Action: Edit -->
-                            <button class="btn-soft btn-soft-info px-3" onclick="openEditModal('${c.id}')" title="Edit Client" style="height: 34px;">
-                                <i class="bi bi-pencil-square me-1"></i> Edit
-                            </button>
-                            
-                            <!-- Secondary Actions: Meetings & Issues -->
-                            <a href="meetings.html?client_id=${c.id}" class="btn-soft btn-soft-primary px-2 d-inline-flex align-items-center justify-content-center" title="Meetings" style="width: 34px; height: 34px;">
-                                <i class="bi bi-camera-video-fill"></i>
-                            </a>
-                            <a href="issues.html?client_id=${c.id}" class="btn-soft btn-soft-danger px-2 d-inline-flex align-items-center justify-content-center" title="Issues" style="width: 34px; height: 34px;">
-                                <i class="bi bi-flag-fill"></i>
-                            </a>
-
-                            <!-- More Dropdown -->
-                            <div class="dropdown">
-                                <button class="btn-soft action-menu-btn d-inline-flex align-items-center justify-content-center" 
-                                    data-bs-toggle="dropdown" 
-                                    data-bs-boundary="viewport"
-                                    data-bs-popper-config='{"strategy":"fixed"}'
-                                    aria-expanded="false" 
-                                    style="width: 34px; height: 34px; padding: 0;">
-                                    <i class="bi bi-three-dots-vertical"></i>
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0" style="border-radius: 12px; padding: 8px; z-index: 2000;">
-                                    <li><h6 class="dropdown-header small text-uppercase fw-bold opacity-50" style="font-size: 10px;">Billing</h6></li>
-                                    <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 rounded-2" href="billing.html?client_id=${c.id}">
-                                        <i class="bi bi-receipt text-success"></i> Manage Invoices
-                                    </a></li>
-                                    
-                                    <li><hr class="dropdown-divider opacity-50"></li>
-                                    <li><h6 class="dropdown-header small text-uppercase fw-bold opacity-50" style="font-size: 10px;">Management</h6></li>
-                                    
-                                    ${(c.status !== 'REFUNDED') ? `
-                                    <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 rounded-2 text-warning" href="javascript:void(0)" onclick="refundClient('${c.id}')">
-                                        <i class="bi bi-arrow-counterclockwise"></i> Refund Client
-                                    </a></li>` : ''}
-                                    
-                                    ${(c.status !== 'ARCHIVED') ? `
-                                    <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 rounded-2 text-info" href="javascript:void(0)" onclick="archiveClient('${c.id}')">
-                                        <i class="bi bi-archive"></i> Archive Client
-                                    </a></li>` : ''}
-                                    
-                                    <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 rounded-2 text-danger" href="javascript:void(0)" onclick="deleteClient('${c.id}')">
-                                        <i class="bi bi-trash3"></i> Delete Client
-                                    </a></li>
-                                </ul>
-                            </div>
-                        </div>
-                    </td>
-                </tr> `).join('');
+                renderPagination({
+                    data: clients,
+                    tbodyId: 'clients-table',
+                    paginationId: 'clients-pagination',
+                    emptyMsg: `<tr><td colspan="6" class="text-center py-5 text-muted">No clients found matching "${searchQuery || 'your criteria'}".</td></tr>`,
+                    renderRow: (c) => {
+                        const pmName = c.pm_name || pmMap[String(c.pm_id)] || 'ID: ' + c.pm_id;
+                        const assignerName = c.pm_assigned_by_name;
+                        const pmTypeLabel = assignerName ? 'Manual' : 'Auto-Assign';
+                        
+                        return `
+                        <tr>
+                            <td>
+                                <div class="sticky-col-content fw-bold text-main" style="font-size: 0.95rem;" title="${c.name}">${c.name}</div>
+                                <div class="sticky-col-content text-muted small" title="${c.organization || 'Individual'}">${c.organization || 'Individual'}</div>
+                            </td>
+                            <td>
+                                <div class="small mb-1"><i class="bi bi-envelope me-2 opacity-50"></i>${c.email || '—'}</div>
+                                <div class="small">
+                                    <i class="bi bi-phone me-2 opacity-50"></i>
+                                    ${c.phone ? `<a href="https://wa.me/${c.phone.replace(/[^0-9]/g, '')}" target="_blank" class="text-decoration-none fw-semibold text-primary">${c.phone} <i class="bi bi-whatsapp text-success ms-1"></i></a>` : '—'}
+                                </div>
+                            </td>
+                            <td>${c.organization || '—'}</td>
+                            <td>
+                                <div class="pm-name-container">
+                                    <span class="badge" style="background:var(--bg-app); color:var(--text-muted); font-size:0.65rem; border: 1px solid var(--border); padding: 3px 8px;">
+                                        <i class="bi ${assignerName ? 'bi-person-gear' : 'bi-robot'} me-1"></i>${pmTypeLabel} : ${pmName}
+                                    </span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge ${
+                                    c.status === 'REFUNDED' ? 'bg-danger-subtle text-danger' :
+                                    c.status === 'ARCHIVED' ? 'bg-secondary-subtle text-secondary' :
+                                    'bg-success-subtle text-success'
+                                }" style="font-size: 0.7rem; padding: 4px 10px; border-radius: 6px;">
+                                    ${c.status || 'Active'}
+                                </span>
+                            </td>
+                            <td style="text-align: right; padding-right: 16px !important;">
+                                <div class="d-flex align-items-center justify-content-end gap-2">
+                                    <button class="btn-soft btn-soft-info px-3" onclick="openEditModal('${c.id}')" title="Edit Client" style="height: 34px;">
+                                        <i class="bi bi-pencil-square me-1"></i> Edit
+                                    </button>
+                                    <a href="meetings.html?client_id=${c.id}" class="btn-soft btn-soft-primary px-2 d-inline-flex align-items-center justify-content-center" title="Meetings" style="width: 34px; height: 34px;">
+                                        <i class="bi bi-camera-video-fill"></i>
+                                    </a>
+                                    <a href="issues.html?client_id=${c.id}" class="btn-soft btn-soft-danger px-2 d-inline-flex align-items-center justify-content-center" title="Issues" style="width: 34px; height: 34px;">
+                                        <i class="bi bi-flag-fill"></i>
+                                    </a>
+                                    <div class="dropdown">
+                                        <button class="btn-soft action-menu-btn d-inline-flex align-items-center justify-content-center" 
+                                            data-bs-toggle="dropdown" 
+                                            data-bs-boundary="viewport"
+                                            data-bs-popper-config='{"strategy":"fixed"}'
+                                            aria-expanded="false" 
+                                            style="width: 34px; height: 34px; padding: 0;">
+                                            <i class="bi bi-three-dots-vertical"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0" style="border-radius: 12px; padding: 8px; z-index: 2000;">
+                                            <li><h6 class="dropdown-header small text-uppercase fw-bold opacity-50" style="font-size: 10px;">Billing</h6></li>
+                                            <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 rounded-2" href="billing.html?client_id=${c.id}">
+                                                <i class="bi bi-receipt text-success"></i> Manage Invoices
+                                            </a></li>
+                                            <li><hr class="dropdown-divider opacity-50"></li>
+                                            <li><h6 class="dropdown-header small text-uppercase fw-bold opacity-50" style="font-size: 10px;">Management</h6></li>
+                                            ${(c.status !== 'REFUNDED') ? `
+                                            <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 rounded-2 text-warning" href="javascript:void(0)" onclick="refundClient('${c.id}')">
+                                                <i class="bi bi-arrow-counterclockwise"></i> Refund Client
+                                            </a></li>` : ''}
+                                            ${(c.status !== 'ARCHIVED') ? `
+                                            <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 rounded-2 text-info" href="javascript:void(0)" onclick="archiveClient('${c.id}')">
+                                                <i class="bi bi-archive"></i> Archive Client
+                                            </a></li>` : ''}
+                                            <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 rounded-2 text-danger" href="javascript:void(0)" onclick="deleteClient('${c.id}')">
+                                                <i class="bi bi-trash3"></i> Delete Client
+                                            </a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>`;
+                    }
+                });
             }
 
             window.openPaymentModal = (id, name) => {

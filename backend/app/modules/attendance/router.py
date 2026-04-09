@@ -1,7 +1,7 @@
 # backend/app/modules/attendance/router.py
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
-from datetime import date as dt_date
+from datetime import datetime, date as dt_date, timedelta, timezone
 from beanie import PydanticObjectId
 
 from app.core.dependencies import get_current_active_user
@@ -25,6 +25,30 @@ async def get_punch_status(
     current_user: User = Depends(get_current_active_user)
 ):
     return await AttendanceService.get_punch_status(current_user)
+
+@router.get("/open-sessions")
+async def get_open_sessions(
+    current_user: User = Depends(get_current_active_user)
+):
+    open_sessions = await AttendanceService.get_open_sessions(current_user)
+    return [
+        {
+            "id": str(s.id), 
+            "date": str(AttendanceService._to_date(s.date)), 
+            "punch_in": s.punch_in.isoformat() if s.punch_in else None
+        } for s in open_sessions
+    ]
+
+@router.patch("/{record_id}/manual-punch-out", response_model=AttendanceResponse)
+async def manual_punch_out(
+    record_id: PydanticObjectId,
+    body: dict,
+    current_user: User = Depends(get_current_active_user)
+):
+    time_str = body.get("punch_out")
+    if not time_str:
+        raise HTTPException(status_code=400, detail="punch_out time is required")
+    return await AttendanceService.manual_punch_out(record_id, time_str, current_user)
 
 @router.get("/logs", response_model=List[AttendanceLog])
 async def get_attendance_logs(
@@ -52,8 +76,19 @@ async def get_attendance_summary(
         if not target_user:
             raise HTTPException(status_code=404, detail="User not found")
 
-    # Optimization: Move reconcile to background if it's broad
+    # Use AttendanceService method to get defaulted end_date (IST)
+    if not end_date:
+        end_date = AttendanceService.get_ist_today()
+    
+    # Use global timedelta (imported at top of file)
+    if not start_date:
+        start_date = end_date - timedelta(days=30)
+
+    # Optimization: Move reconcile to background if requested
     if reconcile:
+        # Resolve defaults here — background tasks receive raw values, not the service's defaults
+        resolved_end = end_date or datetime.now(timezone.utc).date()
+        resolved_start = start_date or (resolved_end - timedelta(days=30))
         settings = await AttendanceService.load_attendance_settings()
         if target_user:
             background_tasks.add_task(AttendanceService.ensure_auto_leaves, target_user, start_date, end_date, settings)

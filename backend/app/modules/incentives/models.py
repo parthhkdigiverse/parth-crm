@@ -1,7 +1,7 @@
 # backend/app/modules/incentives/models.py
 from typing import Optional, Any
 from datetime import datetime, UTC
-from pydantic import Field
+from pydantic import Field, field_validator
 from beanie import Document, Indexed, PydanticObjectId
 
 class IncentiveSlab(Document):
@@ -25,9 +25,29 @@ class IncentiveSlip(Document):
     user_id: PydanticObjectId
     period: str  # YYYY-MM
 
-    target: int
-    achieved: int
-    percentage: float
+    target: int = 0
+    achieved: int = 0
+    percentage: float = 0.0
+
+    @field_validator("target", "achieved", mode="before")
+    @classmethod
+    def coerce_int(cls, v):
+        if v is None:
+            return 0
+        try:
+            return int(v)
+        except (TypeError, ValueError):
+            return 0
+
+    @field_validator("percentage", mode="before")
+    @classmethod
+    def coerce_percentage(cls, v):
+        if v is None:
+            return 0.0
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return 0.0
     applied_slab: Any = Field(default=None)
     amount_per_unit: float = 0.0
     total_incentive: float

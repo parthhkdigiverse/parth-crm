@@ -1,6 +1,6 @@
 from typing import List
-from beanie import PydanticObjectId
-from app.core.base_schema import MongoBaseSchema
+from beanie import PydanticObjectId as BeaniePydanticObjectId
+from app.core.base_schema import MongoBaseSchema, PydanticObjectId
 
 class AreaBase(MongoBaseSchema):
     name: str

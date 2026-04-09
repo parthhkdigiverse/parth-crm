@@ -52,14 +52,11 @@ window.clearTokens = function() {
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('srm_user');
     localStorage.removeItem('current_user');
-    // Also clear any sessionStorage remnants from old sessions
-    sessionStorage.removeItem('access_token');
-    sessionStorage.removeItem('refresh_token');
-    sessionStorage.removeItem('srm_user');
-    sessionStorage.removeItem('current_user');
 }
 window.getUser = function() {
-    try { return JSON.parse(localStorage.getItem('srm_user')); } catch { return null; }
+    try { 
+        return JSON.parse(localStorage.getItem('srm_user') || sessionStorage.getItem('srm_user')); 
+    } catch { return null; }
 }
 
 window.showAccessDeniedState = function(role, path) {
@@ -163,19 +160,15 @@ window.requireAuth = function() {
         const roleName = (role || '').toUpperCase();
         const effective = window.__crmEffectiveAccessPolicy;
         
-        // 1. Try memory cache first
-        if (effective && Array.isArray(effective.allowed_pages)) {
-            return effective.allowed_pages;
+        // 1. Try memory
+        if (window.__crmEffectiveAccessPolicy) return window.__crmEffectiveAccessPolicy.allowed_pages || [];
+
+        // 2. Try localStorage (unified cache)
+        const cached = JSON.parse(localStorage.getItem('crm_access_policy') || 'null');
+        if (cached && (cached.allowed_pages || cached.page_access)) {
+            window.__crmEffectiveAccessPolicy = cached;
+            return cached.allowed_pages || (cached.page_access ? (cached.page_access[role] || []) : []);
         }
-
-        // 2. Try localStorage cache (shared across all tabs)
-        try {
-            const cachedPolicy = JSON.parse(localStorage.getItem('crm_access_policy'));
-            if (cachedPolicy && Array.isArray(cachedPolicy.allowed_pages)) {
-                return cachedPolicy.allowed_pages;
-            }
-        } catch (e) {}
-
         // 3. Fallback to basic pages only if nothing else is available
         // This ensures the system remains functional during initial load
         return ['dashboard.html', 'profile.html', 'notifications.html', 'search.html', 'index.html', 'login.html'];
@@ -238,57 +231,73 @@ window.requireAuth = function() {
         }, 2000);
     }
 
-    // Background Verification
-    fetch(`${API}/auth/profile`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-    })
-        .then(r => {
-            if (!r.ok) {
-                if (r.status === 401) {
+    // Background Verification using ApiClient for robust token handling (auto-refresh)
+    if (window.ApiClient && typeof window.ApiClient.request === 'function') {
+        window.ApiClient.request('/auth/profile')
+            .then(async profile => {
+                if (!profile) return;
+                const userData = { id: profile.id, name: profile.name || profile.email, email: profile.email, role: profile.role };
+                localStorage.setItem('srm_user', JSON.stringify(userData));
+
+                if (window.ApiClient.getEffectiveAccessPolicy) {
+                    try {
+                        const effective = await window.ApiClient.getEffectiveAccessPolicy();
+                        window.__crmEffectiveAccessPolicy = effective;
+                        localStorage.setItem('crm_access_policy', JSON.stringify(effective));
+                    } catch (e) {
+                        console.warn('Failed to load effective access policy, using fallback map', e);
+                    }
+                }
+
+                enforceRoleAccess(userData.role);
+                if (document.body) {
+                    document.body.style.visibility = 'visible';
+                    document.body.style.opacity = '1';
+                }
+                console.log('Background auth check successful (via ApiClient)');
+                const el = document.getElementById('username-display');
+                if (el) el.textContent = profile.name || 'User';
+
+                // Initial sync to set version
+                syncAccessControl(true);
+
+                // Fetch and check for critical issues across the app
+                if (typeof checkCriticalIssues === 'function') checkCriticalIssues();
+            })
+            .catch((err) => {
+                console.warn('Background auth check failed (via ApiClient):', err);
+                if (err.status === 401) {
                     clearTokens();
                     if (!isLoginPage) window.location.replace('index.html');
+                } else if (document.body) {
+                    document.body.style.visibility = 'visible';
+                    document.body.style.opacity = '1';
                 }
-                return null;
-            }
-            return r.json();
+            });
+    } else {
+        // Fallback for when ApiClient is not available (raw fetch)
+        fetch(`${API}/auth/profile`, {
+            headers: { 'Authorization': `Bearer ${token}` }
         })
-        .then(async profile => {
-            if (!profile) return;
-            const userData = { id: profile.id, name: profile.name || profile.email, email: profile.email, role: profile.role };
-            localStorage.setItem('srm_user', JSON.stringify(userData));
-
-            if (window.ApiClient && window.ApiClient.getEffectiveAccessPolicy) {
-                try {
-                    const effective = await window.ApiClient.getEffectiveAccessPolicy();
-                    window.__crmEffectiveAccessPolicy = effective;
-                    localStorage.setItem('crm_access_policy', JSON.stringify(effective));
-                } catch (e) {
-                    console.warn('Failed to load effective access policy, using fallback map', e);
+            .then(r => {
+                if (!r.ok) {
+                    if (r.status === 401) {
+                        clearTokens();
+                        if (!isLoginPage) window.location.replace('index.html');
+                    }
+                    return null;
                 }
-            }
-
-            enforceRoleAccess(userData.role);
-            if (document.body) {
-                document.body.style.visibility = 'visible';
-                document.body.style.opacity = '1';
-            }
-            console.log('Background auth check successful');
-            const el = document.getElementById('username-display');
-            if (el) el.textContent = profile.name || 'User';
-
-            // Initial sync to set version
-            syncAccessControl(true);
-
-            // Fetch and check for critical issues across the app
-            if (typeof checkCriticalIssues === 'function') checkCriticalIssues();
-        })
-        .catch((err) => {
-            console.warn('Background auth check failed:', err);
-            if (document.body) {
-                document.body.style.visibility = 'visible';
-                document.body.style.opacity = '1';
-            }
-        });
+                return r.json();
+            })
+            .then(async profile => {
+                if (!profile) return;
+                const userData = { id: profile.id, name: profile.name || profile.email, email: profile.email, role: profile.role };
+                localStorage.setItem('srm_user', JSON.stringify(userData));
+                enforceRoleAccess(userData.role);
+                console.log('Background auth check successful (via Fallback Fetch)');
+            })
+            .catch(err => console.warn('Fallback auth check failing:', err));
+    }
 }
 
 // --- AUTOMATIC ACCESS SYNC ---
@@ -326,15 +335,33 @@ async function syncAccessControl(isInitial = false) {
             if (roleChanged || policyChanged) {
                 console.log('Access control update detected, refreshing permissions...');
                 
-                // Refetch full profile and policy
-                const profile = await window.ApiClient.getProfile();
-                const userData = { id: profile.id, name: profile.name || profile.email, email: profile.email, role: profile.role };
-                localStorage.setItem('srm_user', JSON.stringify(userData));
-
+                // Try to fetch profile to get roles and preferences
+                const profile = await window.ApiClient.getProfile().catch(() => null);
+                if (profile) {
+                    const userData = {
+                        id: profile.id,
+                        name: profile.name || profile.email,
+                        email: profile.email,
+                        role: profile.role
+                    };
+                    
+                    // Store user data in both
+                    localStorage.setItem('srm_user', JSON.stringify(userData));
+                    sessionStorage.setItem('srm_user', JSON.stringify(userData));
+                    
+                    // If profile includes latest policy, sync it to localStorage cache
+                    if (profile.access_policy) {
+                        localStorage.setItem('crm_access_policy', JSON.stringify(profile.access_policy));
+                        window.__crmEffectiveAccessPolicy = profile.access_policy;
+                    }
+                }
+                
                 if (window.ApiClient && window.ApiClient.getEffectiveAccessPolicy) {
-                    const effective = await window.ApiClient.getEffectiveAccessPolicy();
-                    window.__crmEffectiveAccessPolicy = effective;
-                    localStorage.setItem('crm_access_policy', JSON.stringify(effective));
+                    const effective = await window.ApiClient.getEffectiveAccessPolicy().catch(() => null);
+                    if (effective) {
+                        window.__crmEffectiveAccessPolicy = effective;
+                        localStorage.setItem('crm_access_policy', JSON.stringify(effective));
+                    }
                 }
 
                 // Update UI: Dispatch event for SPA components to re-render
@@ -375,22 +402,32 @@ window.addEventListener('pageshow', (event) => {
     }
 
     // If we land on the login page but already have a VALID token, go to dashboard.
-    // DISABLE: This can cause redirect loops if the dashboard is failing or if the user wants to switch accounts.
-    /*
     const isBypass = params.get('dev') === 'true' || params.get('msg') === 'logged_out';
 
     if (isLoginPage && getToken() && !isBypass) {
+        console.log('requireAuth: User already logged in, verifying session...');
         // Debounce: wait a tiny bit to ensure API is set from config
         setTimeout(() => {
-            fetch(API + '/auth/profile', {
-                headers: { 'Authorization': `Bearer ${getToken()}` }
-            }).then(r => {
-                if (r.ok) window.location.replace('dashboard.html');
-                else clearTokens();
-            }).catch(() => clearTokens());
+            if (window.ApiClient && typeof window.ApiClient.request === 'function') {
+                window.ApiClient.request('/auth/profile')
+                    .then(r => {
+                        console.log('requireAuth: Session verified, redirecting to dashboard');
+                        window.location.replace('dashboard.html');
+                    })
+                    .catch(() => {
+                        console.log('requireAuth: Stale session on login page, clearing tokens');
+                        clearTokens();
+                    });
+            } else {
+                fetch(API + '/auth/profile', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }).then(r => {
+                    if (r.ok) window.location.replace('dashboard.html');
+                    else clearTokens();
+                }).catch(() => clearTokens());
+            }
         }, 300);
     }
-    */
 });
 
 // Logout

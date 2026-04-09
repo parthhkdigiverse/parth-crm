@@ -8,11 +8,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Salary | SRM AI SETU</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/frontend/css/bootstrap.min.css">
     <script>
         // CRITICAL: Global Error Handling (Placed in HEAD to catch early script failures)
         window.__loadedScripts = [];
-        window.onerror = function(msg, url, lineNo, columnNo, error) {
+        window.onerror = function (msg, url, lineNo, columnNo, error) {
             console.error('CRITICAL ERROR:', msg, url, lineNo, columnNo, error);
             const errorDivId = 'emergency-error-display';
             if (document.getElementById(errorDivId)) return false;
@@ -26,7 +26,7 @@
                     <button onclick="location.reload()" style="background:#ef4444; color:white; border:none; padding:8px 16px; border-radius:6px; font-weight:600; cursor:pointer;">Reload Page</button>
                 </div>
             `;
-            
+
             // Force body visible so we can see the error
             if (document.body) {
                 document.body.style.visibility = 'visible';
@@ -43,9 +43,9 @@
             return false;
         };
     </script>
-    <link rel="stylesheet" href="/static/css/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="/static/css/theme.css?v=20260403">
-    <link rel="stylesheet" href="/static/css/components.css?v=20260403">
+    <link rel="stylesheet" href="/frontend/css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/frontend/css/theme.css?v=20260406">
+    <link rel="stylesheet" href="/frontend/css/components.css?v=20260406">
 
     <style>
         .table-responsive {
@@ -54,9 +54,11 @@
             width: 100%;
             scrollbar-width: thin;
         }
+
         #tab-slips .table {
             min-width: 900px;
         }
+
         @media (max-width: 1200px) {
             #tab-slips .table {
                 min-width: 850px;
@@ -67,9 +69,11 @@
         .is-invalid {
             border-color: #dc2626 !important;
         }
+
         .is-invalid:focus {
             box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.15) !important;
         }
+
         .invalid-feedback {
             display: block;
             color: #dc2626;
@@ -86,10 +90,11 @@
         <div class="main-wrapper flex-grow-1">
             <div class="page-content-standard">
                 <!-- Header Section -->
-                <div class="page-header-glass d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+                <div class="page-header-glass d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <div class="min-w-0">
                         <h2 class="page-section-title fw-bold mb-1">Salary Management</h2>
-                        <p class="text-muted mb-0 small">Generate, verify and manage employee salary slips and payroll history.</p>
+                        <p class="text-muted mb-0 small">Generate, verify and manage employee salary slips and payroll
+                            history.</p>
                     </div>
                     <div class="d-flex align-items-center gap-2 flex-shrink-0">
                         <!-- Page Specific Actions -->
@@ -102,13 +107,15 @@
                     </div>
                 </div>
 
-                <div id="filter-wrapper"></div>
+                <div id="filter-wrapper" class="mb-4"></div>
 
                 <!-- Salary Table -->
                 <div id="tab-slips" class="grid-card">
                     <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
-                        <h6 class="fw-bold mb-0" style="color:var(--primary);"><i class="bi bi-receipt me-2 text-primary"></i>Salary Slips</h6>
-                        <span class="badge border" style="background:var(--bg-app); color:var(--text-muted);" id="slip-count"></span>
+                        <h6 class="fw-bold mb-0" style="color:var(--primary);"><i
+                                class="bi bi-receipt me-2 text-primary"></i>Salary Slips</h6>
+                        <span class="badge border" style="background:var(--bg-app); color:var(--text-muted);"
+                            id="slip-count"></span>
                     </div>
                     <div class="table-responsive" style="font-size:0.82rem;">
                         <table class="table table-sm mb-0">
@@ -132,807 +139,832 @@
                             </tbody>
                         </table>
                     </div>
+                    <div id="salary-pagination"></div>
                 </div>
-    <!-- Generate Salary Slip Modal -->
-    <div class="srm-overlay" id="salaryModal">
-        <div class="srm-box" style="max-width:520px; padding: 20px; border-radius: 20px;">
-            <!-- Modal Header -->
-            <div class="d-flex align-items-center gap-3 mb-3">
-                <div class="calc-header-icon">
-                    <i class="bi bi-cash-stack"></i>
-                </div>
-                <div>
-                    <span class="calc-step-label" id="salary-step-label">Step 1 of 2</span>
-                    <h5 class="fw-800 mb-0" style="letter-spacing: -0.02em;">Salary Engine</h5>
-                </div>
-                <button class="btn-close ms-auto" onclick="closeSalaryModal()"></button>
-            </div>
-
-            <div class="modal-scrollable-body">
-                <!-- STEP 1: Selection -->
-                <div id="salary-step-1">
-                    <!-- Mode Selector -->
-                    <div class="calc-mode-selector">
-                        <button class="mode-btn active" id="s-mode-single" onclick="setSalaryMode('single')">
-                            <i class="bi bi-person"></i> Single Employee
-                        </button>
-                        <button class="mode-btn" id="s-mode-bulk" onclick="setSalaryMode('bulk')">
-                            <i class="bi bi-people"></i> All Employees
-                        </button>
-                    </div>
-
-                    <!-- Input Card -->
-                    <div class="calc-input-card mb-3">
-                        <div class="row g-3">
-                            <div class="col-12" id="s-user-row">
-                                <label class="peek-label">Target Employee</label>
-                                <div class="input-group input-group-modern">
-                                    <span class="input-group-text"><i class="bi bi-person text-muted"></i></span>
-                                    <select id="s-user" class="form-select border-start-0 ps-0" style="height: 44px;">
-                                        <option value="">Loading...</option>
-                                    </select>
-                                </div>
+                <!-- Generate Salary Slip Modal -->
+                <div class="srm-overlay" id="salaryModal">
+                    <div class="srm-box" style="max-width:520px; padding: 20px; border-radius: 20px;">
+                        <!-- Modal Header -->
+                        <div class="d-flex align-items-center gap-3 mb-3">
+                            <div class="calc-header-icon">
+                                <i class="bi bi-cash-stack"></i>
                             </div>
-                            <div class="col-12">
-                                <label class="peek-label">Payable Month</label>
-                                <div class="input-group input-group-modern">
-                                    <span class="input-group-text"><i class="bi bi-calendar3 text-muted"></i></span>
-                                    <input type="month" id="s-month" class="form-control border-start-0 ps-0" style="height: 44px;">
-                                </div>
+                            <div>
+                                <span class="calc-step-label" id="salary-step-label">Step 1 of 2</span>
+                                <h5 class="fw-800 mb-0" style="letter-spacing: -0.02em;">Salary Engine</h5>
                             </div>
-                            <div class="col-md-6 s-single-only">
-                                <label class="peek-label">Base Salary Override</label>
-                                <div class="input-group input-group-modern">
-                                    <span class="input-group-text text-muted small">Rs.</span>
-                                    <input type="number" id="s-base-salary" class="form-control border-start-0 ps-0" placeholder="Default" style="height: 44px;">
-                                </div>
-                            </div>
-                            <div class="col-md-6 s-single-only">
-                                <label class="peek-label">Extra Deduction</label>
-                                <div class="input-group input-group-modern">
-                                    <span class="input-group-text text-danger"><i class="bi bi-dash-circle"></i></span>
-                                    <input type="number" id="s-deduction" class="form-control border-start-0 ps-0" placeholder="0" style="height: 44px;">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="info-alert-blue d-flex align-items-center gap-3 mb-4" id="s-bulk-info" style="display:none !important;">
-                        <i class="bi bi-info-circle-fill fs-5"></i>
-                        <div class="small fw-600">This will generate draft salary slips for all active employees for the selected month.</div>
-                    </div>
-
-                    <div class="d-flex justify-content-end gap-2">
-                        <button class="btn py-2 px-3 fw-800 text-muted small" onclick="closeSalaryModal()">Cancel</button>
-                        <button class="btn btn-primary py-2 px-4 fw-800 rounded-3 shadow-sm small" onclick="proceedToSalaryPreview()">
-                            <span>Proceed to Preview</span>
-                            <i class="bi bi-arrow-right-short ms-1 fs-5"></i>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- STEP 2: Preview -->
-                <div id="salary-step-2" style="display:none;">
-                    <div id="salary-preview">
-                        <div class="alert alert-warning border-0 rounded-4 py-3 px-4 mb-4" id="pv-existing-warn" style="display:none; font-size: 0.82rem; font-weight: 600;">
-                            <!-- Warning text injected by JS -->
+                            <button class="btn-close ms-auto" onclick="closeSalaryModal()"></button>
                         </div>
 
-                        <div class="premium-card border shadow-sm mb-4 overflow-hidden" style="border-radius: 16px !important; background: white;">
-                            <div class="p-3 border-bottom bg-light d-flex align-items-center justify-content-between" style="font-size: 0.72rem; letter-spacing: 0.05em; font-weight: 800; color: var(--text-muted); text-transform: uppercase;">
-                                <span><i class="bi bi-bar-chart-fill me-2"></i>Calculated Breakdown</span>
-                                <span class="text-primary" id="pv-days">-</span>
-                            </div>
-                            
-                            <div class="row g-0">
-                                <div class="col-6 border-end border-bottom">
-                                    <div class="p-3 text-center">
-                                        <span class="peek-label">Base Salary</span>
-                                        <div class="peek-value" id="pv-base">-</div>
-                                    </div>
+                        <div class="modal-scrollable-body">
+                            <!-- STEP 1: Selection -->
+                            <div id="salary-step-1">
+                                <!-- Mode Selector -->
+                                <div class="calc-mode-selector">
+                                    <button class="mode-btn active" id="s-mode-single"
+                                        onclick="setSalaryMode('single')">
+                                        <i class="bi bi-person"></i> Single Employee
+                                    </button>
+                                    <button class="mode-btn" id="s-mode-bulk" onclick="setSalaryMode('bulk')">
+                                        <i class="bi bi-people"></i> All Employees
+                                    </button>
                                 </div>
-                                <div class="col-6 border-bottom">
-                                    <div class="p-3 text-center">
-                                        <span class="peek-label">Incentives</span>
-                                        <div class="peek-value text-info" id="pv-incentive">-</div>
-                                    </div>
-                                </div>
-                                <div class="col-6 border-end border-bottom">
-                                    <div class="p-3 text-center">
-                                        <span class="peek-label">Slab Bonus</span>
-                                        <div class="peek-value text-success" id="pv-slab">-</div>
-                                    </div>
-                                </div>
-                                <div class="col-6 border-bottom">
-                                    <div class="p-3 text-center">
-                                        <span class="peek-label">Leaves (P/U)</span>
-                                        <div class="peek-value d-flex justify-content-center gap-2">
-                                            <span class="text-success" id="pv-paid">-</span>
-                                            <span class="opacity-25">|</span>
-                                            <span class="text-danger" id="pv-unpaid">-</span>
+
+                                <!-- Input Card -->
+                                <div class="calc-input-card mb-3">
+                                    <div class="row g-3">
+                                        <div class="col-12" id="s-user-row">
+                                            <label class="peek-label">Target Employee</label>
+                                            <div class="input-group input-group-modern">
+                                                <span class="input-group-text"><i
+                                                        class="bi bi-person text-muted"></i></span>
+                                                <select id="s-user" class="form-select border-start-0 ps-0"
+                                                    style="height: 44px;">
+                                                    <option value="">Loading...</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="peek-label">Payable Month</label>
+                                            <div class="input-group input-group-modern">
+                                                <span class="input-group-text"><i
+                                                        class="bi bi-calendar3 text-muted"></i></span>
+                                                <input type="month" id="s-month"
+                                                    class="form-control border-start-0 ps-0" style="height: 44px;">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 s-single-only">
+                                            <label class="peek-label">Base Salary Override</label>
+                                            <div class="input-group input-group-modern">
+                                                <span class="input-group-text text-muted small">Rs.</span>
+                                                <input type="number" id="s-base-salary"
+                                                    class="form-control border-start-0 ps-0" placeholder="Default"
+                                                    style="height: 44px;">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 s-single-only">
+                                            <label class="peek-label">Extra Deduction</label>
+                                            <div class="input-group input-group-modern">
+                                                <span class="input-group-text text-danger"><i
+                                                        class="bi bi-dash-circle"></i></span>
+                                                <input type="number" id="s-deduction"
+                                                    class="form-control border-start-0 ps-0" placeholder="0"
+                                                    style="height: 44px;">
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-6 border-end">
-                                    <div class="p-3 text-center">
-                                        <span class="peek-label">LWP Deduction</span>
-                                        <div class="peek-value text-danger" id="pv-leave-ded">-</div>
-                                    </div>
+
+                                <div class="info-alert-blue d-flex align-items-center gap-3 mb-4" id="s-bulk-info"
+                                    style="display:none !important;">
+                                    <i class="bi bi-info-circle-fill fs-5"></i>
+                                    <div class="small fw-600">This will generate draft salary slips for all active
+                                        employees for the selected month.</div>
                                 </div>
-                                <div class="col-6">
-                                    <div class="p-3 text-center">
-                                        <span class="peek-label">Extra Deduction</span>
-                                        <div class="peek-value text-danger" id="pv-extra">-</div>
-                                    </div>
+
+                                <div class="d-flex justify-content-end gap-2">
+                                    <button class="btn py-2 px-3 fw-800 text-muted small"
+                                        onclick="closeSalaryModal()">Cancel</button>
+                                    <button class="btn btn-primary py-2 px-4 fw-800 rounded-3 shadow-sm small"
+                                        onclick="proceedToSalaryPreview()">
+                                        <span>Proceed to Preview</span>
+                                        <i class="bi bi-arrow-right-short ms-1 fs-5"></i>
+                                    </button>
                                 </div>
                             </div>
 
-                            <div class="p-3 mt-0" style="background: linear-gradient(135deg, #1e293b, #0f172a); border-top: 1px solid rgba(255,255,255,0.1);">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <span class="peek-label text-white opacity-50 mb-0">NET PAYABLE AMOUNT</span>
-                                        <div class="small text-white opacity-25" style="font-size: 0.6rem;">Monthly Total (Draft)</div>
+                            <!-- STEP 2: Preview -->
+                            <div id="salary-step-2" style="display:none;">
+                                <div id="salary-preview">
+                                    <div class="alert alert-warning border-0 rounded-4 py-3 px-4 mb-4"
+                                        id="pv-existing-warn"
+                                        style="display:none; font-size: 0.82rem; font-weight: 600;">
+                                        <!-- Warning text injected by JS -->
                                     </div>
-                                    <div class="fs-3 fw-black text-white" id="pv-final">--</div>
+
+                                    <div class="premium-card border shadow-sm mb-4 overflow-hidden"
+                                        style="border-radius: 16px !important; background: var(--surface);">
+                                        <div class="p-3 border-bottom d-flex align-items-center justify-content-between"
+                                            style="font-size: 0.72rem; letter-spacing: 0.05em; font-weight: 800; color: var(--text-muted); text-transform: uppercase; background: var(--bg-app);">
+                                            <span><i class="bi bi-bar-chart-fill me-2"></i>Calculated Breakdown</span>
+                                            <span class="text-primary" id="pv-days">-</span>
+                                        </div>
+
+                                        <div class="row g-0">
+                                            <div class="col-6 border-end border-bottom">
+                                                <div class="p-3 text-center">
+                                                    <span class="peek-label">Base Salary</span>
+                                                    <div class="peek-value" id="pv-base">-</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6 border-bottom">
+                                                <div class="p-3 text-center">
+                                                    <span class="peek-label">Incentives</span>
+                                                    <div class="peek-value text-info" id="pv-incentive">-</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6 border-end border-bottom">
+                                                <div class="p-3 text-center">
+                                                    <span class="peek-label">Slab Bonus</span>
+                                                    <div class="peek-value text-success" id="pv-slab">-</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6 border-bottom">
+                                                <div class="p-3 text-center">
+                                                    <span class="peek-label">Leaves (P/U)</span>
+                                                    <div class="peek-value d-flex justify-content-center gap-2">
+                                                        <span class="text-success" id="pv-paid">-</span>
+                                                        <span class="opacity-25">|</span>
+                                                        <span class="text-danger" id="pv-unpaid">-</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6 border-end">
+                                                <div class="p-3 text-center">
+                                                    <span class="peek-label">LWP Deduction</span>
+                                                    <div class="peek-value text-danger" id="pv-leave-ded">-</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="p-3 text-center">
+                                                    <span class="peek-label">Extra Deduction</span>
+                                                    <div class="peek-value text-danger" id="pv-extra">-</div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="p-3 mt-0"
+                                            style="background: linear-gradient(135deg, #1e293b, #0f172a); border-top: 1px solid rgba(255,255,255,0.1);">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div>
+                                                    <span class="peek-label text-white opacity-50 mb-0">NET PAYABLE
+                                                        AMOUNT</span>
+                                                    <div class="small text-white opacity-25" style="font-size: 0.6rem;">
+                                                        Monthly Total (Draft)</div>
+                                                </div>
+                                                <div class="fs-3 fw-black text-white" id="pv-final">--</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Footer Actions -->
+                                <div class="d-flex justify-content-end gap-2 pt-2">
+                                    <button class="btn py-2 px-3 fw-800 text-muted small"
+                                        onclick="goToSalaryStep(1)">Back</button>
+                                    <button class="btn btn-primary py-2 px-4 fw-800 rounded-3 shadow-sm small"
+                                        id="salary-gen-btn" onclick="generateSalarySlip()">
+                                        Generate as Draft
+                                    </button>
+                                    <button
+                                        class="btn btn-info py-2 px-4 fw-800 rounded-3 shadow-sm text-white small d-none"
+                                        id="salary-update-btn" onclick="updateDraftSlip()">
+                                        Update Draft
+                                    </button>
+                                    <button class="btn btn-danger py-2 px-4 fw-800 rounded-3 shadow-sm small d-none"
+                                        id="salary-regen-btn" onclick="regenerateSlip()">
+                                        <i class="bi bi-arrow-repeat me-1"></i>Delete & Regenerate
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Footer Actions -->
-                    <div class="d-flex justify-content-end gap-2 pt-2">
-                        <button class="btn py-2 px-3 fw-800 text-muted small" onclick="goToSalaryStep(1)">Back</button>
-                        <button class="btn btn-primary py-2 px-4 fw-800 rounded-3 shadow-sm small" id="salary-gen-btn" onclick="generateSalarySlip()">
-                            Generate as Draft
-                        </button>
-                        <button class="btn btn-info py-2 px-4 fw-800 rounded-3 shadow-sm text-white small d-none" id="salary-update-btn" onclick="updateDraftSlip()">
-                            Update Draft
-                        </button>
-                        <button class="btn btn-danger py-2 px-4 fw-800 rounded-3 shadow-sm small d-none" id="salary-regen-btn" onclick="regenerateSlip()">
-                            <i class="bi bi-arrow-repeat me-1"></i>Delete & Regenerate
-                        </button>
-                    </div>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    <script src="/frontend/js/utils.js?v=20260326" onload="window.__loadedScripts.push('utils.js')"></script>
-    <script src="/frontend/js/api.js?v=20260321" onload="window.__loadedScripts.push('api.js')"></script>
-    <script src="/frontend/js/auth.js?v=20260321" onload="window.__loadedScripts.push('auth.js')"></script>
-    <script src="/frontend/js/ui_components.js?v=20260321" onload="window.__loadedScripts.push('ui_components.js')"></script>
-    <script src="/frontend/js/app.js?v=20260321" onload="window.__loadedScripts.push('app.js')"></script>
-    <script src="/frontend/js/bootstrap.bundle.min.js" onload="window.__loadedScripts.push('bootstrap.js')"></script>
-    <script>
-        if (typeof window.requireAuth === 'function') window.requireAuth();
-        const sb = document.getElementById('sidebar');
-        if (sb) sb.innerHTML = renderSidebar('salary');
-        injectTopHeader('Salary & Payroll');
+                <script src="/frontend/js/utils.js?v=20260403"
+                    onload="window.__loadedScripts.push('utils.js')"></script>
+                <script src="/frontend/js/api.js?v=20260403" onload="window.__loadedScripts.push('api.js')"></script>
+                <script src="/frontend/js/auth.js?v=20260403" onload="window.__loadedScripts.push('auth.js')"></script>
+                <script src="/frontend/js/ui_components.js?v=20260403"
+                    onload="window.__loadedScripts.push('ui_components.js')"></script>
+                <script src="/frontend/js/app.js?v=20260403" onload="window.__loadedScripts.push('app.js')"></script>
+                <script src="/frontend/js/bootstrap.bundle.min.js"
+                    onload="window.__loadedScripts.push('bootstrap.js')"></script>
+                <script>
+                    if (typeof window.requireAuth === 'function') window.requireAuth();
+                    const sb = document.getElementById('sidebar');
+                    if (sb) sb.innerHTML = renderSidebar('salary');
+                    injectTopHeader('Salary & Payroll');
 
 
-        const user = window.getUser ? window.getUser() : null;
-        const isAdmin = user?.role === 'ADMIN';
-        const canManageSalary = window.hasFeatureAccess ? window.hasFeatureAccess('salary_manage_roles') : isAdmin;
-        const canViewAllSalary = window.hasFeatureAccess ? window.hasFeatureAccess('salary_view_all_roles') : isAdmin;
-
-        if (canManageSalary) {
-            const aa = document.getElementById('admin-actions');
-            aa.classList.remove('d-none');
-            aa.classList.add('d-flex');
-        } else {
-            // Employee viewer mode: hide filter toolbar unless allowed to view all
-            const ft = document.getElementById('filter-wrapper');
-            if (ft && !canViewAllSalary) ft.style.display = 'none';
-        }
-
-        let currentFilters = {};
-
-        function initFilters(employees) {
-            renderFilterPanel({
-                containerId: 'filter-wrapper',
-                filters: [
-                    {
-                        type: 'select',
-                        label: 'Employee',
-                        id: 'user',
-                        options: [
-                            { value: 'ALL', label: 'All Employees' },
-                            ...employees.map(e => ({ value: e.id, label: e.name || e.email }))
-                        ]
-                    },
-                    {
-                        type: 'select',
-                        label: 'Status',
-                        id: 'status',
-                        options: [
-                            { value: 'ALL', label: 'All Statuses' },
-                            { value: 'DRAFT', label: 'Draft' },
-                            { value: 'CONFIRMED', label: 'Paid' }
-                        ]
-                    },
-                    {
-                        type: 'month',
-                        label: 'Month',
-                        id: 'month'
-                    }
-                ],
-                onApply: (data) => {
-                    currentFilters = data;
-                    loadSlips();
-                },
-                onReset: () => {
-                    currentFilters = {};
-                    loadSlips();
-                }
-            });
-        }
-
-        const INR = v => 'Rs. ' + Number(v || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-        // Modal & Step Logic
-        let salaryMode = 'single';
-        function setSalaryMode(mode) {
-            salaryMode = mode;
-            document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
-            document.getElementById(`s-mode-${mode}`).classList.add('active');
-            
-            const singleRows = document.querySelectorAll('.s-single-only');
-            const userRow = document.getElementById('s-user-row');
-            const bulkAlert = document.getElementById('s-bulk-info');
-            
-            if (mode === 'bulk') {
-                singleRows.forEach(el => el.style.setProperty('display', 'none', 'important'));
-                userRow.style.setProperty('display', 'none', 'important');
-                bulkAlert.style.setProperty('display', 'flex', 'important');
-            } else {
-                singleRows.forEach(el => el.style.setProperty('display', 'block', 'important'));
-                userRow.style.setProperty('display', 'block', 'important');
-                bulkAlert.style.setProperty('display', 'none', 'important');
-            }
-        }
-
-        function goToSalaryStep(step) {
-            document.getElementById('salary-step-1').style.display = step === 1 ? 'block' : 'none';
-            document.getElementById('salary-step-2').style.display = step === 2 ? 'block' : 'none';
-            document.getElementById('salary-step-label').textContent = `Step ${step} of 2`;
-        }
-
-        async function proceedToSalaryPreview() {
-            const month = document.getElementById('s-month').value;
-            if (!month) { showToast('Select a month', 'error'); return; }
-
-            if (salaryMode === 'bulk') {
-                if (!confirm(`Generate draft salary slips for all active employees for ${month}?`)) return;
-                
-                const btn = document.querySelector('button[onclick="proceedToSalaryPreview()"]');
-                const originalText = btn.innerHTML;
-                btn.disabled = true;
-                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generating...';
-
-                try {
-                    const res = await ApiClient.generateSalaryBulk(month);
-                    showToast(`Bulk Generation Complete: ${res.generated_count} generated, ${res.skipped_count} skipped.`, 'success');
-                    closeSalaryModal();
-                    loadSlips();
-                } catch (e) {
-                    showToast(e.data?.detail || e.message || 'Bulk generation failed', 'error');
-                } finally {
-                    btn.disabled = false;
-                    btn.innerHTML = originalText;
-                }
-                return;
-            }
-
-            const userId = document.getElementById('s-user').value;
-            if (!userId) { showToast('Select an employee', 'error'); return; }
-            
-            await fetchPreview();
-            goToSalaryStep(2);
-        }
-
-        function openSalaryModal() {
-            if (!canManageSalary) {
-                showToast('You do not have permission to generate salary slips', 'error');
-                return;
-            }
-            const modal = document.getElementById('salaryModal');
-            modal.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-            modal.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
-
-            modal.classList.add('show');
-            setSalaryMode('single');
-            goToSalaryStep(1);
-
-            const sMonthInput = document.getElementById('s-month');
-            const currentDate = new Date();
-            currentDate.setMonth(currentDate.getMonth() - 1);
-            const maxMonthValue = currentDate.toISOString().slice(0, 7);
-            sMonthInput.max = maxMonthValue;
-
-            document.getElementById('s-user').value = '';
-            document.getElementById('s-month').value = '';
-            document.getElementById('s-base-salary').value = '';
-            document.getElementById('s-deduction').value = '0';
-            document.getElementById('salary-preview').style.display = 'none';
-            
-            const genBtn = document.getElementById('salary-gen-btn');
-            genBtn.disabled = false;
-            genBtn.classList.remove('d-none');
-        }
-
-        function closeSalaryModal() {
-            document.getElementById('salaryModal').classList.remove('show');
-        }
-
-        document.getElementById('salaryModal').addEventListener('click', function (e) { if (e.target === this) closeSalaryModal(); });
-
-        // Load employees
-        ApiClient.getEmployees().then(emps => {
-            window.allEmployees = emps;
-            window.userNameMap = {};
-            emps.forEach(e => { window.userNameMap[e.id] = e.name || e.email; });
-            const opts = emps.map(e => `<option value="${e.id}">${e.name || e.email}</option>`).join('');
-            document.getElementById('s-user').innerHTML = '<option value="">-- Select Employee --</option>' + opts;
-            if (canViewAllSalary) initFilters(emps);
-        }).catch(() => { });
-
-        // Fetch Preview for Step 2
-        async function fetchPreview() {
-            const userId = document.getElementById('s-user').value;
-            const month = document.getElementById('s-month').value;
-            if (!userId || !month) return;
-
-            const extra = parseFloat(document.getElementById('s-deduction').value) || 0;
-            const baseSalaryOverride = document.getElementById('s-base-salary').value.trim();
-            const baseSalary = baseSalaryOverride !== '' ? parseFloat(baseSalaryOverride) : null;
-            try {
-                const p = await ApiClient.previewSalary(userId, month, extra, baseSalary);
-                document.getElementById('pv-base').textContent = INR(p.base_salary);
-                document.getElementById('pv-days').textContent = p.working_days + '/30';
-                document.getElementById('pv-paid').textContent = p.paid_leaves;
-                document.getElementById('pv-unpaid').textContent = p.unpaid_leaves;
-                document.getElementById('pv-leave-ded').textContent = '-' + INR(p.leave_deduction);
-                document.getElementById('pv-incentive').textContent = '+' + INR(p.incentive_amount);
-                document.getElementById('pv-slab').textContent = '+' + INR(p.slab_bonus);
-                document.getElementById('pv-extra').textContent = '-' + INR(p.extra_deduction);
-                document.getElementById('pv-final').textContent = INR(p.final_salary);
-
-                const warn = document.getElementById('pv-existing-warn');
-                const genBtn = document.getElementById('salary-gen-btn');
-                const updateBtn = document.getElementById('salary-update-btn');
-                const regenBtn = document.getElementById('salary-regen-btn');
-                
-                warn.style.display = 'none';
-                genBtn.classList.add('d-none');
-                updateBtn.classList.add('d-none');
-                regenBtn.classList.add('d-none');
-
-                if (p.has_existing_slip) {
-                    warn.style.display = 'block';
-                    if (p.existing_slip_status === 'DRAFT') {
-                        warn.textContent = 'A draft salary slip exists. You can update it with recalculated values.';
-                        warn.style.color = '#B45309';
-                        updateBtn.classList.remove('d-none');
-                        updateBtn.dataset.slipId = p.existing_slip_id;
-                    } else {
-                        warn.textContent = 'A confirmed salary slip already exists. Delete it to generate a new draft.';
-                        warn.style.color = '#B91C1C';
-                        regenBtn.classList.remove('d-none');
-                    }
-                } else {
-                    genBtn.classList.remove('d-none');
-                }
-                document.getElementById('salary-preview').style.display = 'block';
-            } catch (e) {
-                showToast(e.data?.detail || e.message || 'Failed to load preview', 'error');
-            }
-        }
-
-        // Load slips
-        async function loadSlips() {
-            const tbody = document.getElementById('slips-tbody');
-            tbody.innerHTML = '<tr><td colspan="9" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading...</td></tr>';
-
-            try {
-                let slips;
-                if (canViewAllSalary) {
-                    const userId = currentFilters['user'] === 'ALL' ? '' : (currentFilters['user'] || '');
-                    slips = userId
-                        ? await ApiClient.getSalaryRecords(userId)
-                        : await ApiClient.getAllSalarySlips();
-                } else {
-                    slips = await ApiClient.getMySalarySlips();
-                }
-
-                // Status filter
-                const statusFilter = currentFilters['status'] === 'ALL' ? '' : (currentFilters['status'] || '');
-                if (statusFilter) slips = slips.filter(s => s.status === statusFilter);
-
-                // Month filter
-                const monthFilter = currentFilters['month'] || '';
-                if (monthFilter) slips = slips.filter(s => s.month === monthFilter);
-
-                const countBadge = document.getElementById('slip-count');
-                if (countBadge) countBadge.textContent = slips.length + ' record(s)';
-
-                // SORTING LOGIC:
-                // 1. Remarks at top (Priority 1)
-                // 2. Drafts above Paid (Priority 2)
-                // 3. Month descending (Priority 3)
-                slips.sort((a, b) => {
-                    const aHasRemark = !!(a.employee_remarks && a.employee_remarks.trim() && a.employee_remarks !== 'None');
-                    const bHasRemark = !!(b.employee_remarks && b.employee_remarks.trim() && b.employee_remarks !== 'None');
-                    
-                    if (aHasRemark && !bHasRemark) return -1;
-                    if (!aHasRemark && bHasRemark) return 1;
-
-                    const aIsDraft = (a.status || '').toUpperCase() === 'DRAFT';
-                    const bIsDraft = (b.status || '').toUpperCase() === 'DRAFT';
-                    
-                    if (aIsDraft && !bIsDraft) return -1;
-                    if (!aIsDraft && bIsDraft) return 1;
-
-                    return (b.month || '').localeCompare(a.month || '');
-                });
-
-                if (!slips.length) {
-                    tbody.innerHTML = '<tr><td colspan="9" class="text-center py-5 text-muted">No salary slips found.</td></tr>';
-                    return;
-                }
-
-                tbody.innerHTML = slips.map(s => {
+                    const user = window.getUser ? window.getUser() : null;
+                    const isAdmin = user?.role === 'ADMIN';
                     const canManageSalary = window.hasFeatureAccess ? window.hasFeatureAccess('salary_manage_roles') : isAdmin;
-                    const statusCls = s.status === 'CONFIRMED' ? 'badge-green-light' : 'badge-yellow-light';
-                    const statusIcon = s.status === 'CONFIRMED' ? 'bi-check-circle' : 'bi-hourglass-split';
-                    const statusLabel = s.status === 'CONFIRMED' ? 'PAID' : 'DRAFT';
-                    const visibleLabel = s.is_visible_to_employee ? 'Visible' : 'Hidden';
-
-                    let previewBtn = '';
-                    let visibilityBtn = '';
-                    let confirmBtn = '';
-                    let remarkBtn = '';
-                    let slipIconBtn = '';
+                    const canViewAllSalary = window.hasFeatureAccess ? window.hasFeatureAccess('salary_view_all_roles') : isAdmin;
 
                     if (canManageSalary) {
-                        const sid = s.id || s._id;
-                        // Admin Icons: Eye (Preview), Tick (Release/Visibility)
-                        previewBtn = `<button class="btn btn-sm btn-outline-primary" title="Download Salary Slip" onclick="downloadInvoice('${sid}')"><i class="bi bi-file-earmark-pdf"></i></button>`;
-                        
-                        const visibilityTitle = s.is_visible_to_employee ? 'Hide from employee' : 'Release to employee';
-                        const visibilityIcon = s.is_visible_to_employee ? 'bi-check-lg' : 'bi-send';
-                        const visibilityBtnClass = s.is_visible_to_employee ? 'btn-success' : 'btn-outline-secondary';
-                        visibilityBtn = `<button class="btn btn-sm ${visibilityBtnClass}" title="${visibilityTitle}" onclick="toggleSalaryVisibility('${sid}', ${!s.is_visible_to_employee})"><i class="bi ${visibilityIcon}"></i></button>`;
-                        
-                        // Admin Remark Highlight: Show dot only if employee has a remark AND admin hasn't replied yet
-                        const hasEmpRemark = !!(s.employee_remarks && s.employee_remarks.trim() && s.employee_remarks !== 'None');
-                        const hasMgrRemark = !!(s.manager_remarks && s.manager_remarks.trim() && s.manager_remarks !== 'None');
-                        
-                        if (hasEmpRemark) {
-                            const showDot = !hasMgrRemark;
-                            remarkBtn = `<button class="btn btn-sm btn-light border-0 p-1 position-relative" 
-                                            title="View Employee Remark: ${s.employee_remarks.substring(0, 50)}..." 
-                                            onclick="openSalaryRemarks('${sid}', '${encodeURIComponent(s.employee_remarks)}', '${encodeURIComponent(s.manager_remarks || '')}', true)">
-                                        <i class="bi bi-chat-left-text ${showDot ? 'text-danger' : 'text-primary'}" style="font-size: 1.2rem;"></i>
-                                        ${showDot ? '<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>' : ''}
-                                    </button>`;
-                        }
+                        const aa = document.getElementById('admin-actions');
+                        aa.classList.remove('d-none');
+                        aa.classList.add('d-flex');
                     } else {
-                        const sid = s.id || s._id;
-                        // Employee Icons: Remark, Slip
-                        const empRemarksEnc = encodeURIComponent(s.employee_remarks || '');
-                        const mgrRemarksEnc = encodeURIComponent(s.manager_remarks || '');
-                        remarkBtn = `<button class="btn btn-sm btn-outline-info" title="Remarks" onclick="openSalaryRemarks('${sid}', '${empRemarksEnc}', '${mgrRemarksEnc}', false)"><i class="bi bi-chat-left-text"></i></button>`;
+                        // Employee viewer mode: hide filter toolbar unless allowed to view all
+                        const ft = document.getElementById('filter-wrapper');
+                        if (ft && !canViewAllSalary) ft.style.display = 'none';
+                    }
 
-                        if (s.status === 'CONFIRMED' && s.is_visible_to_employee) {
-                            slipIconBtn = `<button class="btn btn-sm btn-outline-primary" title="Download Slip" onclick="downloadInvoice('${sid}')"><i class="bi bi-file-earmark-pdf"></i></button>`;
+                    let currentFilters = {};
+
+                    function initFilters(employees) {
+                        renderFilterPanel({
+                            containerId: 'filter-wrapper',
+                            filters: [
+                                {
+                                    type: 'select',
+                                    label: 'Employee',
+                                    id: 'user',
+                                    options: [
+                                        { value: 'ALL', label: 'All Employees' },
+                                        ...employees.map(e => ({ value: e.id, label: e.name || e.email }))
+                                    ]
+                                },
+                                {
+                                    type: 'select',
+                                    label: 'Status',
+                                    id: 'status',
+                                    options: [
+                                        { value: 'ALL', label: 'All Statuses' },
+                                        { value: 'DRAFT', label: 'Draft' },
+                                        { value: 'CONFIRMED', label: 'Paid' }
+                                    ]
+                                },
+                                {
+                                    type: 'month',
+                                    label: 'Month',
+                                    id: 'month'
+                                }
+                            ],
+                            onApply: (data) => {
+                                currentFilters = data;
+                                loadSlips();
+                            },
+                            onReset: () => {
+                                currentFilters = {};
+                                loadSlips();
+                            }
+                        });
+                    }
+
+                    const INR = v => 'Rs. ' + Number(v || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+                    // Modal & Step Logic
+                    let salaryMode = 'single';
+                    function setSalaryMode(mode) {
+                        salaryMode = mode;
+                        document.querySelectorAll('.mode-btn').forEach(btn => btn.classList.remove('active'));
+                        document.getElementById(`s-mode-${mode}`).classList.add('active');
+
+                        const singleRows = document.querySelectorAll('.s-single-only');
+                        const userRow = document.getElementById('s-user-row');
+                        const bulkAlert = document.getElementById('s-bulk-info');
+
+                        if (mode === 'bulk') {
+                            singleRows.forEach(el => el.style.setProperty('display', 'none', 'important'));
+                            userRow.style.setProperty('display', 'none', 'important');
+                            bulkAlert.style.setProperty('display', 'flex', 'important');
+                        } else {
+                            singleRows.forEach(el => el.style.setProperty('display', 'block', 'important'));
+                            userRow.style.setProperty('display', 'block', 'important');
+                            bulkAlert.style.setProperty('display', 'none', 'important');
                         }
                     }
 
-                    const totalBonus = (parseFloat(s.incentive_amount) || 0) + (parseFloat(s.slab_bonus) || 0);
-                    const empName = (window.userNameMap && window.userNameMap[s.user_id]) || s.user_name || 'User #' + s.user_id;
-                    
-                        const sid = s.id || s._id;
-                        const isPaid = (s.status || '').toUpperCase() === 'CONFIRMED';
-                        const statusToggle = canManageSalary 
-                            ? `<div class="d-flex flex-column align-items-center">
-                         <div class="form-check form-switch p-0 m-0 d-flex align-items-center bg-app rounded-pill px-2 py-0 border" style="min-width: 80px; height: 24px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);">
-                                   <input class="form-check-input ms-0 mt-0" type="checkbox" style="cursor:pointer; width: 28px; height: 14px;" 
-                                          ${isPaid ? 'checked disabled' : ''} 
-                                          onchange="if(this.checked) confirmSlip('${sid}')">
-                               <span class="ms-1" style="font-size: 0.62rem; font-weight: 800; color: ${isPaid ? 'var(--success-text)' : 'var(--text-muted)'};">
-                               ${isPaid ? 'PAID' : 'DRAFT'}
-                               </span>
-                             </div>
-                             <div class="mt-1" style="font-size: 0.6rem; color: ${s.is_visible_to_employee ? 'var(--success-text)' : 'var(--text-muted)'}; letter-spacing: 0.02em;">
-                                ${s.is_visible_to_employee ? 'RELEASED' : 'HIDDEN'}
-                             </div>
-                           </div>`
-                        : `<span class="status-pill ${statusCls} w-100 d-block text-center"><i class="bi ${statusIcon} me-1"></i>${statusLabel}</span>`;
+                    function goToSalaryStep(step) {
+                        document.getElementById('salary-step-1').style.display = step === 1 ? 'block' : 'none';
+                        document.getElementById('salary-step-2').style.display = step === 2 ? 'block' : 'none';
+                        document.getElementById('salary-step-label').textContent = `Step ${step} of 2`;
+                    }
 
-                    return `<tr>
-                        <td class="fw-semibold" style="color:var(--text-main); overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${empName}">${empName}</td>
-                        <td class="text-muted small">${s.month}</td>
-                        <td class="small">${INR(s.base_salary)}</td>
-                        <td class="small">
-                            <span style="color:var(--success-text);">${s.paid_leaves}P</span>
-                            <span class="text-muted mx-1">/</span>
-                            <span style="color:var(--danger-text);">${s.unpaid_leaves}U</span>
-                        </td>
-                        <td style="color:var(--success-text); font-weight:600;" class="small">+${INR(totalBonus)}</td>
-                        <td style="color:var(--danger-text); font-weight:600;" class="small">-${INR(s.deduction_amount)}</td>
-                        <td class="fw-bold small">${INR(s.final_salary)}</td>
-                        <td>
-                            ${statusToggle}
-                        </td>
-                        <td class="text-end">
-                            <div class="d-flex gap-1 justify-content-end align-items-center">
-                                ${previewBtn}${visibilityBtn}${remarkBtn}${slipIconBtn}
+                    async function proceedToSalaryPreview() {
+                        const month = document.getElementById('s-month').value;
+                        if (!month) { showToast('Select a month', 'error'); return; }
+
+                        if (salaryMode === 'bulk') {
+                            if (!confirm(`Generate draft salary slips for all active employees for ${month}?`)) return;
+
+                            const btn = document.querySelector('button[onclick="proceedToSalaryPreview()"]');
+                            const originalText = btn.innerHTML;
+                            btn.disabled = true;
+                            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generating...';
+
+                            try {
+                                const res = await ApiClient.generateSalaryBulk(month);
+                                showToast(`Bulk Generation Complete: ${res.generated_count} generated, ${res.skipped_count} skipped.`, 'success');
+                                closeSalaryModal();
+                                loadSlips();
+                            } catch (e) {
+                                showToast(e.data?.detail || e.message || 'Bulk generation failed', 'error');
+                            } finally {
+                                btn.disabled = false;
+                                btn.innerHTML = originalText;
+                            }
+                            return;
+                        }
+
+                        const userId = document.getElementById('s-user').value;
+                        if (!userId) { showToast('Select an employee', 'error'); return; }
+
+                        await fetchPreview();
+                        goToSalaryStep(2);
+                    }
+
+                    function openSalaryModal() {
+                        if (!canManageSalary) {
+                            showToast('You do not have permission to generate salary slips', 'error');
+                            return;
+                        }
+                        const modal = document.getElementById('salaryModal');
+                        modal.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+                        modal.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
+
+                        modal.classList.add('show');
+                        setSalaryMode('single');
+                        goToSalaryStep(1);
+
+                        const sMonthInput = document.getElementById('s-month');
+                        const currentDate = new Date();
+                        currentDate.setMonth(currentDate.getMonth() - 1);
+                        const maxMonthValue = currentDate.toISOString().slice(0, 7);
+                        sMonthInput.max = maxMonthValue;
+
+                        document.getElementById('s-user').value = '';
+                        document.getElementById('s-month').value = '';
+                        document.getElementById('s-base-salary').value = '';
+                        document.getElementById('s-deduction').value = '0';
+                        document.getElementById('salary-preview').style.display = 'none';
+
+                        const genBtn = document.getElementById('salary-gen-btn');
+                        genBtn.disabled = false;
+                        genBtn.classList.remove('d-none');
+                    }
+
+                    function closeSalaryModal() {
+                        document.getElementById('salaryModal').classList.remove('show');
+                    }
+
+                    document.getElementById('salaryModal').addEventListener('click', function (e) { if (e.target === this) closeSalaryModal(); });
+
+                    // Load employees
+                    ApiClient.getEmployees().then(emps => {
+                        window.allEmployees = emps;
+                        window.userNameMap = {};
+                        emps.forEach(e => { window.userNameMap[e.id] = e.name || e.email; });
+                        const opts = emps.map(e => `<option value="${e.id}">${e.name || e.email}</option>`).join('');
+                        document.getElementById('s-user').innerHTML = '<option value="">-- Select Employee --</option>' + opts;
+                        if (canViewAllSalary) initFilters(emps);
+                    }).catch(() => { });
+
+                    // Fetch Preview for Step 2
+                    async function fetchPreview() {
+                        const userId = document.getElementById('s-user').value;
+                        const month = document.getElementById('s-month').value;
+                        if (!userId || !month) return;
+
+                        const extra = parseFloat(document.getElementById('s-deduction').value) || 0;
+                        const baseSalaryOverride = document.getElementById('s-base-salary').value.trim();
+                        const baseSalary = baseSalaryOverride !== '' ? parseFloat(baseSalaryOverride) : null;
+                        try {
+                            const p = await ApiClient.previewSalary(userId, month, extra, baseSalary);
+                            document.getElementById('pv-base').textContent = INR(p.base_salary);
+                            document.getElementById('pv-days').textContent = p.working_days + '/30';
+                            document.getElementById('pv-paid').textContent = p.paid_leaves;
+                            document.getElementById('pv-unpaid').textContent = p.unpaid_leaves;
+                            document.getElementById('pv-leave-ded').textContent = '-' + INR(p.leave_deduction);
+                            document.getElementById('pv-incentive').textContent = '+' + INR(p.incentive_amount);
+                            document.getElementById('pv-slab').textContent = '+' + INR(p.slab_bonus);
+                            document.getElementById('pv-extra').textContent = '-' + INR(p.extra_deduction);
+                            document.getElementById('pv-final').textContent = INR(p.final_salary);
+
+                            const warn = document.getElementById('pv-existing-warn');
+                            const genBtn = document.getElementById('salary-gen-btn');
+                            const updateBtn = document.getElementById('salary-update-btn');
+                            const regenBtn = document.getElementById('salary-regen-btn');
+
+                            warn.style.display = 'none';
+                            genBtn.classList.add('d-none');
+                            updateBtn.classList.add('d-none');
+                            regenBtn.classList.add('d-none');
+
+                            if (p.has_existing_slip) {
+                                warn.style.display = 'block';
+                                if (p.existing_slip_status === 'DRAFT') {
+                                    warn.textContent = 'A draft salary slip exists. You can update it with recalculated values.';
+                                    warn.style.color = '#B45309';
+                                    updateBtn.classList.remove('d-none');
+                                    updateBtn.dataset.slipId = p.existing_slip_id;
+                                } else {
+                                    warn.textContent = 'A confirmed salary slip already exists. Delete it to generate a new draft.';
+                                    warn.style.color = '#B91C1C';
+                                    regenBtn.classList.remove('d-none');
+                                }
+                            } else {
+                                genBtn.classList.remove('d-none');
+                            }
+                            document.getElementById('salary-preview').style.display = 'block';
+                        } catch (e) {
+                            showToast(e.data?.detail || e.message || 'Failed to load preview', 'error');
+                        }
+                    }
+
+                    // Load slips
+                    async function loadSlips() {
+                        const tbody = document.getElementById('slips-tbody');
+                        try {
+                            let slips;
+                            if (canViewAllSalary) {
+                                const userId = currentFilters['user'] === 'ALL' ? '' : (currentFilters['user'] || '');
+                                slips = userId
+                                    ? await ApiClient.getSalaryRecords(userId)
+                                    : await ApiClient.getAllSalarySlips();
+                            } else {
+                                slips = await ApiClient.getMySalarySlips();
+                            }
+
+                            // Status filter
+                            const statusFilter = currentFilters['status'] === 'ALL' ? '' : (currentFilters['status'] || '');
+                            if (statusFilter) slips = slips.filter(s => s.status === statusFilter);
+
+                            // Month filter
+                            const monthFilter = currentFilters['month'] || '';
+                            if (monthFilter) slips = slips.filter(s => s.month === monthFilter);
+
+                            const countBadge = document.getElementById('slip-count');
+                            if (countBadge) countBadge.textContent = slips.length + ' record(s)';
+
+                            // SORTING LOGIC:
+                            slips.sort((a, b) => {
+                                const aHasRemark = !!(a.employee_remarks && a.employee_remarks.trim() && a.employee_remarks !== 'None');
+                                const bHasRemark = !!(b.employee_remarks && b.employee_remarks.trim() && b.employee_remarks !== 'None');
+
+                                if (aHasRemark && !bHasRemark) return -1;
+                                if (!aHasRemark && bHasRemark) return 1;
+
+                                const aIsDraft = (a.status || '').toUpperCase() === 'DRAFT';
+                                const bIsDraft = (b.status || '').toUpperCase() === 'DRAFT';
+
+                                if (aIsDraft && !bIsDraft) return -1;
+                                if (!aIsDraft && bIsDraft) return 1;
+
+                                return (b.month || '').localeCompare(a.month || '');
+                            });
+
+                            renderPagination({
+                                data: slips,
+                                tbodyId: 'slips-tbody',
+                                paginationId: 'salary-pagination',
+                                emptyMsg: '<tr><td colspan="9" class="text-center py-5 text-muted">No salary slips found.</td></tr>',
+                                renderRow: (s) => {
+                                    const canManageSalary = window.hasFeatureAccess ? window.hasFeatureAccess('salary_manage_roles') : isAdmin;
+                                    const statusCls = s.status === 'CONFIRMED' ? 'badge-green-light' : 'badge-yellow-light';
+                                    const statusIcon = s.status === 'CONFIRMED' ? 'bi-check-circle' : 'bi-hourglass-split';
+                                    const statusLabel = s.status === 'CONFIRMED' ? 'PAID' : 'DRAFT';
+                                    const visibleLabel = s.is_visible_to_employee ? 'Visible' : 'Hidden';
+
+                                    let previewBtn = '';
+                                    let visibilityBtn = '';
+                                    let remarkBtn = '';
+                                    let slipIconBtn = '';
+
+                                    if (canManageSalary) {
+                                        const sid = s.id || s._id;
+                                        previewBtn = `<button class="btn btn-sm btn-outline-primary" title="Download Salary Slip" onclick="downloadInvoice('${sid}')"><i class="bi bi-file-earmark-pdf"></i></button>`;
+
+                                        const visibilityTitle = s.is_visible_to_employee ? 'Hide from employee' : 'Release to employee';
+                                        const visibilityIcon = s.is_visible_to_employee ? 'bi-check-lg' : 'bi-send';
+                                        const visibilityBtnClass = s.is_visible_to_employee ? 'btn-success' : 'btn-outline-secondary';
+                                        visibilityBtn = `<button class="btn btn-sm ${visibilityBtnClass}" title="${visibilityTitle}" onclick="toggleSalaryVisibility('${sid}', ${!s.is_visible_to_employee})"><i class="bi ${visibilityIcon}"></i></button>`;
+
+                                        const hasEmpRemark = !!(s.employee_remarks && s.employee_remarks.trim() && s.employee_remarks !== 'None');
+                                        const hasMgrRemark = !!(s.manager_remarks && s.manager_remarks.trim() && s.manager_remarks !== 'None');
+
+                                        if (hasEmpRemark) {
+                                            const showDot = !hasMgrRemark;
+                                            remarkBtn = `<button class="btn btn-sm btn-light border-0 p-1 position-relative" 
+                                                title="View Employee Remark: ${s.employee_remarks.substring(0, 50)}..." 
+                                                onclick="openSalaryRemarks('${sid}', '${encodeURIComponent(s.employee_remarks)}', '${encodeURIComponent(s.manager_remarks || '')}', true)">
+                                            <i class="bi bi-chat-left-text ${showDot ? 'text-danger' : 'text-primary'}" style="font-size: 1.2rem;"></i>
+                                            ${showDot ? '<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>' : ''}
+                                        </button>`;
+                                        }
+                                    } else {
+                                        const sid = s.id || s._id;
+                                        const empRemarksEnc = encodeURIComponent(s.employee_remarks || '');
+                                        const mgrRemarksEnc = encodeURIComponent(s.manager_remarks || '');
+                                        remarkBtn = `<button class="btn btn-sm btn-outline-info" title="Remarks" onclick="openSalaryRemarks('${sid}', '${empRemarksEnc}', '${mgrRemarksEnc}', false)"><i class="bi bi-chat-left-text"></i></button>`;
+
+                                        if (s.status === 'CONFIRMED' && s.is_visible_to_employee) {
+                                            slipIconBtn = `<button class="btn btn-sm btn-outline-primary" title="Download Slip" onclick="downloadInvoice('${sid}')"><i class="bi bi-file-earmark-pdf"></i></button>`;
+                                        }
+                                    }
+
+                                    const totalBonus = (parseFloat(s.incentive_amount) || 0) + (parseFloat(s.slab_bonus) || 0);
+                                    const empName = (window.userNameMap && window.userNameMap[s.user_id]) || s.user_name || 'User #' + s.user_id;
+
+                                    const sid = s.id || s._id;
+                                    const isPaid = (s.status || '').toUpperCase() === 'CONFIRMED';
+                                    const statusToggle = canManageSalary
+                                        ? `<div class="d-flex flex-column align-items-center">
+                            <div class="form-check form-switch p-0 m-0 d-flex align-items-center bg-app rounded-pill px-2 py-0 border" style="min-width: 80px; height: 24px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);">
+                                    <input class="form-check-input ms-0 mt-0" type="checkbox" style="cursor:pointer; width: 28px; height: 14px;" 
+                                            ${isPaid ? 'checked disabled' : ''} 
+                                            onchange="if(this.checked) confirmSlip('${sid}')">
+                                <span class="ms-1" style="font-size: 0.62rem; font-weight: 800; color: ${isPaid ? 'var(--success-text)' : 'var(--text-muted)'};">
+                                ${isPaid ? 'PAID' : 'DRAFT'}
+                                </span>
+                                </div>
+                                <div class="mt-1" style="font-size: 0.6rem; color: ${s.is_visible_to_employee ? 'var(--success-text)' : 'var(--text-muted)'}; letter-spacing: 0.02em;">
+                                    ${s.is_visible_to_employee ? 'RELEASED' : 'HIDDEN'}
+                                </div>
+                            </div>`
+                                        : `<span class="status-pill ${statusCls} w-100 d-block text-center"><i class="bi ${statusIcon} me-1"></i>${statusLabel}</span>`;
+
+                                    return `<tr>
+                            <td class="fw-semibold" style="color:var(--text-main); overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${empName}">${empName}</td>
+                            <td class="text-muted small">${s.month}</td>
+                            <td class="small">${INR(s.base_salary)}</td>
+                            <td class="small">
+                                <span style="color:var(--success-text);">${s.paid_leaves}P</span>
+                                <span class="text-muted mx-1">/</span>
+                                <span style="color:var(--danger-text);">${s.unpaid_leaves}U</span>
+                            </td>
+                            <td style="color:var(--success-text); font-weight:600;" class="small">+${INR(totalBonus)}</td>
+                            <td style="color:var(--danger-text); font-weight:600;" class="small">-${INR(s.deduction_amount)}</td>
+                            <td class="fw-bold small">${INR(s.final_salary)}</td>
+                            <td>
+                                ${statusToggle}
+                            </td>
+                            <td class="text-end">
+                                <div class="d-flex gap-1 justify-content-end align-items-center">
+                                    ${previewBtn}${visibilityBtn}${remarkBtn}${slipIconBtn}
+                                </div>
+                            </td>
+                        </tr>`;
+                                }
+                            });
+                        } catch (e) {
+                            tbody.innerHTML = `<tr><td colspan="9" class="text-center py-5 text-danger">${e.message || 'Error'}</td></tr>`;
+                        }
+                    }
+
+                    async function generateSalarySlip() {
+                        if (!canManageSalary) {
+                            showToast('You do not have permission to generate salary slips', 'error');
+                            return;
+                        }
+                        const userId = document.getElementById('s-user').value;
+                        const month = document.getElementById('s-month').value;
+                        const btn = document.getElementById('salary-gen-btn');
+
+                        const rules = {
+                            's-user': 'Select an employee',
+                            's-month': 'Select a month'
+                        };
+
+                        if (!window.validateForm(document.getElementById('salaryModal'), rules)) {
+                            return;
+                        }
+
+                        btn.disabled = true;
+                        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generating...';
+                        try {
+                            const baseSalaryOverride = document.getElementById('s-base-salary').value.trim();
+                            const payload = {
+                                user_id: userId,
+                                month,
+                                extra_deduction: parseFloat(document.getElementById('s-deduction').value) || 0
+                            };
+                            if (baseSalaryOverride !== '') payload.base_salary = parseFloat(baseSalaryOverride);
+                            await ApiClient.generateSalary(payload);
+                            closeSalaryModal();
+                            showToast('Salary slip generated as Draft. Review and confirm it.', 'success');
+                            loadSlips();
+                        } catch (e) { showToast(e.data?.detail || e.message || 'Failed', 'error'); }
+                        finally { btn.disabled = false; btn.innerHTML = 'Generate as Draft'; }
+                    }
+
+                    async function updateDraftSlip() {
+                        if (!canManageSalary) {
+                            showToast('You do not have permission to update salary slips', 'error');
+                            return;
+                        }
+                        const btn = document.getElementById('salary-update-btn');
+                        const slipId = btn.dataset.slipId;
+                        const userId = document.getElementById('s-user').value;
+                        const month = document.getElementById('s-month').value;
+
+                        const rules = {
+                            's-user': 'Select an employee',
+                            's-month': 'Select a month'
+                        };
+
+                        if (!window.validateForm(document.getElementById('salaryModal'), rules)) {
+                            return;
+                        }
+
+                        if (!slipId) { showToast('No draft slip found to update', 'error'); return; }
+
+                        btn.disabled = true;
+                        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Updating...';
+                        try {
+                            const userId = document.getElementById('s-user').value;
+                            const month = document.getElementById('s-month').value;
+                            const baseSalaryOverride = document.getElementById('s-base-salary').value.trim();
+                            const payload = {
+                                user_id: userId,
+                                month,
+                                extra_deduction: parseFloat(document.getElementById('s-deduction').value) || 0
+                            };
+                            if (baseSalaryOverride !== '') payload.base_salary = parseFloat(baseSalaryOverride);
+                            await ApiClient.updateDraftSalarySlip(slipId, payload);
+                            closeSalaryModal();
+                            showToast('Draft salary slip updated successfully.', 'success');
+                            loadSlips();
+                        } catch (e) { showToast(e.data?.detail || e.message || 'Failed to update', 'error'); }
+                        finally { btn.disabled = false; btn.innerHTML = 'Update Draft'; }
+                    }
+
+                    async function regenerateSlip() {
+                        if (!canManageSalary) {
+                            showToast('You do not have permission to regenerate salary slips', 'error');
+                            return;
+                        }
+                        const btn = document.getElementById('salary-regen-btn');
+                        const userId = document.getElementById('s-user').value;
+                        const month = document.getElementById('s-month').value;
+
+                        const rules = {
+                            's-user': 'Select an employee',
+                            's-month': 'Select a month'
+                        };
+
+                        if (!window.validateForm(document.getElementById('salaryModal'), rules)) {
+                            return;
+                        }
+                        if (!confirm('This will DELETE the existing salary slip and create a new Draft. Continue?')) return;
+
+                        btn.disabled = true;
+                        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Regenerating...';
+                        try {
+                            const baseSalaryOverride = document.getElementById('s-base-salary').value.trim();
+                            const payload = {
+                                user_id: userId,
+                                month,
+                                extra_deduction: parseFloat(document.getElementById('s-deduction').value) || 0
+                            };
+                            if (baseSalaryOverride !== '') payload.base_salary = parseFloat(baseSalaryOverride);
+                            await ApiClient.regenerateSalarySlip(payload);
+                            closeSalaryModal();
+                            showToast('Salary slip regenerated as Draft successfully.', 'success');
+                            loadSlips();
+                        } catch (e) { showToast(e.data?.detail || e.message || 'Failed to regenerate', 'error'); }
+                        finally { btn.disabled = false; btn.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i>Delete Existing & Regenerate'; }
+                    }
+
+                    async function confirmSlip(slipId) {
+                        if (!canManageSalary) {
+                            showToast('You do not have permission to confirm salary slips', 'error');
+                            return;
+                        }
+                        // No confirm() popup as requested
+                        try {
+                            await ApiClient.confirmSalarySlip(slipId);
+                            showToast('Salary slip confirmed.', 'success');
+                            loadSlips();
+                        } catch (e) { showToast(e.data?.detail || e.message || 'Failed', 'error'); }
+                    }
+
+                    async function toggleSalaryVisibility(slipId, isVisible) {
+                        if (!canManageSalary) {
+                            showToast('You do not have permission to change visibility', 'error');
+                            return;
+                        }
+                        try {
+                            await ApiClient.updateSalarySlipVisibility(slipId, { is_visible_to_employee: Boolean(isVisible) });
+                            showToast(Boolean(isVisible) ? 'Salary slip released to employee' : 'Salary slip hidden from employee', 'success');
+                            loadSlips();
+                        } catch (e) {
+                            showToast(e.data?.detail || e.message || 'Failed to update visibility', 'error');
+                        }
+                    }
+
+                    async function openSalaryRemarks(slipId, currentEmployeeRemarksEnc, currentManagerRemarksEnc, isManager) {
+                        const currentEmployeeRemarks = decodeURIComponent(currentEmployeeRemarksEnc || '');
+                        const currentManagerRemarks = decodeURIComponent(currentManagerRemarksEnc || '');
+
+                        document.getElementById('remark-slip-id').value = slipId;
+                        document.getElementById('admin-remark-view').value = currentManagerRemarks;
+                        document.getElementById('employee-remark-input').value = currentEmployeeRemarks;
+
+                        const adminSection = document.getElementById('admin-remark-edit-section');
+                        const adminInput = document.getElementById('admin-remark-input');
+                        const employeeInput = document.getElementById('employee-remark-input');
+
+                        if (isManager) {
+                            adminSection.style.display = 'block';
+                            adminInput.value = currentManagerRemarks;
+                            employeeInput.readOnly = true;
+                            employeeInput.classList.add('bg-app');
+                        } else {
+                            adminSection.style.display = 'none';
+                            employeeInput.readOnly = false;
+                            employeeInput.classList.remove('bg-app');
+                        }
+
+                        const modalEl = document.getElementById('salaryRemarksModal');
+                        // Clear validation state
+                        modalEl.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+                        modalEl.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
+
+                        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                        modal.show();
+                    }
+
+                    async function saveSalaryRemarks() {
+                        const id = document.getElementById('remark-slip-id').value;
+                        const btn = document.getElementById('save-remarks-btn');
+                        const isAdminMode = document.getElementById('admin-remark-edit-section').style.display !== 'none';
+
+                        const data = {};
+                        if (isAdminMode) {
+                            data.manager_remarks = document.getElementById('admin-remark-input').value;
+                        } else {
+                            data.employee_remarks = document.getElementById('employee-remark-input').value;
+                        }
+
+                        try {
+                            btn.disabled = true;
+                            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
+
+                            await ApiClient.updateSalarySlipRemarks(id, data);
+                            showToast('Remarks saved successfully', 'success');
+                            bootstrap.Modal.getInstance(document.getElementById('salaryRemarksModal')).hide();
+                            loadSlips();
+                        } catch (err) {
+                            console.error('Save remark error', err);
+                            showToast(err.message || 'Failed to save remarks', 'error');
+                        } finally {
+                            btn.disabled = false;
+                            btn.innerHTML = 'Save Remarks';
+                        }
+                    }
+
+                    function downloadInvoice(slipId) {
+                        window.open(`salary_slip_view.html?id=${slipId}`, '_blank');
+                    }
+
+                    loadSlips();
+                </script>
+                <!-- Remarks Modal -->
+                <div class="modal fade" id="salaryRemarksModal" tabindex="-1">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content border-0 shadow-lg" style="border-radius:16px;">
+                            <div class="modal-header border-bottom-0 pb-0">
+                                <h5 class="modal-title fw-bold">Salary Slip Remarks</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                             </div>
-                        </td>
-                    </tr>`;
-                }).join('');
-            } catch (e) {
-                tbody.innerHTML = `<tr><td colspan="9" class="text-center py-5 text-danger">${e.message || 'Error'}</td></tr>`;
-            }
-        }
-
-        async function generateSalarySlip() {
-            if (!canManageSalary) {
-                showToast('You do not have permission to generate salary slips', 'error');
-                return;
-            }
-            const userId = document.getElementById('s-user').value;
-            const month = document.getElementById('s-month').value;
-            const btn = document.getElementById('salary-gen-btn');
-            
-            const rules = {
-                's-user': 'Select an employee',
-                's-month': 'Select a month'
-            };
-
-            if (!window.validateForm(document.getElementById('salaryModal'), rules)) {
-                return;
-            }
-
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generating...';
-            try {
-                const baseSalaryOverride = document.getElementById('s-base-salary').value.trim();
-                const payload = {
-                    user_id: userId,
-                    month,
-                    extra_deduction: parseFloat(document.getElementById('s-deduction').value) || 0
-                };
-                if (baseSalaryOverride !== '') payload.base_salary = parseFloat(baseSalaryOverride);
-                await ApiClient.generateSalary(payload);
-                closeSalaryModal();
-                showToast('Salary slip generated as Draft. Review and confirm it.', 'success');
-                loadSlips();
-            } catch (e) { showToast(e.data?.detail || e.message || 'Failed', 'error'); }
-            finally { btn.disabled = false; btn.innerHTML = 'Generate as Draft'; }
-        }
-
-        async function updateDraftSlip() {
-            if (!canManageSalary) {
-                showToast('You do not have permission to update salary slips', 'error');
-                return;
-            }
-            const btn = document.getElementById('salary-update-btn');
-            const slipId = btn.dataset.slipId;
-            const userId = document.getElementById('s-user').value;
-            const month = document.getElementById('s-month').value;
-
-            const rules = {
-                's-user': 'Select an employee',
-                's-month': 'Select a month'
-            };
-
-            if (!window.validateForm(document.getElementById('salaryModal'), rules)) {
-                return;
-            }
-
-            if (!slipId) { showToast('No draft slip found to update', 'error'); return; }
-
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Updating...';
-            try {
-                const userId = document.getElementById('s-user').value;
-                const month = document.getElementById('s-month').value;
-                const baseSalaryOverride = document.getElementById('s-base-salary').value.trim();
-                const payload = {
-                    user_id: userId,
-                    month,
-                    extra_deduction: parseFloat(document.getElementById('s-deduction').value) || 0
-                };
-                if (baseSalaryOverride !== '') payload.base_salary = parseFloat(baseSalaryOverride);
-                await ApiClient.updateDraftSalarySlip(slipId, payload);
-                closeSalaryModal();
-                showToast('Draft salary slip updated successfully.', 'success');
-                loadSlips();
-            } catch (e) { showToast(e.data?.detail || e.message || 'Failed to update', 'error'); }
-            finally { btn.disabled = false; btn.innerHTML = 'Update Draft'; }
-        }
-
-        async function regenerateSlip() {
-            if (!canManageSalary) {
-                showToast('You do not have permission to regenerate salary slips', 'error');
-                return;
-            }
-            const btn = document.getElementById('salary-regen-btn');
-            const userId = document.getElementById('s-user').value;
-            const month = document.getElementById('s-month').value;
-
-            const rules = {
-                's-user': 'Select an employee',
-                's-month': 'Select a month'
-            };
-
-            if (!window.validateForm(document.getElementById('salaryModal'), rules)) {
-                return;
-            }
-            if (!confirm('This will DELETE the existing salary slip and create a new Draft. Continue?')) return;
-
-            btn.disabled = true;
-            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Regenerating...';
-            try {
-                const baseSalaryOverride = document.getElementById('s-base-salary').value.trim();
-                const payload = {
-                    user_id: userId,
-                    month,
-                    extra_deduction: parseFloat(document.getElementById('s-deduction').value) || 0
-                };
-                if (baseSalaryOverride !== '') payload.base_salary = parseFloat(baseSalaryOverride);
-                await ApiClient.regenerateSalarySlip(payload);
-                closeSalaryModal();
-                showToast('Salary slip regenerated as Draft successfully.', 'success');
-                loadSlips();
-            } catch (e) { showToast(e.data?.detail || e.message || 'Failed to regenerate', 'error'); }
-            finally { btn.disabled = false; btn.innerHTML = '<i class="bi bi-arrow-repeat me-1"></i>Delete Existing & Regenerate'; }
-        }
-
-        async function confirmSlip(slipId) {
-            if (!canManageSalary) {
-                showToast('You do not have permission to confirm salary slips', 'error');
-                return;
-            }
-            // No confirm() popup as requested
-            try {
-                await ApiClient.confirmSalarySlip(slipId);
-                showToast('Salary slip confirmed.', 'success');
-                loadSlips();
-            } catch (e) { showToast(e.data?.detail || e.message || 'Failed', 'error'); }
-        }
-
-        async function toggleSalaryVisibility(slipId, isVisible) {
-            if (!canManageSalary) {
-                showToast('You do not have permission to change visibility', 'error');
-                return;
-            }
-            try {
-                await ApiClient.updateSalarySlipVisibility(slipId, { is_visible_to_employee: Boolean(isVisible) });
-                showToast(Boolean(isVisible) ? 'Salary slip released to employee' : 'Salary slip hidden from employee', 'success');
-                loadSlips();
-            } catch (e) {
-                showToast(e.data?.detail || e.message || 'Failed to update visibility', 'error');
-            }
-        }
-
-        async function openSalaryRemarks(slipId, currentEmployeeRemarksEnc, currentManagerRemarksEnc, isManager) {
-            const currentEmployeeRemarks = decodeURIComponent(currentEmployeeRemarksEnc || '');
-            const currentManagerRemarks = decodeURIComponent(currentManagerRemarksEnc || '');
-            
-            document.getElementById('remark-slip-id').value = slipId;
-            document.getElementById('admin-remark-view').value = currentManagerRemarks;
-            document.getElementById('employee-remark-input').value = currentEmployeeRemarks;
-            
-            const adminSection = document.getElementById('admin-remark-edit-section');
-            const adminInput = document.getElementById('admin-remark-input');
-            const employeeInput = document.getElementById('employee-remark-input');
-
-            if (isManager) {
-                adminSection.style.display = 'block';
-                adminInput.value = currentManagerRemarks;
-                employeeInput.readOnly = true;
-                employeeInput.classList.add('bg-app');
-            } else {
-                adminSection.style.display = 'none';
-                employeeInput.readOnly = false;
-                employeeInput.classList.remove('bg-app');
-            }
-
-            const modalEl = document.getElementById('salaryRemarksModal');
-            // Clear validation state
-            modalEl.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-            modalEl.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
-
-            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-            modal.show();
-        }
-
-        async function saveSalaryRemarks() {
-            const id = document.getElementById('remark-slip-id').value;
-            const btn = document.getElementById('save-remarks-btn');
-            const isAdminMode = document.getElementById('admin-remark-edit-section').style.display !== 'none';
-            
-            const data = {};
-            if (isAdminMode) {
-                data.manager_remarks = document.getElementById('admin-remark-input').value;
-            } else {
-                data.employee_remarks = document.getElementById('employee-remark-input').value;
-            }
-
-            try {
-                btn.disabled = true;
-                btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
-                
-                await ApiClient.updateSalarySlipRemarks(id, data);
-                showToast('Remarks saved successfully', 'success');
-                bootstrap.Modal.getInstance(document.getElementById('salaryRemarksModal')).hide();
-                loadSlips();
-            } catch (err) {
-                console.error('Save remark error', err);
-                showToast(err.message || 'Failed to save remarks', 'error');
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = 'Save Remarks';
-            }
-        }
-
-        function downloadInvoice(slipId) {
-            window.open(`salary_slip_view.html?id=${slipId}`, '_blank');
-        }
-
-        loadSlips();
-    </script>
-    <!-- Remarks Modal -->
-    <div class="modal fade" id="salaryRemarksModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg" style="border-radius:16px;">
-                <div class="modal-header border-bottom-0 pb-0">
-                    <h5 class="modal-title fw-bold">Salary Slip Remarks</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <input type="hidden" id="remark-slip-id">
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted">Admin Remarks</label>
-                        <textarea id="admin-remark-view" class="form-control bg-app" rows="2" readonly placeholder="No admin remarks..."></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted">Your Remarks (Employee)</label>
-                        <textarea id="employee-remark-input" class="form-control" rows="3" placeholder="Add your query or remark here..."></textarea>
-                    </div>
-                    <div id="admin-remark-edit-section" style="display: none;">
-                        <label class="form-label small fw-bold text-muted">Update Admin Remarks</label>
-                        <textarea id="admin-remark-input" class="form-control" rows="3" placeholder="Update admin remarks..."></textarea>
+                            <div class="modal-body p-4">
+                                <input type="hidden" id="remark-slip-id">
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold text-muted">Admin Remarks</label>
+                                    <textarea id="admin-remark-view" class="form-control bg-app" rows="2" readonly
+                                        placeholder="No admin remarks..."></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold text-muted">Your Remarks (Employee)</label>
+                                    <textarea id="employee-remark-input" class="form-control" rows="3"
+                                        placeholder="Add your query or remark here..."></textarea>
+                                </div>
+                                <div id="admin-remark-edit-section" style="display: none;">
+                                    <label class="form-label small fw-bold text-muted">Update Admin Remarks</label>
+                                    <textarea id="admin-remark-input" class="form-control" rows="3"
+                                        placeholder="Update admin remarks..."></textarea>
+                                </div>
+                            </div>
+                            <div class="modal-footer border-top-0 pt-0">
+                                <button type="button" class="btn btn-light border fw-semibold"
+                                    data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-primary fw-semibold px-4" id="save-remarks-btn"
+                                    onclick="saveSalaryRemarks()">Save Remarks</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer border-top-0 pt-0">
-                    <button type="button" class="btn btn-light border fw-semibold" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary fw-semibold px-4" id="save-remarks-btn" onclick="saveSalaryRemarks()">Save Remarks</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <script>
-        console.log('Final inline script running');
-        // Final fallback to ensure visibility
-        setTimeout(() => {
-            console.log('Final visibility check (instant)');
-            document.body.style.visibility = 'visible';
-            document.body.style.opacity = '1';
-            const mw = document.querySelector('.main-wrapper');
-            if (mw) {
-                mw.style.visibility = 'visible';
-                mw.style.display = 'block';
-                mw.style.opacity = '1';
-            }
-            console.log('Body visibility forced to visible');
-        }, 0);
-    </script>
+                <script>
+                    console.log('Final inline script running');
+                    // Final fallback to ensure visibility
+                    setTimeout(() => {
+                        console.log('Final visibility check (instant)');
+                        document.body.style.visibility = 'visible';
+                        document.body.style.opacity = '1';
+                        const mw = document.querySelector('.main-wrapper');
+                        if (mw) {
+                            mw.style.visibility = 'visible';
+                            mw.style.display = 'block';
+                            mw.style.opacity = '1';
+                        }
+                        console.log('Body visibility forced to visible');
+                    }, 0);
+                </script>
 </body>
 
 </html>
-
-

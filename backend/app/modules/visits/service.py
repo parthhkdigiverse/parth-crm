@@ -25,32 +25,61 @@ class VisitService:
         # ActivityLogger now expects Beanie-ready async operations
         self.activity_logger = ActivityLogger()
 
-    async def _populate_visit_metadata(self, visit: Visit):
-        """Sequential lookup for shop and user names (NoSQL join replacement)."""
-        if visit.shop_id:
-            shop = await Shop.get(visit.shop_id)
+    async def _populate_visits_bulk(self, visits: List[Visit]) -> List[Visit]:
+        """
+        Bulk-enrich a list of visits with shop/user/area names.
+        Uses 4 DB calls total regardless of number of visits (vs 4 × N before).
+        """
+        if not visits:
+            return visits
+
+        from app.modules.areas.models import Area
+
+        # ── Collect all unique IDs ──────────────────────────────────
+        shop_ids   = list({v.shop_id   for v in visits if v.shop_id})
+        user_ids   = list({v.user_id   for v in visits if v.user_id})
+
+        # ── Bulk DB fetches (4 queries total) ───────────────────────
+        shops_list = await Shop.find(In(Shop.id, shop_ids)).to_list()  if shop_ids  else []
+        shop_map   = {str(s.id): s for s in shops_list}
+
+        pm_ids     = list({s.project_manager_id for s in shops_list if s.project_manager_id})
+        area_ids   = list({s.area_id            for s in shops_list if s.area_id})
+
+        all_user_ids = list({*[str(u) for u in user_ids], *[str(u) for u in pm_ids]})
+        users_list = await User.find(In(User.id, user_ids + pm_ids)).to_list() if (user_ids or pm_ids) else []
+        user_map   = {str(u.id): u for u in users_list}
+
+        areas_list = await Area.find(In(Area.id, area_ids)).to_list() if area_ids else []
+        area_map   = {str(a.id): a for a in areas_list}
+
+        # ── Map enrichment in-memory ─────────────────────────────────
+        for visit in visits:
+            shop = shop_map.get(str(visit.shop_id)) if visit.shop_id else None
             if shop:
-                visit.shop_name = shop.name
+                visit.shop_name   = shop.name
                 visit.shop_status = str(shop.pipeline_stage.value) if hasattr(shop.pipeline_stage, "value") else str(shop.pipeline_stage)
                 visit.shop_demo_stage = shop.demo_stage
-                
-                # Project Manager Name lookup
                 if shop.project_manager_id:
-                    pm = await User.get(shop.project_manager_id)
+                    pm = user_map.get(str(shop.project_manager_id))
                     visit.project_manager_name = pm.name if pm else "Unknown PM"
-
-                # Area lookup for fully qualified shop info
-                from app.modules.areas.models import Area
                 if shop.area_id:
-                    area = await Area.get(shop.area_id)
+                    area = area_map.get(str(shop.area_id))
                     if area:
                         visit.area_name = area.name
-        
-        if visit.user_id:
-            user = await User.get(visit.user_id)
-            if user:
-                visit.user_name = user.name or user.email
-        return visit
+
+            if visit.user_id:
+                u = user_map.get(str(visit.user_id))
+                if u:
+                    visit.user_name = u.name or u.email
+
+        return visits
+
+    async def _populate_visit_metadata(self, visit: Visit) -> Visit:
+        """Single-visit wrapper — reuses the bulk helper for consistency."""
+        result = await self._populate_visits_bulk([visit])
+        return result[0]
+
 
     async def get_visit(self, visit_id: PydanticObjectId) -> Optional[Visit]:
         """Fetches a single visit with enriched metadata."""
@@ -119,9 +148,8 @@ class VisitService:
         if limit is not None:
             query = query.limit(limit)
         visits = await query.to_list()
-        for v in visits:
-            await self._populate_visit_metadata(v)
-        return visits
+        return await self._populate_visits_bulk(visits)
+
 
     async def create_visit(
         self, 
@@ -176,8 +204,7 @@ class VisitService:
             shop.pipeline_stage = MasterPipelineStage.DELIVERY
             from app.modules.shops.service import ShopService
             await ShopService._cancel_pending_demos(
-                shop, 
-                current_user=current_user,
+                shop,
                 reason="System Auto-Canceled: Advanced to Delivery via Visit"
             )
         elif v_status in ["SATISFIED", "TAKE_TIME_TO_THINK", "OTHER"]:

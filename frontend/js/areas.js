@@ -221,7 +221,7 @@ window.handleModalSave = async function () {
 
     const rules = {
         'a-name': 'Area name is required',
-        'map-search': () => (lat && lng) || 'Please select a location on the map'
+        'map-search': () => (lat && lng) ? true : 'Please select a location on the map'
     };
 
     if (!validateForm(document.getElementById('form-area'), rules)) {
@@ -247,7 +247,7 @@ window.handleModalSave = async function () {
 
         if (existingId) {
             // ── Edit Mode: update the existing record ──
-            savedArea = await ApiClient.updateArea(parseInt(existingId), payload);
+            savedArea = await ApiClient.updateArea(existingId, payload);
         } else {
             // ── Create Mode: make a new area ──
             savedArea = await ApiClient.createArea(payload);
@@ -290,47 +290,54 @@ window._discoverShops = async function (areaId, locationParams, radiusMeters = 5
     tableBody.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm text-primary me-2"></span>Scanning for businesses within ${radiusMeters}m...</td></tr>`;
 
     try {
-        const request = {
-            fields: ['id', 'displayName', 'formattedAddress', 'types'],
-            locationRestriction: {
-                center: locationParams,
-                radius: radiusMeters // Dynamic radius
-            },
-            rankPreference: google.maps.places.SearchNearbyRankPreference.DISTANCE,
-            maxResultCount: maxResults
-        };
+        // Use legacy PlacesService.nearbySearch — works with standard Maps API keys
+        if (!window.map) throw new Error('Map not initialized');
 
-        const { places } = await google.maps.places.Place.searchNearby(request);
+        const service = new google.maps.places.PlacesService(window.map);
 
-        if (!places || places.length === 0) {
+        const results = await new Promise((resolve, reject) => {
+            service.nearbySearch({
+                location: locationParams,
+                radius: radiusMeters,
+                type: 'store'
+            }, (results, status) => {
+                if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+                    resolve(results);
+                } else if (status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
+                    resolve([]);
+                } else {
+                    reject(new Error(`Places API: ${status}`));
+                }
+            });
+        });
+
+        if (!results || results.length === 0) {
             tableBody.innerHTML = `<tr><td colspan="3" class="text-center py-4 text-muted">No businesses found within ${radiusMeters}m.</td></tr>`;
             return;
         }
 
         tableBody.innerHTML = ''; // Clear loading indicator
 
-        // Display results sorted by distance up to maxResults limit
-        places.slice(0, maxResults).forEach(place => {
+        // Display results up to maxResults limit
+        results.slice(0, maxResults).forEach(place => {
             const row = document.createElement('tr');
 
             const nameCell = document.createElement('td');
             nameCell.className = 'fw-bold';
-            nameCell.textContent = place.displayName || 'Unnamed Shop';
+            nameCell.textContent = place.name || 'Unnamed Shop';
 
             const addressCell = document.createElement('td');
-            addressCell.textContent = place.formattedAddress || '—';
+            addressCell.textContent = place.vicinity || '—';
 
             const actionCell = document.createElement('td');
             actionCell.className = 'text-end';
 
-            // Pass place.id (new API) so we can fetch rich details on demand
             const addBtn = document.createElement('button');
             addBtn.className = 'btn btn-sm btn-outline-primary fw-semibold';
             addBtn.textContent = 'Add to SRM';
-            addBtn.onclick = () => window.prepareGoogleShop(addBtn, place.id, areaId);
+            addBtn.onclick = () => window._addLegacyShop(addBtn, place, areaId);
 
             actionCell.appendChild(addBtn);
-
             row.appendChild(nameCell);
             row.appendChild(addressCell);
             row.appendChild(actionCell);
@@ -338,7 +345,41 @@ window._discoverShops = async function (areaId, locationParams, radiusMeters = 5
         });
     } catch (error) {
         console.error("Discover shops failed:", error);
-        tableBody.innerHTML = '<tr><td colspan="3" class="text-center py-4 text-danger">Failed to load nearby shops.</td></tr>';
+        // Area is already saved — give user a clear way to continue
+        tableBody.innerHTML = `
+            <tr><td colspan="3" class="text-center py-4">
+                <i class="bi bi-wifi-off text-muted fs-3 d-block mb-2"></i>
+                <span class="text-muted small">Auto-discovery unavailable (Google API restriction).</span><br>
+                <span class="text-muted small">Your area was saved successfully — you can add shops manually.</span><br>
+                <button class="btn btn-sm btn-primary mt-3" onclick="
+                    bootstrap.Modal.getInstance(document.getElementById('addModal')).hide();
+                    if(typeof loadAll === 'function') loadAll();
+                "><i class="bi bi-check-circle me-1"></i>Continue — Area Saved</button>
+            </td></tr>`;
+    }
+};
+
+// Add a discovered shop using legacy Places data (no fetchFields needed)
+window._addLegacyShop = function (btnEl, place, areaId) {
+    btnEl.disabled = true;
+    btnEl.textContent = 'Loading...';
+
+    try {
+        if (typeof switchModalTab === 'function') switchModalTab('shop');
+
+        document.getElementById('s-name').value = place.name || '';
+        document.getElementById('s-addr').value = place.vicinity || '';
+        document.getElementById('s-phone').value = '';
+        document.getElementById('s-area').value = areaId;
+        document.getElementById('s-source').value = 'Google Maps';
+
+        btnEl.className = 'btn btn-sm btn-success fw-semibold text-white disabled';
+        btnEl.innerHTML = '<i class="bi bi-check-lg"></i> Pre-filled';
+    } catch (error) {
+        console.error('Pre-fill failed:', error);
+        btnEl.disabled = false;
+        btnEl.textContent = 'Add to SRM';
+        alert('Could not pre-fill shop details. Please try again.');
     }
 };
 

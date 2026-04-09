@@ -18,9 +18,24 @@ class AreaService:
         # Base query: non-archived areas
         # Import here so the enrich_area nested closure can always access In/Or
         from beanie.operators import Or, In
-        find_query = Area.find(Area.is_archived != True)
+        
+        # 1. Evaluate the Admin check
+        role_str = str(current_user.role).upper()
+        is_admin = "ADMIN" in role_str or "USERROLE.ADMIN" in role_str
+        
+        # 2. Setup the query
+        find_query = Area.find(
+            Area.is_archived == False,
+            Area.is_deleted == False
+        )
+        
+        # 3. THE TRUTH SERUM (Add these print statements)
+        base_count = await find_query.count()
+        print("\n" + "="*50)
+        print(f"🕵️ DEBUG: Is Admin?  = {is_admin}")
+        print(f"🕵️ DEBUG: Areas in DB= {base_count}")
+        print("="*50 + "\n")
 
-        is_admin = "ADMIN" in str(current_user.role).upper()
         if is_admin:
             areas = await find_query.skip(skip).limit(limit).to_list()
         else:
@@ -38,41 +53,67 @@ class AreaService:
 
             # Sales/Telesales: Can see areas they are assigned to OR areas containing shops they own/manage
             areas = await Area.find(
-                Area.is_archived != True,
+                {"is_archived": {"$nin": [True, "t", "true", "1"]}},
                 Or(
                     In(Area.assigned_user_ids, [current_user.id]),
+                    Area.assigned_user_id == current_user.id,
                     In(Area.id, shop_area_ids)
                 )
             ).skip(skip).limit(limit).to_list()
 
         import asyncio
         async def enrich_area(area):
-            # Count only active (non-deleted, non-archived) shops for the main view
-            area.shops_count = await Shop.find(Shop.area_id == area.id, Shop.is_deleted != True, Shop.is_archived != True).count()
-            
-            # Populate creator name
-            if area.created_by_id:
-                creator = await User.get(area.created_by_id)
-                area.created_by_name = creator.name if creator else None
-            else:
-                area.created_by_name = None
-
-            # Populate archived by name
-            if area.is_archived and area.archived_by_id:
-                archived_by = await User.get(area.archived_by_id)
-                area.archived_by_name = archived_by.name if archived_by else None
-            else:
-                area.archived_by_name = None
-
-            # Populate assigned users list for UI dropdowns/tables
-            assigned_users = []
-            if area.assigned_user_ids:
-                users = await User.find(In(User.id, area.assigned_user_ids)).to_list()
-                assigned_users = [
-                    {"id": str(u.id), "name": u.name, "role": u.role.value if hasattr(u.role, 'value') else str(u.role)} 
-                    for u in users
+            try:
+                # Count only active (non-deleted, non-archived) shops for the main view
+                area.shops_count = await Shop.find(
+            {
+                "$or": [
+                    {"area_id": area.id}, 
+                    {"area_id": str(area.id)}
                 ]
-            area.assigned_users = assigned_users
+            },
+            Shop.is_archived == False,
+            Shop.is_deleted == False
+        ).count()
+                
+                # Populate creator name
+                if area.created_by_id:
+                    creator = await User.get(area.created_by_id)
+                    area.created_by_name = creator.name if creator else "Data Error"
+                else:
+                    area.created_by_name = None
+
+                # Populate archived by name
+                if area.is_archived and area.archived_by_id:
+                    archived_by = await User.get(area.archived_by_id)
+                    area.archived_by_name = archived_by.name if archived_by else "Data Error"
+                else:
+                    area.archived_by_name = None
+
+                # Populate assigned users list for UI dropdowns/tables
+                assigned_users = []
+                if area.assigned_user_ids:
+                    users = await User.find(In(User.id, area.assigned_user_ids)).to_list()
+                    assigned_users = [
+                        {"id": str(u.id), "name": u.name, "role": u.role.value if hasattr(u.role, 'value') else str(u.role)} 
+                        for u in users
+                    ]
+                elif getattr(area, 'assigned_user_id', None):
+                    try:
+                        u = await User.get(area.assigned_user_id)
+                        if u:
+                            assigned_users = [
+                                {"id": str(u.id), "name": u.name, "role": u.role.value if hasattr(u.role, 'value') else str(u.role)} 
+                            ]
+                    except Exception as fallbackError:
+                        print(f"Fallback User Get Error: {fallbackError}")
+                
+                area.assigned_users = assigned_users
+            except Exception:
+                area.shops_count = 0
+                area.created_by_name = "Data Error"
+                area.archived_by_name = "Data Error"
+                area.assigned_users = []
             return area
 
         await asyncio.gather(*(enrich_area(area) for area in areas))
@@ -91,7 +132,7 @@ class AreaService:
         area.accepted_at = datetime.now(UTC)
         
         # Update child shops sequentially
-        shops = await Shop.find(Shop.area_id == area.id).to_list()
+        shops = await Shop.find({"area_id": str(area.id)}).to_list()
         for shop in shops:
             shop.assignment_status = "ACCEPTED"
             shop.assigned_owner_ids = [current_user.id]
@@ -100,7 +141,16 @@ class AreaService:
         
         await area.save()
         
-        area.shops_count = await Shop.find(Shop.area_id == area.id, Shop.is_deleted != True, Shop.is_archived != True).count()
+        area.shops_count = await Shop.find(
+            {
+                "$or": [
+                    {"area_id": area.id}, 
+                    {"area_id": str(area.id)}
+                ]
+            },
+            Shop.is_archived == False,
+            Shop.is_deleted == False
+        ).count()
         if area.archived_by_id:
             archived_by = await User.get(area.archived_by_id)
             area.archived_by_name = archived_by.name if archived_by else None
@@ -151,7 +201,16 @@ class AreaService:
             setattr(area, field, value)
         await area.save()
         
-        area.shops_count = await Shop.find(Shop.area_id == area.id, Shop.is_deleted != True, Shop.is_archived != True).count()
+        area.shops_count = await Shop.find(
+            {
+                "$or": [
+                    {"area_id": area.id}, 
+                    {"area_id": str(area.id)}
+                ]
+            },
+            Shop.is_archived == False,
+            Shop.is_deleted == False
+        ).count()
         
         if area.archived_by_id:
             archived_by = await User.get(area.archived_by_id)
@@ -177,62 +236,81 @@ class AreaService:
         if not area:
             raise HTTPException(status_code=404, detail="Area not found")
         
-        users = await User.find(In(User.id, user_ids)).to_list()
+        from bson import ObjectId
+        
+        # Cast string IDs to ObjectId for Beanie querying
+        user_obj_ids = [ObjectId(uid) if isinstance(uid, str) else uid for uid in user_ids]
+        
+        users = await User.find(In(User.id, user_obj_ids)).to_list()
         if not users or len(users) != len(user_ids):
             raise HTTPException(status_code=404, detail="One or more users not found")
 
         current_user_ids = set(area.assigned_user_ids)
         new_user_ids = set(user_ids)
         
-        if len(new_user_ids) > 1 or new_user_ids != current_user_ids:
-            area.assignment_status = "PENDING"
-            area.assigned_by_id = current_user.id
-            area.accepted_at = None
+        # Determine if we need to reset acceptance status
+        status_change = len(new_user_ids) > 1 or new_user_ids != current_user_ids
 
         primary_owner_id = user_ids[0]
         
+        # Query for shops: handle both string and ObjectId formats defensively
+        area_filter = {"$or": [{"area_id": area_id}, {"area_id": str(area_id)}]}
+        
         if shop_ids is not None:
+            shop_obj_ids = [ObjectId(sid) if isinstance(sid, str) else sid for sid in shop_ids]
             # Granular assignment: Update specific shops only
             shops_to_assign = await Shop.find(
-                Shop.area_id == area_id,
-                In(Shop.id, shop_ids)
+                area_filter,
+                In(Shop.id, shop_obj_ids)
             ).to_list()
             
             for shop in shops_to_assign:
                 shop.owner_id = primary_owner_id
-                shop.assigned_owner_ids = user_ids
-                if len(new_user_ids) > 1 or new_user_ids != current_user_ids:
+                shop.assigned_user_ids = user_ids
+                shop.assigned_owner_ids = user_ids # consistency
+                if status_change:
                     shop.assignment_status = "PENDING"
                     shop.assigned_by_id = current_user.id
                     shop.accepted_at = None
                 await shop.save()
             
-            # Update Area assignments
-            for uid in user_ids:
-                if uid not in area.assigned_user_ids:
-                    area.assigned_user_ids.append(uid)
-                    
-            if not getattr(area, 'assigned_user_id', None):
-                 area.assigned_user_id = primary_owner_id
-                 
+            # Update Area assignments: append if not already present or replace if new set
+            area.assigned_user_ids = list(new_user_ids)
+            area.assigned_user_id = primary_owner_id
+                     
         else:
             # Full assignment: Update area and ALL shops
             area.assigned_user_id = primary_owner_id
             area.assigned_user_ids = user_ids
             
-            all_shops = await Shop.find(Shop.area_id == area_id).to_list()
+            all_shops = await Shop.find(area_filter).to_list()
             for shop in all_shops:
                 shop.owner_id = primary_owner_id
-                shop.assigned_owner_ids = user_ids
-                if len(new_user_ids) > 1 or new_user_ids != current_user_ids:
+                shop.assigned_user_ids = user_ids
+                shop.assigned_owner_ids = user_ids # consistency
+                if status_change:
                     shop.assignment_status = "PENDING"
                     shop.assigned_by_id = current_user.id
                     shop.accepted_at = None
                 await shop.save()
         
+        if status_change:
+            area.assignment_status = "PENDING"
+            area.assigned_by_id = current_user.id
+            area.accepted_at = None
+
         await area.save()
         
-        area.shops_count = await Shop.find(Shop.area_id == area.id, Shop.is_deleted != True, Shop.is_archived != True).count()
+        area.shops_count = await Shop.find(
+            {
+                "$or": [
+                    {"area_id": area.id}, 
+                    {"area_id": str(area.id)}
+                ]
+            },
+            Shop.is_archived == False,
+            Shop.is_deleted == False
+        ).count()
         
         if area.archived_by_id:
             archived_by = await User.get(area.archived_by_id)
@@ -263,14 +341,14 @@ class AreaService:
         await area.save()
 
         # Update child shops
-        await Shop.find(Shop.area_id == area_id).update(
+        await Shop.find({"area_id": str(area_id)}).update(
             {"$set": {"is_archived": True, "archived_by_id": current_user.id}}
         )
         
         return {"detail": f"Area \"{area.name}\" and its shops have been archived"}
 
     async def get_archived_areas(self, current_user: User):
-        find_query = Area.find(Area.is_archived == True)  # Intentional: archived list wants only explicitly archived docs
+        find_query = Area.find({"is_archived": {"$in": [True, "t", "true", "1"]}})  # Intentional: archived list wants only explicitly archived docs
 
         role_str = current_user.role.value if hasattr(current_user.role, 'value') else str(current_user.role)
         is_admin = "ADMIN" in str(current_user.role).upper()
@@ -279,7 +357,7 @@ class AreaService:
         else:
             from beanie.operators import Or
             areas = await Area.find(
-                Area.is_archived == True,
+                {"is_archived": {"$in": [True, "t", "true", "1"]}},
                 Or(
                     Area.archived_by_id == current_user.id,
                     In(Area.assigned_user_ids, [current_user.id])
@@ -288,29 +366,40 @@ class AreaService:
 
         import asyncio
         async def enrich_archived_area(area):
-            # For archived areas, we count all shops (they will all be archived anyway)
-            area.shops_count = await Shop.find(Shop.area_id == area.id).count()
+            try:
+                # For archived areas, we count all shops (they will all be archived anyway)
+                area.shops_count = await Shop.find({
+                    "$or": [
+                        {"area_id": area.id}, 
+                        {"area_id": str(area.id)}
+                    ]
+                }).count()
 
-            if area.archived_by_id:
-                archived_by = await User.get(area.archived_by_id)
-                area.archived_by_name = archived_by.name if archived_by else None
-            else:
-                area.archived_by_name = None
+                if area.archived_by_id:
+                    archived_by = await User.get(area.archived_by_id)
+                    area.archived_by_name = archived_by.name if archived_by else "Data Error"
+                else:
+                    area.archived_by_name = None
 
-            if area.created_by_id:
-                creator = await User.get(area.created_by_id)
-                area.created_by_name = creator.name if creator else None
-            else:
-                area.created_by_name = None
+                if area.created_by_id:
+                    creator = await User.get(area.created_by_id)
+                    area.created_by_name = creator.name if creator else "Data Error"
+                else:
+                    area.created_by_name = None
 
-            assigned_users = []
-            if area.assigned_user_ids:
-                users = await User.find(In(User.id, area.assigned_user_ids)).to_list()
-                assigned_users = [
-                    {"id": str(u.id), "name": u.name, "role": u.role.value if hasattr(u.role, 'value') else str(u.role)} 
-                    for u in users
-                ]
-            area.assigned_users = assigned_users
+                assigned_users = []
+                if area.assigned_user_ids:
+                    users = await User.find(In(User.id, area.assigned_user_ids)).to_list()
+                    assigned_users = [
+                        {"id": str(u.id), "name": u.name, "role": u.role.value if hasattr(u.role, 'value') else str(u.role)} 
+                        for u in users
+                    ]
+                area.assigned_users = assigned_users
+            except Exception:
+                area.shops_count = 0
+                area.created_by_name = "Data Error"
+                area.archived_by_name = "Data Error"
+                area.assigned_users = []
             return area
 
         await asyncio.gather(*(enrich_archived_area(area) for area in areas))
@@ -331,11 +420,20 @@ class AreaService:
         area.archived_by_id = None
         await area.save()
 
-        await Shop.find(Shop.area_id == area_id).update(
+        await Shop.find({"area_id": str(area_id)}).update(
             {"$set": {"is_archived": False, "archived_by_id": None}}
         )
         
-        area.shops_count = await Shop.find(Shop.area_id == area.id, Shop.is_deleted != True, Shop.is_archived != True).count()
+        area.shops_count = await Shop.find(
+            {
+                "$or": [
+                    {"area_id": area.id}, 
+                    {"area_id": str(area.id)}
+                ]
+            },
+            Shop.is_archived == False,
+            Shop.is_deleted == False
+        ).count()
         area.archived_by_name = None
         
         assigned_users = []
@@ -358,11 +456,11 @@ class AreaService:
         is_hard = policy and policy.value == "HARD"
 
         if is_hard:
-            await Shop.find(Shop.area_id == area_id).delete()
+            await Shop.find({"area_id": str(area_id)}).delete()
             await area.delete()
         else:
             area.is_deleted = True
             await area.save()
-            await Shop.find(Shop.area_id == area_id).update({"$set": {"is_deleted": True}})
+            await Shop.find({"area_id": str(area_id)}).update({"$set": {"is_deleted": True}})
 
         return {"detail": f"Area and associated shops {'permanently ' if is_hard else ''}deleted"}

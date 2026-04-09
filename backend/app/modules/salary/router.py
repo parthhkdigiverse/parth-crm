@@ -2,12 +2,14 @@
 from typing import List, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from beanie import PydanticObjectId
+from beanie.operators import In
 from datetime import datetime, timezone
 import json
 
 from app.core.dependencies import RoleChecker, get_current_user
 from app.modules.users.models import User, UserRole
 from app.modules.salary.models import LeaveRecord, SalarySlip, LeaveStatus
+from app.core.cache import get_or_set, invalidate
 from app.modules.salary.schemas import (
     LeaveApplicationCreate, LeaveRecordRead, LeaveApproval,
     SalarySlipGenerate, SalarySlipRead, SalaryPreviewResponse,
@@ -40,7 +42,13 @@ DEFAULT_FEATURE_ACCESS = {
 
 async def _get_feature_roles(feature_key: str) -> set[str]:
     fallback = set(DEFAULT_FEATURE_ACCESS.get(feature_key, ["ADMIN"]))
-    settings = await SystemSettings.find_one()
+
+    # Cache SystemSettings for 60 seconds to avoid repeated DB reads
+    async def _fetch_settings():
+        settings = await SystemSettings.find_one()
+        return settings
+    settings = await get_or_set("system_settings", _fetch_settings, ttl_seconds=60)
+
     if not settings or not settings.access_policy:
         return fallback
     
@@ -56,34 +64,55 @@ async def _require_feature_access(current_user: User, feature_key: str, detail: 
     if role_name not in allowed:
         raise HTTPException(status_code=403, detail=detail)
 
-async def _leave_to_dict(l: LeaveRecord, override_user: User = None) -> dict:
-    user = override_user
-    if not user:
-        from app.modules.users.models import User as UserModel
-        user = await UserModel.get(l.user_id)
-    
-    approver_name = None
-    if l.approved_by:
-        from app.modules.users.models import User as UserModel
-        approver = await UserModel.get(l.approved_by)
-        approver_name = (approver.name or approver.email) if approver else None
+async def _leaves_to_dicts(leaves: list[LeaveRecord], current_user_override: User = None) -> list[dict]:
+    """Bulk convert leave records to dicts with a SINGLE user fetch."""
+    if not leaves:
+        return []
 
-    return {
-        "id": l.id,
-        "user_id": l.user_id,
-        "start_date": l.start_date,
-        "end_date": l.end_date,
-        "leave_type": l.leave_type or "CASUAL",
-        "day_type": getattr(l, "day_type", "FULL") or "FULL",
-        "reason": l.reason,
-        "status": l.status,
-        "approved_by": l.approved_by,
-        "remarks": getattr(l, "remarks", None),
-        "user_name": (user.name or user.email) if user else None,
-        "approver_name": approver_name,
-        "created_at": l.created_at,
-        "updated_at": l.updated_at,
-    }
+    # Collect all unique user IDs needed
+    user_ids = set()
+    for l in leaves:
+        if l.user_id: user_ids.add(l.user_id)
+        if l.approved_by: user_ids.add(l.approved_by)
+
+    # If we already have the current user, seed the map to save one lookup
+    user_cache: dict = {}
+    if current_user_override and current_user_override.id in user_ids:
+        user_cache[str(current_user_override.id)] = current_user_override
+        user_ids.discard(current_user_override.id)
+
+    # Single bulk fetch for remaining users
+    if user_ids:
+        fetched = await User.find(In(User.id, list(user_ids))).to_list()
+        for u in fetched:
+            user_cache[str(u.id)] = u
+
+    results = []
+    for l in leaves:
+        u = user_cache.get(str(l.user_id))
+        approver = user_cache.get(str(l.approved_by)) if l.approved_by else None
+        results.append({
+            "id": l.id,
+            "user_id": l.user_id,
+            "start_date": l.start_date,
+            "end_date": l.end_date,
+            "leave_type": l.leave_type or "CASUAL",
+            "day_type": getattr(l, "day_type", "FULL") or "FULL",
+            "reason": l.reason,
+            "status": l.status,
+            "approved_by": l.approved_by,
+            "remarks": getattr(l, "remarks", None),
+            "user_name": (u.name or u.email) if u else None,
+            "approver_name": (approver.name or approver.email) if approver else None,
+            "created_at": l.created_at,
+            "updated_at": l.updated_at,
+        })
+    return results
+
+# Keep single-record helper for mutation endpoints (apply/approve/update)
+async def _leave_to_dict(l: LeaveRecord, override_user: User = None) -> dict:
+    result = await _leaves_to_dicts([l], override_user)
+    return result[0] if result else {}
 
 # ═══════════════════════════════════════════════════════
 # LEAVE ENDPOINTS
@@ -158,7 +187,7 @@ async def get_my_leaves(
         LeaveRecord.user_id == current_user.id,
         LeaveRecord.is_deleted != True
     ).sort("-start_date").to_list()
-    return [await _leave_to_dict(l, current_user) for l in leaves]
+    return await _leaves_to_dicts(leaves, current_user)
 
 @router.get("/leave/all", response_model=List[LeaveRecordRead])
 async def get_all_leaves(
@@ -167,7 +196,7 @@ async def get_all_leaves(
     await _require_feature_access(current_user, "leave_manage_roles", "You do not have permission to view all leave records")
 
     leaves = await LeaveRecord.find(LeaveRecord.is_deleted != True).sort("-start_date").to_list()
-    return [await _leave_to_dict(l) for l in leaves]
+    return await _leaves_to_dicts(leaves)
 
 @router.patch("/leave/{leave_id}", response_model=LeaveRecordRead)
 async def update_my_leave(

@@ -278,12 +278,13 @@ function renderQuickLinks(u) {
             links.push({ label: 'New Project', desc: 'Setup a new client project', icon: 'bi-briefcase', link: 'projects.html?add=true', color: '#6366f1' });
         }
         links.push({ label: 'My Attendance', desc: 'View punch logs and leave status', icon: 'bi-calendar-check', link: 'leaves.html', color: '#f59e0b' });
+        links.push({ label: 'My ID Card', desc: 'Download printable identification', icon: 'bi-person-badge', onclick: 'downloadMyIDCard()', color: '#6366f1' });
     }
 
     if (links.length > 0) {
         container.style.display = 'block';
         list.innerHTML = links.map(l => `
-            <a href="${l.link}" class="quick-action-item">
+            <a ${l.link ? `href="${l.link}"` : `onclick="${l.onclick}" style="cursor:pointer;"`} class="quick-action-item">
                 <div class="qai-icon" style="background: ${l.color}15; color: ${l.color};">
                     <i class="bi ${l.icon}"></i>
                 </div>
@@ -294,6 +295,22 @@ function renderQuickLinks(u) {
                 <i class="bi bi-chevron-right qai-arrow"></i>
             </a>
         `).join('');
+    }
+}
+
+/**
+ * ── Download ID Card ────────────────────────────────────────────────────────
+ */
+window.downloadMyIDCard = async function() {
+    try {
+        if (!window.ApiClient) throw new Error('ApiClient not initialized');
+        const html = await window.ApiClient.getMyIDCardHtml();
+        const blob = new Blob([html], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const win = window.open(url, '_blank');
+        if (!win) showToast('Please allow popups to view ID Card', 'warning');
+    } catch (err) {
+        showToast('Failed to load ID card', 'error');
     }
 }
 

@@ -11,47 +11,57 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;700&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/bootstrap.min.css">
-    <link rel="stylesheet" href="/static/css/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="/static/css/theme.css?v=20260403">
-    <link rel="stylesheet" href="/static/css/components.css?v=20260403">
+    <link rel="stylesheet" href="/frontend/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/frontend/css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/frontend/css/theme.css?v=20260406">
+    <link rel="stylesheet" href="/frontend/css/components.css?v=20260406">
     <style>
         /* ── Professional Table Styling ── */
         .grid-card {
             border: 1px solid var(--border);
             border-radius: 12px;
             overflow: hidden;
-            background: #fff;
+            background: var(--surface);
             transition: all 0.3s ease;
         }
 
-        .table > thead {
-            background: #f8fafc;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .table > thead th {
-            font-size: 0.75rem;
+        .table>thead th {
+            background: var(--bg-app);
+            color: var(--text-muted);
+            font-size: 0.72rem;
             font-weight: 700;
-            color: #64748b;
+            text-transform: uppercase;
             letter-spacing: 0.05em;
-            padding: 1rem 0.75rem;
-            border: none;
+            padding: 13px 14px;
+            border-bottom: 1.5px solid var(--border) !important;
+            white-space: nowrap;
+            text-align: center;
         }
 
-        .table > tbody td {
-            padding: 1rem 0.75rem;
-            border-bottom: 1px solid #f1f5f9;
+        .table>tbody td {
+            padding: 13px 14px;
+            border-bottom: 1px solid var(--border-subtle);
+            font-size: 0.85rem;
             vertical-align: middle;
-            transition: background 0.2s ease;
+            text-align: center;
         }
 
-        .table-hover > tbody > tr:hover {
-            background-color: #f8fafc !important;
+        .table-hover>tbody>tr:hover td {
+            background: rgba(37, 99, 235, 0.04) !important;
         }
 
-        .table-hover > tbody > tr:hover td {
-            color: var(--primary);
+        .employee-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--primary), #6366f1);
+            color: #fff;
+            font-weight: 800;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
         }
 
         /* ── Modern Badges ── */
@@ -66,12 +76,41 @@
             align-items: center;
         }
 
-        .role-ADMIN { background: #eef2ff; color: #4338ca; border: 1px solid #e0e7ff; }
-        .role-SALES { background: #ecfdf5; color: #047857; border: 1px solid #d1fae5; }
-        .role-TELESALES { background: #fdf2f8; color: #be185d; border: 1px solid #fce7f3; }
-        .role-PROJECT_MANAGER { background: #fff7ed; color: #c2410c; border: 1px solid #ffedd5; }
-        .role-PROJECT_MANAGER_AND_SALES { background: #f5f3ff; color: #6d28d9; border: 1px solid #ede9fe; }
-        .role-CLIENT { background: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
+        .role-ADMIN {
+            background: #eef2ff;
+            color: #4338ca;
+            border: 1px solid #e0e7ff;
+        }
+
+        .role-SALES {
+            background: #ecfdf5;
+            color: #047857;
+            border: 1px solid #d1fae5;
+        }
+
+        .role-TELESALES {
+            background: #fdf2f8;
+            color: #be185d;
+            border: 1px solid #fce7f3;
+        }
+
+        .role-PROJECT_MANAGER {
+            background: #fff7ed;
+            color: #c2410c;
+            border: 1px solid #ffedd5;
+        }
+
+        .role-PROJECT_MANAGER_AND_SALES {
+            background: #f5f3ff;
+            color: #6d28d9;
+            border: 1px solid #ede9fe;
+        }
+
+        .role-CLIENT {
+            background: #f8fafc;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+        }
 
         .status-badge {
             font-size: 0.7rem;
@@ -89,6 +128,7 @@
             color: #10b981;
             border: 1px solid #d1fae5;
         }
+
         .status-inactive {
             background: #fef2f2;
             color: #ef4444;
@@ -96,14 +136,47 @@
         }
 
         /* Attendance Statuses */
-        .att-status-PRESENT { background: #ecfdf5; color: #10b981; border: 1px solid #d1fae5; }
-        .att-status-HALF { background: #fffbeb; color: #f59e0b; border: 1px solid #fef3c7; }
-        .att-status-ABSENT { background: #fef2f2; color: #ef4444; border: 1px solid #fee2e2; }
-        .att-status-OFF { background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; }
+        .att-status-PRESENT {
+            background: #ecfdf5;
+            color: #10b981;
+            border: 1px solid #d1fae5;
+        }
 
-        .leave-status-PENDING { background: #fff7ed; color: #ea580c; border: 1px solid #ffedd5; }
-        .leave-status-APPROVED { background: #f0fdf4; color: #16a34a; border: 1px solid #dcfce7; }
-        .leave-status-REJECTED { background: #fff1f2; color: #e11d48; border: 1px solid #ffe4e6; }
+        .att-status-HALF {
+            background: #fffbeb;
+            color: #f59e0b;
+            border: 1px solid #fef3c7;
+        }
+
+        .att-status-ABSENT {
+            background: #fef2f2;
+            color: #ef4444;
+            border: 1px solid #fee2e2;
+        }
+
+        .att-status-OFF {
+            background: #f8fafc;
+            color: #64748b;
+            border: 1px solid #e2e8f0;
+        }
+
+        .leave-status-PENDING {
+            background: #fff7ed;
+            color: #ea580c;
+            border: 1px solid #ffedd5;
+        }
+
+        .leave-status-APPROVED {
+            background: #f0fdf4;
+            color: #16a34a;
+            border: 1px solid #dcfce7;
+        }
+
+        .leave-status-REJECTED {
+            background: #fff1f2;
+            color: #e11d48;
+            border: 1px solid #ffe4e6;
+        }
 
         /* Action Buttons */
         .btn-action {
@@ -115,39 +188,35 @@
             justify-content: center;
             border-radius: 8px;
             transition: all 0.2s ease;
-            background: #fff;
-            border: 1px solid #e2e8f0;
-            color: #64748b;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
         }
+
         .btn-action:hover {
-            background: #f8fafc;
+            background: var(--primary-light);
             color: var(--primary);
             border-color: var(--primary);
             transform: translateY(-1px);
         }
+
         .btn-action-danger:hover {
             color: #ef4444;
             border-color: #ef4444;
         }
 
-        .employee-avatar {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            background: var(--primary-light);
-            color: var(--primary);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 0.9rem;
-            border: 1px solid var(--border);
-        }
+
 
         @keyframes rotate-ring-emp {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
+
         .emp-ring-active {
             opacity: 1 !important;
             animation: rotate-ring-emp 3s linear infinite;
@@ -158,7 +227,7 @@
             background: linear-gradient(135deg, #0d1f5c 0%, #102272 40%, #0f1e6a 70%, #0a1550 100%);
             border-radius: 16px;
             border: 1px solid rgba(99, 102, 241, 0.25);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255,255,255,0.04) inset;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
             padding: 22px 24px;
             display: flex;
             align-items: center;
@@ -169,63 +238,347 @@
             position: relative;
             overflow: hidden;
         }
+
         .pro-att-widget::before {
             content: '';
             position: absolute;
-            top: -40px; left: -40px;
-            width: 180px; height: 180px;
-            background: radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%);
+            top: -40px;
+            left: -40px;
+            width: 180px;
+            height: 180px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
             pointer-events: none;
         }
+
         .pro-att-widget::after {
             content: '';
             position: absolute;
-            bottom: -40px; right: -40px;
-            width: 160px; height: 160px;
-            background: radial-gradient(circle, rgba(37,99,235,0.12) 0%, transparent 70%);
+            bottom: -40px;
+            right: -40px;
+            width: 160px;
+            height: 160px;
+            background: radial-gradient(circle, rgba(37, 99, 235, 0.12) 0%, transparent 70%);
             pointer-events: none;
         }
-        .pro-att-left { flex: 1; padding-right: 24px; min-width: 0; }
-        .pro-att-date { font-size: 10.5px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: rgba(255,255,255,0.32); margin-bottom: 6px; }
-        .pro-att-greeting-line { font-size: 13px; font-weight: 400; color: rgba(255,255,255,0.70); line-height: 1; margin-bottom: 2px; }
-        .pro-att-name { font-size: 22px; font-weight: 800; line-height: 1.15; margin-bottom: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .pro-att-name.punched-in { background: linear-gradient(90deg, #c7d7ff, #a5b8ff, #e0e7ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-        .pro-att-name.punched-out { color: rgba(255,255,255,0.42); -webkit-text-fill-color: rgba(255,255,255,0.42); }
-        .pro-att-live-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
-        .pro-att-live-badge.live { background: rgba(74, 222, 128, 0.08); border: 1px solid rgba(74, 222, 128, 0.22); color: #4ade80; }
-        .pro-att-live-badge.offline { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.10); color: rgba(255,255,255,0.35); }
-        .pro-att-pulse-dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 0 0 rgba(74,222,128,0.5); animation: attPulse 2s ease-in-out infinite; flex-shrink: 0; }
-        @keyframes attPulse { 0% { box-shadow: 0 0 0 0 rgba(74,222,128,0.5); } 60% { box-shadow: 0 0 0 5px rgba(74,222,128,0); } 100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); } }
-        .pro-att-sep { width: 1px; align-self: stretch; background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.10) 20%, rgba(255,255,255,0.10) 80%, transparent); flex-shrink: 0; margin: 0 4px; }
-        .pro-att-right { padding-left: 24px; display: flex; flex-direction: column; gap: 12px; min-width: 260px; max-width: 300px; }
-        .pro-att-user-row { display: flex; align-items: center; gap: 10px; }
-        .pro-att-avatar-wrap { position: relative; flex-shrink: 0; }
-        .pro-att-avatar { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, #3b5bdb, #6366f1); border: 2px solid rgba(255,255,255,0.18); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; color: white; overflow: hidden; }
-        .pro-att-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
-        .pro-att-status-dot { position: absolute; bottom: 1px; right: 1px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid #102272; }
-        .pro-att-status-dot.online { background: #4ade80; }
-        .pro-att-status-dot.offline { background: rgba(255,255,255,0.25); }
-        .pro-att-user-info { flex: 1; min-width: 0; }
-        .pro-att-user-name { font-size: 13.5px; font-weight: 700; color: white; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .pro-att-punch-badge { display: inline-flex; align-items: center; gap: 4px; margin-top: 3px; padding: 2px 7px; border-radius: 4px; font-size: 9px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; }
-        .pro-att-punch-badge.in { background: rgba(74,222,128,0.10); border: 1px solid rgba(74,222,128,0.20); color: #4ade80; }
-        .pro-att-punch-badge.out { background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.10); color: rgba(255,255,255,0.40); }
-        .pro-att-bottom-row { display: flex; align-items: stretch; gap: 8px; }
-        .pro-att-info-cells { display: flex; flex: 1; gap: 0; background: rgba(0,0,0,0.25); border-radius: 10px; border: 1px solid rgba(255,255,255,0.06); overflow: hidden; }
-        .pro-att-info-cell { flex: 1; padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; }
-        .pro-att-info-cell + .pro-att-info-cell { border-left: 1px solid rgba(255,255,255,0.07); }
-        .pro-att-info-label { font-size: 8.5px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: rgba(255,255,255,0.30); }
-        .pro-att-info-val { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.80); letter-spacing: 0.01em; white-space: nowrap; }
-        .pro-att-timer-val { font-family: 'JetBrains Mono', monospace; font-weight: 400; font-size: 17px; color: #fff; letter-spacing: 0; display: flex; align-items: center; }
-        .pro-att-timer-val .att-sep { opacity: 1; animation: timerColonBlink 1s step-start infinite; }
-        @keyframes timerColonBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0.18; } }
-        .pro-att-btn { width: 72px; flex-shrink: 0; border: none; border-radius: 10px; font-family: 'Inter', sans-serif; font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: white; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease; display: flex; align-items: center; justify-content: center; line-height: 1.25; text-align: center; padding: 0; }
-        .pro-att-btn.punch-in { background: linear-gradient(150deg, #15803d, #22c55e); box-shadow: 0 4px 14px rgba(34,197,94,0.35); }
-        .pro-att-btn.punch-out { background: linear-gradient(150deg, #b91c1c, #ef4444); box-shadow: 0 4px 14px rgba(239,68,68,0.35); }
-        .pro-att-btn:hover { transform: translateY(-1px); }
-        .pro-att-btn.punch-in:hover { box-shadow: 0 6px 18px rgba(34,197,94,0.50); }
-        .pro-att-btn.punch-out:hover { box-shadow: 0 6px 18px rgba(239,68,68,0.50); }
-        .pro-att-btn:active { transform: scale(0.97); }
+
+        .pro-att-left {
+            flex: 1;
+            padding-right: 24px;
+            min-width: 0;
+        }
+
+        .pro-att-date {
+            font-size: 10.5px;
+            font-weight: 600;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.32);
+            margin-bottom: 6px;
+        }
+
+        .pro-att-greeting-line {
+            font-size: 13px;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.70);
+            line-height: 1;
+            margin-bottom: 2px;
+        }
+
+        .pro-att-name {
+            font-size: 22px;
+            font-weight: 800;
+            line-height: 1.15;
+            margin-bottom: 10px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .pro-att-name.punched-in {
+            background: linear-gradient(90deg, #c7d7ff, #a5b8ff, #e0e7ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .pro-att-name.punched-out {
+            color: rgba(255, 255, 255, 0.42);
+            -webkit-text-fill-color: rgba(255, 255, 255, 0.42);
+        }
+
+        .pro-att-live-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .pro-att-live-badge.live {
+            background: rgba(74, 222, 128, 0.08);
+            border: 1px solid rgba(74, 222, 128, 0.22);
+            color: #4ade80;
+        }
+
+        .pro-att-live-badge.offline {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            color: rgba(255, 255, 255, 0.35);
+        }
+
+        .pro-att-pulse-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #4ade80;
+            box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.5);
+            animation: attPulse 2s ease-in-out infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes attPulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.5);
+            }
+
+            60% {
+                box-shadow: 0 0 0 5px rgba(74, 222, 128, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(74, 222, 128, 0);
+            }
+        }
+
+        .pro-att-sep {
+            width: 1px;
+            align-self: stretch;
+            background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.10) 20%, rgba(255, 255, 255, 0.10) 80%, transparent);
+            flex-shrink: 0;
+            margin: 0 4px;
+        }
+
+        .pro-att-right {
+            padding-left: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-width: 260px;
+            max-width: 300px;
+        }
+
+        .pro-att-user-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .pro-att-avatar-wrap {
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .pro-att-avatar {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b5bdb, #6366f1);
+            border: 2px solid rgba(255, 255, 255, 0.18);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 800;
+            color: white;
+            overflow: hidden;
+        }
+
+        .pro-att-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        .pro-att-status-dot {
+            position: absolute;
+            bottom: 1px;
+            right: 1px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 2px solid #102272;
+        }
+
+        .pro-att-status-dot.online {
+            background: #4ade80;
+        }
+
+        .pro-att-status-dot.offline {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .pro-att-user-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .pro-att-user-name {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: white;
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .pro-att-punch-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 3px;
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 0.07em;
+            text-transform: uppercase;
+        }
+
+        .pro-att-punch-badge.in {
+            background: rgba(74, 222, 128, 0.10);
+            border: 1px solid rgba(74, 222, 128, 0.20);
+            color: #4ade80;
+        }
+
+        .pro-att-punch-badge.out {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            color: rgba(255, 255, 255, 0.40);
+        }
+
+        .pro-att-bottom-row {
+            display: flex;
+            align-items: stretch;
+            gap: 8px;
+        }
+
+        .pro-att-info-cells {
+            display: flex;
+            flex: 1;
+            gap: 0;
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            overflow: hidden;
+        }
+
+        .pro-att-info-cell {
+            flex: 1;
+            padding: 8px 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .pro-att-info-cell+.pro-att-info-cell {
+            border-left: 1px solid rgba(255, 255, 255, 0.07);
+        }
+
+        .pro-att-info-label {
+            font-size: 8.5px;
+            font-weight: 700;
+            letter-spacing: 0.09em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.30);
+        }
+
+        .pro-att-info-val {
+            font-size: 13px;
+            font-weight: 600;
+            color: rgba(255, 255, 255, 0.80);
+            letter-spacing: 0.01em;
+            white-space: nowrap;
+        }
+
+        .pro-att-timer-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 400;
+            font-size: 17px;
+            color: #fff;
+            letter-spacing: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .pro-att-timer-val .att-sep {
+            opacity: 1;
+            animation: timerColonBlink 1s step-start infinite;
+        }
+
+        @keyframes timerColonBlink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.18;
+            }
+        }
+
+        .pro-att-btn {
+            width: 72px;
+            flex-shrink: 0;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Inter', sans-serif;
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: white;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.25;
+            text-align: center;
+            padding: 0;
+        }
+
+        .pro-att-btn.punch-in {
+            background: linear-gradient(150deg, #15803d, #22c55e);
+            box-shadow: 0 4px 14px rgba(34, 197, 94, 0.35);
+        }
+
+        .pro-att-btn.punch-out {
+            background: linear-gradient(150deg, #b91c1c, #ef4444);
+            box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
+        }
+
+        .pro-att-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        .pro-att-btn.punch-in:hover {
+            box-shadow: 0 6px 18px rgba(34, 197, 94, 0.50);
+        }
+
+        .pro-att-btn.punch-out:hover {
+            box-shadow: 0 6px 18px rgba(239, 68, 68, 0.50);
+        }
+
+        .pro-att-btn:active {
+            transform: scale(0.97);
+        }
 
         @media (max-width: 768px) {
             .pro-att-widget {
@@ -234,33 +587,41 @@
                 padding: 16px;
                 gap: 16px;
             }
+
             .pro-att-left {
                 padding-right: 0;
                 text-align: center;
             }
+
             .pro-att-sep {
                 height: 1px;
                 width: 100%;
                 margin: 4px 0;
             }
+
             .pro-att-right {
                 padding-left: 0;
                 min-width: 0;
                 max-width: 100%;
             }
+
             .pro-att-bottom-row {
                 flex-direction: column;
             }
+
             .pro-att-btn {
                 width: 100%;
                 height: 44px;
             }
-            
-            /* Responsive Table Columns */
-            .d-mobile-none { display: none !important; }
-        }
 
-</style>
+            /* Responsive Table Columns */
+            .d-mobile-none {
+                display: none !important;
+            }
+
+
+        }
+    </style>
 </head>
 
 <body>
@@ -269,7 +630,7 @@
         <div class="flex-grow-1 main-wrapper">
             <div class="page-content-standard">
                 <!-- Header Section -->
-                <div class="page-header-glass d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+                <div class="page-header-glass d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <div class="min-w-0">
                         <h2 class="page-section-title fw-bold mb-1">Employees Directory</h2>
                         <p class="text-muted mb-0 small">Directory, department management and attendance tracking.</p>
@@ -281,30 +642,39 @@
 
                 <!-- Employees Table -->
                 <div class="card shadow-sm grid-card">
-                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
-                        <div class="d-flex align-items-center gap-3">
-                            <h6 class="fw-bold mb-0">Employee Management</h6>
-                            <span class="badge bg-primary-subtle text-primary rounded-pill px-3 py-1 small" id="employee-count-badge">0 Employees</span>
+                    <div class="table-section-header">
+                        <div class="table-section-title">
+                            <i class="bi bi-people"></i>
+                            Employee Registry
+                            <span class="badge"
+                                style="background:var(--success-light);color:var(--success-text);font-size:0.65rem;border-radius:20px;padding:3px 8px;margin-left:8px;font-weight:800;">
+                                <i class="bi bi-circle-fill" style="font-size:0.4rem;margin-right:4px;"></i>LIVE
+                            </span>
                         </div>
-                        <button class="btn btn-sm btn-light border" id="employees-toggle-btn" title="Toggle Visibility">
-                            <i class="bi bi-chevron-up"></i>
-                        </button>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge rounded-pill px-3 py-1 small"
+                                style="background:var(--primary-light);color:var(--primary);font-weight:700;letter-spacing:0.02em;"
+                                id="employee-count-badge">0 Employees</span>
+                            <button class="btn btn-sm" id="employees-toggle-btn" title="Toggle Visibility"
+                                style="background:var(--bg-app);border:1px solid var(--border);color:var(--text-muted);border-radius:8px;">
+                                <i class="bi bi-chevron-up"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="card-body p-0" id="employees-table-container">
                         <div class="table-responsive">
                             <table class="table table-hover table-professional mb-0 align-middle">
                                 <thead>
                                     <tr>
-                                        <th class="ps-3" style="width: 40px;">
-                                            <input type="checkbox" class="form-check-input" id="emp-select-all"
-                                                onclick="toggleAllEmployees(this)">
-                                        </th>
-                                        <th class="py-2 px-3 text-uppercase small fw-bold text-muted" style="min-width: 180px;">Employee</th>
-                                        <th class="py-2 px-3 text-uppercase small fw-bold text-muted d-mobile-none" style="min-width: 140px;">Dept & Code</th>
-                                        <th class="py-2 px-3 text-uppercase small fw-bold text-muted d-mobile-none" style="min-width: 100px;">Role</th>
-                                        <th class="py-2 px-3 text-uppercase small fw-bold text-muted d-mobile-none" style="min-width: 130px;">Contact</th>
-                                        <th class="py-2 px-3 text-uppercase small fw-bold text-muted" style="min-width: 80px;">Status</th>
-                                        <th class="py-2 px-3 text-end text-uppercase small fw-bold text-muted" style="min-width: 100px;">Actions</th>
+                                        <th class="ps-3" style="width:40px;"><input type="checkbox"
+                                                class="form-check-input" id="emp-select-all"
+                                                onclick="toggleAllEmployees(this)"></th>
+                                        <th style="min-width:200px;">Employee</th>
+                                        <th class="d-mobile-none" style="min-width:130px;">Department</th>
+                                        <th class="d-mobile-none" style="min-width:110px;">Role</th>
+                                        <th class="d-mobile-none" style="min-width:130px;">Contact</th>
+                                        <th style="min-width:90px;">Status</th>
+                                        <th class="text-end pe-3" style="min-width:110px;">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="employees-tbody">
@@ -316,42 +686,49 @@
                                 </tbody>
                             </table>
                         </div>
+                        <div id="employees-pagination" class="px-3 pb-2"></div>
                     </div>
                 </div>
 
                 <!-- Attendance Filter Wrapper (Admin) -->
-                <div id="attendance-filter-wrapper" class="mt-5 mb-3" style="display:none;"></div>
+                <div id="attendance-filter-wrapper" style="display:none;"></div>
 
                 <div class="card shadow-sm grid-card mt-2" id="attendance-admin-card" style="display:none;">
-                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
-                        <div>
-                            <h6 class="fw-bold mb-0">Workforce Attendance Management</h6>
-                            <div class="text-muted small">Daily punch logs and total hours</div>
+                    <div class="table-section-header">
+                        <div class="table-section-title">
+                            <i class="bi bi-clock-history"></i>
+                            Attendance Logs
                         </div>
-                        <button class="btn btn-sm btn-light border" id="attendance-toggle-btn" title="Toggle Visibility">
-                            <i class="bi bi-chevron-up"></i>
-                        </button>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge rounded-pill px-2 py-1"
+                                style="background:rgba(37,99,235,0.08);color:var(--primary);font-size:0.7rem;font-weight:700;"
+                                id="attendance-count-badge">0 Records</span>
+                            <span class="badge"
+                                style="background:var(--primary-light);color:var(--primary);font-weight:700;"
+                                id="attendance-total-hours">0.00 HRS</span>
+                            <button class="btn btn-sm" id="attendance-toggle-btn" title="Toggle"
+                                style="background:var(--bg-app);border:1px solid var(--border);color:var(--text-muted);border-radius:8px;">
+                                <i class="bi bi-chevron-up"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="card-body p-0" id="attendance-admin-body">
-                        
-                        <div class="px-3 pt-3">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <div class="text-muted small" id="attendance-count">0 record(s)</div>
-                                <div class="fw-bold text-primary" id="attendance-total-hours">Total: 0.00 hrs</div>
-                            </div>
+
+                        <div class="px-3">
+                            <!-- Helper margin for spacing -->
                         </div>
                         <div class="table-responsive">
                             <table class="table table-hover table-professional table-sm align-middle mb-0">
                                 <thead>
                                     <tr>
-                                        <th class="ps-3" style="white-space:nowrap;">Date</th>
-                                        <th style="white-space:nowrap;">Employee</th>
-                                        <th style="white-space:nowrap;" class="d-mobile-none">In</th>
-                                        <th style="white-space:nowrap;" class="d-mobile-none">Out</th>
-                                        <th style="white-space:nowrap;">Hours</th>
-                                        <th style="white-space:nowrap;">Status</th>
-                                        <th style="white-space:nowrap;" class="d-mobile-none">Leave</th>
-                                        <th style="white-space:nowrap; text-align:right;" class="pe-3">Action</th>
+                                        <th class="ps-3" style="text-align:left;">DATE</th>
+                                        <th>EMPLOYEE</th>
+                                        <th class="d-mobile-none">PUNCH IN</th>
+                                        <th class="d-mobile-none">PUNCH OUT</th>
+                                        <th>HOURS</th>
+                                        <th>STATUS</th>
+                                        <th class="d-mobile-none">LEAVE</th>
+                                        <th>DETAILS</th>
                                     </tr>
                                 </thead>
                                 <tbody id="attendance-admin-tbody">
@@ -361,143 +738,201 @@
                                 </tbody>
                             </table>
                         </div>
+                        <div id="attendance-admin-pagination" class="px-3 pb-2"></div>
                     </div>
                 </div>
 
 
-                    <!-- Attendance History Card -->
-                    <div id="self-attendance-filter-wrapper" class="mb-3" style="display:none;"></div>
+                <!-- Attendance History Card -->
+                <div id="self-attendance-filter-wrapper" style="display:none;"></div>
 
-                    <div class="card shadow-sm grid-card mt-4" id="self-attendance-card" style="display:none;">
-                        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
-                            <div>
-                                <h6 class="fw-bold mb-0">My Attendance Logs</h6>
-                                <div class="text-muted small">Your punch timing and attendance records</div>
-                            </div>
+                <div class="card shadow-sm grid-card mt-4" id="self-attendance-card" style="display:none;">
+                    <div class="table-section-header">
+                        <div class="table-section-title">
+                            <i class="bi bi-person-check"></i>
+                            My Attendance
                         </div>
-                        <div class="card-body p-0" id="employee-self-body">
-
-                            <div class="px-3 pt-3">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <div class="text-muted small" id="self-attendance-count">0 record(s)</div>
-                                    <div class="fw-bold text-primary" id="self-attendance-total-hours">Total: 0.00 hrs</div>
-                                </div>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-hover table-professional table-sm align-middle mb-0">
-                                    <thead>
-                                        <tr>
-                                            <th class="ps-3" style="white-space:nowrap;">Date</th>
-                                            <th style="white-space:nowrap;" class="d-mobile-none">In</th>
-                                            <th style="white-space:nowrap;" class="d-mobile-none">Out</th>
-                                            <th style="white-space:nowrap;">Hours</th>
-                                            <th style="white-space:nowrap;">Status</th>
-                                            <th style="white-space:nowrap;" class="d-mobile-none">Leave</th>
-                                            <th style="white-space:nowrap; text-align:right;" class="pe-3">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="self-attendance-tbody">
-                                        <tr>
-                                            <td colspan="7" class="text-center py-4 text-muted">No data loaded.</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge rounded-pill px-2 py-1"
+                                style="background:rgba(37,99,235,0.08);color:var(--primary);font-size:0.7rem;font-weight:700;"
+                                id="self-attendance-count-badge">0 Records</span>
+                            <span class="badge"
+                                style="background:var(--primary-light);color:var(--primary);font-weight:700;"
+                                id="self-attendance-total-hours">0.00 HRS</span>
                         </div>
                     </div>
-                </div>
+                    <div class="card-body p-0" id="employee-self-body">
 
+                        <div class="px-3">
+                            <!-- Helper margin for spacing -->
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover table-professional table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th class="ps-3" style="text-align:left;">DATE</th>
+                                        <th class="d-mobile-none">PUNCH IN</th>
+                                        <th class="d-mobile-none">PUNCH OUT</th>
+                                        <th>HOURS</th>
+                                        <th>STATUS</th>
+                                        <th class="d-mobile-none">LEAVE</th>
+                                        <th>DETAILS</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="self-attendance-tbody">
+                                    <tr>
+                                        <td colspan="7" class="text-center py-4 text-muted">No data loaded.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div id="self-attendance-pagination" class="px-3 pb-2"></div>
+                    </div>
+                </div>
             </div>
+
         </div>
+    </div>
     </div>
 
     <!-- ─── Edit Employee Modal ─────────────────────────────────── -->
     <div class="srm-overlay" id="editEmployeeModal">
-        <div class="srm-box" style="max-width: 650px;">
-            <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
-                <h5 class="fw-bold mb-0"><i class="bi bi-person-fill-gear text-primary me-2"></i>Edit Employee Profile
-                </h5>
-                <button class="btn-close" onclick="closeEditModal()"></button>
+        <div class="srm-box" style="max-width:680px;padding:0;overflow:hidden;border-radius:20px;">
+
+            <!-- Modal Header -->
+            <div style="background:linear-gradient(135deg,#1e3a8a,#4f46e5);padding:24px 28px;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-3">
+                        <div
+                            style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;">
+                            <i class="bi bi-person-fill-gear text-white fs-5"></i>
+                        </div>
+                        <div>
+                            <div style="font-size:1.05rem;font-weight:800;color:#fff;letter-spacing:-0.01em;">Edit
+                                Employee Profile</div>
+                            <div style="font-size:0.75rem;color:rgba(255,255,255,0.55);margin-top:1px;">Update employee
+                                details and permissions</div>
+                        </div>
+                    </div>
+                    <button class="btn-close btn-close-white" onclick="closeEditModal()"></button>
+                </div>
             </div>
-            <div class="row g-3">
+
+            <!-- Modal Body -->
+            <div style="padding:24px 28px;">
                 <input type="hidden" id="edit-id">
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold small">Full Name</label>
-                    <input type="text" id="edit-name" class="form-control" placeholder="e.g. John Doe">
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold small">Email (Cannot edit)</label>
-                    <input type="email" id="edit-email" class="form-control" disabled>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold small">Phone</label>
-                    <input type="text" id="edit-phone" class="form-control" placeholder="e.g. +91 9876543210">
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold small">Department</label>
-                    <input type="text" id="edit-department" class="form-control" placeholder="e.g. Sales">
-                </div>
-
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold small">Role</label>
-                    <select id="edit-role" class="form-select">
-                        <option value="ADMIN">Admin</option>
-                        <option value="SALES">Sales</option>
-                        <option value="TELESALES">Telesales</option>
-                        <option value="PROJECT_MANAGER">Project Manager</option>
-                        <option value="PROJECT_MANAGER_AND_SALES">PM & Sales</option>
-                        <option value="CLIENT">Client</option>
-                    </select>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold small">Employee Code</label>
-                    <input type="text" id="edit-emp-code" class="form-control" placeholder="e.g. EMP-1234">
-                </div>
-
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold small">Base Salary (₹)</label>
-                    <input type="number" id="edit-salary" class="form-control" step="0.01" min="0">
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold small">Target</label>
-                    <input type="number" id="edit-target" class="form-control" step="1" min="0">
-                </div>
-
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold small">Status</label>
-                    <select id="edit-status" class="form-select">
-                        <option value="true">Active</option>
-                        <option value="false">Inactive</option>
-                    </select>
-                </div>
-                <div class="col-md-6">
-                    <label class="form-label fw-semibold small">New Password (Leave blank to keep)</label>
-                    <div class="position-relative">
-                        <input type="password" id="edit-password" class="form-control"
-                            placeholder="Minimum 8 characters" style="padding-right: 40px;">
-                        <button type="button" class="password-toggle"
-                            onclick="togglePasswordVisibility('edit-password', 'edit-pwd-icon')">
-                            <i class="bi bi-eye" id="edit-pwd-icon"></i>
-                        </button>
+                <div class="col-12" id="editEmpResetBanner" style="display:none; margin-bottom:1rem;">
+                    <div class="alert alert-warning d-flex align-items-center gap-3 w-100 shadow-sm mb-0" style="border:1px solid #f59e0b; background:#fef3c7; color:#92400e; border-radius:12px;">
+                        <i class="bi bi-shield-exclamation fs-4"></i>
+                        <div>
+                            <h6 class="mb-0 fw-bold">Password Reset Requested</h6>
+                            <small>This user requested a password reset on <span id="editEmpResetTime"></span>. Changing their password now will automatically resolve this request.</small>
+                        </div>
                     </div>
                 </div>
-            </div>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold small text-muted text-uppercase"
+                            style="font-size:0.68rem;letter-spacing:0.06em;"><i class="bi bi-person me-1"></i>Full
+                            Name</label>
+                        <input type="text" id="edit-name" class="form-control" placeholder="e.g. Arjun Mehta">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold small text-muted text-uppercase"
+                            style="font-size:0.68rem;letter-spacing:0.06em;"><i class="bi bi-envelope me-1"></i>Email
+                            <span class="text-muted fw-normal">(read-only)</span></label>
+                        <input type="email" id="edit-email" class="form-control" disabled
+                            style="background:var(--bg-app);">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold small text-muted text-uppercase"
+                            style="font-size:0.68rem;letter-spacing:0.06em;"><i
+                                class="bi bi-telephone me-1"></i>Phone</label>
+                        <input type="text" id="edit-phone" class="form-control" placeholder="+91 98765 43210">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold small text-muted text-uppercase"
+                            style="font-size:0.68rem;letter-spacing:0.06em;"><i
+                                class="bi bi-building me-1"></i>Department</label>
+                        <input type="text" id="edit-department" class="form-control" placeholder="e.g. Sales">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold small text-muted text-uppercase"
+                            style="font-size:0.68rem;letter-spacing:0.06em;"><i
+                                class="bi bi-shield-half me-1"></i>Role</label>
+                        <select id="edit-role" class="form-select">
+                            <option value="ADMIN">Admin</option>
+                            <option value="SALES">Sales</option>
+                            <option value="TELESALES">Telesales</option>
+                            <option value="PROJECT_MANAGER">Project Manager</option>
+                            <option value="PROJECT_MANAGER_AND_SALES">PM & Sales</option>
+                            <option value="CLIENT">Client</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold small text-muted text-uppercase"
+                            style="font-size:0.68rem;letter-spacing:0.06em;"><i class="bi bi-hash me-1"></i>Employee
+                            Code</label>
+                        <input type="text" id="edit-emp-code" class="form-control" placeholder="e.g. EMP-1234">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold small text-muted text-uppercase"
+                            style="font-size:0.68rem;letter-spacing:0.06em;"><i
+                                class="bi bi-currency-rupee me-1"></i>Base Salary (₹)</label>
+                        <input type="number" id="edit-salary" class="form-control" step="0.01" min="0"
+                            placeholder="0.00">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold small text-muted text-uppercase"
+                            style="font-size:0.68rem;letter-spacing:0.06em;"><i class="bi bi-bullseye me-1"></i>Target
+                            (Units)</label>
+                        <input type="number" id="edit-target" class="form-control" step="1" min="0" placeholder="0">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold small text-muted text-uppercase"
+                            style="font-size:0.68rem;letter-spacing:0.06em;"><i class="bi bi-toggle-on me-1"></i>Account
+                            Status</label>
+                        <select id="edit-status" class="form-select">
+                            <option value="true">✅ Active</option>
+                            <option value="false">❌ Inactive</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-semibold small text-muted text-uppercase"
+                            style="font-size:0.68rem;letter-spacing:0.06em;"><i class="bi bi-key me-1"></i>New Password
+                            <span class="text-muted fw-normal">(leave blank to keep)</span></label>
+                        <div class="position-relative">
+                            <input type="password" id="edit-password" class="form-control"
+                                placeholder="Min. 8 characters" style="padding-right:40px;">
+                            <button type="button" class="password-toggle"
+                                onclick="togglePasswordVisibility('edit-password','edit-pwd-icon')">
+                                <i class="bi bi-eye" id="edit-pwd-icon"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
 
-            <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
-                <button class="btn btn-outline-secondary fw-semibold" onclick="closeEditModal()">Cancel</button>
-                <button class="btn btn-primary px-4 fw-semibold" id="edit-submit-btn"
-                    onclick="submitEditEmployee()">Save Changes</button>
+                <!-- Footer -->
+                <div class="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
+                    <button class="btn btn-outline-secondary fw-semibold px-4" onclick="closeEditModal()">
+                        <i class="bi bi-x me-1"></i>Cancel
+                    </button>
+                    <button class="btn btn-primary px-4 fw-semibold" id="edit-submit-btn"
+                        onclick="submitEditEmployee()">
+                        <i class="bi bi-check2 me-1"></i>Save Changes
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Scripts -->
-    <script src="/static/js/utils.js?v=20260403"></script>
-    <script src="/static/js/api.js?v=20260403"></script>
-    <script src="/static/js/auth.js?v=20260403"></script>
-    <script src="/static/js/ui_components.js?v=20260403"></script>
-    <script src="/static/js/app.js?v=20260403"></script>
-    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script src="/frontend/js/utils.js?v=20260403"></script>
+    <script src="/frontend/js/api.js?v=20260403"></script>
+    <script src="/frontend/js/auth.js?v=20260403"></script>
+    <script src="/frontend/js/ui_components.js?v=20260403"></script>
+    <script src="/frontend/js/app.js?v=20260403"></script>
+    <script src="/frontend/js/bootstrap.bundle.min.js"></script>
     <script>
         requireAuth();
         const sb = document.getElementById('sidebar');
@@ -510,7 +945,7 @@
         const canManageEmployees = window.hasFeatureAccess ? window.hasFeatureAccess('employee_manage_roles') : isAdmin;
 
         // Modals
-        function openEditModal(id) {
+        async function openEditModal(id) {
             const emp = employeesData.find(e => e.id === id);
             if (!emp) return;
 
@@ -532,6 +967,17 @@
                 modalBody.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
                 modalBody.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
             }
+
+            const banner = document.getElementById('editEmpResetBanner');
+            if(banner) banner.style.display = 'none';
+            try {
+                const rr = await ApiClient.request('/auth/reset-requests');
+                const req = rr.find(r => r.user_id === id && r.status === 'PENDING');
+                if(req && banner) {
+                    banner.style.display = 'flex';
+                    document.getElementById('editEmpResetTime').textContent = new Date(req.requested_at).toLocaleString();
+                }
+            } catch(e) {}
 
             document.getElementById('editEmployeeModal').classList.add('show');
         }
@@ -582,7 +1028,7 @@
                     {
                         type: 'select',
                         label: 'Status',
-                        id: 'status',
+                        id: 'filter-status',
                         options: [
                             { value: 'ALL', label: 'All Status' },
                             { value: 'true', label: 'Active' },
@@ -592,12 +1038,7 @@
                 ],
                 onApply: (data) => {
                     lastFilters = data;
-                    loadEmployees({ 
-                        dept: data['dept'], 
-                        role: data['role'], 
-                        status: data['status'], 
-                        search: data['search'] 
-                    });
+                    loadEmployees(data);
                 },
                 onReset: () => {
                     lastFilters = {};
@@ -605,7 +1046,6 @@
                 }
             });
         }
-
         async function loadEmployees(filters = {}) {
             const tbody = document.getElementById('employees-tbody');
             if (!tbody) return;
@@ -618,11 +1058,12 @@
                         </div>
                     </td>
                 </tr>`;
-            
-            const department = (filters['filter-dept'] === 'ALL' ? '' : filters['filter-dept']) || '';
-            const role = (filters['filter-role'] === 'ALL' ? '' : filters['filter-role']) || '';
-            const status = (filters['filter-status'] === 'ALL' ? '' : filters['filter-status']) || '';
-            const search = filters['filter-search'] || '';
+            document.getElementById('employees-pagination').innerHTML = '';
+
+            const department = (filters['dept'] === 'ALL' ? '' : filters['dept']) || '';
+            const role = (filters['role'] === 'ALL' ? '' : filters['role']) || '';
+            const status = (filters['status'] === 'ALL' ? '' : filters['status']) || '';
+            const search = filters['search'] || '';
 
             let query = '';
             if (department) query += `&department=${encodeURIComponent(department)}`;
@@ -637,70 +1078,109 @@
                 employeesData = await apiGet('/employees/' + query);
                 document.getElementById('employee-count-badge').innerText = `${employeesData.length} Employee${employeesData.length !== 1 ? 's' : ''}`;
 
-                if (employeesData.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">No employees found.</td></tr>';
-                    return;
-                }
-
                 // Collect and Initialize Department Filters if first load
                 const departments = [...new Set(employeesData.map(e => e.department).filter(d => d))].sort();
                 const filterWrapper = document.getElementById('filter-wrapper');
                 if (filterWrapper && filterWrapper.innerHTML === '' && isAdmin) {
                     initFilters(departments);
                 }
-                
+
                 populateAttendanceEmployeeFilter();
 
-                tbody.innerHTML = employeesData.map(emp => {
-                    const avatarLetter = (emp.name || emp.email || 'U')[0].toUpperCase();
-                    const statusClass = emp.is_active ? 'status-active' : 'status-inactive';
-                    const statusText = emp.is_active ? '<i class="bi bi-check-circle-fill"></i> Active' : '<i class="bi bi-x-circle-fill"></i> Inactive';
-                    const roleClass = (emp.role || 'CLIENT').toUpperCase();
+                window.EmpPagination = renderPagination({
+                    data: employeesData,
+                    tbodyId: 'employees-tbody',
+                    paginationId: 'employees-pagination',
+                    emptyMsg: '<tr><td colspan="7" class="text-center py-5 text-muted">No employees found.</td></tr>',
+                    renderRow: (emp) => {
+                        const palette = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'];
+                        const deptChar = (emp.department || 'X').toUpperCase().charCodeAt(0);
+                        const nameParts = (emp.name || '').split(' ');
+                        const secondChar = nameParts.length > 1 ? nameParts[1].toUpperCase().charCodeAt(0) : 0;
+                        const deptColor = palette[(deptChar + secondChar) % 6];
 
-                    let actions = `<span class="text-muted small">Viewer</span>`;
-                    if (canManageEmployees) {
-                        actions = `
-                            <button class="btn-action" onclick="viewEmployeeAttendance('${emp.id}', '${emp.name}')" title="Attendance History"><i class="bi bi-calendar-check"></i></button>
-                            <button class="btn-action" onclick="openEditModal('${emp.id}')" title="Edit"><i class="bi bi-pencil"></i></button>
-                            ${emp.role !== 'admin' ? `<button class="btn-action btn-action-danger" onclick="deleteEmployee('${emp.id}')" title="Delete"><i class="bi bi-trash"></i></button>` : ''}
-                        `;
-                    }
+                        let nameInitial = 'U';
+                        const nStr = (emp.name || emp.email || '').trim();
+                        if (nStr) {
+                            const parts = nStr.split(' ').filter(p => p.length > 0);
+                            nameInitial = parts.length > 1 ? (parts[0][0] + parts[1][0]).toUpperCase() : parts[0].substring(0, 2).toUpperCase();
+                        }
 
-                    return `
-                    <tr>
-                        <td class="ps-3">
-                            <input type="checkbox" class="form-check-input emp-checkbox" value="${emp.id}" onclick="updateSelectedCount()">
-                        </td>
-                        <td class="px-3">
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="employee-avatar shadow-sm">${avatarLetter}</div>
-                                <div class="min-w-0">
-                                    <h6 class="mb-0 fw-bold text-dark text-truncate" style="font-size: 0.875rem;">${emp.name || '<i>No Name</i>'}</h6>
-                                    <div class="text-muted text-truncate" style="font-size: 0.75rem;">${emp.email}</div>
+                        const roleColors = {
+                            ADMIN: 'background:rgba(254,243,199,0.5);color:#92400e;border:1px solid rgba(254,226,138,0.5);',
+                            SALES: 'background:rgba(220,252,231,0.5);color:#166534;border:1px solid rgba(187,247,208,0.5);',
+                            TELESALES: 'background:rgba(219,234,254,0.5);color:#1e40af;border:1px solid rgba(191,219,254,0.5);',
+                            PROJECT_MANAGER: 'background:rgba(237,233,254,0.5);color:#5b21b6;border:1px solid rgba(221,214,254,0.5);',
+                            PROJECT_MANAGER_AND_SALES: 'background:rgba(252,231,243,0.5);color:#9d174d;border:1px solid rgba(251,207,232,0.5);',
+                            CLIENT: 'background:rgba(241,245,249,0.5);color:#475569;border:1px solid rgba(226,232,240,0.5);',
+                        };
+                        const roleStyle = roleColors[(emp.role || '').toUpperCase()] || roleColors.CLIENT;
+                        const roleName = (emp.role || 'Unknown').replace(/_/g, ' ');
+
+                        let actions = `<span class="text-muted small">Viewer</span>`;
+                        if (canManageEmployees) {
+                            actions = `
+                                <button class="btn-action" onclick="viewEmployeeAttendance('${emp.id}', '${emp.name}')" title="Attendance History" style="width:30px;height:30px;border-radius:10px;background:rgba(37,99,235,0.1);color:var(--primary);border:none;">
+                                    <i class="bi bi-calendar2-check" style="font-size:0.85rem;"></i>
+                                </button>
+                                <button class="btn-action" onclick="openEditModal('${emp.id}')" title="Edit Employee" style="width:30px;height:30px;border-radius:10px;background:rgba(14,165,233,0.1);color:#0ea5e9;border:none;">
+                                    <i class="bi bi-pencil-square" style="font-size:0.85rem;"></i>
+                                </button>
+                                ${emp.role !== 'admin' ? `
+                                <button class="btn-action" onclick="deleteEmployee('${emp.id}')" title="Delete" style="width:30px;height:30px;border-radius:10px;background:rgba(239,68,68,0.1);color:#ef4444;border:none;">
+                                    <i class="bi bi-trash3" style="font-size:0.85rem;"></i>
+                                </button>` : ''}
+                            `;
+                        }
+
+                        return `
+                        <tr>
+                            <td class="ps-3">
+                                <input type="checkbox" class="form-check-input emp-checkbox" value="${emp.id}" onclick="updateSelectedCount()">
+                            </td>
+                            <td class="px-3">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="employee-avatar shadow-sm" style="background:${deptColor};color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;">${nameInitial}</div>
+                                    <div class="min-w-0">
+                                        <div class="fw-bold text-truncate" style="font-size:0.9rem;color:var(--text-1);">${emp.name || '<i>No Name</i>'}</div>
+                                        <div class="text-muted text-truncate" style="font-size:0.73rem;">${emp.email}</div>
+                                    </div>
                                 </div>
-                            </div>
-                        </td>
-                        <td class="px-3 d-mobile-none">
-                            <div class="fw-semibold text-dark small">${emp.department || '—'}</div>
-                            <div class="text-muted" style="font-size: 0.7rem;">${emp.employee_code || 'No Code'}</div>
-                        </td>
-                        <td class="px-3 d-mobile-none">
-                            <span class="role-badge role-${roleClass}" style="font-size: 0.65rem; padding: 2px 8px;">${(emp.role || 'Unknown').replace(/_/g, ' ')}</span>
-                        </td>
-                        <td class="px-3 text-muted d-mobile-none" style="font-size: 0.8rem;">
-                            ${emp.phone ? `<i class="bi bi-telephone me-1 opacity-50"></i>${emp.phone}` : '—'}
-                        </td>
-                        <td class="px-3">
-                            <span class="status-badge ${statusClass}" style="padding: 2px 8px; font-size: 0.65rem;">${statusText}</span>
-                        </td>
-                        <td class="px-3 text-end">
-                            <div class="d-flex justify-content-end gap-1">
-                                ${actions}
-                            </div>
-                        </td>
-                    </tr>
-                    `;
-                }).join('');
+                            </td>
+                            <td class="px-3 d-mobile-none">
+                                <div class="fw-semibold" style="font-size:0.82rem;color:var(--text-body);"><i class="bi bi-building me-1 opacity-50"></i>${emp.department || '—'}</div>
+                                <div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">
+                                    <i class="bi bi-hash opacity-50"></i>${emp.employee_code || 'No Code'}
+                                </div>
+                            </td>
+                            <td class="px-3 d-mobile-none">
+                                <span class="badge" style="display:inline-flex;align-items:center;gap:5px;font-size:0.68rem;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:0.04em;${roleStyle}">
+                                    ${roleName}
+                                </span>
+                            </td>
+                            <td class="px-3 d-mobile-none">
+                                ${emp.phone
+                                ? `<a href="tel:${emp.phone}" class="d-flex align-items-center gap-2 text-decoration-none" style="color:var(--text-body);font-size:0.82rem;">
+                                        <i class="bi bi-telephone text-primary opacity-60"></i>${emp.phone}
+                                       </a>`
+                                : '<span class="text-muted">—</span>'}
+                                ${emp.joining_date
+                                ? `<div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;"><i class="bi bi-calendar-event opacity-50 me-1"></i>${new Date(emp.joining_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</div>`
+                                : ''}
+                            </td>
+                            <td class="px-3">
+                                ${emp.is_active
+                                ? `<span class="badge" style="background:rgba(16,185,129,0.1);color:#10b981;font-size:0.65rem;font-weight:800;border-radius:20px;padding:3px 10px;border:1px solid rgba(16,185,129,0.2);"><i class="bi bi-check-circle-fill me-1"></i>ACTIVE</span>`
+                                : `<span class="badge" style="background:rgba(239,68,68,0.1);color:#ef4444;font-size:0.65rem;font-weight:800;border-radius:20px;padding:3px 10px;border:1px solid rgba(239,68,68,0.2);"><i class="bi bi-x-circle-fill me-1"></i>INACTIVE</span>`}
+                            </td>
+                            <td class="px-3 text-end">
+                                <div class="d-flex justify-content-end align-items-center gap-1">
+                                    ${actions}
+                                </div>
+                            </td>
+                        </tr>`;
+                    }
+                });
             } catch (err) {
                 console.error("Error loading employees", err);
                 tbody.innerHTML = `<tr><td colspan="7" class="text-center py-5 text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Failed to load employees (${err.message || 'Unknown error'})</td></tr>`;
@@ -724,7 +1204,7 @@
                 const elapsed = Math.max(0, (Date.now() - selfPunchStartTime) / 1000);
                 totalSec += elapsed;
             }
-            
+
             const h = Math.floor(totalSec / 3600);
             const m = Math.floor((totalSec % 3600) / 60);
             const s = Math.floor(totalSec % 60);
@@ -742,21 +1222,22 @@
 
         function initAttendanceFilters(isAdmin, employees = [], containerId = 'attendance-filter-wrapper') {
             const filters = [];
-            
+
             if (isAdmin) {
-                filters.push({ 
-                    type: 'select', 
-                    label: 'Employee', 
-                    id: 'att-user', 
-                    options: [{ value: '', label: 'All Employees' }, ...employees.map(e => ({ value: e.id, label: e.name || e.email }))] 
+                filters.push({
+                    type: 'select',
+                    label: 'Employee',
+                    id: 'att-user',
+                    options: [{ value: '', label: 'All Employees' }, ...employees.map(e => ({ value: e.id, label: e.name || e.email }))]
                 });
             }
 
-            filters.push({ 
-                type: 'select', 
-                label: 'Quick Range', 
-                id: 'att-quick', 
+            filters.push({
+                type: 'select',
+                label: 'Quick Range',
+                id: 'att-quick',
                 options: [
+                    { value: 'ALL', label: 'All Records' },
                     { value: 'custom', label: 'Custom Range' },
                     { value: 'today', label: 'Today' },
                     { value: 'yesterday', label: 'Yesterday' },
@@ -765,7 +1246,7 @@
                     { value: 'last_7_days', label: 'Last 7 Days' },
                     { value: 'this_month', label: 'This Month' },
                     { value: 'last_month', label: 'Last Month' }
-                ] 
+                ]
             });
 
             filters.push({ type: 'date', label: 'From', id: 'att-from' });
@@ -784,17 +1265,10 @@
                     const fromInp = document.getElementById('att-from');
                     const toInp = document.getElementById('att-to');
                     const quickSel = document.getElementById('att-quick');
-                    if (fromInp && toInp && quickSel) {
-                        const end = new Date();
-                        const start = new Date();
-                        start.setDate(end.getDate() - 6);
-                        fromInp.value = start.toISOString().slice(0, 10);
-                        toInp.value = end.toISOString().slice(0, 10);
-                        quickSel.value = 'last_7_days';
-                        attendanceFilters['att-from'] = fromInp.value;
-                        attendanceFilters['att-to'] = toInp.value;
-                        attendanceFilters['att-quick'] = 'last_7_days';
-                    }
+                    if (fromInp) fromInp.value = '';
+                    if (toInp) toInp.value = '';
+                    if (quickSel) quickSel.value = 'ALL';
+
                     if (isAdmin) loadAttendanceSummary();
                     else loadSelfAttendance();
                 }
@@ -809,7 +1283,7 @@
                 const quickSel = document.getElementById('att-quick');
                 const fromInp = document.getElementById('att-from');
                 const toInp = document.getElementById('att-to');
-                
+
                 if (quickSel && fromInp && toInp) {
                     // Set default range: Last 7 Days
                     const end = new Date();
@@ -862,7 +1336,7 @@
 
         async function loadMyEmployeeInsights() {
             if (canManageEmployees) return;
-            
+
             // Hide admin sections
             const directoryCard = document.querySelector('.grid-card:has(#employees-table-container)');
             if (directoryCard) directoryCard.style.display = 'none';
@@ -885,9 +1359,10 @@
             const tbody = document.getElementById('self-attendance-tbody');
 
             if (!tbody) return;
-            
+
             tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading...</td></tr>';
-            
+            document.getElementById('self-attendance-pagination').innerHTML = '';
+
             try {
                 const data = await ApiClient.getAttendanceSummary({
                     start_date: start,
@@ -895,30 +1370,39 @@
                     reconcile: true
                 });
                 const records = (data.records || []).sort((a, b) => new Date(b.date) - new Date(a.date));
-                document.getElementById('self-attendance-count').textContent = `${records.length} record(s)`;
-                document.getElementById('self-attendance-total-hours').textContent = `Total: ${(data.total_hours || 0).toFixed(2)} hrs`;
+                const countBadge = document.getElementById('self-attendance-count-badge');
+                if (countBadge) countBadge.textContent = `${records.length} Records`;
+                const hoursBadge = document.getElementById('self-attendance-total-hours');
+                if (hoursBadge) hoursBadge.textContent = `${(data.total_hours || 0).toFixed(2)} HRS`;
 
-                if (!records.length) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No attendance records found.</td></tr>';
-                    return;
-                }
-
-                tbody.innerHTML = records.map(r => {
-                    const day = new Date(r.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-                    return `<tr>
-                        <td style="white-space:nowrap;">${day}</td>
-                        <td class="d-mobile-none">${formatTimeCell(r.first_punch_in)}</td>
-                        <td class="d-mobile-none">${formatTimeCell(r.last_punch_out)}</td>
-                        <td>${(r.total_hours || 0).toFixed(2)}</td>
-                        <td>${statusBadge(r.day_status)}</td>
-                        <td class="d-mobile-none">${leaveBadge(r.leave_status)}</td>
-                        <td class="text-end">
-                            <button class="btn-action" onclick="viewPunchLogs('${r.date}')" title="View Details">
-                                <i class="bi bi-eye"></i>
-                            </button>
-                        </td>
-                    </tr>`;
-                }).join('');
+                renderPagination({
+                    data: records,
+                    tbodyId: 'self-attendance-tbody',
+                    paginationId: 'self-attendance-pagination',
+                    emptyMsg: '<tr><td colspan="7" class="text-center py-4 text-muted">No attendance records found.</td></tr>',
+                    renderRow: (r) => {
+                        const day = new Date(r.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+                        return `<tr>
+                            <td style="white-space:nowrap;font-weight:600;text-align:left;" class="ps-3"><i class="bi bi-calendar3 me-2 text-primary opacity-50"></i>${day}</td>
+                            <td class="d-mobile-none">
+                                <span class="px-2 py-1 rounded" style="background:var(--bg-app);font-size:0.75rem;"><i class="bi bi-box-arrow-in-right text-success me-1"></i>${formatTimeCell(r.first_punch_in)}</span>
+                            </td>
+                            <td class="d-mobile-none">
+                                <span class="px-2 py-1 rounded" style="background:var(--bg-app);font-size:0.75rem;"><i class="bi bi-box-arrow-right text-danger me-1"></i>${formatTimeCell(r.last_punch_out)}</span>
+                            </td>
+                            <td>
+                                <span class="fw-bold" style="font-family:'JetBrains Mono', monospace;color:var(--primary);">${(r.total_hours || 0).toFixed(2)}</span>
+                            </td>
+                            <td>${statusBadge(r.day_status)}</td>
+                            <td class="d-mobile-none">${leaveBadge(r.leave_status)}</td>
+                            <td>
+                                <button class="btn-action" onclick="viewPunchLogs('${r.date}')" title="View Details" style="width:30px;height:30px;border-radius:10px;margin-left:12px;margin-right:auto;">
+                                    <i class="bi bi-eye" style="font-size:0.8rem;"></i>
+                                </button>
+                            </td>
+                        </tr>`;
+                    }
+                });
             } catch (err) {
                 console.error('Self attendance load failed', err);
                 tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger">Failed to load attendance.</td></tr>';
@@ -937,12 +1421,38 @@
         }
 
         function statusBadge(status) {
-            return `<span class="status-badge att-status-${status}">${status}</span>`;
+            const colors = {
+                'PRESENT': 'background:rgba(16,185,129,0.1);color:#10b981;border:1px solid rgba(16,185,129,0.2);',
+                'ABSENT': 'background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.2);',
+                'HALF_DAY': 'background:rgba(245,158,11,0.1);color:#f59e0b;border:1px solid rgba(245,158,11,0.2);',
+                'ON_LEAVE': 'background:rgba(59,130,246,0.1);color:#3b82f6;border:1px solid rgba(59,130,246,0.2);',
+                'WEEKLY_OFF': 'background:rgba(107,114,128,0.1);color:#6b7280;border:1px solid rgba(107,114,128,0.2);',
+                'HOLIDAY': 'background:rgba(139,92,246,0.1);color:#8b5cf6;border:1px solid rgba(139,92,246,0.2);'
+            };
+            const icons = {
+                'PRESENT': 'bi-check-circle-fill',
+                'ABSENT': 'bi-x-circle-fill',
+                'HALF_DAY': 'bi-pause-circle-fill',
+                'ON_LEAVE': 'bi-calendar-event-fill',
+                'WEEKLY_OFF': 'bi-calendar-x',
+                'HOLIDAY': 'bi-gift-fill'
+            };
+            const s = (status || '').toUpperCase();
+            const style = colors[s] || 'background:rgba(107,114,128,0.05);color:#6b7280;border:1px solid rgba(107,114,128,0.1);';
+            const icon = icons[s] || 'bi-info-circle';
+            return `<span class="badge" style="display:inline-flex;align-items:center;gap:5px;font-size:0.68rem;font-weight:700;padding:4px 10px;border-radius:20px;letter-spacing:0.04em;${style}"><i class="bi ${icon}"></i>${s.replace(/_/g, ' ')}</span>`;
         }
 
         function leaveBadge(status) {
-            if (!status) return '--';
-            return `<span class="status-badge leave-status-${status}">${status}</span>`;
+            if (!status || status === '--' || status === 'None') return '<span class="text-muted opacity-50"—</span>';
+            const colors = {
+                'APPROVED': 'background:rgba(16,185,129,0.1);color:#1b4332;border:1px solid rgba(16,185,129,0.2);',
+                'PENDING': 'background:rgba(245,158,11,0.1);color:#92400e;border:1px solid rgba(245,158,11,0.2);',
+                'REJECTED': 'background:rgba(239,68,68,0.1);color:#7f1d1d;border:1px solid rgba(239,68,68,0.2);'
+            };
+            const s = (status || '').toUpperCase();
+            const style = colors[s] || 'background:rgba(107,114,128,0.1);color:#374151;';
+            return `<span class="badge" style="font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:6px;${style}">${s}</span>`;
         }
 
         async function viewPunchLogs(dateStr, userId = null) {
@@ -951,7 +1461,7 @@
             const modal = new bootstrap.Modal(modalEl);
             const tbody = document.getElementById('punch-detail-tbody');
             const titleDate = document.getElementById('punch-detail-date');
-            
+
             titleDate.textContent = new Date(dateStr).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
             tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4"><span class="spinner-border spinner-border-sm me-2"></span>Loading logs...</td></tr>';
             modal.show();
@@ -982,7 +1492,8 @@
             const start = attendanceFilters['att-from'] || '';
             const end = attendanceFilters['att-to'] || '';
             const userId = attendanceFilters['att-user'] || '';
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading...</td></tr>';
+            document.getElementById('attendance-admin-pagination').innerHTML = '';
 
             try {
                 const params = {
@@ -991,37 +1502,46 @@
                     reconcile: true
                 };
                 if (userId) params.user_id = userId;
-                
+
                 const data = await ApiClient.getAttendanceSummary(params);
                 const records = (data.records || []).sort((a, b) => new Date(b.date) - new Date(a.date));
-                document.getElementById('attendance-count').textContent = `${records.length} record(s)`;
-                document.getElementById('attendance-total-hours').textContent = `Total: ${(data.total_hours || 0).toFixed(2)} hrs`;
+                const countBadge = document.getElementById('attendance-count-badge');
+                if (countBadge) countBadge.textContent = `${records.length} Records`;
+                const hoursBadge = document.getElementById('attendance-total-hours');
+                if (hoursBadge) hoursBadge.textContent = `${(data.total_hours || 0).toFixed(2)} HRS`;
 
-                if (!records.length) {
-                    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No attendance records found.</td></tr>';
-                    return;
-                }
-
-                tbody.innerHTML = records.map(r => {
-                    const day = new Date(r.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-                    return `<tr>
-                        <td style="white-space:nowrap;">${day}</td>
-                        <td style="white-space:nowrap;">${r.user_name || 'User #' + r.user_id}</td>
-                        <td class="d-mobile-none">${formatTimeCell(r.first_punch_in)}</td>
-                        <td class="d-mobile-none">${formatTimeCell(r.last_punch_out)}</td>
-                        <td>${(r.total_hours || 0).toFixed(2)}</td>
-                        <td>${statusBadge(r.day_status)}</td>
-                        <td class="d-mobile-none">${leaveBadge(r.leave_status)}</td>
-                        <td class="text-end">
-                            <button class="btn-action" onclick="viewPunchLogs('${r.date}', '${r.user_id}')" title="View Details">
-                                <i class="bi bi-eye"></i>
-                            </button>
-                        </td>
-                    </tr>`;
-                }).join('');
+                renderPagination({
+                    data: records,
+                    tbodyId: 'attendance-admin-tbody',
+                    paginationId: 'attendance-admin-pagination',
+                    emptyMsg: '<tr><td colspan="8" class="text-center py-4 text-muted">No attendance records found.</td></tr>',
+                    renderRow: (r) => {
+                        const day = new Date(r.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+                        return `<tr>
+                            <td style="white-space:nowrap;font-weight:600;text-align:left;" class="ps-3"><i class="bi bi-calendar3 me-2 text-primary opacity-50"></i>${day}</td>
+                            <td style="white-space:nowrap;font-weight:700;color:var(--text-1);">${r.user_name || 'User #' + r.user_id}</td>
+                            <td class="d-mobile-none">
+                                <span class="px-2 py-1 rounded" style="background:var(--bg-app);font-size:0.75rem;"><i class="bi bi-box-arrow-in-right text-success me-1"></i>${formatTimeCell(r.first_punch_in)}</span>
+                            </td>
+                            <td class="d-mobile-none">
+                                <span class="px-2 py-1 rounded" style="background:var(--bg-app);font-size:0.75rem;"><i class="bi bi-box-arrow-right text-danger me-1"></i>${formatTimeCell(r.last_punch_out)}</span>
+                            </td>
+                            <td>
+                                <span class="fw-bold" style="font-family:'JetBrains Mono', monospace;color:var(--primary);">${(r.total_hours || 0).toFixed(2)}</span>
+                            </td>
+                            <td>${statusBadge(r.day_status)}</td>
+                            <td class="d-mobile-none">${leaveBadge(r.leave_status)}</td>
+                            <td>
+                                <button class="btn-action" onclick="viewPunchLogs('${r.date}', '${r.user_id}')" title="View Details" style="width:30px;height:30px;border-radius:10px;margin-left:12px;margin-right:auto;">
+                                    <i class="bi bi-eye" style="font-size:0.8rem;"></i>
+                                </button>
+                            </td>
+                        </tr>`;
+                    }
+                });
             } catch (err) {
                 console.error('Attendance summary error', err);
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-danger">Failed to load attendance.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-danger">Failed to load attendance.</td></tr>';
             }
         }
 
@@ -1098,14 +1618,62 @@
                 onDelete: () => batchDeleteEmployees(),
                 onCancel: () => {
                     document.querySelectorAll('.emp-checkbox').forEach(cb => cb.checked = false);
-                    document.getElementById('emp-select-all').checked = false;
+                    const master = document.getElementById('emp-select-all');
+                    if (master) master.checked = false;
                     updateSelectedCount();
                 }
             });
         }
 
+        async function viewEmployeeAttendance(userId, userName) {
+            const modalEl = document.getElementById('attendanceHistoryModal');
+            if (!modalEl) return;
+            const modal = new bootstrap.Modal(modalEl);
+            const tbody = document.getElementById('att-hist-tbody');
+            const titleName = document.getElementById('att-hist-user-name');
+
+            titleName.textContent = userName;
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4"><span class="spinner-border spinner-border-sm me-2"></span>Loading history...</td></tr>';
+            modal.show();
+
+            try {
+                // Fetch last 30 days by default
+                const end = new Date();
+                const start = new Date();
+                start.setDate(end.getDate() - 29);
+
+                const data = await ApiClient.getAttendanceSummary({
+                    user_id: userId,
+                    start_date: start.toISOString().split('T')[0],
+                    end_date: end.toISOString().split('T')[0],
+                    reconcile: true
+                });
+
+                const records = (data.records || []).sort((a, b) => new Date(b.date) - new Date(a.date));
+                if (!records.length) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-muted">No attendance records found for the last 30 days.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = records.map(r => {
+                    const day = new Date(r.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+                    return `<tr>
+                        <td class="ps-3" style="white-space:nowrap;font-weight:600;"><i class="bi bi-calendar3 me-2 text-primary opacity-50"></i>${day}</td>
+                        <td><span class="px-2 py-1 rounded" style="background:var(--bg-app);font-size:0.75rem;"><i class="bi bi-box-arrow-in-right text-success me-1"></i>${formatTimeCell(r.first_punch_in)}</span></td>
+                        <td><span class="px-2 py-1 rounded" style="background:var(--bg-app);font-size:0.75rem;"><i class="bi bi-box-arrow-right text-danger me-1"></i>${formatTimeCell(r.last_punch_out)}</span></td>
+                        <td><span class="fw-bold" style="font-family:'JetBrains Mono', monospace;color:var(--primary);">${(r.total_hours || 0).toFixed(2)}</span></td>
+                        <td>${statusBadge(r.day_status)}</td>
+                        <td class="pe-3 text-end">${leaveBadge(r.leave_status)}</td>
+                    </tr>`;
+                }).join('');
+            } catch (err) {
+                console.error(err);
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-danger">Failed to load attendance history.</td></tr>';
+            }
+        }
+
         async function batchDeleteEmployees() {
-            const selectedIds = Array.from(document.querySelectorAll('.emp-checkbox:checked')).map(cb => parseInt(cb.value));
+            const selectedIds = Array.from(document.querySelectorAll('.emp-checkbox:checked')).map(cb => cb.value);
             if (!selectedIds.length) return;
 
             if (!canManageEmployees) {
@@ -1132,9 +1700,6 @@
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             updateHeaderContext();
-            if (isAdmin) {
-                initFilters();
-            }
             loadEmployees().then(() => {
                 if (isAdmin) {
                     initAttendanceFilters(true, employeesData);
@@ -1147,7 +1712,7 @@
             if (!canManageEmployees) {
                 const globalFilterPanel = document.getElementById('global-filter-panel');
                 if (globalFilterPanel) globalFilterPanel.style.display = 'none';
-                
+
                 const directoryCard = document.querySelector('.grid-card:has(#employees-table-container)');
                 if (directoryCard) directoryCard.style.display = 'none';
             }
@@ -1197,11 +1762,18 @@
                     <div class="table-responsive rounded-3 border">
                         <table class="table table-hover table-sm mb-0 align-middle">
                             <thead class="bg-light">
-                                <tr>
-                                    <th class="ps-3 py-2">#</th>
-                                    <th class="py-2">Punch In</th>
-                                    <th class="py-2">Punch Out</th>
-                                    <th class="pe-3 py-2 text-end">Duration</th>
+                                <tr style="border-bottom: 1.5px solid var(--border);">
+                                    <th class="ps-3 py-2 text-uppercase"
+                                        style="font-size:0.72rem;letter-spacing:0.04em;color:var(--text-3);">#</th>
+                                    <th class="py-2 text-uppercase"
+                                        style="font-size:0.72rem;letter-spacing:0.04em;color:var(--text-3);">PUNCH IN
+                                    </th>
+                                    <th class="py-2 text-uppercase"
+                                        style="font-size:0.72rem;letter-spacing:0.04em;color:var(--text-3);">PUNCH OUT
+                                    </th>
+                                    <th class="pe-3 py-2 text-end text-uppercase"
+                                        style="font-size:0.72rem;letter-spacing:0.04em;color:var(--text-3);">DURATION
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody id="punch-detail-tbody" style="font-size:0.85rem;">
@@ -1211,7 +1783,8 @@
                     </div>
                 </div>
                 <div class="modal-footer border-top-0 pt-0">
-                    <button type="button" class="btn btn-primary fw-semibold w-100" data-bs-dismiss="modal" style="border-radius:10px;">Done</button>
+                    <button type="button" class="btn btn-primary fw-semibold w-100" data-bs-dismiss="modal"
+                        style="border-radius:10px;">Done</button>
                 </div>
             </div>
         </div>
@@ -1232,13 +1805,21 @@
                     <div class="table-responsive rounded-3 border">
                         <table class="table table-hover table-sm mb-0 align-middle">
                             <thead class="bg-light">
-                                <tr>
-                                    <th class="ps-3 py-2">Date</th>
-                                    <th class="py-2">Punch In</th>
-                                    <th class="py-2">Punch Out</th>
-                                    <th class="py-2">Hours</th>
-                                    <th class="py-2">Status</th>
-                                    <th class="pe-3 py-2 text-end">Leave</th>
+                                <tr style="border-bottom: 1.5px solid var(--border);">
+                                    <th class="ps-3 py-2 text-uppercase"
+                                        style="font-size:0.72rem;letter-spacing:0.04em;color:var(--text-3);">DATE</th>
+                                    <th class="py-2 text-uppercase"
+                                        style="font-size:0.72rem;letter-spacing:0.04em;color:var(--text-3);">PUNCH IN
+                                    </th>
+                                    <th class="py-2 text-uppercase"
+                                        style="font-size:0.72rem;letter-spacing:0.04em;color:var(--text-3);">PUNCH OUT
+                                    </th>
+                                    <th class="py-2 text-uppercase"
+                                        style="font-size:0.72rem;letter-spacing:0.04em;color:var(--text-3);">HOURS</th>
+                                    <th class="py-2 text-uppercase"
+                                        style="font-size:0.72rem;letter-spacing:0.04em;color:var(--text-3);">STATUS</th>
+                                    <th class="pe-3 py-2 text-end text-uppercase"
+                                        style="font-size:0.72rem;letter-spacing:0.04em;color:var(--text-3);">LEAVE</th>
                                 </tr>
                             </thead>
                             <tbody id="att-hist-tbody" style="font-size:0.85rem;">
@@ -1248,7 +1829,8 @@
                     </div>
                 </div>
                 <div class="modal-footer border-top-0 pt-0">
-                    <button type="button" class="btn btn-light border fw-semibold" data-bs-dismiss="modal" style="border-radius:10px;">Close</button>
+                    <button type="button" class="btn btn-light border fw-semibold" data-bs-dismiss="modal"
+                        style="border-radius:10px;">Close</button>
                 </div>
             </div>
         </div>
@@ -1257,5 +1839,3 @@
 </body>
 
 </html>
-
-

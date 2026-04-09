@@ -134,13 +134,18 @@ window.renderSidebar = function (active) {
 
     window.__lastSidebarActive = active;
     const roleName = String(role || '').toUpperCase();
-    const effectivePolicy = window.__crmEffectiveAccessPolicy || JSON.parse(sessionStorage.getItem('crm_access_policy') || 'null');
+    const effectivePolicy = window.__crmEffectiveAccessPolicy || JSON.parse(localStorage.getItem('crm_access_policy') || 'null');
 
     const allowedPages = Array.isArray(effectivePolicy?.allowed_pages)
         ? effectivePolicy.allowed_pages
         : (effectivePolicy?.policy?.page_access?.[roleName] || []);
 
     const allowAllPages = roleName === 'ADMIN' || allowedPages.includes('*');
+
+    // The "Settings" link is compulsory for all Staff (non-ADMIN, non-CLIENT).
+    // ADMIN has full access anyway.
+    const isStaff = (roleName !== 'CLIENT' && roleName !== 'ADMIN');
+    const showSettings = isStaff || (roleName === 'ADMIN');
 
     const canShowPage = (href) => {
         const page = String(href || '').split('?')[0];
@@ -236,9 +241,10 @@ window.renderSidebar = function (active) {
             <a href="#" class="sb-bottom-link logout" onclick="logout();return false;" title="Logout">
                 <i class="bi bi-box-arrow-right"></i> <span>Logout</span>
             </a>
+            ${showSettings ? `
             <a href="settings.html" class="sb-bottom-link ${active === 'settings' ? 'active' : ''}" title="Settings">
                 <i class="bi bi-gear"></i> <span>Settings</span>
-            </a>
+            </a>` : ''}
         </div>
     </div>
     <div id="sb-overlay" class="sidebar-overlay" onclick="toggleMobileSidebar()"></div>
@@ -408,7 +414,7 @@ window.injectTopHeader = function (pageTitle) {
                     <button class="btn p-0 position-absolute text-muted search-btn" style="left: 12px; top: 50%; transform: translateY(-50%); z-index: 10;" onclick="const val = document.getElementById('global-search-input').value.trim(); if(val) window.location.href = 'search.html?q=' + encodeURIComponent(val);">
                         <i class="bi bi-search" style="color: var(--nav-text-muted);"></i>
                     </button>
-                    <input type="text" id="global-search-input" class="form-control" placeholder="Search..." style="padding-left: 38px; border-radius: 20px; height: 38px; background: var(--bg-app); border: 1px solid var(--border); color: var(--text-main); font-weight: 500;">
+                    <input type="text" id="global-search-input" class="form-control" placeholder="Search..." autocomplete="new-password" readonly onfocus="this.removeAttribute('readonly')" style="padding-left: 38px; border-radius: 20px; height: 38px; background: var(--bg-app); border: 1px solid var(--border); color: var(--text-main); font-weight: 500;">
                     <div id="live-search-dropdown" class="search-results-dropdown"></div>
                 </div>
             </div>
@@ -494,7 +500,10 @@ window.injectTopHeader = function (pageTitle) {
 
     setTimeout(() => {
         if (window.checkUrlForQuickAdd) window.checkUrlForQuickAdd();
-    }, 500);
+        // Force-clear Chrome autofill on the global search bar
+        const gsi = document.getElementById('global-search-input');
+        if (gsi) { gsi.value = ''; }
+    }, 200);
 
     // Inject overlay if not present
     if (!document.getElementById('sb-overlay')) {
@@ -739,7 +748,7 @@ window.refreshBell = async function () {
                     sessionClosed = true;
                     cleanMessage = cleanMessage.replace('STATUS:COMPLETED', '').trim();
                 }
-                
+
                 // [START] - Standardized Link/Meeting ID Parsing
                 if (cleanMessage.includes('MEETING_ID:')) {
                     const parts = cleanMessage.split('MEETING_ID:');
@@ -1051,8 +1060,10 @@ window.renderFilterPanel = function (config) {
 
         return `
             <div class="filter-field">
-                <label for="${f.id}">${f.label}</label>
-                ${inputHtml}
+                <label for="${f.id}" class="filter-label">${f.label}</label>
+                <div class="filter-input-wrapper">
+                    ${inputHtml}
+                </div>
             </div>`;
     }).join('');
 
@@ -1070,7 +1081,7 @@ window.renderFilterPanel = function (config) {
                 </div>
                 ${headerContent}
                 <div class="filter-panel-head-meta">
-                    <div class="filter-summary-text" id="${containerId}-summary">No filters active</div>
+                    <span class="filter-summary-text" id="${containerId}-summary">No filters active</span>
                     <button class="filter-toggle-btn">
                         <i class="bi bi-chevron-down"></i>
                     </button>
@@ -1167,7 +1178,12 @@ window.renderFilterPanel = function (config) {
             const el = document.getElementById(f.id);
             if (el) {
                 if (f.type === 'select') {
-                    el.value = f.options[0]?.value || 'ALL';
+                    // Try to find 'ALL' or '' or use first option
+                    const hasAll = f.options.some(o => o.value === 'ALL');
+                    const hasEmpty = f.options.some(o => o.value === '');
+                    if (hasAll) el.value = 'ALL';
+                    else if (hasEmpty) el.value = '';
+                    else el.value = f.options[0]?.value;
                 } else {
                     el.value = '';
                 }
@@ -1433,6 +1449,26 @@ window.initAttendance = async function () {
             if (mm) mm.textContent = '--';
             if (ss) ss.textContent = '--';
         }
+
+        // FIX 4: Midnight reset — check every 30s if the calendar date has rolled over
+        if (window._midnightCheck) clearInterval(window._midnightCheck);
+        const _midnightStartDate = new Date().toDateString();
+        window._midnightCheck = setInterval(async () => {
+            if (new Date().toDateString() !== _midnightStartDate) {
+                clearInterval(window._midnightCheck);
+                window._midnightCheck = null;
+                if (window._attTimer) {
+                    clearInterval(window._attTimer);
+                    window._attTimer = null;
+                }
+                try {
+                    const freshStatus = await window.ApiClient.getPunchStatus();
+                    updateUI(freshStatus);
+                } catch (e) {
+                    console.warn('[Attendance] Midnight refresh failed', e);
+                }
+            }
+        }, 30000);
     };
 
     updateUI(status);
@@ -1447,6 +1483,14 @@ window.initAttendance = async function () {
             punchBtn.textContent = '...';
             try {
                 const res = await window.ApiClient.punch();
+                if (res && res.requires_manual_punchout) {
+                    punchBtn.innerHTML = origHTML;
+                    punchBtn.classList.remove('loading');
+                    if(typeof window.showManualPunchOutModal === 'function') {
+                        window.showManualPunchOutModal(res.open_sessions);
+                    }
+                    return;
+                }
                 const newStatus = await window.ApiClient.getPunchStatus();
                 updateUI(newStatus);
                 if (typeof window.showToast === 'function') {
@@ -1471,6 +1515,72 @@ window.initAttendance = async function () {
 };
 
 
+
+window.showManualPunchOutModal = function(sessions) {
+    let modalEl = document.getElementById('manualPunchOutModal');
+    if (!modalEl) {
+        document.body.insertAdjacentHTML('beforeend', `
+            <div class="modal fade" id="manualPunchOutModal" tabindex="-1" aria-labelledby="manualPunchOutModalLabel" aria-hidden="true" data-bs-backdrop="static">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-0 shadow">
+                        <div class="modal-header border-bottom-0 pb-0">
+                            <h5 class="modal-title fw-bold" id="manualPunchOutModalLabel"><i class="bi bi-exclamation-triangle text-warning me-2"></i> Unclosed Sessions Detected</h5>
+                        </div>
+                        <div class="modal-body pb-0">
+                            <p class="text-muted small">You have open attendance sessions from previous days. You must manually close them before punching in today.</p>
+                            <div id="manualPunchOutContainer" class="d-flex flex-column gap-3 mt-3"></div>
+                        </div>
+                        <div class="modal-footer border-top-0 pt-3">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `);
+        modalEl = document.getElementById('manualPunchOutModal');
+    }
+    
+    const container = document.getElementById('manualPunchOutContainer');
+    container.innerHTML = sessions.map(s => {
+        const dateStr = window.formatDateToApp ? window.formatDateToApp(s.date) : s.date;
+        const timeIn = s.punch_in ? new Date(s.punch_in).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Unknown';
+        return `
+            <div class="card p-3 bg-light border-0 shadow-sm">
+                <h6 class="fw-bold mb-1">${dateStr}</h6>
+                <p class="mb-2 small text-muted">Started: ${timeIn}</p>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-white">Out Time</span>
+                    <input type="time" class="form-control" id="punch_out_${s.id}" required>
+                    <button class="btn btn-primary fw-bold" onclick="window.submitManualPunchOut('${s.id}')">Close Session</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+    
+    window.submitManualPunchOut = async (recordId) => {
+        const timeInput = document.getElementById(`punch_out_${recordId}`).value;
+        if (!timeInput) {
+            window.showToast('Please select a punch-out time', 'warning');
+            return;
+        }
+        try {
+            await window.ApiClient.manualPunchOut(recordId, timeInput);
+            window.showToast('Session closed manually', 'success');
+            modal.hide();
+            // Automatically attempt to punch in again if that was the only session
+            setTimeout(() => {
+                const btn = document.getElementById('header-punch-btn-new');
+                if (btn) btn.click();
+            }, 500);
+        } catch(e) {
+            console.error('Manual punch out failed', e);
+            window.showToast(e.data?.detail || 'Failed to close session', 'error');
+        }
+    };
+};
 
 window.setTheme = function (mode) {
     let applyDark = false;
@@ -1596,3 +1706,143 @@ if (typeof window.showToast !== 'function') {
         }
     };
 }
+
+// ── UNIVERSAL PAGINATION ───────────────────────────────────────────────
+/**
+ * Renders paginated data into a tbody and injects a pagination bar.
+ *
+ * @param {Object} options
+ * @param {Array}    options.data          - Full data array to paginate
+ * @param {number}   options.pageSize      - Rows per page (default: 15)
+ * @param {string}   options.tbodyId       - ID of the <tbody> to render rows into
+ * @param {string}   options.paginationId  - ID of the container for pagination controls
+ * @param {Function} options.renderRow     - Function(item) => HTML string for a <tr>
+ * @param {Array}    [options.targets]     - Optional: array of { id, renderRow, emptyMsg }
+ * @param {string}   [options.emptyMsg]    - HTML for the "no data" state
+ * @param {number}   [options.colSpan]     - colspan for empty/loading rows (default: 10)
+ * @param {number}   [options.currentPage] - Page to jump to (1-indexed, default: 1)
+ * @returns {Object} { goToPage, getCurrentPage } — controller object
+ */
+window.renderPagination = function (options) {
+    const {
+        data = [],
+        pageSize: explicitPageSize,
+        tbodyId,
+        paginationId,
+        renderRow,
+        targets,
+        emptyMsg = '<tr><td colspan="10" class="text-center py-5 text-muted">No data found.</td></tr>',
+        colSpan = 10,
+        currentPage: startPage = 1,
+    } = options;
+
+    // Prioritize explicit pageSize, then user setting, then default (10)
+    const userPageSize = parseInt(localStorage.getItem('srm_setting_pagination_limit'));
+    const pageSize = explicitPageSize || userPageSize || 10;
+
+    const paginationContainer = document.getElementById(paginationId);
+
+    let currentPage = Math.max(1, startPage);
+    const totalPages = Math.max(1, Math.ceil(data.length / pageSize));
+
+    function renderPage(page) {
+        currentPage = Math.min(Math.max(1, page), totalPages);
+        const start = (currentPage - 1) * pageSize;
+        const slice = data.slice(start, start + pageSize);
+
+        const renderToTarget = (tid, rRow, eMsg) => {
+            const el = document.getElementById(tid);
+            if (!el) return;
+            if (data.length === 0) {
+                el.innerHTML = eMsg || emptyMsg;
+            } else {
+                el.innerHTML = slice.map(rRow).join('');
+            }
+        };
+
+        if (targets && targets.length > 0) {
+            targets.forEach(t => renderToTarget(t.id, t.renderRow, t.emptyMsg));
+        } else if (tbodyId && renderRow) {
+            renderToTarget(tbodyId, renderRow, emptyMsg);
+        }
+
+        if (paginationContainer) {
+            renderControls();
+        }
+    }
+
+    function renderControls() {
+        if (totalPages <= 1) {
+            paginationContainer.innerHTML = '';
+            return;
+        }
+
+        const showing = data.length === 0 ? 0 : Math.min(currentPage * pageSize, data.length);
+        const from = data.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+
+        // Build page number buttons (show at most 5 around current)
+        let pages = [];
+        const delta = 2;
+        const left = Math.max(1, currentPage - delta);
+        const right = Math.min(totalPages, currentPage + delta);
+
+        for (let i = left; i <= right; i++) pages.push(i);
+        if (left > 2) pages = ['...left', ...pages];
+        if (left > 1) pages = [1, ...pages];
+        if (right < totalPages - 1) pages = [...pages, '...right'];
+        if (right < totalPages) pages = [...pages, totalPages];
+
+        const pageButtons = pages.map(p => {
+            if (typeof p === 'string') {
+                return `<li class="page-item disabled"><span class="page-link srm-page-ellipsis">…</span></li>`;
+            }
+            const active = p === currentPage ? 'active' : '';
+            return `<li class="page-item ${active}"><button class="page-link srm-page-btn" data-page="${p}">${p}</button></li>`;
+        }).join('');
+
+        paginationContainer.innerHTML = `
+            <div class="srm-pagination-bar">
+                <span class="srm-pagination-info">
+                    Showing <strong>${from}–${showing}</strong> of <strong>${data.length}</strong>
+                </span>
+                <nav aria-label="Table pagination">
+                    <ul class="pagination pagination-sm srm-pagination mb-0">
+                        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                            <button class="page-link srm-page-btn" data-page="${currentPage - 1}" aria-label="Previous">
+                                <i class="bi bi-chevron-left"></i>
+                            </button>
+                        </li>
+                        ${pageButtons}
+                        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                            <button class="page-link srm-page-btn" data-page="${currentPage + 1}" aria-label="Next">
+                                <i class="bi bi-chevron-right"></i>
+                            </button>
+                        </li>
+                    </ul>
+                </nav>
+            </div>`;
+
+        // Wire up click events
+        paginationContainer.querySelectorAll('.srm-page-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const p = parseInt(btn.dataset.page, 10);
+                if (!isNaN(p) && p >= 1 && p <= totalPages) {
+                    renderPage(p);
+                    // Scroll to top of containing card
+                    const el = tbody.closest('.card, .table-responsive, [class*="card"]');
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            });
+        });
+    }
+
+    // First render
+    renderPage(currentPage);
+
+    // Return a controller so caller can refresh without re-init
+    return {
+        goToPage: (p) => renderPage(p),
+        getCurrentPage: () => currentPage,
+        getTotalPages: () => totalPages,
+    };
+};

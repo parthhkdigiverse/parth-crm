@@ -11,7 +11,7 @@ if backend_dir not in sys.path:
     sys.path.insert(0, backend_dir)
 
 # Import config through the backend app package
-from app.core.config import HOST, PORT
+from app.core.config import HOST, PORT    
 import time
 
 _display_host = "localhost" if HOST == "0.0.0.0" else HOST

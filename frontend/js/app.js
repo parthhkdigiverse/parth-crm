@@ -280,7 +280,7 @@ async function renderDashboard() {
         
         <!-- Row 2: KPI Grid of 4 (Lovable Style) -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 24px; margin-bottom: 24px;">
-            <div class="stat-card" onclick="loadView('leads')" style="cursor:pointer;">
+            <div class="stat-card card-purple" onclick="loadView('leads')" style="cursor:pointer;">
                 <div class="stat-content-left">
                     <div class="stat-title">Total Leads</div>
                     <div class="stat-value">1,284</div>
@@ -291,7 +291,7 @@ async function renderDashboard() {
                 </div>
             </div>
             
-            <div class="stat-card" onclick="loadView('clients')" style="cursor:pointer;">
+            <div class="stat-card card-teal" onclick="loadView('clients')" style="cursor:pointer;">
                 <div class="stat-content-left">
                     <div class="stat-title">Active Clients</div>
                     <div class="stat-value">342</div>
@@ -302,7 +302,7 @@ async function renderDashboard() {
                 </div>
             </div>
             
-            <div class="stat-card" onclick="loadView('${kpi3.view}')" style="cursor:pointer;">
+            <div class="stat-card card-warning" onclick="loadView('${kpi3.view}')" style="cursor:pointer;">
                 <div class="stat-content-left">
                     <div class="stat-title">${kpi3.title}</div>
                     <div class="stat-value">${kpi3.value}</div>
@@ -313,7 +313,7 @@ async function renderDashboard() {
                 </div>
             </div>
             
-            <div class="stat-card" onclick="loadView('billing')" style="cursor:pointer;">
+            <div class="stat-card card-success" onclick="loadView('billing')" style="cursor:pointer;">
                 <div class="stat-content-left">
                     <div class="stat-title">Revenue (MTD)</div>
                     <div class="stat-value">₹24.5L</div>
@@ -1008,13 +1008,30 @@ async function renderDashboard() {
         const renderTableRows = (filtered) => {
             return filtered.length ? filtered.map(p => {
                 const prog = p.progress_percentage || 0;
+                const statusOptions = ['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CANCELLED'];
+                const statusDropdown = statusOptions.map(s => 
+                    `<a class="dropdown-item small py-2" href="javascript:void(0)" onclick="window.updateProjectStatus('${p.id}', '${s}')">
+                        ${statusBadge(s)} ${s === p.status ? '<i class="bi bi-check2 ms-1 text-success"></i>' : ''}
+                     </a>`
+                ).join('');
+
                 return `
                 <tr style="vertical-align: middle;">
                     <td style="font-weight:600; color:var(--text-main); padding: 20px 24px;">${p.name}</td>
                     <td class="text-muted" style="padding: 20px 24px;">${p.client_name || 'Client #' + p.client_id}</td>
                     <td style="padding: 20px 24px;">${pmanagerIcon(p.pm_name)}</td>
                     <td style="padding: 20px 24px;">${formatDateRange(p)}</td>
-                    <td style="padding: 20px 24px;">${statusBadge(p.status)}</td>
+                    <td style="padding: 20px 24px;">
+                        <div class="dropdown">
+                            <span role="button" data-bs-toggle="dropdown" aria-expanded="false" title="Click to change status">
+                                ${statusBadge(p.status)}
+                                <i class="bi bi-chevron-down" style="font-size:0.65rem; opacity:0.6; margin-left:2px;"></i>
+                            </span>
+                            <ul class="dropdown-menu shadow border-0 p-1" style="border-radius:10px; min-width:160px;">
+                                ${statusDropdown}
+                            </ul>
+                        </div>
+                    </td>
                     <td style="font-weight:600; color:var(--text-main); padding: 20px 24px;">${formatBudget(p.budget)}</td>
                     <td style="width: 180px; padding: 20px 24px;">
                         <div style="display:flex; align-items:center; gap:12px;">
@@ -1095,6 +1112,17 @@ async function renderDashboard() {
         // Initial filter application in case filter was already set
         if (window._projectFilter !== 'ALL' || window._projectSearch) applyFilters();
     }
+
+    window.updateProjectStatus = async (projectId, newStatus) => {
+        try {
+            await window.ApiClient.updateProject(projectId, { status: newStatus });
+            showToast(`Project status updated to ${newStatus.replace('_', ' ')}`);
+            await renderProjects();
+        } catch (e) {
+            console.error('Project update failed:', e);
+            showToast('Failed to update project status. You may not have permission.', 'error');
+        }
+    };
 
     // ─── HR & Payroll Modules ─────────────────────────────────────────────
     async function renderEmployees() {
@@ -1980,7 +2008,7 @@ async function renderDashboard() {
                                         <div class="text-muted small">Digital identity & verification</div>
                                     </div>
                                 </div>
-                                <button class="btn btn-sm btn-primary" onclick="window.open('${window.ApiClient.API_BASE_URL}/idcards/view_own', '_blank')">
+                                <button class="btn btn-sm btn-primary" onclick="window.open('${window.ApiClient.API_BASE_URL}/idcards/my/html', '_blank')">
                                     View Digital ID
                                 </button>
                             </div>
@@ -2021,7 +2049,7 @@ async function renderDashboard() {
         </div>
         
         <div class="grid-4" style="margin-bottom:24px;">
-            <div class="stat-card card">
+            <div class="stat-card card card-primary">
                 <div class="stat-content-left">
                     <div class="stat-title">Total Clients</div>
                     <div class="stat-value">${totalClients}</div>
@@ -2030,7 +2058,7 @@ async function renderDashboard() {
                 <div class="stat-icon-wrapper icon-purple"><i class="fa-solid fa-building"></i></div>
             </div>
             
-            <div class="stat-card card">
+            <div class="stat-card card card-danger">
                 <div class="stat-content-left">
                     <div class="stat-title">Open Issues</div>
                     <div class="stat-value">${openIssues}</div>
@@ -2039,7 +2067,7 @@ async function renderDashboard() {
                 <div class="stat-icon-wrapper icon-red"><i class="fa-solid fa-bug"></i></div>
             </div>
             
-            <div class="stat-card card">
+            <div class="stat-card card card-success">
                 <div class="stat-content-left">
                     <div class="stat-title">Field Visits</div>
                     <div class="stat-value">${totalVisits}</div>
@@ -2048,7 +2076,7 @@ async function renderDashboard() {
                 <div class="stat-icon-wrapper icon-teal"><i class="fa-solid fa-route"></i></div>
             </div>
             
-            <div class="stat-card card">
+            <div class="stat-card card card-warning">
                 <div class="stat-content-left">
                     <div class="stat-title">Total Shops</div>
                     <div class="stat-value">${totalShops}</div>
@@ -2416,3 +2444,65 @@ async function renderDashboard() {
             renderTimetable();
         }, "Schedule");
     };
+
+
+// ─── STANDARDIZED FILTER BEHAVIOR ─────────────────────────────────────
+// 1. Auto-filter on input change
+// 2. Closed by default (except Overview page)
+(function initGlobalFilterBehaviors() {
+    function applyStandardBehavior(container) {
+        if (!container) return;
+        
+        // 1. Close filter panels by default
+        // Skip if this is the dashboard/overview page
+        const isDashboard = document.title.includes('Overview') || 
+                           window.location.pathname.includes('dashboard.html');
+                           
+        if (!isDashboard) {
+            container.querySelectorAll('.filter-panel-body').forEach(body => {
+                body.classList.remove('open');
+            });
+            container.querySelectorAll('.filter-toggle-btn').forEach(btn => {
+                btn.classList.remove('open');
+            });
+        }
+
+        // 2. Auto-trigger 'Apply' on change
+        container.querySelectorAll('.filter-panel').forEach(panel => {
+            const inputs = panel.querySelectorAll('select, input[type="date"], input[type="text"]');
+            inputs.forEach(input => {
+                if (input.dataset.autoFilterInit) return;
+                input.addEventListener('change', () => {
+                    const applyBtn = panel.querySelector('.btn-filter-apply');
+                    if (applyBtn) {
+                        applyBtn.click();
+                    }
+                });
+                input.dataset.autoFilterInit = "true";
+            });
+        });
+    }
+
+    // Run on initial load
+    document.addEventListener('DOMContentLoaded', () => {
+        applyStandardBehavior(document);
+    });
+
+    // Hook into SPA view loading
+    const originalLoadView = window.loadView;
+    if (typeof originalLoadView === 'function') {
+        window.loadView = async function(viewName) {
+            if (originalLoadView && originalLoadView.constructor && originalLoadView.constructor.name === 'AsyncFunction') {
+                await originalLoadView(viewName);
+            } else if (originalLoadView) {
+                originalLoadView(viewName);
+            }
+            // Delay slightly to ensure DOM is settled
+            setTimeout(() => {
+                const mainContent = document.getElementById('main-content') || document.body;
+                applyStandardBehavior(mainContent);
+            }, 100);
+        };
+    }
+})();
+
