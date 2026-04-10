@@ -1169,7 +1169,7 @@
         }
 
         async function batchDeleteLeads() {
-            const selectedIds = Array.from(document.querySelectorAll('.lead-checkbox:checked')).map(cb => parseInt(cb.value));
+            const selectedIds = Array.from(document.querySelectorAll('.lead-checkbox:checked')).map(cb => cb.value);
             if (!selectedIds.length) return;
 
             const u = JSON.parse(sessionStorage.getItem('srm_user') || '{}');
@@ -1189,7 +1189,7 @@
             try {
                 await window.ApiClient.request('/shops/batch-delete', {
                     method: 'POST',
-                    body: selectedIds
+                    body: { ids: selectedIds }
                 });
                 showToast(`Successfully removed ${selectedIds.length} entries`, 'success');
                 await loadLeads();
@@ -1391,7 +1391,7 @@
                 await window.ApiClient.request(`/shops/${shopId}/assign-pm`, {
                     method: 'POST',
                     body: { 
-                        pm_id: parseInt(pmId),
+                        pm_id: pmId,
                         demo_scheduled_at: scheduledAt
                     }
                 });

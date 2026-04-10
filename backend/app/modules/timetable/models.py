@@ -20,3 +20,7 @@ class TimetableEvent(Document):
 
     class Settings:
         name = "srm_timetable_events"
+        bson_encoders = {
+            dt.time: str,
+            dt.date: lambda d: dt.datetime.combine(d, dt.time.min, tzinfo=dt.timezone.utc)
+        }

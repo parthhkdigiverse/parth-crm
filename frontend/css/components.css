@@ -964,6 +964,12 @@
     background: rgba(239, 68, 68, 0.05);
 }
 
+.sb-link.alert-highlight.active {
+    background: linear-gradient(90deg, #991b1b, #ef4444) !important;
+    box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35) !important;
+    color: #ffffff !important;
+}
+
 .sb-link.alert-highlight:hover {
     background: rgba(239, 68, 68, 0.1);
 }

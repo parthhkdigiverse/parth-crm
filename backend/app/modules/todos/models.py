@@ -37,3 +37,6 @@ class Todo(Document):
 
     class Settings:
         name = "srm_todos"
+        bson_encoders = {
+            time: str
+        }

@@ -1402,7 +1402,7 @@
 
                     const shopEditId = document.getElementById('s-id').value;
                     const name = document.getElementById('s-name').value.trim();
-                    const areaId = parseInt(document.getElementById('s-area').value);
+                    const areaId = document.getElementById('s-area').value;
                     const payload = {
                         name, area_id: areaId,
                         contact_person: document.getElementById('s-contact').value,
@@ -1412,7 +1412,7 @@
                         project_type: document.getElementById('s-project').value || null,
                     };
                     if (shopEditId) {
-                        await ApiClient.updateShop(parseInt(shopEditId), payload);
+                        await ApiClient.updateShop(shopEditId, payload);
                         toast('Shop updated!');
                     } else {
                         await ApiClient.createShop(payload);
@@ -1702,7 +1702,7 @@
             // 1. If "Select All" is checked AND (all shops are checked OR no shops exist), we send null 
             //    to trigger the cascading logic (Area + All Shops).
             // 2. Otherwise, we send ONLY the checked shop IDs.
-            const shopIds = (selectAll && checkedCbs.length === allCbs.length) ? null : Array.from(checkedCbs).map(cb => parseInt(cb.value));
+            const shopIds = (selectAll && checkedCbs.length === allCbs.length) ? null : Array.from(checkedCbs).map(cb => cb.value);
 
             try {
                 // Pass array of userIds instead of single userId

@@ -356,32 +356,61 @@
         let _allProjects = []; // cache for client auto-fill
         let _allClients = []; // cache for client name lookup
 
-        Promise.all([
-            apiGet('/projects/?limit=200'),
-            apiGet('/clients/')
-        ]).then(([projects, clients]) => {
-            _allProjects = projects || [];
-            _allClients = clients || [];
-
+        async function loadModalData() {
             const projSelect = document.getElementById('i-project');
-            projSelect.innerHTML = '<option value="">-- Select Project --</option>' +
-                _allProjects.map(p => `<option value="${p.id}" data-client-id="${p.client_id}">${p.name}</option>`).join('');
+            const handlerSelect = document.getElementById('i-handler');
+            
+            projSelect.innerHTML = '<option value="">Loading Projects...</option>';
+            
+            try {
+                const [projects, clients, usersRes] = await Promise.all([
+                    apiGet('/projects/'),
+                    apiGet('/clients/'),
+                    apiGet('/users/')
+                ]);
+                
+                _allProjects = projects || [];
+                _allClients = clients || [];
+                const users = Array.isArray(usersRes) ? usersRes : (usersRes.data || usersRes.items || []);
 
-            // Handle URL param: if client_id passed, pre-filter projects & open modal
-            const urlClient = new URLSearchParams(window.location.search).get('client_id');
-            if (urlClient) {
-                // Pre-select first project belonging to this client
-                const match = _allProjects.find(p => String(p.client_id) === String(urlClient));
-                if (match) {
-                    projSelect.value = match.id;
-                    autoFillClientFromProject();
+                // Populate Projects
+                projSelect.innerHTML = '<option value="">-- Select Project --</option>' +
+                    _allProjects.map(p => `<option value="${p.id}" data-client-id="${p.client_id}">${p.name}</option>`).join('');
+
+                // Populate Handlers
+                const activeStaff = users.filter(u => u.is_active);
+                handlerSelect.innerHTML = `
+                    <option value="">-- Default (Project PM) --</option>
+                    <optgroup label="Team Assignments (Broadcast)">
+                        <option value="GROUP_ALL">Assign All (Company Wide)</option>
+                        <option value="GROUP_SALES">Assign All SALES Team</option>
+                        <option value="GROUP_PM">Assign All PMs</option>
+                        <option value="GROUP_PM_SALES">Assign All PMs & SALES Team</option>
+                    </optgroup>
+                    <optgroup label="Individual Assignments">
+                        ${activeStaff.map(u => `<option value="${u.id}">${u.name || u.email} (${(u.role || '').replace('_', ' ')})</option>`).join('')}
+                    </optgroup>
+                `;
+
+                // Handle URL param: if client_id passed, pre-filter projects & open modal
+                const urlClient = new URLSearchParams(window.location.search).get('client_id');
+                if (urlClient) {
+                    const match = _allProjects.find(p => String(p.client_id) === String(urlClient));
+                    if (match) {
+                        projSelect.value = match.id;
+                        autoFillClientFromProject();
+                    }
+                    openReportModal();
                 }
-                openReportModal();
+            } catch (err) {
+                console.error('Failed to load modal data', err);
+                projSelect.innerHTML = '<option value="">Error loading data. Click to retry.</option>';
+                projSelect.onclick = () => { projSelect.onclick = null; loadModalData(); };
+                showToast('Failed to load project/client data', 'error');
             }
-        }).catch(err => {
-            console.error('Failed to load projects/clients for issue modal', err);
-            document.getElementById('i-project').innerHTML = '<option value="">Error loading projects</option>';
-        });
+        }
+
+        loadModalData();
 
         window.openReportModal = () => {
             const modalEl = document.getElementById('addIssueModal');
@@ -391,24 +420,7 @@
             bootstrap.Modal.getOrCreateInstance(modalEl).show();
         };
 
-        // Load users for handler assignment
-        apiGet('/users/').then(usersRes => {
-            const users = Array.isArray(usersRes) ? usersRes : (usersRes.data || usersRes.items || usersRes.users || []);
-            const sel = document.getElementById('i-handler');
-            const activeStaff = users.filter(u => u.is_active);
-            sel.innerHTML = `
-                <option value="">-- Default (Project PM) --</option>
-                <optgroup label="Team Assignments (Broadcast)">
-                    <option value="GROUP_ALL">Assign All (Company Wide)</option>
-                    <option value="GROUP_SALES">Assign All SALES Team</option>
-                    <option value="GROUP_PM">Assign All PMs</option>
-                    <option value="GROUP_PM_SALES">Assign All PMs & SALES Team</option>
-                </optgroup>
-                <optgroup label="Individual Assignments">
-                    ${activeStaff.map(u => `<option value="${u.id}">${u.name || u.email} (${(u.role || '').replace('_', ' ')})</option>`).join('')}
-                </optgroup>
-            `;
-        }).catch(() => { });
+        /* Handlers populated in loadModalData */
 
         // Auto-fill client from selected project
         window.autoFillClientFromProject = () => {
@@ -468,7 +480,7 @@
             if (handlerVal.startsWith('GROUP_')) {
                 assignedGroup = handlerVal;
             } else if (handlerVal) {
-                assignedId = parseInt(handlerVal);
+                assignedId = handlerVal;
             }
 
             const btn = document.getElementById('save-issue-btn');
@@ -508,27 +520,23 @@
             });
         }
 
-        async function batchDeleteIssues() {
-            const selectedIds = Array.from(document.querySelectorAll('.issue-checkbox:checked')).map(cb => parseInt(cb.value));
-            if (!selectedIds.length) return;
-
-            if (getUser().role !== 'ADMIN') {
-                showToast('Only Admins can perform bulk delete', 'error');
-                return;
-            }
-
-            if (!confirm(`Delete ${selectedIds.length} issues permanently?`)) return;
-
-            try {
-                await ApiClient.request('/issues/batch-delete', {
-                    method: 'POST',
-                    body: selectedIds
-                });
-                showToast(`Successfully removed ${selectedIds.length} issues`, 'success');
-                loadIssues();
-            } catch (err) {
-                showToast('Bulk delete failed', 'error');
-            }
+        // Modal reset on close
+        const addIssueModalEl = document.getElementById('addIssueModal');
+        if (addIssueModalEl) {
+            addIssueModalEl.addEventListener('hidden.bs.modal', () => {
+                document.getElementById('i-project').value = '';
+                document.getElementById('i-client').value = '';
+                document.getElementById('i-title').value = '';
+                document.getElementById('i-desc').value = '';
+                document.getElementById('i-handler').value = '';
+                document.getElementById('i-sev').value = 'MEDIUM';
+                document.getElementById('i-client-display').textContent = '-- Auto-filled from Project --';
+                document.getElementById('i-client-display').className = 'form-control bg-light text-muted';
+                
+                // Clear validation state
+                addIssueModalEl.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+                addIssueModalEl.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
+            });
         }
 
         // Initialize Filters

@@ -130,7 +130,8 @@ class IssueService:
         # -- In-App Notifications --
         try:
             severity = db_issue.severity or "MEDIUM"
-            notif_title = "⚠️ New Issue Reported"
+            is_critical = severity == "HIGH"
+            notif_title = f"[{'Critical' if is_critical else 'Issue'}] {'⚠️ ' if is_critical else ''}New Issue Reported"
             notif_msg = f"A {severity} issue '{db_issue.title}' was reported for '{client.name}' by {current_user.name or current_user.email}."
             
             if assigned_group:
@@ -171,7 +172,7 @@ class IssueService:
         
         # Notify reporter on status change
         if "status" in update_data and db_issue.reporter_id:
-             await create_notification(db_issue.reporter_id, "🔄 Issue Status Updated", f"Issue '{db_issue.title}' status changed to '{db_issue.status}' by {current_user.name or current_user.email}.", actor_id=current_user.id)
+             await create_notification(db_issue.reporter_id, "[Issue] 🔄 Issue Status Updated", f"Issue '{db_issue.title}' status changed to '{db_issue.status}' by {current_user.name or current_user.email}.", actor_id=current_user.id)
         
         return db_issue
 

@@ -178,7 +178,7 @@ window.renderSidebar = function (active) {
                 <i class="bi ${icon} sb-sec-icon"></i>
                 <div class="d-flex align-items-center gap-2">
                     <span>${title}</span>
-                    ${sectionHasAlert ? '<span class="sb-sec-dot" style="background:#f59e0b;"></span>' : ''}
+                    ${sectionHasAlert ? '<span class="sb-sec-dot" style="background:#ef4444;"></span>' : ''}
                 </div>
                 <i class="bi bi-chevron-right sb-arrow"></i>
             </div>
@@ -1018,16 +1018,22 @@ window.checkHighPriorityIssues = async function () {
                 const dot = document.getElementById('nav-notif-dot');
                 if (dot) dot.classList.remove('d-none');
             }
-        } else if (alertEl) {
-            alertEl.remove();
-            sessionStorage.removeItem('crm_high_issue_count');
-            const topHeader = document.querySelector('.top-header');
-            if (topHeader) topHeader.style.top = '0';
-            const sidebar = document.getElementById('sidebar-container');
-            if (sidebar) {
-                sidebar.style.height = '100vh';
-                sidebar.style.top = '0';
+        } else {
+            if (alertEl) {
+                alertEl.remove();
+                const topHeader = document.querySelector('.top-header');
+                if (topHeader) topHeader.style.top = '0';
+                const sidebar = document.getElementById('sidebar-container');
+                if (sidebar) {
+                    sidebar.style.height = '100vh';
+                    sidebar.style.top = '0';
+                }
             }
+            // Remove bell section if it exists
+            const bellHigh = document.getElementById('bell-high-issues-section');
+            if (bellHigh) bellHigh.remove();
+            
+            sessionStorage.removeItem('crm_high_issue_count');
         }
     } catch (e) {
         console.error("High Priority check failed", e);
@@ -1212,8 +1218,8 @@ window.renderFilterPanel = function (config) {
 // Start both polls
 window.startAllPolling = function () {
     startNotificationPolling();
-    // High priority check every 60s
-    setInterval(window.checkHighPriorityIssues, 60000);
+    // High priority check every 30s
+    setInterval(window.checkHighPriorityIssues, 30000);
 };
 
 // ─── Dark Mode ────────────────────────────────────────────────
@@ -1863,8 +1869,14 @@ window.renderPagination = function (options) {
                 if (!isNaN(p) && p >= 1 && p <= totalPages) {
                     renderPage(p);
                     // Scroll to top of containing card
-                    const el = tbody.closest('.card, .table-responsive, [class*="card"]');
-                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    const scrollTargetId = tbodyId || (targets && targets[0] ? targets[0].id : null);
+                    if (scrollTargetId) {
+                        const targetEl = document.getElementById(scrollTargetId);
+                        if (targetEl) {
+                            const el = targetEl.closest('.card, .table-responsive, [class*="card"]');
+                            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }
+                    }
                 }
             });
         });
