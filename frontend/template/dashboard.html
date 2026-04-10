@@ -948,22 +948,27 @@
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 10px;
-            overflow: hidden;
+            overflow: visible; /* Ensure buttons aren't clipped if wrapped or slightly overflow */
             box-shadow: var(--shadow-xs);
+            flex-wrap: wrap; /* Allow wrapping on narrow containers */
         }
 
         .period-btn {
-            background: transparent;
+            background: #ffffff;
             border: none;
             border-right: 1px solid var(--border);
-            padding: 6px 15px;
+            padding: 6px 14px;
             font-size: 0.78rem;
             font-weight: 600;
-            color: var(--text-muted);
             cursor: pointer;
-            transition: background 0.15s, color 0.15s;
+            transition: all 0.2s ease;
             white-space: nowrap;
             line-height: 1.4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 80px; /* Prevent text from disappearing */
+            flex: 1 0 auto;
         }
 
         .period-btn:last-child {
@@ -976,8 +981,14 @@
         }
 
         .period-btn.active {
-            background: var(--primary);
-            color: #fff;
+            background-color: #2563eb !important;
+            color: #ffffff !important;
+            z-index: 1;
+        }
+
+        .period-btn:not(.active) {
+            color: var(--text-muted);
+            background: #ffffff;
         }
 
         .period-btn.active:hover {
@@ -2122,11 +2133,11 @@
                     const rawData = stats.visit_status_breakdown || {};
                     
                     const config = {
-                        'SATISFIED': { label: 'Satisfied', color: '#3b82f6' },
+                        'SATISFIED': { label: 'Satisfied (Demo Set)', color: '#3b82f6' },
                         'ACCEPT': { label: 'Accepted', color: '#10b981' },
                         'TAKE_TIME_TO_THINK': { label: 'Needs Time', color: '#f59e0b' },
                         'DECLINE': { label: 'Declined', color: '#ef4444' },
-                        'MISSED': { label: 'Missed', color: '#94a3b8' },
+                        'MISSED': { label: 'Missed Visit', color: '#94a3b8' },
                         'OTHER': { label: 'Other', color: '#64748b' }
                     };
 
@@ -2700,18 +2711,32 @@
                     // Update KPIs (with null guards since non-admin dashboard may differ)
                     const flags = getRoleFlags(currentUser?.role);
 
+                    const isAllTime = !start && !end;
+
                     // Card 1: Visits / Active Projects
                     const kpiLeads = document.getElementById('kpi-leads');
                     const val1 = flags.isPM ? stats.ongoing_projects : stats.total_visits;
                     if (kpiLeads) kpiLeads.textContent = (val1 || 0).toLocaleString('en-IN');
                     const kpiLeadsTrend = document.getElementById('kpi-leads-trend');
-                    if (kpiLeadsTrend) kpiLeadsTrend.innerHTML = formatTrend(flags.isPM ? stats.projects_mom_pct : stats.visits_mom_pct || 0);
+                    if (kpiLeadsTrend) {
+                        if (isAllTime) kpiLeadsTrend.style.display = 'none';
+                        else {
+                            kpiLeadsTrend.innerHTML = formatTrend(flags.isPM ? stats.projects_mom_pct : stats.visits_mom_pct || 0);
+                            kpiLeadsTrend.style.display = 'flex';
+                        }
+                    }
 
                     // Card 2: Clients / Leads
                     const kpiClients = document.getElementById('kpi-clients');
                     if (kpiClients) kpiClients.textContent = (stats.active_clients || 0).toLocaleString('en-IN');
                     const kpiClientsTrend = document.getElementById('kpi-clients-trend');
-                    if (kpiClientsTrend) kpiClientsTrend.innerHTML = formatTrend(stats.clients_mom_pct || 0);
+                    if (kpiClientsTrend) {
+                        if (isAllTime) kpiClientsTrend.style.display = 'none';
+                        else {
+                            kpiClientsTrend.innerHTML = formatTrend(stats.clients_mom_pct || 0);
+                            kpiClientsTrend.style.display = 'flex';
+                        }
+                    }
 
                     // Card 3: Employees / Incentive / Meetings
                     const kpiEmployees = document.getElementById('kpi-employees');
@@ -2725,7 +2750,13 @@
                     }
                     if (kpiEmployees) kpiEmployees.textContent = val3Suffix + (val3 || 0).toLocaleString('en-IN');
                     const kpiEmployeesTrend = document.getElementById('kpi-employees-trend');
-                    if (kpiEmployeesTrend) kpiEmployeesTrend.innerHTML = formatTrend(stats.presence_mom_pct || 0);
+                    if (kpiEmployeesTrend) {
+                        if (isAllTime) kpiEmployeesTrend.style.display = 'none';
+                        else {
+                            kpiEmployeesTrend.innerHTML = formatTrend(stats.presence_mom_pct || 0);
+                            kpiEmployeesTrend.style.display = 'flex';
+                        }
+                    }
 
                     // Card 4: Revenue / Todos / Issues
                     const kpiRevenue = document.getElementById('kpi-revenue');
@@ -2737,7 +2768,13 @@
                         else if (rev >= 100000) revText = '₹' + (rev / 100000).toFixed(1) + 'L';
                         else if (rev >= 1000) revText = '₹' + (rev / 1000).toFixed(1) + 'K';
                         if (kpiRevenue) kpiRevenue.textContent = revText;
-                        if (kpiRevenueTrend) kpiRevenueTrend.innerHTML = formatTrend(stats.revenue_mom_pct || 0);
+                        if (kpiRevenueTrend) {
+                            if (isAllTime) kpiRevenueTrend.style.display = 'none';
+                            else {
+                                kpiRevenueTrend.innerHTML = formatTrend(stats.revenue_mom_pct || 0);
+                                kpiRevenueTrend.style.display = 'flex';
+                            }
+                        }
                         // Update label to "Total Revenue" (all SENT invoices)
                         const revLabel = document.getElementById('kpi-revenue-label');
                         if (revLabel) revLabel.textContent = 'Total Revenue';
@@ -2932,8 +2969,8 @@
 
             // Update KPI labels (Role-Aware)
             const rolePrefixes = {
-                SALES: ['My Visits', 'My Leads', 'My Incentive', 'Pending Tasks'],
-                TELESALES: ['My Visits', 'My Leads', 'My Incentive', 'Pending Tasks'],
+                SALES: ['Shops Visited', 'Deals Closed', 'My Incentive', 'Pending Tasks'],
+                TELESALES: ['Shops Visited', 'Deals Closed', 'My Incentive', 'Pending Tasks'],
                 PROJECT_MANAGER: ['Active Projects', 'My Clients', 'Today\'s Meetings', 'Open Issues'],
                 ADMIN: ['Total Visits', 'Active Clients', 'Present Employees', 'Total Revenue']
             };

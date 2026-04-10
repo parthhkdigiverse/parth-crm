@@ -175,9 +175,7 @@
             }
         }
 
-        .page-header-glass {
-            margin-bottom: 0 !important;
-        }
+        /* Removed margin-bottom override for consistency */
     </style>
 </head>
 
@@ -188,7 +186,7 @@
             <div class="page-content-standard">
                 <!-- Removed inner p-4 to prevent double padding -->
 
-                    <div class="page-header-glass d-flex align-items-center justify-content-between flex-wrap gap-3">
+                    <div class="page-header-glass mb-4 d-flex align-items-center justify-content-between flex-wrap gap-3">
                         <div>
                             <h2 class="page-section-title fw-bold mb-1">Users &amp; Roles</h2>
                             <p class="text-muted mb-0 small">Manage system access and role assignments.</p>
@@ -199,7 +197,7 @@
                     </div>
 
                     <!-- Filter Bar (same component as Leaves / Issues pages) -->
-                    <div id="filter-wrapper"></div>
+                    <div id="filter-wrapper" class="mb-4"></div>
 
                     <!-- Users Table -->
                     <div class="grid-card">

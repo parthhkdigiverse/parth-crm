@@ -251,7 +251,7 @@ class AttendanceService:
                 user_id=current_user.id,
                 user_role=current_user.role,
                 action=ActionType.UPDATE,
-                entity_type=EntityType.ATTENDANCE,
+                entity_type="ATTENDANCE",
                 entity_id=record.id,
                 new_data={"manual_punch_out": punch_out_time, "total_hours": record.total_hours},
             )
