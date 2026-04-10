@@ -13,7 +13,10 @@
     <link rel="stylesheet" href="/frontend/css/theme.css?v=20260406">
     <link rel="stylesheet" href="/frontend/css/components.css?v=20260406">
     <style>
-        body { font-family: 'Outfit', sans-serif; background: var(--bg-app); }
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-app);
+        }
 
         .page-header-banner {
             background: linear-gradient(135deg, #2563eb 0%, #2563eb 60%, #a855f7 100%);
@@ -23,29 +26,35 @@
             margin-bottom: 2rem;
             position: relative;
             overflow: hidden;
-            box-shadow: 0 12px 40px rgba(79,70,229,0.25);
+            box-shadow: 0 12px 40px rgba(79, 70, 229, 0.25);
         }
+
         .page-header-banner::before {
             content: '';
             position: absolute;
-            top: -60px; right: -40px;
-            width: 260px; height: 260px;
-            background: rgba(255,255,255,0.08);
+            top: -60px;
+            right: -40px;
+            width: 260px;
+            height: 260px;
+            background: rgba(255, 255, 255, 0.08);
             border-radius: 50%;
         }
+
         .page-header-banner::after {
             content: '';
             position: absolute;
-            bottom: -80px; left: 30%;
-            width: 200px; height: 200px;
-            background: rgba(255,255,255,0.05);
+            bottom: -80px;
+            left: 30%;
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.05);
             border-radius: 50%;
         }
 
         .demo-table-card {
             background: var(--bg-surface);
             border-radius: 16px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
             border: 1px solid var(--border-subtle);
             overflow: visible;
         }
@@ -55,12 +64,14 @@
             align-items: center;
             gap: 4px;
         }
+
         .demo-step {
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 2px;
         }
+
         .demo-step-dot {
             width: 28px;
             height: 28px;
@@ -75,25 +86,35 @@
             color: var(--text-muted);
             transition: all 0.3s;
         }
+
         .demo-step-dot.done {
             background: #10b981;
             border-color: #10b981;
             color: white;
         }
+
         .demo-step-dot.active {
             background: #2563eb;
             border-color: #2563eb;
             color: white;
-            box-shadow: 0 0 0 3px rgba(79,70,229,0.2);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
         }
+
         .demo-step-label {
             font-size: 0.62rem;
             color: #94a3b8;
             font-weight: 600;
             text-align: center;
         }
-        .demo-step-label.done { color: #10b981; }
-        .demo-step-label.active { color: #2563eb; }
+
+        .demo-step-label.done {
+            color: #10b981;
+        }
+
+        .demo-step-label.active {
+            color: #2563eb;
+        }
+
         .demo-step-connector {
             width: 18px;
             height: 2px;
@@ -101,16 +122,25 @@
             margin-bottom: 14px;
             transition: background 0.3s;
         }
-        .demo-step-connector.done { background: #10b981; }
 
-        .btn-create-client { font-size: 0.8rem; }
-        .btn-demo-action { font-size: 0.78rem; }
+        .demo-step-connector.done {
+            background: #10b981;
+        }
+
+        .btn-create-client {
+            font-size: 0.8rem;
+        }
+
+        .btn-demo-action {
+            font-size: 0.78rem;
+        }
 
         .empty-state {
             padding: 5rem 2rem;
             text-align: center;
             color: #94a3b8;
         }
+
         .status-badge-ms {
             font-size: 0.68rem;
             font-weight: 700;
@@ -129,15 +159,18 @@
             <div class="page-content mx-auto" style="max-width: 1200px;">
 
                 <!-- Page Header -->
-                <div class="page-header-banner d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3">
+                <div
+                    class="page-header-banner d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-3">
                     <div style="position:relative;z-index:1;">
                         <div class="d-flex align-items-center gap-2 mb-2">
-                            <span class="badge" style="background:rgba(255,255,255,0.2);font-size:0.75rem;padding:5px 12px;border-radius:20px;">
+                            <span class="badge"
+                                style="background:rgba(255,255,255,0.2);font-size:0.75rem;padding:5px 12px;border-radius:20px;">
                                 <i class="bi bi-collection-play me-1"></i>Demo Pipeline
                             </span>
                         </div>
                         <h1 class="fw-bold mb-1" style="font-size:1.8rem;">PM Demo Dashboard</h1>
-                        <p class="mb-0 opacity-75" style="font-size:0.95rem;">Manage your assigned leads · Schedule demos · First demo advances to Meeting Set</p>
+                        <p class="mb-0 opacity-75" style="font-size:0.95rem;">Manage your assigned leads · Schedule
+                            demos · First demo advances to Meeting Set</p>
                     </div>
                     <!-- Refresh button removed -->
                 </div>
@@ -147,14 +180,18 @@
                     <div class="col-12 col-md-4">
                         <div class="card border-0 shadow-sm rounded-4 h-100 has-stripe">
                             <div class="card-body p-3 pt-4 d-flex align-items-center gap-3">
-                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width:44px;height:44px;background:var(--icon-bg-blue);color:var(--icon-text-blue);">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                    style="width:44px;height:44px;background:var(--icon-bg-blue);color:var(--icon-text-blue);">
                                     <i class="bi bi-people fs-5"></i>
                                 </div>
                                 <div>
-                                    <div class="text-muted fw-bold" style="font-size:0.65rem;letter-spacing:0.5px;">TOTAL ASSIGNED LEADS</div>
+                                    <div class="text-muted fw-bold" style="font-size:0.65rem;letter-spacing:0.5px;">
+                                        TOTAL ASSIGNED LEADS</div>
                                     <h4 class="fw-bold mb-0 text-dark" id="kpi-total">0</h4>
-                                    <div class="d-flex align-items-center gap-1 mt-1" style="font-size:0.68rem;color:var(--text-muted);">
-                                        <i class="bi bi-bar-chart-line" style="font-size:0.7rem;"></i>&nbsp;Active pipeline
+                                    <div class="d-flex align-items-center gap-1 mt-1"
+                                        style="font-size:0.68rem;color:var(--text-muted);">
+                                        <i class="bi bi-bar-chart-line" style="font-size:0.7rem;"></i>&nbsp;Active
+                                        pipeline
                                     </div>
                                 </div>
                             </div>
@@ -163,13 +200,16 @@
                     <div class="col-12 col-md-4">
                         <div class="card border-0 shadow-sm rounded-4 h-100 has-stripe">
                             <div class="card-body p-3 pt-4 d-flex align-items-center gap-3">
-                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width:44px;height:44px;background:var(--icon-bg-yellow);color:var(--icon-text-yellow);">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                    style="width:44px;height:44px;background:var(--icon-bg-yellow);color:var(--icon-text-yellow);">
                                     <i class="bi bi-hourglass-split fs-5"></i>
                                 </div>
                                 <div>
-                                    <div class="text-muted fw-bold" style="font-size:0.65rem;letter-spacing:0.5px;">PENDING 1ST DEMO</div>
+                                    <div class="text-muted fw-bold" style="font-size:0.65rem;letter-spacing:0.5px;">
+                                        PENDING 1ST DEMO</div>
                                     <h4 class="fw-bold mb-0 text-dark" id="kpi-pending">0</h4>
-                                    <div class="d-flex align-items-center gap-1 mt-1" style="font-size:0.68rem;color:var(--warning-text);">
+                                    <div class="d-flex align-items-center gap-1 mt-1"
+                                        style="font-size:0.68rem;color:var(--warning-text);">
                                         <i class="bi bi-clock" style="font-size:0.7rem;"></i>&nbsp;Awaiting schedule
                                     </div>
                                 </div>
@@ -179,14 +219,18 @@
                     <div class="col-12 col-md-4">
                         <div class="card border-0 shadow-sm rounded-4 h-100 has-stripe">
                             <div class="card-body p-3 pt-4 d-flex align-items-center gap-3">
-                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width:44px;height:44px;background:var(--icon-bg-green);color:var(--icon-text-green);">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                    style="width:44px;height:44px;background:var(--icon-bg-green);color:var(--icon-text-green);">
                                     <i class="bi bi-check-circle fs-5"></i>
                                 </div>
                                 <div>
-                                    <div class="text-muted fw-bold" style="font-size:0.65rem;letter-spacing:0.5px;">COMPLETED DEMO</div>
+                                    <div class="text-muted fw-bold" style="font-size:0.65rem;letter-spacing:0.5px;">
+                                        COMPLETED DEMO</div>
                                     <h4 class="fw-bold mb-0 text-dark" id="kpi-completed">0</h4>
-                                    <div class="d-flex align-items-center gap-1 mt-1" style="font-size:0.68rem;color:var(--success-text);">
-                                        <i class="bi bi-graph-up-arrow" style="font-size:0.7rem;"></i>&nbsp;At least 1 demo done
+                                    <div class="d-flex align-items-center gap-1 mt-1"
+                                        style="font-size:0.68rem;color:var(--success-text);">
+                                        <i class="bi bi-graph-up-arrow" style="font-size:0.7rem;"></i>&nbsp;At least 1
+                                        demo done
                                     </div>
                                 </div>
                             </div>
@@ -196,7 +240,8 @@
 
                 <!-- Filters -->
                 <div class="filter-panel">
-                    <div class="filter-panel-head" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.filter-toggle-btn').classList.toggle('open');">
+                    <div class="filter-panel-head"
+                        onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.filter-toggle-btn').classList.toggle('open');">
                         <div class="filter-panel-head-left">
                             <i class="bi bi-filter"></i> Filters
                         </div>
@@ -241,9 +286,11 @@
                             <div class="filter-field d-none" id="custom-date-container-col">
                                 <label>Custom Range</label>
                                 <div class="filter-date-range" id="custom-date-container">
-                                    <input type="date" class="form-control" id="filter-custom-start" onchange="applyDemoFilters()">
+                                    <input type="date" class="form-control" id="filter-custom-start"
+                                        onchange="applyDemoFilters()">
                                     <span><i class="bi bi-arrow-right"></i></span>
-                                    <input type="date" class="form-control" id="filter-custom-end" onchange="applyDemoFilters()">
+                                    <input type="date" class="form-control" id="filter-custom-end"
+                                        onchange="applyDemoFilters()">
                                 </div>
                             </div>
                         </div>
@@ -252,9 +299,12 @@
 
                 <!-- Demo Queue Table -->
                 <div class="demo-table-card">
-                    <div class="p-3 border-bottom d-flex align-items-center justify-content-between" style="background:var(--bg-app);">
-                        <span class="fw-bold text-main" style="font-size:0.95rem;"><i class="bi bi-table me-2 text-primary"></i>Assigned Leads</span>
-                        <span class="badge bg-primary-subtle text-primary rounded-pill" id="queue-count-badge">0 leads</span>
+                    <div class="p-3 border-bottom d-flex align-items-center justify-content-between"
+                        style="background:var(--bg-app);">
+                        <span class="fw-bold text-main" style="font-size:0.95rem;"><i
+                                class="bi bi-table me-2 text-primary"></i>Assigned Leads</span>
+                        <span class="badge bg-primary-subtle text-primary rounded-pill" id="queue-count-badge">0
+                            leads</span>
                     </div>
                     <div id="demo-table-desktop"></div>
                     <div id="demo-table-mobile"></div>
@@ -268,22 +318,27 @@
     <!-- Schedule Demo Modal -->
     <div class="modal fade" id="scheduleDemoModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.3); background: var(--bg-surface);">
+            <div class="modal-content"
+                style="border-radius: 16px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.3); background: var(--bg-surface);">
                 <div class="modal-header" style="border-bottom: 1px solid var(--border-subtle); padding: 20px 24px;">
-                    <h5 class="modal-title fw-bold text-main"><i class="bi bi-calendar-event text-primary me-2"></i>Schedule / Reschedule Demo</h5>
+                    <h5 class="modal-title fw-bold text-main"><i
+                            class="bi bi-calendar-event text-primary me-2"></i>Schedule / Reschedule Demo</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-4">
                     <input type="hidden" id="sched-shop-id">
-                    <input type="hidden" id="sched-pm-id"> <div class="mb-3">
+                    <input type="hidden" id="sched-pm-id">
+                    <div class="mb-3">
                         <label class="form-label fw-bold text-secondary small mb-1">Target Shop</label>
-                        <input type="text" id="sched-shop-name" class="form-control bg-app" readonly disabled style="border-radius: 8px;">
+                        <input type="text" id="sched-shop-name" class="form-control bg-app" readonly disabled
+                            style="border-radius: 8px;">
                     </div>
-                    
+
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
                             <label class="form-label fw-bold text-secondary small mb-1">Demo Title</label>
-                            <input type="text" id="sched-title" class="form-control" placeholder="e.g. Platform Overview" style="border-radius: 8px;">
+                            <input type="text" id="sched-title" class="form-control"
+                                placeholder="e.g. Platform Overview" style="border-radius: 8px;">
                             <div class="invalid-feedback">Title is required</div>
                         </div>
                         <div class="col-md-6">
@@ -297,27 +352,35 @@
 
                     <div class="mb-3">
                         <label class="form-label fw-bold text-secondary small mb-2">Demo Date</label>
-                        <input type="date" id="sched-date" class="form-control form-control-lg shadow-sm mb-3" onchange="fetchDemoTimeSlots()" style="border-radius: 10px; font-size: 0.95rem; border-color: #e2e8f0;">
+                        <input type="date" id="sched-date" class="form-control form-control-lg shadow-sm mb-3"
+                            onchange="fetchDemoTimeSlots()"
+                            style="border-radius: 10px; font-size: 0.95rem; border-color: #e2e8f0;">
                         <div class="invalid-feedback">Date is required</div>
-                        
+
                         <label class="form-label fw-bold text-secondary small mb-2">Available Time Slots</label>
                         <div id="time-slots-container" class="d-flex flex-wrap gap-2">
-                            <div class="text-muted small w-100 text-center py-4" style="background: var(--bg-app); border-radius: 10px; border: 1px dashed var(--border);">
+                            <div class="text-muted small w-100 text-center py-4"
+                                style="background: var(--bg-app); border-radius: 10px; border: 1px dashed var(--border);">
                                 Loading calendar availability...
                             </div>
                         </div>
                         <input type="hidden" id="sched-time-slot">
-                        <div class="invalid-feedback d-block" id="slot-error" style="display:none !important;">Please select a time slot</div>
+                        <div class="invalid-feedback d-block" id="slot-error" style="display:none !important;">Please
+                            select a time slot</div>
                     </div>
 
                     <div class="mb-2">
                         <label class="form-label fw-bold text-secondary small mb-1">Pre-Demo Notes</label>
-                        <textarea id="sched-notes" class="form-control" rows="2" placeholder="Any specific requirements..." style="border-radius: 8px;"></textarea>
+                        <textarea id="sched-notes" class="form-control" rows="2"
+                            placeholder="Any specific requirements..." style="border-radius: 8px;"></textarea>
                     </div>
                 </div>
-                <div class="modal-footer" style="border-top: none; padding: 0 24px 24px; justify-content: space-between;">
-                    <button type="button" class="btn btn-light fw-bold" data-bs-dismiss="modal" style="border-radius: 10px; padding: 10px 20px;">Cancel</button>
-                    <button type="button" class="btn btn-primary fw-bold shadow-sm" id="save-demo-btn" onclick="saveDemoMeeting()" style="border-radius: 10px; padding: 10px 24px;" disabled>
+                <div class="modal-footer"
+                    style="border-top: none; padding: 0 24px 24px; justify-content: space-between;">
+                    <button type="button" class="btn btn-light fw-bold" data-bs-dismiss="modal"
+                        style="border-radius: 10px; padding: 10px 20px;">Cancel</button>
+                    <button type="button" class="btn btn-primary fw-bold shadow-sm" id="save-demo-btn"
+                        onclick="saveDemoMeeting()" style="border-radius: 10px; padding: 10px 24px;" disabled>
                         <i class="bi bi-calendar-check me-2"></i> Save Schedule
                     </button>
                 </div>
@@ -347,7 +410,7 @@
         function renderDemoTable(shops) {
             const user = window.getUser ? window.getUser() : JSON.parse(localStorage.getItem('crm_user') || '{}');
             const showPMColumn = ['ADMIN', 'SALES', 'TELESALES'].includes(user.role?.toUpperCase());
-            
+
             const badge = document.getElementById('queue-count-badge');
             badge.textContent = `${shops.length} lead${shops.length !== 1 ? 's' : ''}`;
 
@@ -457,10 +520,10 @@
         window.updateDemoKPIs = (data) => {
             // 1. Total
             document.getElementById('kpi-total').textContent = data.length.toString();
-            
+
             // 2. Pending 1st Demo
             document.getElementById('kpi-pending').textContent = data.filter(lead => (lead.demo_stage || 0) === 0).length.toString();
-            
+
             // 3. Completed Demo: has had at least 1 demo
             document.getElementById('kpi-completed').textContent = data.filter(lead => (lead.demo_stage || 0) > 0).length.toString();
         };
@@ -468,7 +531,7 @@
         window.populateDemoFilters = () => {
             const pmFilter = document.getElementById('filter-pm');
             const ownerFilter = document.getElementById('filter-owner');
-            if(!pmFilter) return;
+            if (!pmFilter) return;
 
             const pms = [...new Set(window.allDemoShops.map(s => s.assigned_pm_name || s.project_manager_name).filter(Boolean))].sort();
             const owners = [...new Set(window.allDemoShops.map(s => s.owner_name).filter(Boolean))].sort();
@@ -488,7 +551,7 @@
             const owner = document.getElementById('filter-owner')?.value || '';
             const progress = document.getElementById('filter-progress')?.value || '';
             const dateRange = document.getElementById('filter-dateRange')?.value || 'ALL';
-            
+
             const customContainer = document.getElementById('custom-date-container');
             if (dateRange === 'CUSTOM') {
                 customContainer.classList.remove('d-none');
@@ -527,13 +590,13 @@
             let filtered = window.allDemoShops.filter(shop => {
                 if (pm && (shop.assigned_pm_name || shop.project_manager_name) !== pm) return false;
                 if (owner && shop.owner_name !== owner) return false;
-                
+
                 if (progress === '0') {
                     if ((shop.demo_stage || 0) > 0) return false;
                 } else if (progress === '1+') {
                     if ((shop.demo_stage || 0) === 0) return false;
                 }
-                
+
                 if (filterStart || filterEnd) {
                     const shopDate = new Date(shop.demo_scheduled_at || shop.updated_at || shop.created_at);
                     if (filterStart && shopDate < filterStart) return false;
@@ -564,20 +627,20 @@
         }
 
         // ── Smart Reschedule Engine ──
-        
+
         window.openScheduleDemo = (shopId, shopName) => {
             document.getElementById('sched-shop-id').value = shopId;
             document.getElementById('sched-shop-name').value = shopName || '';
             document.getElementById('sched-title').value = '';
             document.getElementById('sched-notes').value = '';
             document.getElementById('sched-type').value = 'Google Meet';
-            
+
             // Set bounds to today minimum
             const today = new Date().toISOString().split('T')[0];
             const dateInput = document.getElementById('sched-date');
             dateInput.value = today;
             dateInput.min = today;
-            
+
             document.getElementById('sched-time-slot').value = '';
             document.getElementById('save-demo-btn').disabled = true;
 
@@ -587,7 +650,7 @@
             document.getElementById('sched-pm-id').value = user.id;
 
             bootstrap.Modal.getOrCreateInstance(document.getElementById('scheduleDemoModal')).show();
-            
+
             // Clear validation
             document.querySelectorAll('#scheduleDemoModal .is-invalid').forEach(el => el.classList.remove('is-invalid'));
             document.getElementById('slot-error').style.setProperty('display', 'none', 'important');
@@ -600,7 +663,7 @@
             const pmId = document.getElementById('sched-pm-id').value;
             const date = document.getElementById('sched-date').value;
             const container = document.getElementById('time-slots-container');
-            
+
             document.getElementById('sched-time-slot').value = '';
             document.getElementById('save-demo-btn').disabled = true;
 
@@ -610,8 +673,8 @@
 
             try {
                 const response = await window.ApiClient.request(`/users/${pmId}/availability?date=${date}`, { method: 'GET' });
-                const slots = response.slots || []; 
-                
+                const slots = response.slots || [];
+
                 if (!slots || slots.length === 0) {
                     container.innerHTML = '<div class="text-muted small w-100 text-center py-3">No working hours configured for this day.</div>';
                     return;
@@ -626,7 +689,7 @@
                     if (hour24 === 15) return "03 to 04 PM";
                     if (hour24 === 16) return "04 to 05 PM";
                     if (hour24 === 17) return "05 to 06 PM";
-                    return `${hour24}:00`; 
+                    return `${hour24}:00`;
                 };
 
                 let html = '';
@@ -689,7 +752,7 @@
             });
             btnEl.classList.remove('btn-outline-success');
             btnEl.classList.add('btn-success', 'text-white');
-            
+
             document.getElementById('sched-time-slot').value = timeValue;
             document.getElementById('slot-error').style.setProperty('display', 'none', 'important');
             document.getElementById('save-demo-btn').disabled = false;
@@ -702,7 +765,7 @@
             const timeStr = document.getElementById('sched-time-slot').value;
             const type = document.getElementById('sched-type').value;
             const notes = document.getElementById('sched-notes').value.trim();
-            
+
             const btn = document.getElementById('save-demo-btn');
 
             const rules = {
@@ -719,7 +782,7 @@
                 document.getElementById('slot-error').style.setProperty('display', 'block', 'important');
                 return;
             }
-            
+
             // Combine Date and Time into ISO
             const scheduledAt = new Date(`${dateStr}T${timeStr}:00`).toISOString();
 
@@ -782,5 +845,3 @@
 </body>
 
 </html>
-
-
