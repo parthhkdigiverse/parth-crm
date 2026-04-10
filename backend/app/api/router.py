@@ -45,8 +45,7 @@ api_router.include_router(issues.router, prefix="/clients", tags=["issues"])
 api_router.include_router(issues_global_router, prefix="/issues", tags=["issues"])
 api_router.include_router(meetings.router, prefix="/clients", tags=["meetings"])
 api_router.include_router(meetings.global_router, prefix="/meetings", tags=["meetings"])
-api_router.include_router(feedback.router, prefix="/clients", tags=["feedback"])
-api_router.include_router(feedback.global_router, prefix="/feedback", tags=["feedback"])
+api_router.include_router(feedback.router, prefix="/feedback", tags=["feedback"])
 
 # Field Operations
 api_router.include_router(areas.router, prefix="/areas", tags=["areas"])
