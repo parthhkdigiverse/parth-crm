@@ -61,15 +61,8 @@ async def read_clients(
     
     # Normalize status filter
     normalized_status = (status_filter or "").strip().upper()
-    if normalized_status in ["ACTIVE", "REFUNDED", "ARCHIVED"]:
-        service._target_status = normalized_status
-        client_active_status = None
-    else:
-        client_active_status = True
-        if normalized_status in ["INACTIVE", "FALSE"]:
-            client_active_status = False
-        elif normalized_status == "ALL":
-            client_active_status = None
+    if not normalized_status:
+        normalized_status = "ACTIVE"
 
     pm_filter_id = None
     scoped_user_id = None
@@ -98,7 +91,7 @@ async def read_clients(
         search=search,
         sort_by=sort_by,
         sort_order=sort_order,
-        is_active=client_active_status,
+        status=normalized_status,
         pm_id=pm_filter_id,
         scoped_user_id=scoped_user_id,
         scoped_mode=scoped_mode,

@@ -761,7 +761,7 @@ class ShopService:
                 "_id": {"$ifNull": ["$pm.name", "$pm.email"]},
                 "in_demo": {"$sum": {"$cond": [{"$eq": ["$pipeline_stage", "NEGOTIATION"]}, 1, 0]}},
                 "meeting_set": {"$sum": {"$cond": [{"$eq": ["$pipeline_stage", "PITCHING"]}, 1, 0]}},
-                "converted": {"$sum": {"$cond": [{"$eq": ["$pipeline_stage", "DELIVERY"]}, 1, 0]}}
+                "converted": {"$sum": {"$cond": [{"$in": ["$pipeline_stage", ["DELIVERY", "MAINTENANCE"]]}, 1, 0]}}
             }},
             {"$project": {
                 "pm_name": "$_id",

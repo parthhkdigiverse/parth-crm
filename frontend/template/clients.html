@@ -234,7 +234,7 @@
         <div id="sidebar"></div>
         <div class="main-wrapper flex-grow-1" style="min-width: 0; overflow-x: hidden;">
             <div class="page-content-standard">
-                <div class="page-header-glass">
+                <div class="page-header-glass mb-4">
                     <div class="min-w-0">
                         <h2 class="page-section-title fw-bold mb-1">Client Directory</h2>
                         <p class="text-muted mb-0 small d-flex align-items-center gap-2 flex-wrap">
@@ -250,6 +250,7 @@
                     </div>
                 </div>
 
+
                 <!-- Filter Panel Wrapper -->
                 <div id="filter-wrapper" class="mb-4"></div>
                 <div class="card shadow-sm grid-card" style="border-radius: 14px; overflow: visible;">
@@ -263,6 +264,31 @@
                             <span class="badge" style="background: var(--success-light); color: var(--success-text); font-size: 0.7rem; padding: 4px 10px; border-radius: 20px; font-weight: 700;">
                                 <i class="bi bi-circle-fill me-1" style="font-size: 0.45rem;"></i>Live
                             </span>
+                            
+                            <!-- Status Filter Dropdown -->
+                            <div class="dropdown">
+                                <button class="btn btn-sm dropdown-toggle d-flex align-items-center gap-2 px-3" 
+                                    type="button" id="statusViewDropdown" data-bs-toggle="dropdown" aria-expanded="false"
+                                    style="background: var(--bg-app); border: 1.5px solid var(--border); border-radius: 10px; font-weight: 700; color: var(--text-main); height: 32px; font-size: 0.75rem;">
+                                    <i class="bi bi-grid-fill text-secondary"></i>
+                                    <span id="current-status-label">All Clients</span>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="statusViewDropdown" style="font-size: 0.85rem; border-radius: 12px; padding: 8px; min-width: 180px;">
+                                    <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 rounded-2 active" href="javascript:void(0)" onclick="switchStatusTab('ALL', 'All Clients', 'bi-grid-fill')">
+                                        <i class="bi bi-grid-fill text-secondary"></i> All Clients
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 rounded-2" href="javascript:void(0)" onclick="switchStatusTab('ACTIVE', 'Active Clients', 'bi-people-fill')">
+                                        <i class="bi bi-people-fill text-primary"></i> Active Clients
+                                    </a></li>
+                                    <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 rounded-2" href="javascript:void(0)" onclick="switchStatusTab('REFUNDED', 'Refunded Clients', 'bi-arrow-counterclockwise')">
+                                        <i class="bi bi-arrow-counterclockwise text-danger"></i> Refunded
+                                    </a></li>
+                                    <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 rounded-2" href="javascript:void(0)" onclick="switchStatusTab('ARCHIVED', 'Archived Clients', 'bi-archive-fill')">
+                                        <i class="bi bi-archive-fill text-muted"></i> Archived
+                                    </a></li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
                     <div class="card-body p-0">
@@ -464,6 +490,46 @@
             injectTopHeader('Clients');
 
             let activeClientIdForPayment = null;
+            let currentTabStatus = 'ALL';
+
+            window.switchStatusTab = function(status, label, iconClass) {
+                currentTabStatus = status;
+                
+                // Update UI Dropdown Label & Icon
+                if (label && iconClass) {
+                    const labelEl = document.getElementById('current-status-label');
+                    const btnEl = document.getElementById('statusViewDropdown');
+                    if (labelEl) labelEl.textContent = label;
+                    if (btnEl) {
+                        const icon = btnEl.querySelector('i');
+                        if (icon) {
+                            icon.className = `bi ${iconClass}`;
+                            // Special coloring for some icons
+                            if (status === 'REFUNDED') icon.style.color = '#ef4444';
+                            else if (status === 'ACTIVE') icon.style.color = 'var(--primary)';
+                            else icon.style.color = 'var(--text-muted)';
+                        }
+                    }
+                }
+
+                // Update active state in dropdown items
+                const menu = document.querySelector('#statusViewDropdown + .dropdown-menu');
+                if (menu) {
+                    menu.querySelectorAll('.dropdown-item').forEach(el => {
+                        const clickAttr = el.getAttribute('onclick') || '';
+                        el.classList.toggle('active', clickAttr.includes(`'${status}'`));
+                    });
+                }
+
+                // Update dropdown filter if it exists
+                const statusDropdown = document.getElementById('filter-status');
+                if (statusDropdown) {
+                    statusDropdown.value = status;
+                }
+
+                // Load data
+                loadClients({ status: status });
+            };
 
 
             async function loadClients(filters = {}) {
@@ -889,12 +955,39 @@
                                 ]
                             }
                         ],
-                        onApply: (data) => loadClients({
-                            search: data['search'],
-                            status: data['status'],
-                            pm: data['pm']
-                        }),
-                        onReset: () => loadClients()
+                        onApply: (data) => {
+                            // Sync dropdown with dropdown filter if changed via dropdown
+                            const status = data['status'];
+                            const statusLabels = {
+                                'ACTIVE': { label: 'Active Clients', icon: 'bi-people-fill' },
+                                'REFUNDED': { label: 'Refunded Clients', icon: 'bi-arrow-counterclockwise' },
+                                'ARCHIVED': { label: 'Archived Clients', icon: 'bi-archive-fill' },
+                                'ALL': { label: 'All Clients', icon: 'bi-grid-fill' }
+                            };
+                            
+                            const cfg = statusLabels[status] || statusLabels['ALL'];
+                            
+                            // Call switchStatusTab without triggering reload (since onApply already triggers it)
+                            // but we want to update the UI
+                            const labelEl = document.getElementById('current-status-label');
+                            const btnEl = document.getElementById('statusViewDropdown');
+                            if (labelEl) labelEl.textContent = cfg.label;
+                            if (btnEl) {
+                                const icon = btnEl.querySelector('i');
+                                if (icon) icon.className = `bi ${cfg.icon}`;
+                            }
+
+                            currentTabStatus = status;
+                            
+                            loadClients({
+                                search: data['search'],
+                                status: status,
+                                pm: data['pm']
+                            });
+                        },
+                        onReset: () => {
+                            switchStatusTab('ACTIVE', 'Active Clients', 'bi-people-fill');
+                        }
                     });
                 } catch (err) {
                     console.error("Filter Init Failed", err);
@@ -911,7 +1004,7 @@
                 }
             }
 
-            loadClients().then(() => {
+            loadClients({ status: 'ALL' }).then(() => {
                 initFilters();
                 const urlParams = new URLSearchParams(window.location.search);
                 const highlightId = urlParams.get('id');

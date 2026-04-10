@@ -28,7 +28,7 @@ class ClientService:
         sort_order: str = "desc",
         include_inactive: bool = False,
         pm_id: PydanticObjectId = None,
-        is_active: Optional[bool] = True,
+        status: Optional[str] = "ACTIVE",
         current_user: User = None,
         scoped_user_id: PydanticObjectId = None,
         **kwargs
@@ -39,11 +39,15 @@ class ClientService:
             if scoped_user_id:
                 q = q.find(Client.owner_id == scoped_user_id)
             
-            if is_active is True:
-                q = q.find(Client.is_active == True, Client.status == 'ACTIVE')
-            elif is_active is False:
-                q = q.find(Client.is_active == False)
-            elif not include_inactive:
+            # Status and Active logic
+            if status == "ALL":
+                pass # No filter on status
+            elif status in ["ACTIVE", "REFUNDED", "ARCHIVED"]:
+                q = q.find(Client.status == status)
+                if status == "ACTIVE":
+                    q = q.find(Client.is_active == True)
+            else:
+                # Default behavior: show active clients
                 q = q.find(Client.is_active == True, Client.status == 'ACTIVE')
 
             if current_user and current_user.role != UserRole.ADMIN:
@@ -55,7 +59,7 @@ class ClientService:
                 )
                 
                 q = q.find(Or(
-                    And(Client.owner_id == current_user.id, Client.is_active == True),
+                    Client.owner_id == current_user.id,
                     Client.pm_id == current_user.id,
                     In(Client.phone, billed_phones)
                 ))
@@ -204,7 +208,7 @@ class ClientService:
             })
         return sorted(results, key=lambda x: x["active_client_count"])
 
-    async def archive_client(self, client_id: PydanticObjectId, current_user: User):
+    async def archive_client(self, client_id: PydanticObjectId, current_user: User, request: Request = None):
         db_client = await self.get_client(client_id)
         if not db_client: raise HTTPException(status_code=404, detail="Not Found")
         db_client.status = "ARCHIVED"
@@ -212,7 +216,7 @@ class ClientService:
         await db_client.save()
         return {"detail": "Client successfully ARCHIVED."}
 
-    async def refund_client(self, client_id: PydanticObjectId, current_user: User):
+    async def refund_client(self, client_id: PydanticObjectId, current_user: User, request: Request = None):
         # TODO: Implement MongoDB transactions for financial safety
         db_client = await self.get_client(client_id)
         if not db_client: raise HTTPException(status_code=404, detail="Not Found")

@@ -175,9 +175,7 @@
             }
         }
 
-        .page-header-glass {
-            margin-bottom: 0 !important;
-        }
+        /* Removed margin-bottom override for consistency */
     </style>
 </head>
 
@@ -188,7 +186,7 @@
             <div class="page-content-standard">
                 <!-- Removed inner p-4 to prevent double padding -->
 
-                    <div class="page-header-glass d-flex align-items-center justify-content-between flex-wrap gap-3">
+                    <div class="page-header-glass mb-4 d-flex align-items-center justify-content-between flex-wrap gap-3">
                         <div>
                             <h2 class="page-section-title fw-bold mb-1">Users &amp; Roles</h2>
                             <p class="text-muted mb-0 small">Manage system access and role assignments.</p>
@@ -199,7 +197,7 @@
                     </div>
 
                     <!-- Filter Bar (same component as Leaves / Issues pages) -->
-                    <div id="filter-wrapper"></div>
+                    <div id="filter-wrapper" class="mb-4"></div>
 
                     <!-- Users Table -->
                     <div class="grid-card">
@@ -410,12 +408,25 @@
                                         </select>
                                     </div>
                                     
-                                    <div class="mb-0">
+                                    <div class="mb-3">
                                         <label class="form-premium-label">ACCOUNT STATUS</label>
                                         <select class="form-select form-premium-control" id="editUserStatus" required>
                                             <option value="true">Active</option>
                                             <option value="false">Inactive</option>
                                         </select>
+                                    </div>
+
+                                    <div class="mb-0">
+                                        <label class="form-premium-label">SET NEW PASSWORD</label>
+                                        <div class="position-relative">
+                                            <input type="password" class="form-premium-control" id="editUserPassword" 
+                                                placeholder="Leave blank to keep current"
+                                                autocomplete="new-password">
+                                            <button type="button" class="password-toggle" onclick="togglePasswordVisibility('editUserPassword', 'edit-user-pwd-icon')">
+                                                <i class="bi bi-eye" id="edit-user-pwd-icon"></i>
+                                            </button>
+                                        </div>
+                                        <div class="form-text mt-1" style="font-size: 0.75rem;">Admins can reset passwords manually here.</div>
                                     </div>
                                 </div>
 
@@ -529,7 +540,10 @@
                                 <div class="d-flex align-items-center gap-3">
                                     <div class="avatar-circle">${char}</div>
                                     <div>
-                                        <div class="fw-bold text-main" style="font-size:0.92rem;">${displayName}</div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="fw-bold text-main" style="font-size:0.92rem;">${displayName}</div>
+                                            ${u.hasPendingReset ? `<span class="badge" style="background:#fef3c7; color:#92400e; font-size:9px; border:1px solid #f59e0b; padding: 2px 6px;">RESET REQUESTED</span>` : ''}
+                                        </div>
                                         <div class="text-muted" style="font-size:0.78rem;">${u.email}</div>
                                     </div>
                                 </div>
@@ -540,6 +554,7 @@
                             <td><span class="role-pill ${role.cls}">${role.label}</span></td>
                             <td><span class="status-pill" style="background:${statusBg};color:${statusColor};">${u.is_active ? 'Active' : 'Inactive'}</span></td>
                             <td class="text-end pe-4">
+                                ${window.getUser()?.role === 'ADMIN' ? `
                                 <div class="d-flex gap-2 justify-content-end">
                                     <button class="btn btn-sm action-btn-pill" onclick="editUser('${u.id}')" title="Edit">
                                         <i class="bi bi-pencil"></i>
@@ -547,7 +562,7 @@
                                     <button class="btn btn-sm action-btn-pill delete" onclick="deleteUser('${u.id}')" title="Delete">
                                         <i class="bi bi-trash3"></i>
                                     </button>
-                                </div>
+                                </div>` : '<span class="badge bg-light text-muted border">Read Only</span>'}
                             </td>
                         </tr>`;
                     },
@@ -558,7 +573,7 @@
             let currentFilters = {};
 
             function initFilters() {
-                if (typeof renderFilterPanel !== 'function') return;
+                if (typeof renderFilterPanel !== 'function' || window.getUser()?.role !== 'ADMIN') return;
                 renderFilterPanel({
                     containerId: 'filter-wrapper',
                     filters: [
@@ -614,12 +629,40 @@
                 if (window.__accessDenied) return;
                 try {
                     const users = await apiGet('/users/');
+                    let requests = [];
+                    const currentUser = window.getUser();
+                    const isAdmin = currentUser?.role === 'ADMIN';
+
+                    if (isAdmin) {
+                        try {
+                            requests = await apiGet('/auth/reset-requests');
+                        } catch(e) {}
+                    }
+                    
+                    const pendingIds = new Set(requests.filter(r => r.status === 'PENDING').map(r => r.user_id));
+                    users.forEach(u => {
+                        u.hasPendingReset = pendingIds.has(u.id);
+                    });
+
+                    let listToUse = users;
+                    
+                    if (!isAdmin) {
+                        listToUse = users.filter(u => String(u.id) === String(currentUser.id));
+                        const addBtn = document.querySelector('.btn-premium-action');
+                        if (addBtn && addBtn.textContent.includes('Add User')) {
+                            addBtn.style.display = 'none';
+                        }
+                        const filterWrap = document.getElementById('filter-wrapper');
+                        if (filterWrap) filterWrap.style.display = 'none';
+                    }
+
                     // Active first, then newest
-                    users.sort((a, b) => {
+                    listToUse.sort((a, b) => {
+                        if (a.hasPendingReset !== b.hasPendingReset) return b.hasPendingReset - a.hasPendingReset;
                         if (a.is_active !== b.is_active) return b.is_active - a.is_active;
                         return b.id - a.id;
                     });
-                    loadedUsers = users;
+                    loadedUsers = listToUse;
                     
                     if (!document.querySelector('#filter-wrapper .filter-panel')) {
                         initFilters();
@@ -816,8 +859,11 @@
                             const baseSalaryVal = document.getElementById('editUserBaseSalary').value;
                             const newBaseSalary = baseSalaryVal !== '' ? parseFloat(baseSalaryVal) : null;
 
+                            const newPassword = document.getElementById('editUserPassword').value;
+
                             const profileUpdate = {};
                             if (originalUser.name !== newName) profileUpdate.name = newName;
+                            if (newPassword) profileUpdate.password = newPassword;
                             if ((originalUser.employee_code || '') !== newEmpCode) profileUpdate.employee_code = newEmpCode || null;
                             if ((originalUser.joining_date || '') !== newJoiningDate) profileUpdate.joining_date = newJoiningDate || null;
                             if ((originalUser.department || '') !== newDepartment) profileUpdate.department = newDepartment || null;
@@ -893,6 +939,7 @@
                 document.getElementById('editUserJoiningDate').value = user.joining_date || '';
                 document.getElementById('editUserDepartment').value = user.department || '';
                 document.getElementById('editUserBaseSalary').value = user.base_salary != null ? user.base_salary : '';
+                document.getElementById('editUserPassword').value = '';
 
                 if (editUserModalInstance) {
                     const form = document.getElementById('editUserForm');
@@ -902,14 +949,17 @@
                     
                     const banner = document.getElementById('editUserResetBanner');
                     if(banner) banner.style.display = 'none';
-                    try {
-                        const rr = await apiGet('/auth/reset-requests');
-                        const req = rr.find(r => r.user_id === id && r.status === 'PENDING');
-                        if(req && banner) {
-                            banner.style.display = 'flex';
-                            document.getElementById('editUserResetTime').textContent = new Date(req.requested_at).toLocaleString();
-                        }
-                    } catch(e) {}
+                    const isAdmin = window.getUser()?.role === 'ADMIN';
+                    if (isAdmin) {
+                        try {
+                            const rr = await apiGet('/auth/reset-requests');
+                            const req = rr.find(r => r.user_id === id && r.status === 'PENDING');
+                            if(req && banner) {
+                                banner.style.display = 'flex';
+                                document.getElementById('editUserResetTime').textContent = new Date(req.requested_at).toLocaleString();
+                            }
+                        } catch(e) {}
+                    }
 
                     editUserModalInstance.show();
                 }

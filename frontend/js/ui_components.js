@@ -165,7 +165,12 @@ window.renderSidebar = function (active) {
 
         const highCount = sessionStorage.getItem('crm_high_issue_count');
         const hasHighIssues = highCount && highCount !== '0';
-        const sectionHasAlert = hasHighIssues && filteredItems.some(item => item.id === 'issues');
+        
+        const resetCount = sessionStorage.getItem('crm_reset_req_count');
+        const hasResets = resetCount && resetCount !== '0';
+
+        const sectionHasAlert = (hasHighIssues && filteredItems.some(item => item.id === 'issues')) ||
+                               (hasResets && id === 'admin');
 
         return `
         <div class="sb-section" id="sb-sec-${id}">
@@ -173,18 +178,20 @@ window.renderSidebar = function (active) {
                 <i class="bi ${icon} sb-sec-icon"></i>
                 <div class="d-flex align-items-center gap-2">
                     <span>${title}</span>
-                    ${sectionHasAlert ? '<span class="sb-sec-dot"></span>' : ''}
+                    ${sectionHasAlert ? '<span class="sb-sec-dot" style="background:#f59e0b;"></span>' : ''}
                 </div>
                 <i class="bi bi-chevron-right sb-arrow"></i>
             </div>
             <div class="sb-section-items ${isOpen ? 'open' : ''}">
                 ${filteredItems.map(item => {
-            const showBadge = item.id === 'issues' && hasHighIssues;
+            const showIssueBadge = item.id === 'issues' && hasHighIssues;
+            const showResetBadge = item.id === 'admin' && hasResets;
             return `
-                    <a href="${item.href}" class="sb-link ${item.id === active ? 'active' : ''} ${showBadge ? 'alert-highlight' : ''}">
+                    <a href="${item.href}" class="sb-link ${item.id === active ? 'active' : ''} ${showIssueBadge || showResetBadge ? 'alert-highlight' : ''}">
                         <i class="bi ${item.icon}"></i>
                         <span>${item.label}</span>
-                        ${showBadge ? `<span class="sb-issue-badge">${highCount}</span>` : ''}
+                        ${showIssueBadge ? `<span class="sb-issue-badge">${highCount}</span>` : ''}
+                        ${showResetBadge ? `<span class="sb-issue-badge" style="background:#f59e0b;">${resetCount}</span>` : ''}
                     </a>
                 `;
         }).join('')}
@@ -1550,9 +1557,10 @@ window.showManualPunchOutModal = function(sessions) {
                 <p class="mb-2 small text-muted">Started: ${timeIn}</p>
                 <div class="input-group input-group-sm">
                     <span class="input-group-text bg-white">Out Time</span>
-                    <input type="time" class="form-control" id="punch_out_${s.id}" required>
+                    <input type="time" class="form-control" id="punch_out_${s.id}" value="23:59" required>
                     <button class="btn btn-primary fw-bold" onclick="window.submitManualPunchOut('${s.id}')">Close Session</button>
                 </div>
+                <p class="mt-2 mb-0 xsmall text-info-emphasis"><i class="bi bi-info-circle me-1"></i> Sessions are capped at 11:59 PM. Time after midnight counts for the next day.</p>
             </div>
         `;
     }).join('');
@@ -1581,6 +1589,32 @@ window.showManualPunchOutModal = function(sessions) {
         }
     };
 };
+
+// Fetch reset requests count for sidebar badge
+window.refreshResetBadge = async function() {
+    const u = getUser();
+    if (u?.role !== 'ADMIN') return;
+    try {
+        const requests = await apiGet('/auth/reset-requests');
+        const pendingCount = requests.filter(r => r.status === 'PENDING').length;
+        const old = sessionStorage.getItem('crm_reset_req_count');
+        sessionStorage.setItem('crm_reset_req_count', pendingCount);
+        
+        if (String(old) !== String(pendingCount)) {
+            // Re-render sidebar if count changed to update dot/badge
+            const sbInput = document.getElementById('sidebar');
+            if (sbInput && window.__lastSidebarActive) {
+                sbInput.innerHTML = renderSidebar(window.__lastSidebarActive);
+            }
+        }
+    } catch (e) {
+        console.warn("Failed to refresh reset badge", e);
+    }
+};
+
+// Start polling for resets
+setInterval(refreshResetBadge, 300000); // 5 mins
+setTimeout(refreshResetBadge, 2000);   // Initial delay
 
 window.setTheme = function (mode) {
     let applyDark = false;
