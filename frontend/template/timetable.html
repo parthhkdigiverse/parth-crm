@@ -1652,7 +1652,7 @@
             // ── TASK LIST VIEW ──────────────────────────────────────
             if (showTaskView) {
                 const currUserUnique = currentUser ? (currentUser.email || currentUser.name) : '';
-                
+
                 // 1. Filter events based on task filter
                 const tasksForList = filteredEvents.filter(ev => {
                     const s = (ev.status || '').toUpperCase();
@@ -1741,7 +1741,7 @@
                         renderRow: (ev, idx, pageSlice) => {
                             // On page change or start of target render, lastDate logic needs care.
                             // However, renderRow is called for each item in the slice.
-                            
+
                             // To correctly show headers, we must know if this item is the first of its date IN THE CURRENT SLICE
                             // or if it's the very first item of the page.
                             let headerHtml = '';
@@ -1759,7 +1759,7 @@
                             const timeLbl = `${fmtH(ev.sh, ev.sm)} – ${fmtH(ev.eh, ev.em)}`;
                             const s = (ev.status || '').toUpperCase();
                             const isDone = (s === 'RESOLVED' || s === 'COMPLETED' || s === 'CANCELLED' || s === 'CANCEL' || completedIds.has(ev._uid));
-                            
+
                             return `
                             ${headerHtml}
                             <div class="task-row ${isDone ? 'done-row' : ''}" style="border-left-color:${u.color}; margin-bottom: 8px;">
@@ -1846,19 +1846,89 @@
                 }).join('')}
                     </div>` : '';
 
-                const placed = packEvents(scrollEvts);
-                const evHtml = placed.map(({ ev, slot, slots }) => {
+                // ── DAY VIEW: Split events into first-time-slot cluster + later-time events ──
+                // (packEvents sorts by start time, so 12AM events always come first)
+                const allPlaced = packEvents(scrollEvts);
+                const DAY_MAX = 7;
+
+                // Determine end time of the first event to identify the "first cluster"
+                const firstCluster = [], laterEvts = [];
+                if (allPlaced.length > 0) {
+                    const firstEnd = allPlaced[0].ev.eh * 60 + allPlaced[0].ev.em;
+                    allPlaced.forEach(p => {
+                        const es = p.ev.sh * 60 + p.ev.sm;
+                        // If event starts before the first event ends → same time group
+                        if (es < firstEnd) {
+                            firstCluster.push(p);
+                        } else {
+                            // Different time (e.g. 7AM, 8AM, 10AM) → always on calendar
+                            laterEvts.push(p);
+                        }
+                    });
+                }
+
+                const visibleMain = firstCluster.slice(0, DAY_MAX);
+                const hiddenMain = firstCluster.slice(DAY_MAX);
+                const hasOvf = hiddenMain.length > 0;
+
+                // Store overflow UIDs for the popup (day-view only)
+                if (!window._dayOvfCache) window._dayOvfCache = {};
+                window._dayOvfCache[sdStr] = hiddenMain.map(p => p.ev._uid);
+
+                // Render first-cluster visible events (capped at 7)
+                const mainHtml = visibleMain.map(({ ev }, idx) => {
+                    const u = getEventStyles(ev);
+                    const t = Math.max(topPx(ev.sh, ev.sm), 0);
+                    const h = Math.max(hPx(ev.sh, ev.sm, ev.eh, ev.em), 22);
+                    const wPct = 96 / visibleMain.length;
+                    const lPct = 2 + idx * wPct;
+                    const timeLbl = `${fmtH(ev.sh, ev.sm)} – ${fmtH(ev.eh, ev.em)}`;
+                    const s = (ev.status || '').toUpperCase();
+                    const isDone = (s === 'COMPLETED' || s === 'DONE' || s === 'CANCELLED' || s === 'CANCEL' || completedIds.has(ev._uid));
+                    const isLast = (idx === visibleMain.length - 1) && hasOvf;
+
+                    const ovfHtml = isLast ? `
+                        <div style="
+                            position:absolute; inset:0;
+                            backdrop-filter: blur(3px);
+                            -webkit-backdrop-filter: blur(3px);
+                            background: rgba(255,255,255,0.45);
+                            border-radius: 6px;
+                            display:flex; flex-direction:column;
+                            align-items:center; justify-content:center;
+                            cursor:pointer; z-index:10; gap:2px;
+                        " onclick="event.stopPropagation(); showDayOverflowModal('${sdStr}')">
+                            <div style="font-size:1.1rem; font-weight:800; color:#1e3a8a; line-height:1;">+${hiddenMain.length}</div>
+                            <div style="font-size:0.6rem; font-weight:600; color:#1e3a8a; opacity:.8; letter-spacing:.03em;">more</div>
+                        </div>` : '';
+
+                    return `
+                    <div class="cal-evt${isDone ? ' evt-done' : ''}" style="top:${t}px;height:${h}px;left:${lPct}%;width:${wPct}%;background:${u.bg};border-left:3px solid ${u.color};display:flex;flex-direction:column;padding-left:${ev.event_type === 'TODO' ? '17px' : '8px'};overflow:hidden;position:absolute;"
+                         title="${ev.title} (${ev.user})\n${timeLbl}\n${ev.loc}"
+                         onclick="event.stopPropagation();${isLast ? '' : `openEditModal('${ev._uid}')`}">
+                        ${ev.event_type === 'TODO' ? `<button class="evt-complete-btn${isDone ? ' done' : ''}" style="color:${u.color};"
+                            onclick="event.stopPropagation();completeEvent('${ev._uid}')" title="${isDone ? 'Mark incomplete' : 'Mark complete'}"></button>` : ''}
+                        <div class="evt-inner-title" style="color:${u.color};font-size:.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                            ${ev.event_type === 'MEETING' ? '<i class="bi bi-camera-video me-1"></i>' : ''}${ev.title}
+                        </div>
+                        ${h > 30 ? `<div class="evt-time" style="color:${u.color};font-size:0.7rem;">${timeLbl}</div>` : ''}
+                        <div style="font-size:.72rem;color:${u.color};opacity:.7;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><i class="bi bi-person me-1"></i>${ev.user}</div>
+                        ${ovfHtml}
+                    </div>`;
+                }).join('');
+
+                // Render later-time events (ALWAYS visible at their correct time positions)
+                const laterHtml = laterEvts.map(({ ev, slot, slots }) => {
                     const u = getEventStyles(ev);
                     const t = Math.max(topPx(ev.sh, ev.sm), 0);
                     const h = Math.max(hPx(ev.sh, ev.sm, ev.eh, ev.em), 22);
                     const wPct = 96 / slots;
                     const lPct = 2 + slot * wPct;
-                    const rPct = 2 + (slots - slot - 1) * wPct;
                     const timeLbl = `${fmtH(ev.sh, ev.sm)} – ${fmtH(ev.eh, ev.em)}`;
                     const s = (ev.status || '').toUpperCase();
                     const isDone = (s === 'COMPLETED' || s === 'DONE' || s === 'CANCELLED' || s === 'CANCEL' || completedIds.has(ev._uid));
                     return `
-                    <div class="cal-evt${isDone ? ' evt-done' : ''}" style="top:${t}px;height:${h}px;left:${lPct}%;right:${rPct}%;background:${u.bg};border-left:3px solid ${u.color};display:flex;flex-direction:column;padding-left:${ev.event_type === 'TODO' ? '17px' : '8px'};overflow:hidden;"
+                    <div class="cal-evt${isDone ? ' evt-done' : ''}" style="top:${t}px;height:${h}px;left:${lPct}%;width:${wPct}%;background:${u.bg};border-left:3px solid ${u.color};display:flex;flex-direction:column;padding-left:${ev.event_type === 'TODO' ? '17px' : '8px'};overflow:hidden;position:absolute;"
                          title="${ev.title} (${ev.user})\n${timeLbl}\n${ev.loc}"
                          onclick="event.stopPropagation();openEditModal('${ev._uid}')">
                         ${ev.event_type === 'TODO' ? `<button class="evt-complete-btn${isDone ? ' done' : ''}" style="color:${u.color};"
@@ -1870,6 +1940,8 @@
                         <div style="font-size:.72rem;color:${u.color};opacity:.7;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><i class="bi bi-person me-1"></i>${ev.user}</div>
                     </div>`;
                 }).join('');
+
+                const evHtml = mainHtml + laterHtml;
 
                 // Current time
                 const nowH = today.getHours(), nowM = today.getMinutes();
@@ -2231,6 +2303,11 @@
         }
 
         // ── Navigation ──────────────────────────────────────────
+        function navDay(dir) {
+            miniMonthOffset = 0;
+            selectedDate = addDays(selectedDate, dir);
+            renderCalendar();
+        }
         function navWeek(dir) {
             miniMonthOffset = 0;
             if (currentView === 'day') {
@@ -2673,14 +2750,14 @@
                 try {
                     await ApiClient.updateTodo(id, { status: newStatus });
                     if (ev) ev.status = newStatus;
-                    
+
                     // Show confirmation
                     if (isDoneNow) {
                         showCompletedToast(uid);
                     } else {
                         showToastMsg('Task marked as incomplete.');
                     }
-                    
+
                     // Refresh full data to keep in sync
                     await renderCalendar();
                 } catch (e) {
@@ -2753,16 +2830,18 @@
             setTimeout(() => t.remove(), 3000);
         }
 
-        // ── Overflow Modal (More Events) ─────────────────────────
-        function showOverflowModal(dateStr) {
-            const dayEvts = events.filter(e => e.date === dateStr && (e.priority || '').toUpperCase() !== 'HIGH');
+        // ── Day View Overflow Modal ────────────────────────────────
+        // Shows ONLY the hidden overflow events from the 12AM cluster (not other-time events)
+        function showDayOverflowModal(dateStr) {
+            const uids = (window._dayOvfCache || {})[dateStr] || [];
+            const dayEvts = events.filter(e => uids.includes(e._uid));
             dayEvts.sort((a, b) => (a.sh * 60 + a.sm) - (b.sh * 60 + b.sm));
 
             const dateObj = new Date(dateStr);
             const dateLabel = dateObj.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
 
             const titleEl = document.getElementById('hiddenTasksModalTitle');
-            const listEl  = document.getElementById('hiddenTasksList');
+            const listEl = document.getElementById('hiddenTasksList');
             if (!titleEl || !listEl) return;
 
             titleEl.textContent = dateLabel;
@@ -2787,7 +2866,59 @@
                         </div>
                         <div style="font-size:.72rem; color:#64748b; margin-top:2px;">
                             <i class="bi bi-clock me-1"></i>${timeLbl}
-                            ${ev.user ? ` &nbsp;·&nbsp; <i class="bi bi-person me-1"></i>${ev.user}` : ''}
+                            ${ev.user ? ` &nbsp;&middot;&nbsp; <i class="bi bi-person me-1"></i>${ev.user}` : ''}
+                        </div>
+                    </div>
+                    ${ev.event_type === 'TODO' ? `
+                    <button style="
+                        width:22px; height:22px; border-radius:50%;
+                        border: 2px solid ${u.color}; background: ${isDone ? u.color : 'transparent'};
+                        flex-shrink:0; cursor:pointer; display:flex; align-items:center; justify-content:center;
+                    " onclick="event.stopPropagation(); completeEvent('${ev._uid}')">
+                        ${isDone ? '<i class="bi bi-check text-white" style="font-size:0.65rem;"></i>' : ''}
+                    </button>` : ''}
+                </div>`;
+            }).join('') || '<p class="text-muted text-center small mt-3">No overflow events.</p>';
+
+            const modal = new bootstrap.Modal(document.getElementById('hiddenTasksModal'));
+            modal.show();
+        }
+
+        // ── Overflow Modal (More Events) – Week View ──────────────────────────────
+        function showOverflowModal(dateStr) {
+            const dayEvts = events.filter(e => e.date === dateStr && (e.priority || '').toUpperCase() !== 'HIGH');
+            dayEvts.sort((a, b) => (a.sh * 60 + a.sm) - (b.sh * 60 + b.sm));
+
+            const dateObj = new Date(dateStr);
+            const dateLabel = dateObj.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
+
+            const titleEl = document.getElementById('hiddenTasksModalTitle');
+            const listEl = document.getElementById('hiddenTasksList');
+            if (!titleEl || !listEl) return;
+
+            titleEl.textContent = dateLabel;
+            listEl.innerHTML = dayEvts.map(ev => {
+                const u = getEventStyles(ev);
+                const timeLbl = `${fmtH(ev.sh, ev.sm)} – ${fmtH(ev.eh, ev.em)}`;
+                const s = (ev.status || '').toUpperCase();
+                const isDone = (s === 'COMPLETED' || s === 'RESOLVED' || s === 'DONE' || s === 'CANCELLED' || completedIds.has(ev._uid));
+                const icon = ev.event_type === 'MEETING' ? '<i class="bi bi-camera-video me-2"></i>' : '<i class="bi bi-check-circle me-2"></i>';
+                return `
+                <div style="
+                    display:flex; align-items:center; gap:12px;
+                    padding: 10px 12px; border-radius:10px;
+                    background: ${u.bg}; border-left: 3px solid ${u.color};
+                    margin-bottom: 8px; cursor:pointer;
+                    opacity: ${isDone ? '0.5' : '1'};
+                    text-decoration: ${isDone ? 'line-through' : 'none'};
+                " onclick="openEditModal('${ev._uid}'); bootstrap.Modal.getInstance(document.getElementById('hiddenTasksModal'))?.hide();">
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-size:.85rem; font-weight:700; color:${u.color}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                            ${icon}${ev.title}
+                        </div>
+                        <div style="font-size:.72rem; color:#64748b; margin-top:2px;">
+                            <i class="bi bi-clock me-1"></i>${timeLbl}
+                            ${ev.user ? ` &nbsp;&middot;&nbsp; <i class="bi bi-person me-1"></i>${ev.user}` : ''}
                         </div>
                     </div>
                     ${ev.event_type === 'TODO' ? `
@@ -2804,6 +2935,7 @@
             const modal = new bootstrap.Modal(document.getElementById('hiddenTasksModal'));
             modal.show();
         }
+
 
         // ── Auto-update current time line every minute ───────────
         setInterval(() => renderCalendar(), 60000);
@@ -2913,8 +3045,10 @@
         <div class="modal-dialog modal-dialog-centered modal-sm" style="max-width: 340px;">
             <div class="modal-content border-0 shadow-lg" style="border-radius: 24px;">
                 <div class="modal-header border-0 pb-0 pt-4 px-4">
-                    <h6 class="modal-title fw-bold text-dark" id="hiddenTasksModalTitle" style="font-size: 1.1rem;"></h6>
-                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <h6 class="modal-title fw-bold text-dark" id="hiddenTasksModalTitle" style="font-size: 1.1rem;">
+                    </h6>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4" id="hiddenTasksList" style="max-height: 480px; overflow-y: auto;">
                     <!-- Tasks will be injected here -->
