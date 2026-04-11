@@ -38,6 +38,7 @@ class MeetingSummary(Document):
     
     # Relationships
     client_id: Optional[PydanticObjectId] = None
+    project_id: Optional[PydanticObjectId] = None
     host_id: Optional[PydanticObjectId] = None
     todo_id: Optional[PydanticObjectId] = None
     

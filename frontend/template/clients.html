@@ -728,9 +728,14 @@
                     }
 
                     pmSelect.innerHTML = '<option value="">-- Unassigned --</option>' + 
-                        pms.map(pm => `<option value="${pm.pm_id}">${pm.pm_name} (${pm.active_client_count} active clients)</option>`).join('');
+                        pms.map(pm => {
+                            const id = pm.pm_id || pm.id;
+                            const name = pm.pm_name || pm.name || pm.email;
+                            const count = pm.active_client_count !== undefined ? pm.active_client_count : '?';
+                            return `<option value="${id}">${name} (${count} active clients)</option>`;
+                        }).join('');
                         
-                    if (currentPmId) pmSelect.value = currentPmId;
+                    if (currentPmId) pmSelect.value = String(currentPmId);
                 } catch (err) {
                     console.error("Critical failure loading PMs:", err);
                     pmSelect.innerHTML = '<option value="">Error loading staff list</option>';
@@ -784,7 +789,7 @@
                         phone: phone,
                         organization: document.getElementById('edit-c-org').value || null,
                         address: document.getElementById('edit-c-addr').value || null,
-                        pm_id: parseInt(document.getElementById('edit-client-pm').value) || null
+                        pm_id: document.getElementById('edit-client-pm').value || null
                     });
                     bootstrap.Modal.getInstance(document.getElementById('editClientModal')).hide();
                     showToast('Client updated successfully', 'success');

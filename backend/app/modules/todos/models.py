@@ -34,6 +34,7 @@ class Todo(Document):
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     client_id: Optional[PydanticObjectId] = None
+    project_id: Optional[PydanticObjectId] = None
 
     class Settings:
         name = "srm_todos"

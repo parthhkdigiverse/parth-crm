@@ -60,6 +60,12 @@ class ApiClient {
     }
 
     static async request(path, options = {}) {
+        // Guard against malformed paths like '_' which cause 404 spam
+        if (!path || path === '_' || path === '/_') {
+            console.warn(`[ApiClient] Blocked request to invalid path: "${path}"`);
+            return null;
+        }
+
         if (!this._configParsed) await this.initConfig();
         const url = `${this.API_BASE_URL}${path}`;
         const headers = {
@@ -331,6 +337,9 @@ class ApiClient {
     }
     static async refundClient(clientId) {
         return this.request(`/clients/${clientId}/refund`, { method: 'POST' });
+    }
+    static async archiveClient(clientId) {
+        return this.request(`/clients/${clientId}/archive`, { method: 'POST' });
     }
     static async assignPM(clientId, pmId) {
         return this.request(`/clients/${clientId}/assign-pm`, { method: 'POST', body: { pm_id: pmId } });

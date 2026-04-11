@@ -30,7 +30,7 @@ class IssueService:
         assigned_to_id: Optional[PydanticObjectId] = None,
         pm_id: Optional[PydanticObjectId] = None,
         current_user: Optional[User] = None
-    ) -> List[Issue]:
+    ) -> List[Any]:
         try:
             q = Issue.find(Issue.is_deleted == False)
             
@@ -86,21 +86,55 @@ class IssueService:
                 query = query.limit(limit)
             issues = await query.to_list()
             
-            # Enrich properties sequentially (NoSQL join replacement)
+            # Enrich properties: one client fetch gives us client name + client's PM
+            enriched_issues = []
             for issue in issues:
-                if issue.assigned_to_id:
-                    pm = await User.get(issue.assigned_to_id)
-                    issue.pm_name = pm.name if pm else f"PM #{issue.assigned_to_id}"
-                
-                client = await Client.get(issue.client_id)
-                if client:
-                    issue.project_name = client.name
-                
-                reporter = await User.get(issue.reporter_id)
-                if reporter:
-                    issue.reporter_name = reporter.name if reporter else f"User #{issue.reporter_id}"
-            
-            return issues
+                # Convert to dict for enrichment
+                item = issue.model_dump()
+                item["id"] = str(issue.id)
+
+                # Fetch the linked client to get name and PM
+                client_obj = None
+                try:
+                    if issue.client_id:
+                        client_obj = await Client.get(issue.client_id)
+                except Exception:
+                    pass
+
+                if client_obj:
+                    item["client_name"] = client_obj.name
+                    item["project_name"] = client_obj.name  # backward compat
+                    # PM = the client's assigned PM (auto-assigned on client create/edit)
+                    try:
+                        if client_obj.pm_id:
+                            # Use cached pm_name on client first to avoid extra DB call
+                            if client_obj.pm_name:
+                                item["pm_name"] = client_obj.pm_name
+                            else:
+                                pm_user = await User.get(client_obj.pm_id)
+                                item["pm_name"] = pm_user.name if pm_user else "Unassigned"
+                        else:
+                            item["pm_name"] = "Unassigned"
+                    except Exception:
+                        item["pm_name"] = "Unassigned"
+                else:
+                    item["client_name"] = "Unknown Client"
+                    item["project_name"] = "Unknown Client"
+                    item["pm_name"] = "Unassigned"
+
+                # Resolve reporter name
+                try:
+                    if issue.reporter_id:
+                        reporter = await User.get(issue.reporter_id)
+                        item["reporter_name"] = reporter.name if reporter else "System"
+                    else:
+                        item["reporter_name"] = "System"
+                except Exception:
+                    item["reporter_name"] = "System"
+
+                enriched_issues.append(item)
+
+            return enriched_issues
         except Exception as e:
             print(f"Error fetching issues: {e}")
             return []

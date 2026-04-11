@@ -11,7 +11,7 @@
     <!-- Combined Stylesheets -->
     <link rel="stylesheet" href="/static/css/bootstrap.min.css">
     <link rel="stylesheet" href="/static/css/bootstrap-icons.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/theme.css?v=20260408">
     <link rel="stylesheet" href="/static/css/components.css?v=20260408">
     <style>
@@ -54,21 +54,332 @@
             letter-spacing: 0.05rem;
         }
 
-        /* Premium Modal Upgrade */
+        /* ──────── PREMIUM SCHEDULE MEETING MODAL ──────── */
+        .schedule-modal .modal-content {
+            border-radius: 24px;
+            border: none;
+            box-shadow: 0 32px 96px rgba(0, 0, 0, 0.18);
+            overflow: hidden;
+            max-height: 92vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .schedule-modal .modal-header {
+            background: linear-gradient(135deg, #2563eb 0%, #7c3aed 100%);
+            color: white;
+            padding: 1.25rem 1.75rem;
+            border: none;
+            flex-shrink: 0;
+        }
+
+        .schedule-modal .modal-header .btn-close {
+            filter: brightness(0) invert(1);
+            opacity: 0.85;
+        }
+
+        .schedule-modal .modal-body {
+            padding: 0;
+            overflow-y: auto;
+            flex: 1 1 auto;
+        }
+
+        .schedule-modal .modal-footer {
+            border-top: 1px solid rgba(0,0,0,0.06);
+            padding: 1rem 1.75rem;
+            flex-shrink: 0;
+            background: var(--bg-card, #fff);
+        }
+
+        /* Section dividers inside modal */
+        .sch-section {
+            padding: 1.1rem 1.75rem;
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+        }
+
+        .sch-section:last-child {
+            border-bottom: none;
+        }
+
+        .sch-section-label {
+            font-size: 0.68rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-muted);
+            margin-bottom: 0.65rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        /* Target type toggle */
+        .target-toggle {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .target-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.45rem 1.1rem;
+            border-radius: 50px;
+            border: 2px solid var(--border);
+            background: transparent;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.18s ease;
+            white-space: nowrap;
+        }
+
+        .target-btn:hover {
+            border-color: #2563eb;
+            color: #2563eb;
+            background: rgba(37,99,235,0.05);
+        }
+
+        .target-btn.active {
+            border-color: #2563eb;
+            background: #2563eb;
+            color: white;
+        }
+
+        /* Role pills */
+        .role-pills-wrap {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.45rem;
+        }
+
+        .role-pill {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.35rem 0.85rem;
+            border-radius: 50px;
+            border: 1.5px solid var(--border);
+            background: var(--bg-surface);
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-2, #475569);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            user-select: none;
+        }
+
+        .role-pill:hover {
+            border-color: #7c3aed;
+            color: #7c3aed;
+            background: rgba(124,58,237,0.05);
+        }
+
+        .role-pill.selected {
+            border-color: #7c3aed;
+            background: #7c3aed;
+            color: white;
+        }
+
+        .role-pill .pill-count {
+            background: rgba(255,255,255,0.28);
+            border-radius: 50px;
+            padding: 0 5px;
+            font-size: 0.7rem;
+            min-width: 18px;
+            text-align: center;
+        }
+
+        /* Date row */
+        .date-time-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        @media (max-width: 520px) {
+            .date-time-row { grid-template-columns: 1fr; }
+        }
+
+        /* Slot pills */
+        .slot-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-top: 0.5rem;
+        }
+
+        .slot-pill {
+            padding: 0.35rem 0.85rem;
+            border-radius: 50px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            border: 1.5px solid var(--border);
+            background: var(--bg-surface);
+            color: var(--text-2, #475569);
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .slot-pill.free {
+            border-color: #10b981;
+            color: #059669;
+            background: rgba(16, 185, 129, 0.07);
+        }
+
+        .slot-pill.free:hover,
+        .slot-pill.free.selected {
+            background: #10b981;
+            color: white;
+            border-color: #10b981;
+        }
+
+        .slot-pill.booked {
+            opacity: 0.45;
+            text-decoration: line-through;
+            cursor: not-allowed;
+            border-style: dashed;
+        }
+
+        .slot-pill.past {
+            opacity: 0.35;
+            text-decoration: line-through;
+            cursor: not-allowed;
+        }
+
+        /* Details grid */
+        .details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.65rem;
+        }
+
+        @media (max-width: 520px) {
+            .details-grid { grid-template-columns: 1fr; }
+        }
+
+        .details-grid .full-col {
+            grid-column: 1 / -1;
+        }
+
+        /* Form controls inside modal */
+        .sch-input {
+            border-radius: 10px;
+            border: 1.5px solid var(--border);
+            padding: 0.45rem 0.7rem;
+            font-size: 0.85rem;
+            width: 100%;
+            background: var(--bg-surface, #ffffff);
+            color: var(--text-main);
+            transition: border-color 0.15s;
+            outline: none;
+        }
+
+        .sch-input option {
+            background: var(--bg-surface, #ffffff);
+            color: #000000; /* Force black dropdown text for high contrast on light bg */
+        }
+        
+        [data-theme="dark"] .sch-input option {
+            color: #ffffff;
+        }
+
+        .sch-input:focus {
+            border-color: #2563eb;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+        }
+
+        .sch-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 0.3rem;
+            display: block;
+        }
+
+        .slot-status-msg {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            padding: 0.5rem 0;
+        }
+
+        /* Attendee badge chips */
+        .attendee-chip-wrap {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+            margin-top: 0.4rem;
+        }
+
+        .attendee-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            background: rgba(37,99,235,0.08);
+            color: #2563eb;
+            border-radius: 50px;
+            padding: 0.2rem 0.6rem;
+            font-size: 0.72rem;
+            font-weight: 600;
+        }
+
+        /* Btn primary gradient */
+        .btn-schedule {
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 0.55rem 1.5rem;
+            font-weight: 700;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: opacity 0.15s, transform 0.15s;
+        }
+
+        .btn-schedule:hover {
+            opacity: 0.92;
+            transform: translateY(-1px);
+            color: white;
+        }
+
+        /* Premium Modal (existing reschedule / AI) */
         .premium-modal .modal-content {
             border-radius: 24px;
             border: none;
             box-shadow: 0 25px 80px rgba(0,0,0,0.15);
             overflow: hidden;
         }
+
         .premium-modal .modal-header {
             background: var(--accent-gradient);
             color: white;
             padding: 1.5rem 2rem;
             border: none;
         }
+
         .premium-modal .btn-close {
             filter: brightness(0) invert(1);
+        }
+
+        /* Dark mode support - refined transitions */
+        [data-theme="dark"] .schedule-modal .modal-footer,
+        [data-theme="dark"] .schedule-modal .modal-body {
+            background: var(--bg-surface, #1e293b);
+        }
+
+        [data-theme="dark"] .sch-label {
+            color: #ffffff;
+        }
+        
+        [data-theme="dark"] .sch-input {
+            background: #0f172a;
+            border-color: #334155;
+            color: #f8fafc;
         }
     </style>
 </head>
@@ -112,7 +423,7 @@
                                                 onclick="toggleAllMeetings(this)">
                                         </th>
                                         <th class="py-3 text-muted fw-bold extra-small uppercase">Client Name</th>
-                                        <th class="py-3 text-muted fw-bold extra-small uppercase">Subject & Type</th>
+                                        <th class="py-3 text-muted fw-bold extra-small uppercase">Subject &amp; Type</th>
                                         <th class="py-3 text-muted fw-bold extra-small uppercase">Scheduled Date</th>
                                         <th class="py-3 text-muted fw-bold extra-small uppercase">Status</th>
                                         <th class="py-3 text-muted fw-bold extra-small uppercase">AI Summary</th>
@@ -127,66 +438,150 @@
                                 </tbody>
                             </table>
                         </div>
+                        <div id="meetings-pagination" class="px-4 pb-3"></div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Modals -->
-    <div class="modal fade premium-modal" id="addMeetingModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
+    <!-- ─── PROFESSIONAL SCHEDULE MEETING MODAL ─── -->
+    <div class="modal fade schedule-modal" id="addMeetingModal" tabindex="-1" aria-labelledby="addMeetingModalLabel">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
+
+                <!-- Header -->
                 <div class="modal-header">
-                    <h5 class="modal-title fw-bold">Schedule Meeting</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <div>
+                        <h5 class="modal-title fw-bold mb-0" id="addMeetingModalLabel">
+                            <i class="bi bi-calendar-plus me-2"></i>Schedule Meeting
+                        </h5>
+                        <p class="text-white-50 small mb-0 mt-1">Set up a team, client, or project meeting</p>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body p-4">
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Target Client *</label>
-                        <select id="m-client" class="form-select border-2"></select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Subject Title</label>
-                        <input id="m-title" class="form-control border-2" placeholder="e.g. Project Kickoff">
-                    </div>
-                    <div class="row g-2 mb-3">
-                        <div class="col">
-                            <label class="form-label fw-semibold">Date *</label>
-                            <input type="date" id="m-date" class="form-control border-2" required>
+
+                <!-- Body (scrollable if needed) -->
+                <div class="modal-body">
+
+                    <!-- ① TARGET TYPE -->
+                    <div class="sch-section">
+                        <div class="sch-section-label">
+                            <i class="bi bi-crosshair"></i> Meeting Context
                         </div>
-                        <div class="col">
-                            <label class="form-label fw-semibold">Time</label>
-                            <input type="time" id="m-time" class="form-control border-2">
+                        <div class="target-toggle" id="target-toggle-group">
+                            <button class="target-btn active" id="target-btn-CLIENT"
+                                onclick="setTargetType('CLIENT')" data-type="CLIENT">
+                                <i class="bi bi-person-badge"></i> Client
+                            </button>
+                            <button class="target-btn" id="target-btn-PROJECT"
+                                onclick="setTargetType('PROJECT')" data-type="PROJECT">
+                                <i class="bi bi-kanban"></i> Project
+                            </button>
+                            <button class="target-btn" id="target-btn-INTERNAL"
+                                onclick="setTargetType('INTERNAL')" data-type="INTERNAL">
+                                <i class="bi bi-people"></i> Internal
+                            </button>
                         </div>
-                    </div>
-                    <div class="row g-2 mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Booking Status</label>
-                            <select id="m-status" class="form-select border-2">
-                                <option value="OPEN">Pending Arrival</option>
-                                <option value="IN_PROGRESS" selected>Confirmed / Scheduled</option>
+
+                        <!-- Context dropdowns — shown based on target type -->
+                        <div id="ctx-client" class="mt-3">
+                            <label class="sch-label" for="m-client">Select Client</label>
+                            <select id="m-client" class="sch-input" onchange="onContextChange()">
+                                <option value="">-- Select Client (Business) --</option>
                             </select>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">Meeting Type</label>
-                            <select id="m-type" class="form-select border-2">
-                                <option value="In-Person">In-Person</option>
-                                <option value="Google Meet">Google Meet</option>
-                                <option value="Virtual">Virtual Session</option>
+                        <div id="ctx-project" class="mt-3" style="display:none;">
+                            <label class="sch-label" for="m-project">Select Project</label>
+                            <select id="m-project" class="sch-input" onchange="onContextChange()">
+                                <option value="">-- Select Project --</option>
                             </select>
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Pre-meeting Notes</label>
-                        <textarea id="m-notes" class="form-control border-2" rows="3"
-                            placeholder="Context for the call..."></textarea>
+
+                    <!-- ② WHO (Role-Based Multi Select) -->
+                    <div class="sch-section">
+                        <div class="sch-section-label">
+                            <i class="bi bi-people-fill"></i> Attendees by Role
+                            <span id="attendee-count-badge" class="ms-auto" style="font-size:0.7rem;color:#7c3aed;font-weight:700;text-transform:none;letter-spacing:0;"></span>
+                        </div>
+                        <div class="role-pills-wrap" id="role-pills-wrap">
+                            <!-- Pills injected by JS -->
+                        </div>
+                        <div class="attendee-chip-wrap" id="attendee-name-chips"></div>
+                    </div>
+
+                    <!-- ③ DATE & FREE SLOTS -->
+                    <div class="sch-section">
+                        <div class="sch-section-label">
+                            <i class="bi bi-calendar3"></i> Date &amp; Time Slot
+                        </div>
+                        <div class="date-time-row">
+                            <div>
+                                <label class="sch-label" for="m-date">Date <span class="text-danger">*</span></label>
+                                <input type="date" id="m-date" class="sch-input" onchange="onDateChange()">
+                            </div>
+                            <div>
+                                <label class="sch-label">Free Slots (Common Availability)</label>
+                                <div id="slot-status-msg" class="slot-status-msg">
+                                    <i class="bi bi-info-circle me-1"></i>Select a date &amp; attendees to see free slots
+                                </div>
+                                <input type="hidden" id="m-time">
+                            </div>
+                        </div>
+                        <div class="slot-grid mt-2" id="slot-grid"></div>
+                    </div>
+
+                    <!-- ④ MEETING DETAILS -->
+                    <div class="sch-section">
+                        <div class="sch-section-label">
+                            <i class="bi bi-card-text"></i> Meeting Details
+                        </div>
+                        <div class="details-grid">
+                            <!-- Subject -->
+                            <div class="full-col">
+                                <label class="sch-label" for="m-title">Subject Title</label>
+                                <input id="m-title" class="sch-input" placeholder="e.g. Project Kickoff, Weekly Sync">
+                            </div>
+                            <!-- Type -->
+                            <div>
+                                <label class="sch-label" for="m-type">Meeting Mode</label>
+                                <select id="m-type" class="sch-input">
+                                    <option value="In-Person">In-Person</option>
+                                    <option value="Google Meet">Google Meet</option>
+                                    <option value="Virtual">Virtual Session</option>
+                                </select>
+                            </div>
+                            <!-- Status -->
+                            <div>
+                                <label class="sch-label" for="m-status">Booking Status</label>
+                                <select id="m-status" class="sch-input">
+                                    <option value="OPEN">Pending Arrival</option>
+                                    <option value="IN_PROGRESS" selected>Confirmed / Scheduled</option>
+                                </select>
+                            </div>
+                            <!-- Notes -->
+                            <div class="full-col">
+                                <label class="sch-label" for="m-notes">Pre-meeting Notes</label>
+                                <textarea id="m-notes" class="sch-input" rows="2" style="resize:none;"
+                                    placeholder="Context, agenda, or any relevant notes..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Footer -->
+                <div class="modal-footer d-flex justify-content-between align-items-center gap-2">
+                    <div id="modal-form-info" class="text-muted small"></div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                        <button class="btn-schedule" id="save-meeting-btn" onclick="saveMeeting()">
+                            <i class="bi bi-calendar-check"></i> Schedule Session
+                        </button>
                     </div>
                 </div>
-                <div class="modal-footer border-0">
-                    <button class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                    <button class="btn btn-primary px-4 fw-bold" id="save-meeting-btn" style="border-radius:10px;">Schedule Session</button>
-                </div>
+
             </div>
         </div>
     </div>
@@ -266,8 +661,23 @@
         if (sb) sb.innerHTML = renderSidebar('meetings');
         injectTopHeader('Meetings');
 
-        let allClients = [];
+        // ────────── STATE ──────────
+        let allClients   = [];
+        let allProjects  = [];
+        let allUsers     = [];
+        let currentTargetType = 'CLIENT';
+        let selectedRoles = new Set();
+        let selectedAttendeeIds = [];
+        const ROLE_DEFS = [
+            { key: 'ALL',          label: 'All',           icon: 'bi-people-fill',         color: '#2563eb' },
+            { key: 'SALES',        label: 'Sales',         icon: 'bi-graph-up-arrow',       color: '#0ea5e9' },
+            { key: 'TELESALES',    label: 'Telesales',     icon: 'bi-telephone-fill',        color: '#10b981' },
+            { key: 'PROJECT_MANAGER', label: 'PM',         icon: 'bi-kanban-fill',           color: '#f59e0b' },
+            { key: 'PROJECT_MANAGER_AND_SALES', label: 'PM+Sales', icon: 'bi-briefcase-fill', color: '#8b5cf6' },
+            { key: 'ADMIN',        label: 'Admin',         icon: 'bi-shield-fill-check',     color: '#ef4444' },
+        ];
 
+        // ────────── LOAD DATA ──────────
         async function loadClients() {
             try {
                 allClients = await apiGet('/clients/');
@@ -288,9 +698,302 @@
             }
         }
 
+        async function loadProjects() {
+            try {
+                allProjects = await apiGet('/projects/');
+                const sel = document.getElementById('m-project');
+                if (!sel) return;
+                sel.innerHTML = '<option value="">-- Select Project --</option>' +
+                    allProjects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+            } catch (e) {
+                console.error("Projects Load Failed", e);
+            }
+        }
+
+        async function loadAllUsers() {
+            try {
+                allUsers = await apiGet('/users/');
+                buildRolePills();
+            } catch (e) {
+                console.error("Users Load Failed", e);
+                buildRolePills(); // still render pills even if empty
+            }
+        }
+
+        // ────────── ROLE PILLS ──────────
+        function buildRolePills() {
+            const wrap = document.getElementById('role-pills-wrap');
+            if (!wrap) return;
+
+            wrap.innerHTML = ROLE_DEFS.map(r => {
+                const count = r.key === 'ALL'
+                    ? allUsers.filter(u => u.role !== 'CLIENT').length
+                    : allUsers.filter(u => u.role === r.key).length;
+
+                return `
+                <button class="role-pill" id="rpill-${r.key}"
+                    onclick="toggleRolePill('${r.key}')"
+                    data-role="${r.key}"
+                    title="${count} ${r.label} member${count !== 1 ? 's' : ''}">
+                    <i class="${r.icon}"></i>
+                    ${r.label}
+                    ${count > 0 ? `<span class="pill-count">${count}</span>` : ''}
+                </button>`;
+            }).join('');
+        }
+
+        function toggleRolePill(roleKey) {
+            if (roleKey === 'ALL') {
+                // If ALL already selected — deselect all
+                if (selectedRoles.has('ALL')) {
+                    selectedRoles.clear();
+                } else {
+                    // Select ALL
+                    selectedRoles.clear();
+                    selectedRoles.add('ALL');
+                }
+            } else {
+                selectedRoles.delete('ALL'); // deselect ALL if individual role clicked
+                if (selectedRoles.has(roleKey)) {
+                    selectedRoles.delete(roleKey);
+                } else {
+                    selectedRoles.add(roleKey);
+                }
+            }
+            refreshRolePillUI();
+            refreshAttendees();
+        }
+
+        function refreshRolePillUI() {
+            ROLE_DEFS.forEach(r => {
+                const pill = document.getElementById(`rpill-${r.key}`);
+                if (!pill) return;
+                const isActive = selectedRoles.has(r.key) || (r.key !== 'ALL' && selectedRoles.has('ALL'));
+                pill.classList.toggle('selected', isActive);
+            });
+        }
+
+        function refreshAttendees() {
+            const chipWrap = document.getElementById('attendee-name-chips');
+            const countBadge = document.getElementById('attendee-count-badge');
+
+            if (selectedRoles.size === 0) {
+                selectedAttendeeIds = [];
+                if (chipWrap) chipWrap.innerHTML = '';
+                if (countBadge) countBadge.textContent = '';
+                fetchGroupSlots();
+                return;
+            }
+
+            const isAll = selectedRoles.has('ALL');
+            const filteredUsers = isAll
+                ? allUsers.filter(u => u.role !== 'CLIENT')
+                : allUsers.filter(u => selectedRoles.has(u.role));
+
+            selectedAttendeeIds = filteredUsers.map(u => u.id);
+
+            if (chipWrap) {
+                chipWrap.innerHTML = filteredUsers.slice(0, 8).map(u =>
+                    `<span class="attendee-chip"><i class="bi bi-person-circle"></i>${u.name || u.email}</span>`
+                ).join('') + (filteredUsers.length > 8
+                    ? `<span class="attendee-chip" style="background:rgba(100,116,139,0.1);color:#64748b;">+${filteredUsers.length - 8} more</span>`
+                    : '');
+            }
+
+            if (countBadge) {
+                countBadge.textContent = filteredUsers.length > 0
+                    ? `${filteredUsers.length} attendee${filteredUsers.length !== 1 ? 's' : ''} selected`
+                    : '';
+            }
+
+            fetchGroupSlots();
+        }
+
+        // ────────── TARGET TYPE ──────────
+        function setTargetType(type) {
+            currentTargetType = type;
+
+            // Update button UI
+            document.querySelectorAll('.target-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.type === type);
+            });
+
+            // Show/hide context dropdowns
+            document.getElementById('ctx-client').style.display  = (type === 'CLIENT')   ? '' : 'none';
+            document.getElementById('ctx-project').style.display = (type === 'PROJECT')  ? '' : 'none';
+        }
+
+        function onContextChange() {
+            // Re-fetch slots whenever context changes
+            fetchGroupSlots();
+        }
+
+        // ────────── DATE & SLOTS ──────────
+        function initDatePicker() {
+            const dateInput = document.getElementById('m-date');
+            if (!dateInput) return;
+            const today = new Date().toISOString().split('T')[0];
+            dateInput.min = today;
+            dateInput.value = today;
+        }
+
+        function onDateChange() {
+            document.getElementById('m-time').value = '';
+            document.querySelectorAll('.slot-pill').forEach(b => b.classList.remove('selected'));
+            fetchGroupSlots();
+        }
+
+        async function fetchGroupSlots() {
+            const date = document.getElementById('m-date').value;
+            const grid = document.getElementById('slot-grid');
+            const statusMsg = document.getElementById('slot-status-msg');
+
+            if (!date) {
+                if (statusMsg) statusMsg.innerHTML = '<i class="bi bi-info-circle me-1"></i>Select a date first';
+                if (grid) grid.innerHTML = '';
+                return;
+            }
+
+            if (selectedAttendeeIds.length === 0) {
+                if (statusMsg) statusMsg.innerHTML = '<i class="bi bi-info-circle me-1"></i>Select attendees to see free slots';
+                if (grid) grid.innerHTML = '';
+                return;
+            }
+
+            if (statusMsg) statusMsg.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Checking availability...';
+            if (grid) grid.innerHTML = '';
+
+            try {
+                const response = await window.ApiClient.request('/users/availability/group', {
+                    method: 'POST',
+                    body: JSON.stringify({ user_ids: selectedAttendeeIds, date: date })
+                });
+
+                const slots = response?.slots || [];
+                const today = new Date().toISOString().split('T')[0];
+                const isToday = date === today;
+                const currentHour = new Date().getHours();
+
+                const formatSlot = (h) => {
+                    const labels = {
+                        10: '10–11 AM', 11: '11–12 PM', 12: '12–1 PM',
+                        13: '1–2 PM ☕', 14: '2–3 PM', 15: '3–4 PM',
+                        16: '4–5 PM', 17: '5–6 PM'
+                    };
+                    return labels[h] || `${h}:00`;
+                };
+
+                let html = '';
+                slots.forEach(slot => {
+                    if (slot.hour24 >= 18) return;
+                    const isPast = isToday && slot.hour24 <= currentHour;
+                    const isLunch = slot.hour24 === 13;
+                    const timeVal = String(slot.hour24).padStart(2, '0') + ':00';
+                    const label = formatSlot(slot.hour24);
+
+                    if (slot.is_available && !isPast && !isLunch) {
+                        html += `<button class="slot-pill free" onclick="selectSlot(this, '${timeVal}')" data-time="${timeVal}">${label}</button>`;
+                    } else {
+                        const tipLabel = isPast ? label + ' (past)' : isLunch ? label + ' (lunch)' : label + ' (booked)';
+                        const cls = isPast ? 'past' : 'booked';
+                        html += `<button class="slot-pill ${cls}" disabled>${tipLabel}</button>`;
+                    }
+                });
+
+                if (grid) grid.innerHTML = html || `<span class="slot-status-msg">No working hours configured for this day</span>`;
+                if (statusMsg) statusMsg.innerHTML = slots.length
+                    ? `<i class="bi bi-check-circle text-success me-1"></i>Common free slots shown below`
+                    : '';
+
+            } catch (err) {
+                if (statusMsg) statusMsg.innerHTML = '<i class="bi bi-exclamation-triangle text-danger me-1"></i>Could not load slots';
+                if (grid) grid.innerHTML = '';
+                console.error('Group availability error:', err);
+            }
+        }
+
+        function selectSlot(btn, timeVal) {
+            document.querySelectorAll('.slot-pill.selected').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            document.getElementById('m-time').value = timeVal;
+        }
+
+        // ────────── SAVE MEETING ──────────
+        window.saveMeeting = async function () {
+            const date = document.getElementById('m-date').value;
+            const time = document.getElementById('m-time').value;
+            const title = document.getElementById('m-title').value;
+
+            if (!date) return showToast('Please select a date.', 'warning');
+
+            const payload = {
+                title: title || 'Meeting',
+                date: `${date}T${time || '09:00'}:00`,
+                meeting_type: document.getElementById('m-type').value,
+                status: document.getElementById('m-status').value,
+                content: document.getElementById('m-notes').value || '',
+                target_type: currentTargetType,
+                attendee_ids: selectedAttendeeIds
+            };
+
+            // Add client_id or project context
+            if (currentTargetType === 'CLIENT') {
+                const clientId = document.getElementById('m-client').value;
+                if (!clientId) return showToast('Please select a client.', 'warning');
+                payload.client_id = clientId;
+            } else if (currentTargetType === 'PROJECT') {
+                const projectId = document.getElementById('m-project').value;
+                if (!projectId) return showToast('Please select a project.', 'warning');
+                payload.project_id = projectId;
+            }
+
+            const btn = document.getElementById('save-meeting-btn');
+            if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Scheduling...'; }
+
+            try {
+                if (currentTargetType === 'CLIENT') {
+                    const clientId = document.getElementById('m-client').value;
+                    await apiPost(`/clients/${clientId}/meetings`, payload);
+                } else {
+                    await apiPost('/meetings/', payload);
+                }
+                showToast('Meeting scheduled successfully!', 'success');
+                bootstrap.Modal.getInstance(document.getElementById('addMeetingModal')).hide();
+                resetAddModal();
+                loadMeetings();
+            } catch (e) {
+                showToast('Scheduling failed: ' + (e?.data?.detail || e?.message || 'Unknown error'), 'error');
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-calendar-check"></i> Schedule Session'; }
+            }
+        };
+
+        function resetAddModal() {
+            selectedRoles.clear();
+            selectedAttendeeIds = [];
+            refreshRolePillUI();
+            const chipWrap = document.getElementById('attendee-name-chips');
+            if (chipWrap) chipWrap.innerHTML = '';
+            const countBadge = document.getElementById('attendee-count-badge');
+            if (countBadge) countBadge.textContent = '';
+            document.getElementById('m-title').value = '';
+            document.getElementById('m-notes').value = '';
+            document.getElementById('m-time').value = '';
+            document.getElementById('slot-grid').innerHTML = '';
+            const statusMsg = document.getElementById('slot-status-msg');
+            if (statusMsg) statusMsg.innerHTML = '<i class="bi bi-info-circle me-1"></i>Select a date &amp; attendees to see free slots';
+            setTargetType('CLIENT');
+            initDatePicker();
+        }
+
+        // Re-init modal when opened
+        document.getElementById('addMeetingModal').addEventListener('show.bs.modal', function () {
+            initDatePicker();
+        });
+
+        // ────────── MEETINGS TABLE ──────────
         async function loadMeetings(filters = {}) {
             try {
-                // Using the new global endpoint for efficiency
                 const params = new URLSearchParams();
                 if (filters.client) params.append('client_id', filters.client);
                 if (filters.type) params.append('meeting_type', filters.type);
@@ -300,7 +1003,10 @@
 
                 const meetings = await apiGet(`/meetings/?${params.toString()}`);
                 const clientMap = {};
-                allClients.forEach(c => clientMap[c.id] = c); // Store the full object
+                allClients.forEach(c => clientMap[c.id] = c);
+                
+                const projectMap = {};
+                allProjects.forEach(p => projectMap[p.id] = p);
 
                 meetings.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
                 const countEl = document.getElementById('meeting-count');
@@ -325,70 +1031,86 @@
 
                 const tableBody = document.getElementById('meetings-table');
                 if (!tableBody) return;
-                if (meetings.length === 0) {
-                    tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-5 text-muted">No meetings found. Start by scheduling one!</td></tr>';
-                    return;
-                }
 
-                tableBody.innerHTML = meetings.map(m => {
-                    const clientObj = clientMap[m.client_id] || {};
-                    const clientName = clientObj.name || `Client #${m.client_id}`;
-                    const businessName = clientObj.organization || '';
-                    const isFinished = m.status === 'RESOLVED';
-                    const isCancelled = m.status === 'CANCELLED' || m.status === 'CANCEL';
+                window.renderPagination({
+                    data: meetings,
+                    tbodyId: 'meetings-table',
+                    paginationId: 'meetings-pagination',
+                    pageSize: 10,
+                    emptyMsg: '<tr><td colspan="7" class="text-center py-5 text-muted">No meetings found. Start by scheduling one!</td></tr>',
+                    renderRow: (m) => {
+                        const clientObj = clientMap[m.client_id] || {};
+                        const projectObj = projectMap[m.project_id] || {};
+                        
+                        let clientName = clientObj.name || "";
+                        let businessName = clientObj.organization || "";
 
-                    return `
-                    <tr class="border-bottom">
-                        <td class="ps-4">
-                            <input type="checkbox" class="form-check-input meeting-checkbox" value="${m.id}" onclick="updateSelectedCount()">
-                        </td>
-                        <td>
-                            <div class="fw-bold text-main">${clientName}</div>
-                            ${businessName ? `<div class="text-muted extra-small">${businessName}</div>` : ''}
-                            <div class="text-muted extra-small opacity-50 mt-1">ID: ${m.id}</div>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center">
-                                ${platformIcon(m.meeting_type)}
-                                <span class="fw-medium">${m.title || 'Untitled Session'}</span>
-                            </div>
-                            <div class="text-muted extra-small ms-4">${m.meeting_type || 'General'}</div>
-                        </td>
-                        <td>
-                            <div class="fw-semibold">${m.date ? new Date(m.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</div>
-                            <div class="text-muted extra-small">${m.date ? new Date(m.date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—'}</div>
-                        </td>
-                        <td><span class="badge status-badge border ${statusBadge(m.status)}">${m.status || 'Scheduled'}</span></td>
-                        <td>
-                            ${isFinished ? `
-                                <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="fetchAISummary('${m.id}')">
-                                    <i class="bi bi-robot me-1"></i>Report
-                                </button>
-                            ` : `<span class="text-muted small">${m.content ? m.content.substring(0, 30) + '...' : 'Pre-meeting phase'}</span>`}
-                        </td>
-                        <td class="pe-4 text-end">
-                            <div class="dropdown">
-                                <button class="btn btn-light btn-sm rounded-circle p-2 shadow-none border" data-bs-toggle="dropdown">
-                                    <i class="bi bi-three-dots-vertical"></i>
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
-                                    ${(!isFinished && !isCancelled) ? `
-                                        <li><a class="dropdown-item" href="#" onclick="updateStatus('${m.id}', 'RESOLVED')"><i class="bi bi-check2-circle me-2 text-success"></i>Mark Done</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="openRescheduleModal('${m.id}', '${m.date}', '${m.client_id}')"><i class="bi bi-calendar2-range me-2 text-primary"></i>Reschedule</a></li>
-                                        <li><a class="dropdown-item" href="#" onclick="updateStatus('${m.id}', 'CANCELLED')"><i class="bi bi-x-circle me-2 text-danger"></i>Cancel</a></li>
-                                    ` : ''}
-                                    ${(!m.meet_link && !isFinished && !isCancelled) ? `
-                                        <li><a class="dropdown-item" href="#" onclick="initializeMeet('${m.id}')"><i class="bi bi-camera-video me-2 text-info"></i>Create G-Meet</a></li>
-                                    ` : m.meet_link ? `
-                                        <li><a class="dropdown-item" href="${m.meet_link}" target="_blank"><i class="bi bi-link-45deg me-2"></i>Join Meet</a></li>
-                                    ` : ''}
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item text-danger" href="#" onclick="deleteMeeting('${m.id}')"><i class="bi bi-trash me-2"></i>Delete</a></li>
-                                </ul>
-                            </div>
-                        </td>
-                    </tr>`;
-                }).join('');
+                        if (!clientName && m.project_id) {
+                            clientName = projectObj.name ? `Project: ${projectObj.name}` : "Project Sync";
+                            businessName = "Internal Project";
+                        }
+                        
+                        if (!clientName && !m.project_id) {
+                            clientName = "Internal Team Meeting";
+                            businessName = "Internal";
+                        }
+
+                        const isFinished  = m.status === 'RESOLVED';
+                        const isCancelled = m.status === 'CANCELLED' || m.status === 'CANCEL';
+
+                        return `
+                        <tr class="border-bottom">
+                            <td class="ps-4">
+                                <input type="checkbox" class="form-check-input meeting-checkbox" value="${m.id}" onclick="updateSelectedCount()">
+                            </td>
+                            <td>
+                                <div class="fw-bold text-main" style="color: var(--primary);">${clientName}</div>
+                                ${businessName ? `<div class="text-muted extra-small">${businessName}</div>` : ''}
+                                <div class="text-muted extra-small opacity-50 mt-1">ID: ${m.id}</div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    ${platformIcon(m.meeting_type)}
+                                    <span class="fw-medium">${m.title || 'Untitled Session'}</span>
+                                </div>
+                                <div class="text-muted extra-small ms-4">${m.meeting_type || 'General'}</div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold">${m.date ? new Date(m.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</div>
+                                <div class="text-muted extra-small">${m.date ? new Date(m.date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—'}</div>
+                            </td>
+                            <td><span class="badge status-badge border ${statusBadge(m.status)}">${m.status || 'Scheduled'}</span></td>
+                            <td>
+                                ${isFinished ? `
+                                    <button class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="fetchAISummary('${m.id}')">
+                                        <i class="bi bi-robot me-1"></i>Report
+                                    </button>
+                                ` : `<span class="text-muted small">${m.content ? m.content.substring(0, 30) + '...' : 'Pre-meeting phase'}</span>`}
+                            </td>
+                            <td class="pe-4 text-end">
+                                <div class="dropdown">
+                                    <button class="btn btn-light btn-sm rounded-circle p-2 shadow-none border" data-bs-toggle="dropdown">
+                                        <i class="bi bi-three-dots-vertical"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
+                                        ${(!isFinished && !isCancelled) ? `
+                                            <li><a class="dropdown-item" href="#" onclick="updateStatus('${m.id}', 'RESOLVED')"><i class="bi bi-check2-circle me-2 text-success"></i>Mark Done</a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="openRescheduleModal('${m.id}', '${m.date}', '${m.client_id}')"><i class="bi bi-calendar2-range me-2 text-primary"></i>Reschedule</a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="updateStatus('${m.id}', 'CANCELLED')"><i class="bi bi-x-circle me-2 text-danger"></i>Cancel</a></li>
+                                        ` : ''}
+                                        ${(!m.meet_link && !isFinished && !isCancelled) ? `
+                                            <li><a class="dropdown-item" href="#" onclick="initializeMeet('${m.id}')"><i class="bi bi-camera-video me-2 text-info"></i>Create G-Meet</a></li>
+                                        ` : m.meet_link ? `
+                                            <li><a class="dropdown-item" href="${m.meet_link}" target="_blank"><i class="bi bi-link-45deg me-2"></i>Join Meet</a></li>
+                                        ` : ''}
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteMeeting('${m.id}')"><i class="bi bi-trash me-2"></i>Delete</a></li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>`;
+                    }
+                });
             } catch (e) {
                 console.error("Meetings Load Failed", e);
                 const tableBody = document.getElementById('meetings-table');
@@ -404,7 +1126,7 @@
             if (!aiModalEl) return;
             const modal = bootstrap.Modal.getOrCreateInstance(aiModalEl);
             const aiLabel = document.getElementById('ai-meeting-label');
-            const aiBody = document.getElementById('ai-summary-body');
+            const aiBody  = document.getElementById('ai-summary-body');
             if (aiLabel) aiLabel.textContent = `Meeting ID: ${id}`;
             if (aiBody) aiBody.innerHTML = `
                 <div class="text-center py-4">
@@ -416,7 +1138,7 @@
             try {
                 const result = await apiPost(`/meetings/${id}/generate-ai-summary`, {});
                 const highlights = result.highlights || [];
-                const nextSteps = result.next_steps || result.action_items || 'No action items found.';
+                const nextSteps  = result.next_steps || result.action_items || 'No action items found.';
                 if (aiBody) aiBody.innerHTML = `
                     <div class="mb-4">
                         <h6 class="fw-bold text-primary mb-3"><i class="bi bi-lightbulb me-2"></i>Key Highlights</h6>
@@ -455,7 +1177,6 @@
         window.updateStatus = async (id, status) => {
             if (status === 'CANCELLED' && !confirm('Are you sure you want to cancel this meeting?')) return;
             try {
-                // Fixed endpoint: /api/meetings/ instead of /api/clients/meetings/
                 await apiPatch(`/meetings/${id}`, { status: status });
                 showToast(`Meeting marked as ${status}`);
                 loadMeetings();
@@ -465,7 +1186,6 @@
         window.deleteMeeting = async (id) => {
             if (!confirm('Permanently delete this meeting session?')) return;
             try {
-                // Fixed endpoint: /api/meetings/
                 await apiDelete(`/meetings/${id}`);
                 showToast('Meeting deleted', 'success');
                 loadMeetings();
@@ -475,8 +1195,7 @@
         window.openRescheduleModal = (id, currentIso, clientId) => {
             document.getElementById('reschedule-id').value = id;
             document.getElementById('res-selected-time').value = '';
-            
-            // Derive PM ID from client
+
             const client = allClients.find(c => c.id == clientId);
             document.getElementById('res-pm-id').value = client ? client.pm_id : '';
 
@@ -490,7 +1209,7 @@
             } else {
                 dateInput.value = today;
             }
-            
+
             fetchRescheduleSlots();
             bootstrap.Modal.getOrCreateInstance(document.getElementById('rescheduleModal')).show();
         };
@@ -502,16 +1221,24 @@
 
             document.getElementById('res-selected-time').value = '';
 
-            if (!pmId || !date) {
-                container.innerHTML = '<div class="text-muted small w-100 text-center py-3">PM unavailable.</div>';
+            if (!pmId || pmId === '' || pmId === '_') {
+                container.innerHTML = '<div class="alert alert-info py-2" style="font-size: 13px;"><i class="bi bi-info-circle me-2"></i> No Project Manager assigned to this client.</div>';
                 return;
             }
 
-            container.innerHTML = '<div class="w-100 text-center py-4"><div class="spinner-border text-primary"></div></div>';
+            if (!date) return;
+
+            container.innerHTML = '<div class="w-100 text-center py-4"><div class="spinner-border text-primary"></div><div class="text-muted small mt-2">Checking availability...</div></div>';
 
             try {
                 const response = await window.ApiClient.request(`/users/${pmId}/availability?date=${date}`, { method: 'GET' });
-                const slots = response.slots || [];
+
+                if (response?.detail === "Project Manager not found") {
+                    container.innerHTML = '<div class="alert alert-warning py-2" style="font-size: 13px;"><i class="bi bi-exclamation-triangle me-2"></i> PM not found in system.</div>';
+                    return;
+                }
+
+                const slots = response?.slots || [];
 
                 if (!slots || slots.length === 0) {
                     container.innerHTML = '<div class="text-muted small w-100 text-center py-3">No working hours configured for this day.</div>';
@@ -536,8 +1263,8 @@
 
                 let html = '';
                 slots.forEach(slot => {
-                    if (slot.hour24 >= 18) return; 
-                    if (slot.hour24 === 13) slot.is_available = false; 
+                    if (slot.hour24 >= 18) return;
+                    if (slot.hour24 === 13) slot.is_available = false;
 
                     const isPast = isToday && slot.hour24 <= currentHour;
                     const displayLabel = formatRange(slot.hour24);
@@ -569,14 +1296,13 @@
 
         window.confirmReschedule = async () => {
             const id = document.getElementById('reschedule-id').value;
-            const d = document.getElementById('res-date').value;
-            const t = document.getElementById('res-selected-time').value;
+            const d  = document.getElementById('res-date').value;
+            const t  = document.getElementById('res-selected-time').value;
 
             if (!d || !t) return showToast('Please select a valid date and available time slot.', 'error');
 
             try {
                 const new_date = `${d}T${t}:00`;
-                // Use the /reschedule endpoint (not a PATCH) so the backend creates a MEETING_RESCHEDULED Visit log
                 await apiPost(`/meetings/${id}/reschedule`, { new_date: new_date });
                 showToast('Meeting rescheduled successfully', 'success');
                 bootstrap.Modal.getInstance(document.getElementById('rescheduleModal')).hide();
@@ -593,30 +1319,7 @@
             }
         };
 
-        document.getElementById('save-meeting-btn').addEventListener('click', async () => {
-            const client_id = document.getElementById('m-client').value;
-            const title = document.getElementById('m-title').value;
-            const date = document.getElementById('m-date').value;
-            const time = document.getElementById('m-time').value;
-
-            if (!client_id || !date) return showToast('Client and Date are required.', 'warning');
-
-            const payload = {
-                title: title || 'Meeting',
-                date: `${date}T${time || '00:00'}:00`,
-                meeting_type: document.getElementById('m-type').value,
-                status: document.getElementById('m-status').value,
-                content: document.getElementById('m-notes').value
-            };
-
-            try {
-                await apiPost(`/clients/${client_id}/meetings`, payload);
-                showToast('Meeting scheduled!', 'success');
-                bootstrap.Modal.getInstance(document.getElementById('addMeetingModal')).hide();
-                loadMeetings();
-            } catch (e) { showToast('Scheduling failed', 'error'); }
-        });
-
+        // ────────── BULK ACTIONS ──────────
         function toggleAllMeetings(master) {
             document.querySelectorAll('.meeting-checkbox').forEach(cb => cb.checked = master.checked);
             updateSelectedCount();
@@ -648,7 +1351,6 @@
             if (!confirm(`Delete ${selectedIds.length} meetings permanently?`)) return;
 
             try {
-                // Fixed payload: { ids: [...] } instead of { method: 'POST', body: [...] }
                 await apiPost('/meetings/batch-delete', { ids: selectedIds });
                 showToast(`Removed ${selectedIds.length} sessions`, 'success');
                 loadMeetings();
@@ -657,7 +1359,7 @@
             }
         }
 
-        // Initialize Filters
+        // ────────── FILTERS ──────────
         function initFilters() {
             renderFilterPanel({
                 containerId: 'filter-wrapper',
@@ -677,23 +1379,24 @@
                         { value: 'CANCELLED', label: 'Cancelled' }
                     ]},
                     { type: 'date', label: 'Start Date', id: 'filter-start' },
-                    { type: 'date', label: 'End Date', id: 'filter-end' }
+                    { type: 'date', label: 'End Date',   id: 'filter-end' }
                 ],
                 onApply: (data) => loadMeetings({
                     client: data['client'],
-                    type: data['type'],
+                    type:   data['type'],
                     status: data['status'],
-                    start: data['start'],
-                    end: data['end']
+                    start:  data['start'],
+                    end:    data['end']
                 }),
                 onReset: () => loadMeetings()
             });
         }
 
-        // Initialize
-        loadClients().then(() => {
+        // ────────── INITIALIZE ──────────
+        Promise.all([loadClients(), loadProjects(), loadAllUsers()]).then(() => {
             initFilters();
             loadMeetings();
+            initDatePicker();
         });
     </script>
 </body>

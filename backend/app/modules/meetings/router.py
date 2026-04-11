@@ -42,7 +42,7 @@ PM_SCOPED_ROLES = {UserRole.PROJECT_MANAGER, UserRole.PROJECT_MANAGER_AND_SALES}
 async def read_all_meetings(
     skip: int = 0,
     limit: Optional[int] = None,
-    client_id: Optional[PydanticObjectId] = None,
+    client_id: Optional[str] = None,
     meeting_type: Optional[str] = None,
     status: Optional[str] = None,
     start_date: Optional[dt_date] = None,
@@ -57,8 +57,11 @@ async def read_all_meetings(
         assigned_client_ids = [c.id for c in clients]
         find_query["client_id"] = {"$in": assigned_client_ids}
 
-    if client_id:
-        find_query["client_id"] = client_id
+    if client_id and client_id not in {"ALL", "all"}:
+        try:
+            find_query["client_id"] = PydanticObjectId(client_id)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Invalid client_id format")
     if meeting_type and meeting_type not in {"ALL", "all"}:
         find_query["meeting_type"] = meeting_type
     if status and status not in {"ALL", "all"}:

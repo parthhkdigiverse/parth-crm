@@ -944,19 +944,22 @@ window.initLiveSearch = function () {
 
 
 window.checkHighPriorityIssues = async function () {
-    if (!sessionStorage.getItem('access_token')) return;
+    // Tokens are always stored in localStorage (not sessionStorage)
+    if (!localStorage.getItem('access_token')) return;
     try {
         const issues = await apiGet('/issues/');
+        // Only count issues that are NOT resolved/cancelled — red only when unsolved
         const unreadHigh = (Array.isArray(issues) ? issues : []).filter(i => i.severity === 'HIGH' && !['RESOLVED', 'CANCELLED'].includes(i.status));
 
         // Store for sidebar badge
         const oldCount = sessionStorage.getItem('crm_high_issue_count');
         sessionStorage.setItem('crm_high_issue_count', unreadHigh.length);
 
-        // If count changed and we have a sidebar active, re-render it
+        // If count changed, re-render sidebar to update badges & dot
         if (oldCount !== String(unreadHigh.length) && window.renderSidebar && window.__lastSidebarActive) {
-            const sb = document.getElementById('sidebar') || document.getElementById('sidebar-container')?.parentElement;
-            if (sb && sb.id === 'sidebar') {
+            // #sidebar is the wrapper div; renderSidebar() produces #sidebar-container inside it
+            const sb = document.getElementById('sidebar');
+            if (sb) {
                 sb.innerHTML = window.renderSidebar(window.__lastSidebarActive);
             }
         }
@@ -1218,7 +1221,8 @@ window.renderFilterPanel = function (config) {
 // Start both polls
 window.startAllPolling = function () {
     startNotificationPolling();
-    // High priority check every 30s
+    // Run immediately on page load, then every 30s
+    window.checkHighPriorityIssues();
     setInterval(window.checkHighPriorityIssues, 30000);
 };
 

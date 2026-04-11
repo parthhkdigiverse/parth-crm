@@ -12,6 +12,7 @@ class MeetingSummaryBase(BaseModel):
     content: typing.Optional[str] = None
     date: typing.Optional[datetime.datetime] = None
     client_id: typing.Optional[PydanticObjectId] = None
+    project_id: typing.Optional[PydanticObjectId] = None
     meeting_type: typing.Optional[str] = "In-Person"
 
     model_config = {"from_attributes": True, "populate_by_name": True}
@@ -27,7 +28,8 @@ class MeetingSummaryCreate(BaseModel):
     host_id: typing.Optional[PydanticObjectId] = None
     attendee_ids: typing.Optional[typing.List[PydanticObjectId]] = Field(default_factory=list)
     client_id: typing.Optional[PydanticObjectId] = None
-    target_type: typing.Optional[str] = "CLIENT"   # CLIENT | ALL_STAFF | ROLE_BASED
+    project_id: typing.Optional[PydanticObjectId] = None
+    target_type: typing.Optional[str] = "CLIENT"   # CLIENT | PROJECT | INTERNAL | ALL_STAFF | ROLE_BASED
     target_role: typing.Optional[str] = None
     priority: typing.Optional[str] = "MEDIUM"
 
@@ -73,6 +75,7 @@ class MeetingSummaryRead(BaseModel):
     content: typing.Optional[str] = None
     date: typing.Optional[datetime.datetime] = None
     client_id: typing.Optional[PydanticObjectId] = None
+    project_id: typing.Optional[PydanticObjectId] = None
     meeting_type: typing.Optional[str] = None
     status: GlobalTaskStatus = GlobalTaskStatus.OPEN
     meet_link: typing.Optional[str] = None

@@ -31,7 +31,11 @@ class MeetingService:
         from app.utils.google_meet import generate_google_meet_link
         
         meeting_dict = meeting_in.model_dump()
+        client_id = client_id or meeting_dict.get("client_id")
+        project_id = meeting_dict.get("project_id")
+        
         meeting_dict["client_id"] = client_id
+        meeting_dict["project_id"] = project_id
         
         # Resolve target audience to attendee ObjectIDs
         target_type = meeting_dict.pop("target_type", "CLIENT")
@@ -85,7 +89,8 @@ class MeetingService:
             priority=db_meeting.priority,
             assigned_to=host_user.name if host_user else (current_user.name or current_user.email),
             related_entity=f"MEETING:{str(db_meeting.id)}",
-            client_id=client_id
+            client_id=client_id,
+            project_id=project_id
         )
         await db_todo.insert()
         db_meeting.todo_id = db_todo.id
@@ -123,6 +128,16 @@ class MeetingService:
                 if client:
                     meeting_time = db_meeting.date.strftime("%I:%M %p, %d %b %Y") if db_meeting.date else "TBD"
                     await notify_client_stakeholders(client, "📅 Meeting Scheduled", f"Meeting '{db_meeting.title}' with {client.name} scheduled for {meeting_time}.", actor_id=current_user.id)
+            elif project_id:
+                from app.modules.projects.models import Project
+                project = await Project.get(project_id)
+                if project:
+                    from app.modules.clients.models import Client
+                    client = await Client.get(project.client_id)
+                    meeting_time = db_meeting.date.strftime("%I:%M %p, %d %b %Y") if db_meeting.date else "TBD"
+                    # If project has a client, notify stakeholders; otherwise just log/internal notif
+                    if client:
+                        await notify_client_stakeholders(client, "📅 Project Meeting Scheduled", f"Meeting '{db_meeting.title}' for project '{project.name}' scheduled for {meeting_time}.", actor_id=current_user.id)
         except Exception as e: 
             print(f"Notification error: {e}")
 

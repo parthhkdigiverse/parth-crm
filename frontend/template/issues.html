@@ -10,8 +10,8 @@
     <title>Issues — SRM AI SETU</title>
     <link rel="stylesheet" href="/static/css/bootstrap.min.css">
     <link rel="stylesheet" href="/static/css/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="/static/css/theme.css?v=20260406">
-    <link rel="stylesheet" href="/static/css/components.css?v=20260406">
+    <link rel="stylesheet" href="/static/css/theme.css?v=20260411">
+    <link rel="stylesheet" href="/static/css/components.css?v=20260411">
     <style>
         /* Inline Validation */
         .is-invalid {
@@ -67,7 +67,7 @@
                                         <th class="text-secondary fw-semibold">ISSUE</th>
                                         <th class="text-secondary fw-semibold">SEVERITY</th>
                                         <th class="text-secondary fw-semibold">STATUS</th>
-                                        <th class="text-secondary fw-semibold">PROJECT & PM</th>
+                                        <th class="text-secondary fw-semibold">CLIENT & PM</th>
                                         <th class="text-secondary fw-semibold">REPORTED BY</th>
                                         <th class="text-secondary fw-semibold">DATE</th>
                                         <th class="text-secondary fw-semibold text-end">ACTION</th>
@@ -177,11 +177,11 @@
         </div>
     </div>
 
-    <script src="/static/js/utils.js?v=20260408"></script>
-    <script src="/static/js/api.js?v=20260408"></script>
-    <script src="/static/js/auth.js?v=20260408"></script>
-    <script src="/static/js/ui_components.js?v=20260408"></script>
-    <script src="/static/js/app.js?v=20260408"></script>
+    <script src="/static/js/utils.js?v=20260411"></script>
+    <script src="/static/js/api.js?v=20260411"></script>
+    <script src="/static/js/auth.js?v=20260411"></script>
+    <script src="/static/js/ui_components.js?v=20260411"></script>
+    <script src="/static/js/app.js?v=20260411"></script>
     <script src="/static/js/bootstrap.bundle.min.js"></script>
     <script>
         requireAuth();
@@ -238,10 +238,10 @@
 
             const params = new URLSearchParams();
             params.append('limit', '200');
-            if (filters.severity) params.append('severity', filters.severity);
-            if (filters.status) params.append('status', filters.status);
-            if (filters.client) params.append('client_id', filters.client);
-            if (filters.pm) params.append('pm_id', filters.pm);
+            if (filters.severity && filters.severity !== 'ALL') params.append('severity', filters.severity);
+            if (filters.status && filters.status !== 'ALL') params.append('status', filters.status);
+            if (filters.client && filters.client !== 'ALL') params.append('client_id', filters.client);
+            if (filters.pm && filters.pm !== 'ALL') params.append('pm_id', filters.pm);
 
             const issues = await apiGet(`/issues/?${params.toString()}`);
             const open = issues.filter(i => i.status === 'OPEN').length;
@@ -274,8 +274,8 @@
                     <td>${sBadge}</td>
                     <td>${stBadge}</td>
                     <td class="text-muted">
-                        <div class="fw-medium text-dark">${i.project_name || 'N/A'}</div>
-                        <div class="small"><i class="bi bi-person me-1"></i>${i.pm_name || 'Unassigned'}</div>
+                        <div class="fw-medium text-dark">${i.project_name || i.client_name || 'N/A'}</div>
+                        <div class="small">${i.pm_name && i.pm_name !== 'Unassigned' ? `<i class="bi bi-person-fill me-1 text-primary"></i><span class="text-dark">${i.pm_name}</span>` : '<span class="text-muted fst-italic">Unassigned</span>'}</div>
                     </td>
                     <td class="text-muted">${i.reporter_name || 'System'}</td>
                     <td class="text-muted">${i.created_at ? new Date(i.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}</td>
@@ -392,13 +392,20 @@
                     </optgroup>
                 `;
 
-                // Handle URL param: if client_id passed, pre-filter projects & open modal
+                // Handle URL param: if client_id passed, pre-select
                 const urlClient = new URLSearchParams(window.location.search).get('client_id');
                 if (urlClient) {
-                    const match = _allProjects.find(p => String(p.client_id) === String(urlClient));
-                    if (match) {
-                        projSelect.value = match.id;
-                        autoFillClientFromProject();
+                    const client = _allClients.find(c => String(c.id) === String(urlClient));
+                    if (client) {
+                        // 1. Try to find a matching project
+                        const match = _allProjects.find(p => String(p.client_id) === String(urlClient));
+                        if (match) {
+                            projSelect.value = match.id;
+                        }
+                        // 2. Regardless of project, pre-fill client display (essential for Red Flag intent)
+                        document.getElementById('i-client-display').innerHTML = `<i class="bi bi-person-check-fill text-success me-2"></i>${client.name}`;
+                        document.getElementById('i-client-display').className = 'form-control bg-light text-success fw-semibold';
+                        document.getElementById('i-client').value = client.id;
                     }
                     openReportModal();
                 }

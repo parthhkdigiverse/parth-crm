@@ -120,7 +120,7 @@ async def read_my_clients(
 
 @router.get("/pm-workload", response_model=List[PMWorkloadRead])
 async def get_pm_workload(
-    current_user: User = Depends(admin_checker)
+    current_user: User = Depends(staff_checker)
 ) -> Any:
     """Admin-only: audit auto-assignment load balancing."""
     return await ClientService().get_pm_workload()
@@ -176,7 +176,7 @@ async def delete_client(
 async def refund_client(
     request: Request,
     client_id: PydanticObjectId,
-    current_user: User = Depends(admin_checker)
+    current_user: User = Depends(staff_checker)
 ):
     service = ClientService()
     return await service.refund_client(client_id, current_user, request)
@@ -185,7 +185,7 @@ async def refund_client(
 async def archive_client(
     request: Request,
     client_id: PydanticObjectId,
-    current_user: User = Depends(admin_checker)
+    current_user: User = Depends(staff_checker)
 ):
     service = ClientService()
     return await service.archive_client(client_id, current_user, request)
