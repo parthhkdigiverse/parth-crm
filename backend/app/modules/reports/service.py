@@ -318,10 +318,22 @@ class ReportService:
         end_dt = now
         
         if start_date_str:
-             try: start_dt = datetime.fromisoformat(str(start_date_str)).replace(tzinfo=UTC)
+             try: 
+                 # Handle empty or null strings from frontend
+                 if str(start_date_str).strip():
+                     start_dt = datetime.fromisoformat(str(start_date_str)).replace(tzinfo=UTC)
+                 else:
+                     # Default to last 3 months if empty
+                     start_dt = now - timedelta(days=90)
              except: pass
+        else:
+             # Default to last 3 months if no start_date
+             start_dt = now - timedelta(days=90)
+             
         if end_date_str:
-             try: end_dt = datetime.fromisoformat(str(end_date_str)).replace(tzinfo=UTC)
+             try: 
+                 if str(end_date_str).strip():
+                     end_dt = datetime.fromisoformat(str(end_date_str)).replace(tzinfo=UTC)
              except: pass
 
         match_stage = {"is_deleted": False, "role": {"$ne": "CLIENT"}}
@@ -332,7 +344,7 @@ class ReportService:
             {"$match": match_stage},
             {
                 "$lookup": {
-                    "from": "visits",
+                    "from": "srm_visits",
                     "let": { "u_id": "$_id" },
                     "pipeline": [
                         { "$match": { 
@@ -340,12 +352,12 @@ class ReportService:
                             "visit_date": { "$gte": start_dt, "$lte": end_dt },
                             "is_deleted": False,
                             "status": {"$in": [
-                                VisitStatus.SATISFIED.value, 
-                                VisitStatus.ACCEPT.value, 
-                                VisitStatus.DECLINE.value, 
-                                VisitStatus.TAKE_TIME_TO_THINK.value, 
-                                VisitStatus.OTHER.value, 
-                                VisitStatus.COMPLETED.value
+                                "SATISFIED", 
+                                "ACCEPT", 
+                                "DECLINE", 
+                                "TAKE_TIME_TO_THINK", 
+                                "OTHER", 
+                                "COMPLETED"
                             ]}
                         }}
                     ],
@@ -354,7 +366,7 @@ class ReportService:
             },
             {
                 "$lookup": {
-                    "from": "payments",
+                    "from": "srm_payments",
                     "let": { "u_id": "$_id" },
                     "pipeline": [
                         { "$match": { 
@@ -369,7 +381,7 @@ class ReportService:
             },
             {
                 "$lookup": {
-                    "from": "projects",
+                    "from": "srm_projects",
                     "localField": "_id",
                     "foreignField": "pm_id",
                     "as": "all_projects"
@@ -377,7 +389,7 @@ class ReportService:
             },
             {
                 "$lookup": {
-                    "from": "issues",
+                    "from": "srm_issues",
                     "localField": "_id",
                     "foreignField": "assigned_to_id",
                     "as": "all_issues"

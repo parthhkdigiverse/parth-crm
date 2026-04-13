@@ -58,20 +58,20 @@
         #clients-table-container td:first-child {
             position: sticky;
             left: 0;
-            z-index: 10;
-            background: var(--surface);
+            z-index: 100; /* Increased to ensure it stays on top of status badges */
+            background-color: var(--surface) !important; /* Force solid color */
             border-right: 1.5px solid var(--border);
             min-width: 180px !important;
-            box-shadow: 4px 0 10px rgba(0,0,0,0.02);
+            box-shadow: 4px 0 10px rgba(0,0,0,0.02), 2px 0 5px rgba(0,0,0,0.05);
             transition: min-width 0.2s;
         }
 
         #clients-table-container thead th:first-child {
-            z-index: 11;
-            background: var(--bg-app);
+            z-index: 101;
+            background-color: var(--bg-app) !important;
         }
 
-        /* Ensure smooth hover with sticky column */
+        /* Ensure smooth hover with sticky column and prevent transparency */
         .table-hover tbody tr:hover td:first-child {
             background-color: var(--primary-light) !important;
         }
@@ -655,19 +655,31 @@
                                             <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 rounded-2" href="billing.html?client_id=${c.id}">
                                                 <i class="bi bi-receipt text-success"></i> Manage Invoices
                                             </a></li>
-                                            <li><hr class="dropdown-divider opacity-50"></li>
                                             <li><h6 class="dropdown-header small text-uppercase fw-bold opacity-50" style="font-size: 10px;">Management</h6></li>
-                                            ${(c.status !== 'REFUNDED') ? `
+                                            
+                                            ${c.status === 'REFUNDED' ? `
+                                            <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 rounded-2 text-primary" href="javascript:void(0)" onclick="restoreClient('${c.id}', 'REFUNDED')">
+                                                <i class="bi bi-arrow-left-right"></i> Cancel Refund
+                                            </a></li>
+                                            ` : (c.status === 'ARCHIVED' ? `
+                                            <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 rounded-2 text-primary" href="javascript:void(0)" onclick="restoreClient('${c.id}', 'ARCHIVED')">
+                                                <i class="bi bi-bootstrap-reboot"></i> Restore Client
+                                            </a></li>
+                                            ` : `
                                             <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 rounded-2 text-warning" href="javascript:void(0)" onclick="refundClient('${c.id}')">
                                                 <i class="bi bi-arrow-counterclockwise"></i> Refund Client
-                                            </a></li>` : ''}
-                                            ${(c.status !== 'ARCHIVED') ? `
+                                            </a></li>
                                             <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 rounded-2 text-info" href="javascript:void(0)" onclick="archiveClient('${c.id}')">
                                                 <i class="bi bi-archive"></i> Archive Client
-                                            </a></li>` : ''}
+                                            </a></li>
+                                            `)}
+
+                                            ${(window.currentUser && window.currentUser.role === 'ADMIN') ? `
+                                            <li><hr class="dropdown-divider opacity-50"></li>
                                             <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 rounded-2 text-danger" href="javascript:void(0)" onclick="deleteClient('${c.id}')">
                                                 <i class="bi bi-trash3"></i> Delete Client
                                             </a></li>
+                                            ` : ''}
                                         </ul>
                                     </div>
                                 </div>
@@ -905,7 +917,7 @@
                 try {
                     await ApiClient.deleteClient(id);
                     showToast('Client deleted successfully', 'success');
-                    loadClients();
+                    loadClients({ status: currentTabStatus });
                 } catch (e) {
                     showToast(e.message || 'Failed to delete client', 'error');
                 }
@@ -916,9 +928,24 @@
                 try {
                     await ApiClient.refundClient(id);
                     showToast('Client marked as REFUNDED', 'success');
-                    loadClients();
+                    loadClients({ status: currentTabStatus });
                 } catch (e) {
                     showToast(e.message || 'Failed to refund client', 'error');
+                }
+            };
+
+            window.restoreClient = async (id, fromStatus) => {
+                const action = fromStatus === 'REFUNDED' ? 'REVERSE REFUND' : 'RESTORE';
+                if (!confirm(`Are you sure you want to ${action} this client? \n\nThey will be marked as ACTIVE again.`)) return;
+                try {
+                    await apiPatch(`/clients/${id}`, {
+                        status: 'ACTIVE',
+                        is_active: true
+                    });
+                    showToast('Client RESTORED to Active status', 'success');
+                    loadClients({ status: currentTabStatus });
+                } catch (e) {
+                    showToast(e.message || 'Failed to restore client', 'error');
                 }
             };
 
@@ -1011,6 +1038,18 @@
 
             loadClients({ status: 'ALL' }).then(() => {
                 initFilters();
+                
+                // Hook up global search box from the top header
+                const globalSearch = document.getElementById('global-search-input');
+                if (globalSearch) {
+                    globalSearch.addEventListener('input', (e) => {
+                        loadClients({ 
+                            search: e.target.value.trim(),
+                            status: document.querySelector('.status-filter-btn.active')?.dataset.status || 'ALL'
+                        });
+                    });
+                }
+
                 const urlParams = new URLSearchParams(window.location.search);
                 const highlightId = urlParams.get('id');
                 if (highlightId) {
@@ -1101,7 +1140,7 @@
                 try {
                     await ApiClient.archiveClient(id);
                     showToast('Client moved to Archive', 'success');
-                    loadClients();
+                    loadClients({ status: currentTabStatus });
                 } catch (e) {
                     showToast(e.message || 'Failed to archive client', 'error');
                 }

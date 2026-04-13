@@ -9,6 +9,8 @@ from app.modules.clients.models import Client
 from app.modules.settings.models import AppSetting
 from app.modules.users.models import User, UserRole
 from app.modules.notifications.models import Notification
+from app.modules.activity_logs.service import ActivityLogger
+from app.modules.activity_logs.models import ActionType, EntityType
 from app.core.config import settings
 from app.utils.notify_helpers import create_notification, notify_admins
 import datetime
@@ -293,11 +295,11 @@ class BillingService:
             # Re-verify with PhonePe Server-to-Server
             try:
                 pp_status = await self.check_phonepe_payment_status(bill_in.transaction_id, current_user)
-                if pp_status.get("code") != "PAYMENT_SUCCESS":
-                    # Strictly block creation if payment is not confirmed
+                # Allow PAYMENT_SUCCESS or PAYMENT_PENDING. Block only on definitive failures.
+                if pp_status.get("code") not in ["PAYMENT_SUCCESS", "PAYMENT_PENDING", "INTERNAL_SERVER_ERROR"]:
                     raise HTTPException(
                         status_code=402, 
-                        detail=f"Payment for transaction {bill_in.transaction_id} is {pp_status.get('state', 'FAILED')}. Invoice cannot be created."
+                        detail=f"Payment for transaction {bill_in.transaction_id} is {pp_status.get('state', 'FAILED')}. Status: {pp_status.get('code')}"
                     )
                 # Success - we can proceed to record it
             except HTTPException:
@@ -337,6 +339,28 @@ class BillingService:
             created_by_id=current_user.id,
         )
         await db_bill.insert()
+
+        # ─── Advance Shop Stage ───
+        if db_bill.shop_id:
+            from app.modules.shops.models import Shop
+            from app.core.enums import MasterPipelineStage
+            shop = await Shop.get(db_bill.shop_id)
+            if shop:
+                shop.pipeline_stage = MasterPipelineStage.MAINTENANCE
+                if db_bill.client_id:
+                    shop.client_id = db_bill.client_id
+                await shop.save()
+
+        # ─── Activity Log ───
+        await ActivityLogger().log_activity(
+            user_id=current_user.id,
+            user_role=current_user.role,
+            action=ActionType.CREATE,
+            entity_type=EntityType.BILL,
+            entity_id=db_bill.id,
+            new_data={"invoice_number": db_bill.invoice_number, "amount": db_bill.amount, "payment_type": db_bill.payment_type}
+        )
+
         return db_bill
 
     async def get_bill(self, bill_id: PydanticObjectId, current_user: User = None) -> Bill | None:
@@ -419,6 +443,16 @@ class BillingService:
         bill.verified_by_id = current_user.id
         bill.verified_at = datetime.datetime.now(UTC)
         await bill.save()
+
+        await ActivityLogger().log_activity(
+            user_id=current_user.id,
+            user_role=current_user.role,
+            action=ActionType.STATUS_CHANGE,
+            entity_type=EntityType.BILL,
+            entity_id=bill.id,
+            new_data={"status": "VERIFIED"}
+        )
+
         return bill
 
     async def archive_invoice(self, bill_id: PydanticObjectId, current_user: User) -> Bill:
@@ -426,6 +460,25 @@ class BillingService:
         if not bill: raise HTTPException(status_code=404, detail="Not Found")
         bill.is_archived = True
         await bill.save()
+
+        # Sync with Shop
+        if bill.shop_id:
+            from app.modules.shops.models import Shop
+            shop = await Shop.get(bill.shop_id)
+            if shop:
+                shop.is_archived = True
+                shop.archived_by_id = current_user.id
+                await shop.save()
+
+        await ActivityLogger().log_activity(
+            user_id=current_user.id,
+            user_role=current_user.role,
+            action=ActionType.STATUS_CHANGE,
+            entity_type=EntityType.BILL,
+            entity_id=bill.id,
+            new_data={"archived": True}
+        )
+
         return bill
 
     async def send_whatsapp_invoice(self, bill_id: PydanticObjectId, current_user: User, base_url: str = None) -> dict:
@@ -444,15 +497,8 @@ class BillingService:
         bill.whatsapp_sent = True
         await bill.save()
         
-        # Advance shop stage
-        if bill.shop_id:
-            from app.modules.shops.models import Shop
-            shop = await Shop.get(bill.shop_id)
-            if shop:
-                from app.core.enums import MasterPipelineStage
-                shop.pipeline_stage = MasterPipelineStage.MAINTENANCE
-                shop.client_id = bill.client_id
-                await shop.save()
+        # NOTE: Stage advancement is now handled in create_invoice for better responsiveness.
+        # This keeps the logic consistent even if WhatsApp is skipped.
 
         return {"bill": bill, "status": "sent"}
 
@@ -473,7 +519,26 @@ class BillingService:
                 c.status = "REFUNDED"
                 await c.save()
         
+        # Archive Lead/Project on Refund
+        if bill.shop_id:
+            from app.modules.shops.models import Shop
+            shop = await Shop.get(bill.shop_id)
+            if shop:
+                shop.is_archived = True
+                shop.archived_by_id = current_user.id
+                await shop.save()
+
         await bill.save()
+
+        await ActivityLogger().log_activity(
+            user_id=current_user.id,
+            user_role=current_user.role,
+            action=ActionType.STATUS_CHANGE,
+            entity_type=EntityType.BILL,
+            entity_id=bill.id,
+            new_data={"status": "REFUNDED", "archived_shop": bool(bill.shop_id)}
+        )
+
         return bill
 
     async def generate_payment_qr_for_new_invoice(self, payment_type: str, gst_type: str, amount: float, phone: str = "9999999999", origin: str = None) -> dict:

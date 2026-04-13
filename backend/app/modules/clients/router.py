@@ -47,7 +47,7 @@ async def read_clients(
     skip: int = 0,
     limit: Optional[int] = None,
     search: Optional[str] = None,
-    status_filter: Optional[str] = None, # renamed from 'status' to avoid conflict
+    status: Optional[str] = None, 
     pm_id: Optional[str] = None,
     sort_by: Optional[str] = "created_at",
     sort_order: Optional[str] = "desc",
@@ -60,7 +60,7 @@ async def read_clients(
     service = ClientService()
     
     # Normalize status filter
-    normalized_status = (status_filter or "").strip().upper()
+    normalized_status = (status or "").strip().upper()
     if not normalized_status:
         normalized_status = "ACTIVE"
 

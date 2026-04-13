@@ -356,11 +356,38 @@
         let _allProjects = []; // cache for client auto-fill
         let _allClients = []; // cache for client name lookup
 
+        window.openReportModal = () => {
+            const modalEl = document.getElementById('addIssueModal');
+            // Clear validation state
+            modalEl.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+            modalEl.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
+
+            // If a client was pre-provided, ensure dropdown is filtered
+            const clientVal = document.getElementById('i-client').value;
+            if (clientVal) {
+                const projSelect = document.getElementById('i-project');
+                const options = Array.from(projSelect.options);
+                let foundMatch = false;
+                options.forEach(opt => {
+                    const cid = opt.getAttribute('data-client-id');
+                    if (!opt.value) return; // Skip select project placeholder
+                    if (cid && String(cid) === String(clientVal)) {
+                        opt.style.display = '';
+                        foundMatch = true;
+                    } else {
+                        opt.style.display = 'none';
+                    }
+                });
+            }
+
+            bootstrap.Modal.getOrCreateInstance(modalEl).show();
+        };
+
         async function loadModalData() {
             const projSelect = document.getElementById('i-project');
             const handlerSelect = document.getElementById('i-handler');
             
-            projSelect.innerHTML = '<option value="">Loading Projects...</option>';
+            projSelect.innerHTML = '<option value="">-- Select Project --</option>';
             
             try {
                 const [projects, clients, usersRes] = await Promise.all([
@@ -393,39 +420,33 @@
                 `;
 
                 // Handle URL param: if client_id passed, pre-select
-                const urlClient = new URLSearchParams(window.location.search).get('client_id');
+                const urlParams = new URLSearchParams(window.location.search);
+                const urlClient = urlParams.get('client_id');
                 if (urlClient) {
                     const client = _allClients.find(c => String(c.id) === String(urlClient));
                     if (client) {
-                        // 1. Try to find a matching project
-                        const match = _allProjects.find(p => String(p.client_id) === String(urlClient));
-                        if (match) {
-                            projSelect.value = match.id;
-                        }
-                        // 2. Regardless of project, pre-fill client display (essential for Red Flag intent)
                         document.getElementById('i-client-display').innerHTML = `<i class="bi bi-person-check-fill text-success me-2"></i>${client.name}`;
                         document.getElementById('i-client-display').className = 'form-control bg-light text-success fw-semibold';
                         document.getElementById('i-client').value = client.id;
+
+                        // Try to find a matching project
+                        const matches = _allProjects.filter(p => String(p.client_id) === String(urlClient));
+                        if (matches.length > 0) {
+                            projSelect.value = matches[0].id;
+                            // Trigger autofill to ensure internal state is synced
+                            if (window.autoFillClientFromProject) window.autoFillClientFromProject();
+                        }
                     }
                     openReportModal();
                 }
             } catch (err) {
                 console.error('Failed to load modal data', err);
-                projSelect.innerHTML = '<option value="">Error loading data. Click to retry.</option>';
-                projSelect.onclick = () => { projSelect.onclick = null; loadModalData(); };
+                projSelect.innerHTML = '<option value="">Error loading data.</option>';
                 showToast('Failed to load project/client data', 'error');
             }
         }
 
-        loadModalData();
-
-        window.openReportModal = () => {
-            const modalEl = document.getElementById('addIssueModal');
-            // Clear validation state
-            modalEl.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-            modalEl.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
-            bootstrap.Modal.getOrCreateInstance(modalEl).show();
-        };
+        /* loadModalData called at bottom - fix for auto-open */
 
         /* Handlers populated in loadModalData */
 
@@ -608,6 +629,8 @@
                 showToast('You do not have permission to report issues', 'error');
             }
         });
+        
+        loadModalData();
     </script>
 </body>
 

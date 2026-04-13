@@ -217,8 +217,9 @@ class ClientService:
             count = await Client.find(Client.pm_id == pm.id, Client.is_active == True).count()
             results.append({
                 "pm_id": str(pm.id),
-                "pm_name": pm.name,
+                "pm_name": pm.name or pm.email or f"PM {str(pm.id)[:8]}",
                 "pm_email": pm.email,
+                "role": str(pm.role.value) if hasattr(pm.role, "value") else str(pm.role),
                 "active_client_count": count
             })
         return sorted(results, key=lambda x: x["active_client_count"])

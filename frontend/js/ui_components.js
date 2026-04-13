@@ -1872,7 +1872,8 @@ window.renderPagination = function (options) {
                 const p = parseInt(btn.dataset.page, 10);
                 if (!isNaN(p) && p >= 1 && p <= totalPages) {
                     renderPage(p);
-                    // Scroll to top of containing card
+                    /* 
+                    // Scroll to top of containing card — disabled per user request
                     const scrollTargetId = tbodyId || (targets && targets[0] ? targets[0].id : null);
                     if (scrollTargetId) {
                         const targetEl = document.getElementById(scrollTargetId);
@@ -1881,6 +1882,7 @@ window.renderPagination = function (options) {
                             if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                         }
                     }
+                    */
                 }
             });
         });

@@ -28,6 +28,7 @@ class EntityType(str, enum.Enum):
     FEEDBACK = "FEEDBACK"
     USER = "USER"
     ATTENDANCE = "ATTENDANCE"
+    BILL = "BILL"
 
 class ActivityLog(Document):
     user_id: Any = None # Relaxed for legacy 0 IDs
