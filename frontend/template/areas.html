@@ -385,7 +385,7 @@
                 margin-bottom: 1rem;
                 position: relative;
             }
-            #shops-panel-title {
+            #selectedAreaTitle {
                 width: 100%;
             }
             #shops-panel-count {
@@ -534,11 +534,35 @@
 
                                 <!-- Right: Shops Area -->
                                 <div class="panel-content d-flex flex-column flex-grow-1" style="min-width: 0;">
-                                    <div class="shops-header flex-shrink-0"
-                                        style="padding: 1.5rem 2rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--surface);">
-                                        <h3 id="shops-panel-title" class="mb-0 fs-5"><i
-                                                class="bi bi-shop text-muted me-2"></i> Select an area</h3>
-                                        <span id="shops-panel-count" class="text-muted small"></span>
+                                    <div class="shops-header flex-shrink-0 d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3 mb-4 pb-3 border-bottom"
+                                        style="padding: 1.5rem 2rem; border-color: var(--border-subtle) !important; background: var(--surface);">
+                                        <div class="d-flex flex-column gap-2">
+                                            <h3 class="fw-bold mb-0 d-flex align-items-center gap-2 text-main" id="selectedAreaTitle" style="font-family: 'Outfit', sans-serif;">
+                                                <div class="bg-primary bg-opacity-10 p-2 rounded-3 text-primary d-flex align-items-center justify-content-center">
+                                                    <i class="bi bi-shop fs-5"></i>
+                                                </div>
+                                                <span>Select an Area</span>
+                                            </h3>
+
+                                            <div class="d-flex align-items-center gap-2 flex-wrap" id="areaBadgesDisplay">
+                                                <!-- Badges injected dynamically via JS -->
+                                            </div>
+                                        </div>
+
+                                        <div class="d-flex flex-column align-items-xl-end gap-2">
+                                            <div id="areaActionButtons" class="d-flex flex-wrap gap-2 d-none">
+                                                <button class="btn btn-sm btn-light shadow-sm hover-lift fw-bold border" style="color: var(--text-main); border-radius: 8px;" onclick="editArea(currentAreaId)">
+                                                    <i class="bi bi-pencil me-1"></i> Edit Area
+                                                </button>
+                                                <button class="btn btn-sm shadow-sm hover-lift fw-bold" style="background: rgba(239, 68, 68, 0.1); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px;" onclick="archiveArea(currentAreaId)">
+                                                    <i class="bi bi-archive me-1"></i> Archive
+                                                </button>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-3 mt-1">
+                                                <div class="text-muted fw-bold" style="font-size: 0.85rem;" id="shopCountDisplay">0 shops</div>
+                                                <div class="text-muted fw-bold" style="font-size: 0.85rem;" id="areaManagerDisplay"></div>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div id="shops-panel-body" class="flex-grow-1" style="overflow-y: auto;">
                                         <div class="h-100 d-flex flex-column align-items-center justify-content-center p-5 text-muted opacity-50">
@@ -941,6 +965,13 @@
             if (typeof v === 'object' && v.$oid) return v.$oid;
             return String(v);
         };
+        
+        // Compatibility Aliases for UI RESTORATION
+        window.editArea = (id) => openEditAreaModal(id);
+        Object.defineProperty(window, 'currentAreaId', {
+            get: function() { return selectedAreaId; },
+            set: function(v) { selectedAreaId = v; }
+        });
 
 
         // ── Reset modal to Create mode whenever it opens normally ──
@@ -1134,31 +1165,57 @@
             let badgeHtml = '';
             if (area && area.priority_level) {
                 const p = area.priority_level.toUpperCase();
-                if (p === 'HIGH') badgeHtml = `<span class="badge bg-danger-subtle text-danger ms-2 d-flex align-items-center" style="font-size:0.75rem;padding:4px 8px;"><i class="bi bi-flag-fill me-1"></i> High Priority</span>`;
-                else if (p === 'MEDIUM') badgeHtml = `<span class="badge bg-warning-subtle text-warning-emphasis ms-2 d-flex align-items-center" style="font-size:0.75rem;padding:4px 8px;"><i class="bi bi-flag-fill me-1"></i> Medium Priority</span>`;
-                else if (p === 'LOW') badgeHtml = `<span class="badge bg-secondary-subtle text-secondary ms-2 d-flex align-items-center" style="font-size:0.75rem;padding:4px 8px;"><i class="bi bi-flag-fill me-1"></i> Low Priority</span>`;
+                if (p === 'HIGH') badgeHtml = `<span class="badge bg-danger bg-opacity-10 text-danger rounded-pill px-3 py-2 fw-bold d-flex align-items-center" style="border: 1px solid rgba(239, 68, 68, 0.2);"><i class="bi bi-flag-fill me-1"></i> High Priority</span>`;
+                else if (p === 'MEDIUM') badgeHtml = `<span class="badge bg-warning bg-opacity-10 text-warning rounded-pill px-3 py-2 fw-bold d-flex align-items-center" style="border: 1px solid rgba(245, 158, 11, 0.2);"><i class="bi bi-flag-fill me-1"></i> Medium Priority</span>`;
+                else if (p === 'LOW') badgeHtml = `<span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill px-3 py-2 fw-bold d-flex align-items-center" style="border: 1px solid rgba(108, 117, 125, 0.2);"><i class="bi bi-flag-fill me-1"></i> Low Priority</span>`;
             }
 
             const isPendingArea = area && area.assignment_status === 'PENDING';
             const isAcceptedArea = area && area.assignment_status === 'ACCEPTED';
             let statusBadge = '';
             let sourcedByBadge = area && area.created_by_name && area.created_by_id && (!user || area.created_by_id !== user.id)
-                ? `<span class="badge bg-info text-dark ms-2 align-self-center" style="font-size:0.75rem;"><i class="bi bi-person-plus"></i> Sourced by: ${area.created_by_name}</span>`
+                ? `<span class="badge bg-info bg-opacity-10 text-info rounded-pill px-3 py-2 fw-bold ms-1" style="border: 1px solid rgba(13, 202, 240, 0.2);"><i class="bi bi-person-plus me-1"></i> Sourced by: ${area.created_by_name}</span>`
                 : '';
+            
             if (isPendingArea) {
-                statusBadge = isAdmin ? `<span class="badge bg-warning text-dark ms-2 align-self-center">Pending Staff Acceptance</span>` : `<span class="badge rounded-pill bg-warning text-dark placeholder-glow ms-2 align-self-center">Pending Acceptance</span>`;
+                statusBadge = isAdmin ? `<span class="badge bg-warning bg-opacity-10 text-warning rounded-pill px-3 py-2 fw-bold" style="border: 1px solid rgba(245, 158, 11, 0.2);">Pending Staff Acceptance</span>` : `<span class="badge bg-warning bg-opacity-10 text-warning rounded-pill px-3 py-2 fw-bold placeholder-glow" style="border: 1px solid rgba(245, 158, 11, 0.2);">Pending Acceptance</span>`;
             } else if (isAcceptedArea && isAdmin) {
-                statusBadge = `<span class="badge bg-success ms-2 align-self-center">Claimed / Accepted</span>`;
+                statusBadge = `<span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-2 fw-bold" style="border: 1px solid rgba(16, 185, 129, 0.2);">Claimed / Accepted</span>`;
             }
 
-            document.getElementById('shops-panel-title').innerHTML =
-                `<i class="bi bi-shop me-2"></i>Shops in ${areaName}${statusBadge}${sourcedByBadge}${badgeHtml}`;
-            document.getElementById('shops-panel-count').innerHTML = `
-                <div class="d-flex align-items-center gap-3">
+            document.getElementById('selectedAreaTitle').innerHTML = `
+                <div class="bg-primary bg-opacity-10 p-2 rounded-3 text-primary d-flex align-items-center justify-content-center">
+                    <i class="bi bi-shop fs-5"></i>
+                </div>
+                <span>Shops in ${areaName}</span>
+            `;
+            document.getElementById('areaBadgesDisplay').innerHTML = statusBadge + sourcedByBadge + badgeHtml;
+            
+            // Show action buttons
+            document.getElementById('areaActionButtons').classList.remove('d-none');
+            
+            // Update shop count, Accept button (non-admin) and Assign button (admin)
+            document.getElementById('shopCountDisplay').innerHTML = `
+                <div class="d-flex align-items-center gap-2 flex-wrap">
                     <span class="text-muted small fw-medium">${shops.length} shop${shops.length !== 1 ? 's' : ''}</span>
+                    ${isPendingArea && !isAdmin ? `
+                        <button class="btn btn-sm btn-success fw-semibold d-flex align-items-center gap-1" 
+                                onclick="acceptAssignment('areas', '${areaId}')" 
+                                style="border-radius:8px;padding:5px 12px;font-size:0.8rem;">
+                            <i class="bi bi-check-circle-fill"></i> Accept Area
+                        </button>
+                    ` : ''}
                     ${isAdmin ? `<button class="btn btn-sm fw-semibold d-flex align-items-center gap-2" onclick="openAssignModal('${areaId}')" style="background:#4f46e5;color:white;border:none;border-radius:8px;padding:6px 14px;"><i class="bi bi-person-plus"></i> Assign</button>` : ''}
                 </div>
             `;
+            
+            // Populate manager info if available
+            const managerDisplay = document.getElementById('areaManagerDisplay');
+            if (area && area.assigned_users && area.assigned_users.length > 0) {
+                managerDisplay.innerHTML = `<i class="bi bi-person-badge me-1"></i>To: ${area.assigned_users[0].name}`;
+            } else {
+                managerDisplay.textContent = 'Unassigned';
+            }
             const body = document.getElementById('shops-panel-body');
 
             if (!shops.length) {
@@ -1504,14 +1561,26 @@
 
         // ── Archive Area ──
         async function archiveArea(id, name) {
+            if (!name) {
+                const a = allAreas.find(x => normalizeId(x.id) === normalizeId(id));
+                name = a ? a.name : 'Unknown Area';
+            }
             if (!confirm(`Archive area "${name}"? This will also archive all associated shops.`)) return;
             try {
                 await ApiClient.deleteArea(id); // backend uses delete router for soft delete
                 showToast(`Area "${name}" archived`);
                 selectedAreaId = null;
                 // Reset right-hand panel to empty default
-                document.getElementById('shops-panel-title').innerHTML = '<i class="bi bi-shop text-muted"></i> Select an area';
-                document.getElementById('shops-panel-count').textContent = '';
+                document.getElementById('selectedAreaTitle').innerHTML = `
+                    <div class="bg-primary bg-opacity-10 p-2 rounded-3 text-primary d-flex align-items-center justify-content-center">
+                        <i class="bi bi-shop fs-5"></i>
+                    </div>
+                    <span>Select an Area</span>
+                `;
+                document.getElementById('areaBadgesDisplay').innerHTML = '';
+                document.getElementById('areaActionButtons').classList.add('d-none');
+                document.getElementById('shopCountDisplay').textContent = '0 shops';
+                document.getElementById('areaManagerDisplay').textContent = '';
                 document.getElementById('shops-panel-body').innerHTML = `
                     <div class="h-100 d-flex flex-column align-items-center justify-content-center p-5 text-muted opacity-50">
                         <i class="bi bi-geo-alt" style="font-size:4rem;display:block;margin-bottom:1rem;"></i>

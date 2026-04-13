@@ -29,6 +29,7 @@ class Client(Document):
     
     # Embedded History
     pm_history: List[ClientPMHistory] = Field(default_factory=list)
+    archived_by_ids: List[PydanticObjectId] = Field(default_factory=list)
 
     is_active: bool = True
     status: Indexed(str) = "ACTIVE"  # ACTIVE, REFUNDED, ARCHIVED

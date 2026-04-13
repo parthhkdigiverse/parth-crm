@@ -28,23 +28,42 @@ class ClientService:
         sort_order: str = "desc",
         include_inactive: bool = False,
         pm_id: PydanticObjectId = None,
-        is_active: Optional[bool] = True,
+        status: Optional[str] = "ACTIVE",
         current_user: User = None,
         scoped_user_id: PydanticObjectId = None,
         **kwargs
     ) -> List[Client]:
         try:
+            # Initial query filter
+            # REVISION: Removed redundant scoped_user_id check here because the dynamic OR block
+            # at line 58 handles ownership/pm/billing scoping more comprehensively.
             q = Client.find(Client.is_deleted == False)
-
-            if scoped_user_id:
-                q = q.find(Client.owner_id == scoped_user_id)
             
-            if is_active is True:
+            # Status and Active logic
+            # Status and Active logic
+            if status == "ALL":
+                pass # No filter on status
+            elif status == "ACTIVE":
+                q = q.find(Client.status == "ACTIVE", Client.is_active == True)
+                if current_user and current_user.role != UserRole.ADMIN:
+                    # Hide clients personally archived by this user
+                    q = q.find({"archived_by_ids": {"$ne": current_user.id}})
+            elif status == "REFUNDED":
+                q = q.find(Client.status == "REFUNDED")
+            elif status == "ARCHIVED":
+                if current_user and current_user.role != UserRole.ADMIN:
+                    # Show clients EITHER globally archived OR personally archived by this user
+                    q = q.find(Or(
+                        Client.status == "ARCHIVED",
+                        {"archived_by_ids": current_user.id}
+                    ))
+                else:
+                    q = q.find(Client.status == "ARCHIVED")
+            else:
+                # Default behavior: show active clients (including personal archive check)
                 q = q.find(Client.is_active == True, Client.status == 'ACTIVE')
-            elif is_active is False:
-                q = q.find(Client.is_active == False)
-            elif not include_inactive:
-                q = q.find(Client.is_active == True, Client.status == 'ACTIVE')
+                if current_user and current_user.role != UserRole.ADMIN:
+                    q = q.find({"archived_by_ids": {"$ne": current_user.id}})
 
             if current_user and current_user.role != UserRole.ADMIN:
                 # Scoped view: Owner, PM, or via Billing link
@@ -55,7 +74,7 @@ class ClientService:
                 )
                 
                 q = q.find(Or(
-                    And(Client.owner_id == current_user.id, Client.is_active == True),
+                    Client.owner_id == current_user.id,
                     Client.pm_id == current_user.id,
                     In(Client.phone, billed_phones)
                 ))
@@ -198,21 +217,36 @@ class ClientService:
             count = await Client.find(Client.pm_id == pm.id, Client.is_active == True).count()
             results.append({
                 "pm_id": str(pm.id),
-                "pm_name": pm.name,
+                "pm_name": pm.name or pm.email or f"PM {str(pm.id)[:8]}",
                 "pm_email": pm.email,
+                "role": str(pm.role.value) if hasattr(pm.role, "value") else str(pm.role),
                 "active_client_count": count
             })
         return sorted(results, key=lambda x: x["active_client_count"])
 
-    async def archive_client(self, client_id: PydanticObjectId, current_user: User):
+    async def archive_client(self, client_id: PydanticObjectId, current_user: User, request: Request = None):
         db_client = await self.get_client(client_id)
         if not db_client: raise HTTPException(status_code=404, detail="Not Found")
-        db_client.status = "ARCHIVED"
-        db_client.is_active = False
-        await db_client.save()
-        return {"detail": "Client successfully ARCHIVED."}
+        
+        if current_user.role == UserRole.ADMIN:
+            # Global Archive
+            db_client.status = "ARCHIVED"
+            db_client.is_active = False
+            await db_client.save()
+            return {"detail": "Client successfully ARCHIVED globally."}
+        else:
+            # Personal Archive (for non-admins)
+            if not db_client.archived_by_ids:
+                db_client.archived_by_ids = []
+            
+            if current_user.id not in db_client.archived_by_ids:
+                db_client.archived_by_ids.append(current_user.id)
+                await db_client.save()
+                return {"detail": "Client archived in your view."}
+            else:
+                return {"detail": "Client is already archived in your view."}
 
-    async def refund_client(self, client_id: PydanticObjectId, current_user: User):
+    async def refund_client(self, client_id: PydanticObjectId, current_user: User, request: Request = None):
         # TODO: Implement MongoDB transactions for financial safety
         db_client = await self.get_client(client_id)
         if not db_client: raise HTTPException(status_code=404, detail="Not Found")

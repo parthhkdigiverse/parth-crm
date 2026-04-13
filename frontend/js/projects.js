@@ -313,7 +313,7 @@ async function loadVisitHistory(shopId) {
 
         try {
             // If this fails, we will see it in the Chrome Console!
-            invoicesRes = await window.ApiClient.request(`/billing?shop_id=${shopId}&archived=ALL`);
+            invoicesRes = await window.ApiClient.request(`/billing/?shop_id=${shopId}&archived=ALL`);
             console.log("📦 Raw Invoices Response:", invoicesRes);
         } catch (e) {
             console.error("❌ Invoices fetch failed! The endpoint might be /billing/invoices/ instead of /invoices/", e);

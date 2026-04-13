@@ -22,8 +22,8 @@ class Issue(Document):
     
     is_deleted: bool = False
     opened_at: Optional[datetime] = None
-    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    created_at: Optional[datetime] = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: Optional[datetime] = Field(default_factory=lambda: datetime.now(UTC))
     
     # Relationships
     client_id: PydanticObjectId

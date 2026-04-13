@@ -917,19 +917,21 @@
 
 .sb-issue-badge {
     margin-left: auto;
-    background: #ef4444;
+    background: #db4437;
     color: #fff;
     font-size: 10px;
-    font-weight: 700;
-    border-radius: 20px;
-    padding: 1px 6px;
-    min-width: 18px;
-    height: 18px;
+    font-weight: 800;
+    border-radius: 100px;
+    padding: 2px 10px;
+    min-width: 28px;
+    height: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
     line-height: 1;
-    box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+    letter-spacing: 0.03em;
+    box-shadow: 0 2px 6px rgba(219, 68, 55, 0.4);
+    flex-shrink: 0;
 }
 
 .sb-sec-dot {
@@ -960,12 +962,24 @@
 }
 
 .sb-link.alert-highlight {
-    border-left: 3px solid #ef4444 !important;
-    background: rgba(239, 68, 68, 0.05);
+    border-left: 3px solid #db4437 !important;
+    background: rgba(219, 68, 55, 0.06);
+}
+
+.sb-link.alert-highlight.active {
+    background: linear-gradient(90deg, #b03a2e, #db4437) !important;
+    box-shadow: 0 4px 14px rgba(219, 68, 55, 0.3) !important;
+    color: #ffffff !important;
+}
+
+.sb-link.alert-highlight.active .sb-issue-badge {
+    background: rgba(255, 255, 255, 0.25);
+    color: #fff;
+    box-shadow: none;
 }
 
 .sb-link.alert-highlight:hover {
-    background: rgba(239, 68, 68, 0.1);
+    background: rgba(185, 28, 28, 0.10);
 }
 
 /* â”€â”€ Password Toggle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */

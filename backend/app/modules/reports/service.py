@@ -53,31 +53,98 @@ class ReportService:
         
         import asyncio
 
+        # Parse dates
+        start_dt = None
+        end_dt = None
+        if start_date:
+            try: start_dt = datetime.fromisoformat(str(start_date)).replace(tzinfo=UTC)
+            except: pass
+        if end_date:
+            try: end_dt = datetime.fromisoformat(str(end_date)).replace(tzinfo=UTC)
+            except: pass
+
         # Match expressions for date aggregation with type-safety
         curr_m_expr = {"$and": [{"$eq": [{"$type": "$created_at"}, "date"]}, {"$eq": [{"$month": "$created_at"}, curr_month]}, {"$eq": [{"$year": "$created_at"}, curr_year]}]}
         prev_m_expr = {"$and": [{"$eq": [{"$type": "$created_at"}, "date"]}, {"$eq": [{"$month": "$created_at"}, prev_month]}, {"$eq": [{"$year": "$created_at"}, prev_year]}]}
 
         # --- 1. Visits Metrics ---
-        v_match = {"is_deleted": False}
-        if user_id: v_match["user_id"] = user_id
+        # 1. Base Filters
+        v_match = {
+            "is_deleted": False,
+            "status": {"$in": [
+                VisitStatus.SATISFIED.value, 
+                VisitStatus.ACCEPT.value, 
+                VisitStatus.DECLINE.value, 
+                VisitStatus.TAKE_TIME_TO_THINK.value, 
+                VisitStatus.OTHER.value, 
+                VisitStatus.MISSED.value
+            ]}
+        }
+        
+        # Broader match for "Total Visits" count to match Visits page "Shops Visited" (66)
+        v_all_count_match = {"is_deleted": False}
+
+        if user_id: 
+            v_match["user_id"] = user_id
+            v_all_count_match["user_id"] = user_id
+            
         if area_id:
              raw_ids = await Shop.get_pymongo_collection().distinct("_id", {"area_id": PydanticObjectId(area_id) if hasattr(area_id, "id") or type(area_id)==str else area_id})
              shop_ids = [PydanticObjectId(rid) for rid in raw_ids if rid]
              v_match["shop_id"] = {"$in": shop_ids}
+             v_all_count_match["shop_id"] = {"$in": shop_ids}
+
+        if start_dt or end_dt:
+            date_filter = {}
+            if start_dt: date_filter["$gte"] = start_dt
+            if end_dt: date_filter["$lte"] = end_dt
+            v_match["visit_date"] = date_filter
+            v_all_count_match["visit_date"] = date_filter
         
         # Define expressions for Visit counts
         v_expr_curr = {"$expr": {"$and": [{"$eq": [{"$type": "$visit_date"}, "date"]}, {"$eq": [{"$month": "$visit_date"}, curr_month]}, {"$eq": [{"$year": "$visit_date"}, curr_year]}]}}
         v_expr_prev = {"$expr": {"$and": [{"$eq": [{"$type": "$visit_date"}, "date"]}, {"$eq": [{"$month": "$visit_date"}, prev_month]}, {"$eq": [{"$year": "$visit_date"}, prev_year]}]}}
         
-        c_match = {"status": "ACTIVE", "is_deleted": False}
-        if user_id: c_match["owner_id"] = user_id
-        if area_id: c_match["area_id"] = area_id
+        c_match = {"status": "ACTIVE", "is_active": True, "is_deleted": False}
+        if user_id:
+            # Unified scoping: Owner, PM, or previously Billed
+            billed_phones = await Bill.get_pymongo_collection().distinct(
+                "invoice_client_phone", 
+                {"created_by_id": user_id, "is_deleted": False}
+            )
+            c_match["$or"] = [
+                {"owner_id": user_id}, 
+                {"pm_id": user_id},
+                {"phone": {"$in": billed_phones}}
+            ]
+        
+        if area_id:
+            # Correct area filtering for clients: find clients with a shop in this area
+            target_area = PydanticObjectId(area_id) if isinstance(area_id, str) or not hasattr(area_id, "id") else area_id
+            client_ids_in_area = await Shop.get_pymongo_collection().distinct("client_id", {"area_id": target_area, "is_deleted": False})
+            c_match["_id"] = {"$in": [PydanticObjectId(rid) for rid in client_ids_in_area if rid]}
+        if start_dt or end_dt:
+            date_filter = {}
+            if start_dt: date_filter["$gte"] = start_dt
+            if end_dt: date_filter["$lte"] = end_dt
+            c_match["created_at"] = date_filter
         
         p_match = {"status": GlobalTaskStatus.IN_PROGRESS, "is_deleted": False}
         if user_id: p_match["pm_id"] = user_id
+        if start_dt or end_dt:
+            date_filter = {}
+            if start_dt: date_filter["$gte"] = start_dt
+            if end_dt: date_filter["$lte"] = end_dt
+            p_match["created_at"] = date_filter
 
-        b_match = {"invoice_status": "SENT", "is_deleted": False}
+        # Revenue filter: only count confirmed SUCCESSful payments
+        b_match = {"status": "SUCCESS", "is_deleted": False}
         if user_id: b_match["created_by_id"] = user_id
+        if start_dt or end_dt:
+            date_filter = {}
+            if start_dt: date_filter["$gte"] = start_dt
+            if end_dt: date_filter["$lte"] = end_dt
+            b_match["created_at"] = date_filter
 
         rev_pipeline = [
             {"$match": b_match},
@@ -90,23 +157,63 @@ class ReportService:
         ]
 
         # Fetch basic stats, revenue, and presence in parallel
+        # Fetch basic stats, revenue, and presence in parallel (Visits now count Unique Shops as per UI request)
+
+        # Date bounds for "today" for meetings query
+        today_local = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        tomorrow_local = today_local + timedelta(days=1)
+
+        # Current month period string for incentive slip lookup
+        current_period = now.strftime("%Y-%m")
+
         (
-            total_visits, v_curr, v_prev,
+            v_all_res, v_curr_res, v_prev_res,
             active_clients, clients_curr, clients_prev,
             projects_count, projects_curr, projects_prev,
             rev_res,
             present_user_ids,
             open_issues_count,
-            visit_status_res
+            visit_status_res,
+            incentive_slip_res,
+            pending_todos_count,
+            meetings_today_count
         ) = await asyncio.gather(
-            Visit.find(v_match).count(), Visit.find(v_match, v_expr_curr).count(), Visit.find(v_match, v_expr_prev).count(),
-            Client.find(c_match).count(), Client.find(c_match, {"$expr": curr_m_expr}).count(), Client.find(c_match, {"$expr": prev_m_expr}).count(),
-            Project.find(p_match).count(), Project.find(p_match, {"$expr": curr_m_expr}).count(), Project.find(p_match, {"$expr": prev_m_expr}).count(),
+            Visit.get_pymongo_collection().aggregate([{"$match": v_all_count_match}, {"$group": {"_id": "$shop_id"}}, {"$count": "total"}]).to_list(length=1),
+            Visit.get_pymongo_collection().aggregate([{"$match": {**v_match, **v_expr_curr}}, {"$group": {"_id": "$shop_id"}}, {"$count": "total"}]).to_list(length=1),
+            Visit.get_pymongo_collection().aggregate([{"$match": {**v_match, **v_expr_prev}}, {"$group": {"_id": "$shop_id"}}, {"$count": "total"}]).to_list(length=1),
+            Client.find(c_match).count(), 
+            Client.find(c_match, {"$expr": curr_m_expr}).count(), Client.find(c_match, {"$expr": prev_m_expr}).count(),
+            Shop.find({"is_deleted": False, "pipeline_stage": {"$in": ["PITCHING", "NEGOTIATION", "DELIVERY"]}}).count(), 
+            Shop.find({"is_deleted": False, "pipeline_stage": {"$in": ["PITCHING", "NEGOTIATION", "DELIVERY"]}, "$expr": curr_m_expr}).count(), 
+            Shop.find({"is_deleted": False, "pipeline_stage": {"$in": ["PITCHING", "NEGOTIATION", "DELIVERY"]}, "$expr": prev_m_expr}).count(),
             Bill.get_pymongo_collection().aggregate(rev_pipeline).to_list(length=None),
             Attendance.get_pymongo_collection().distinct("user_id", {"date": today_start, "is_deleted": False}),
             Issue.find(Issue.status == GlobalTaskStatus.OPEN, Issue.is_deleted == False).count(),
-            Visit.get_pymongo_collection().aggregate(status_pipeline).to_list(length=None)
+            Visit.get_pymongo_collection().aggregate(status_pipeline).to_list(length=None),
+            # Real incentive slip for current month (returns total_incentive from admin-generated slip)
+            IncentiveSlip.find_one(
+                IncentiveSlip.user_id == user_id,
+                IncentiveSlip.period == current_period,
+                IncentiveSlip.is_visible_to_employee == True
+            ) if user_id else asyncio.sleep(0),
+            # Pending todos: only truly unstarted tasks (PENDING status, not deleted)
+            Todo.find(
+                Todo.user_id == user_id,
+                Todo.status == TodoStatus.PENDING,
+                Todo.is_deleted == False
+            ).count() if user_id else asyncio.sleep(0),
+            # Meetings today for PM: meetings where user is host or attendee, scheduled today
+            MeetingSummary.find(
+                MeetingSummary.date >= today_local,
+                MeetingSummary.date < tomorrow_local,
+                MeetingSummary.is_deleted == False,
+                MeetingSummary.status != GlobalTaskStatus.CANCELLED
+            ).count() if user_id else asyncio.sleep(0),
         )
+
+        total_visits = v_all_res[0]["total"] if v_all_res else 0
+        v_curr = v_curr_res[0]["total"] if v_curr_res else 0
+        v_prev = v_prev_res[0]["total"] if v_prev_res else 0
 
         visits_mom_pct = ReportService._get_mom_pct(v_curr, v_prev)
         active_clients = active_clients
@@ -117,23 +224,35 @@ class ReportService:
         employees_present = len(present_user_ids)
         visit_status_breakdown = {str(r["_id"]): r["count"] for r in visit_status_res}
 
-        # --- 7. Chart Data (Last 12 Months for better visibility) ---
-        one_year_ago = now - timedelta(days=365)
+        # --- Role-specific KPI values ---
+        # Card 3 (My Incentive for Sales/Telesales): use admin-published incentive slip for current month
+        my_incentive = 0.0
+        if isinstance(incentive_slip_res, IncentiveSlip):
+            my_incentive = float(incentive_slip_res.total_incentive or 0.0)
+
+        # Card 4 (Pending Tasks): only PENDING status todos
+        pending_todos = int(pending_todos_count) if isinstance(pending_todos_count, int) else 0
+
+        # Card 3 (Meetings Today for PM)
+        meetings_today = int(meetings_today_count) if isinstance(meetings_today_count, int) else 0
+
+        # --- 7. Chart Data (Last 6 Months for UI) ---
+        six_months_ago = now - timedelta(days=180)
         
         # Visits Trend
         v_chart_pipeline = [
             {"$addFields": {"v_date_dt": {"$toDate": "$visit_date"}}},
-            {"$match": {**v_match, "v_date_dt": {"$gte": one_year_ago}}},
+            {"$match": {**v_match, "v_date_dt": {"$gte": six_months_ago}}},
             {"$group": {"_id": {"year": {"$year": "$v_date_dt"}, "month": {"$month": "$v_date_dt"}}, "count": {"$sum": 1}}},
-            {"$sort": {"_id.year": 1, "_id.month": 1}}, {"$limit": 12}
+            {"$sort": {"_id.year": 1, "_id.month": 1}}
         ]
         
         # Revenue Trend
         r_chart_pipeline = [
             {"$addFields": {"c_date_dt": {"$toDate": "$created_at"}}},
-            {"$match": {**b_match, "c_date_dt": {"$gte": one_year_ago}}},
+            {"$match": {**b_match, "c_date_dt": {"$gte": six_months_ago}}},
             {"$group": {"_id": {"year": {"$year": "$c_date_dt"}, "month": {"$month": "$c_date_dt"}}, "total": {"$sum": "$amount"}}},
-            {"$sort": {"_id.year": 1, "_id.month": 1}}, {"$limit": 12}
+            {"$sort": {"_id.year": 1, "_id.month": 1}}
         ]
 
         v_chart_res, r_chart_res = await asyncio.gather(
@@ -141,15 +260,26 @@ class ReportService:
             Bill.get_pymongo_collection().aggregate(r_chart_pipeline).to_list(length=None)
         )
 
-        visits_chart_data = {datetime(r["_id"]["year"], r["_id"]["month"], 1).strftime("%b"): r["count"] for r in v_chart_res}
-        revenue_by_month = {datetime(r["_id"]["year"], r["_id"]["month"], 1).strftime("%b"): float(r["total"]) for r in r_chart_res}
+        # Helper to pad data for the last 6 months
+        def pad_monthly_data(results, key_name, months_count=6):
+            padded = {}
+            for i in range(months_count - 1, -1, -1):
+                dt = now - timedelta(days=i*30)
+                month_name = dt.strftime("%b")
+                # Find if result exists for this month/year
+                match = next((r for r in results if r["_id"]["month"] == dt.month and r["_id"]["year"] == dt.year), None)
+                padded[month_name] = float(match[key_name]) if match else 0.0 if key_name == "total" else (match["count"] if match else 0)
+            return padded
 
-        # --- 8. Project Status Breakdown (for alternative/new chart) ---
+        visits_chart_data = pad_monthly_data(v_chart_res, "count")
+        revenue_by_month = pad_monthly_data(r_chart_res, "total")
+
+        # --- 8. Project / Pipeline Status Breakdown (from Shops) ---
         p_status_pipeline = [
             {"$match": {"is_deleted": False}},
-            {"$group": {"_id": "$status", "count": {"$sum": 1}}}
+            {"$group": {"_id": "$pipeline_stage", "count": {"$sum": 1}}}
         ]
-        project_status_res = await Project.get_pymongo_collection().aggregate(p_status_pipeline).to_list(length=None)
+        project_status_res = await Shop.get_pymongo_collection().aggregate(p_status_pipeline).to_list(length=None)
         project_status_breakdown = {str(r["_id"]): r["count"] for r in project_status_res}
 
         return {
@@ -161,7 +291,7 @@ class ReportService:
             "clients_mom_pct": clients_mom_pct,
             "projects_mom_pct": projects_mom_pct,
             "revenue_mom_pct": 0.0,
-            "open_issues": await Issue.find(Issue.status == GlobalTaskStatus.OPEN, Issue.is_deleted == False).count(),
+            "open_issues": open_issues_count,
             "employees_present": employees_present,
             "visit_status_breakdown": visit_status_breakdown,
             "visits_chart_data": visits_chart_data,
@@ -170,7 +300,11 @@ class ReportService:
             "revenue_by_month": revenue_by_month,
             "issue_severity_breakdown": {},
             "visit_outcomes_breakdown": visit_status_breakdown,
-            "project_status_breakdown": project_status_breakdown
+            "project_status_breakdown": project_status_breakdown,
+            # Role-specific KPI extras
+            "total_incentive": my_incentive,
+            "pending_todos": pending_todos,
+            "meetings_today": meetings_today,
         }
 
     @staticmethod
@@ -202,6 +336,24 @@ class ReportService:
             start_dt = ReportService._parse_date(start_date_str) or datetime(now.year, now.month, 1, tzinfo=UTC)
             
         end_dt = ReportService._parse_date(kwargs.get("end_date"), is_end=True) or now
+        if start_date_str:
+             try: 
+                 # Handle empty or null strings from frontend
+                 if str(start_date_str).strip():
+                     start_dt = datetime.fromisoformat(str(start_date_str)).replace(tzinfo=UTC)
+                 else:
+                     # Default to last 3 months if empty
+                     start_dt = now - timedelta(days=90)
+             except: pass
+        else:
+             # Default to last 3 months if no start_date
+             start_dt = now - timedelta(days=90)
+             
+        if end_date_str:
+             try: 
+                 if str(end_date_str).strip():
+                     end_dt = datetime.fromisoformat(str(end_date_str)).replace(tzinfo=UTC)
+             except: pass
 
         match_stage = {"is_deleted": False, "role": {"$ne": "CLIENT"}}
 
@@ -230,7 +382,15 @@ class ReportService:
                         { "$match": { 
                             "$expr": { "$eq": ["$user_id", "$$u_id"] },
                             "visit_date": { "$gte": start_dt, "$lte": end_dt },
-                            "is_deleted": False
+                            "is_deleted": False,
+                            "status": {"$in": [
+                                "SATISFIED", 
+                                "ACCEPT", 
+                                "DECLINE", 
+                                "TAKE_TIME_TO_THINK", 
+                                "OTHER", 
+                                "COMPLETED"
+                            ]}
                         }}
                     ],
                     "as": "visits"

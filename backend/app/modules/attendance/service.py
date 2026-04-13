@@ -219,19 +219,28 @@ class AttendanceService:
             dt_ist = dt_ist_naive.replace(tzinfo=timezone(timedelta(hours=5, minutes=30)))
             dt_utc = dt_ist.astimezone(UTC)
 
-            if record.punch_in:
-                p_in = record.punch_in
-                if p_in.tzinfo is None:
-                    p_in = p_in.replace(tzinfo=UTC)
-                if p_in > dt_utc:
-                    raise HTTPException(status_code=400, detail="Punch out time cannot be earlier than punch in time")
+            p_in = record.punch_in
+            if not p_in:
+                raise HTTPException(status_code=400, detail="Cannot punch out: session has no punch-in record")
+                
+            if p_in.tzinfo is None:
+                p_in = p_in.replace(tzinfo=UTC)
+
+            # Enforce midnight boundary: One day is midnight to midnight.
+            # If the user enters a punch out time that is mathematically earlier than punch_in
+            # (e.g. punch-in at 10 PM, user enters 02:00 AM which they intended for the next day),
+            # we cap the current session at 23:59:59 of the record's date.
+            if dt_utc < p_in:
+                # If they entered a time earlier than punch-in, assume they meant it lasted until midnight
+                # but work after midnight belongs to a new day.
+                day_end_ist = datetime.combine(d, time(23, 59, 59)).replace(tzinfo=timezone(timedelta(hours=5, minutes=30)))
+                dt_utc = day_end_ist.astimezone(UTC)
+                
+                # If even 23:59:59 is before punch_in, something is wrong with the record date
+                if dt_utc < p_in:
+                    raise HTTPException(status_code=400, detail=f"Punch out time cannot be earlier than punch in ({p_in.strftime('%H:%M')})")
 
             record.punch_out = dt_utc
-            
-            p_in = record.punch_in
-            if p_in and p_in.tzinfo is None:
-                p_in = p_in.replace(tzinfo=UTC)
-            
             diff = dt_utc - p_in
             record.total_hours = min(max(0.0, diff.total_seconds() / 3600.0), 23.99)
             
@@ -242,7 +251,7 @@ class AttendanceService:
                 user_id=current_user.id,
                 user_role=current_user.role,
                 action=ActionType.UPDATE,
-                entity_type=EntityType.ATTENDANCE,
+                entity_type="ATTENDANCE",
                 entity_id=record.id,
                 new_data={"manual_punch_out": punch_out_time, "total_hours": record.total_hours},
             )
@@ -386,12 +395,26 @@ class AttendanceService:
             ongoing_secs = (now - p_in).total_seconds()
             today_hours += (ongoing_secs / 3600)
 
+        # FIX: Ensure all datetimes are UTC-aware before returning.
+        # As requested, we provide raw UTC times with a 'Z' / timezone tag. 
+        # The browser will automatically shift this to the user's local time (IST).
+        # This single fix handles both the "In at" display and the "Duration" timer math.
+        def normalize_dt(dt):
+            if not dt: return None, None
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=UTC)
+            utc_dt = dt.astimezone(UTC)
+            return utc_dt, utc_dt.timestamp() * 1000
+
+        last_punch_utc, last_punch_ts = normalize_dt(last_punch)
+        first_punch_in_utc, first_punch_in_ts = normalize_dt(first_punch_in)
+
         return {
             "is_punched_in":        is_punched_in,
-            "last_punch":           last_punch,
-            "last_punch_ts":        last_punch.timestamp() * 1000 if last_punch else None,
-            "first_punch_in":       first_punch_in,
-            "first_punch_in_ts":    first_punch_in.timestamp() * 1000 if first_punch_in else None,
+            "last_punch":           last_punch_utc,
+            "last_punch_ts":        last_punch_ts,
+            "first_punch_in":       first_punch_in_utc,
+            "first_punch_in_ts":    first_punch_in_ts,
             "today_hours":          round(today_hours, 4),
             "today_hours_secs":     round(today_hours * 3600),
             "completed_hours_secs": completed_hours_secs,

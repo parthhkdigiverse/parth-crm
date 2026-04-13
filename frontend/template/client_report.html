@@ -142,6 +142,7 @@
         injectTopHeader('Client Report');
 
         let reportData = [];
+        let filteredData = []; // tracks the currently-visible (filtered) subset
 
         async function compileReport() {
             try {
@@ -188,6 +189,7 @@
                 document.getElementById('kpi-meetings').textContent = activeMeetings.length;
 
                 initFilters();
+                filteredData = reportData; // start with full set
                 renderTable(reportData);
 
             } catch (err) {
@@ -314,34 +316,48 @@
                     if (filters['health'] && filters['health'] !== 'ALL') {
                         filtered = filtered.filter(c => c.healthClass === filters['health']);
                     }
+                    filteredData = filtered; // keep export in sync with active filters
                     renderTable(filtered);
                 },
-                onReset: () => renderTable(reportData)
+                onReset: () => { filteredData = reportData; renderTable(reportData); }
             });
         }
 
         function exportCSV() {
-            if (!reportData.length) return showToast('No data to export', 'error');
-            let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += "Client ID,Business Name,Contact Name,Assigned PM,Open Issues,Total Meetings,Health Status,Date Added,Remaining Days\n";
-            
-            reportData.forEach(c => {
-                const bizName = `"${(c.business_name || c.company_name || c.shop_name || c.company || c.organization || c.project_name || 'Direct Client').replace(/"/g, '""')}"`;
-                const contactName = `"${(c.name || '').replace(/"/g, '""')}"`;
-                const pm = `"${(c.pm_name || c.onboarding_pm_name || 'Unassigned').replace(/"/g, '""')}"`;
-                const rawDate = c.created_at || c.date_added || c.createdAt || c.timestamp;
-                const date = rawDate ? new Date(rawDate).toLocaleDateString('en-CA') : 'N/A';
-                const row = [c.id, bizName, contactName, pm, c.openIssuesCount, c.meetingsCount, c.healthText, date, c.remainingExportText || ''].join(",");
-                csvContent += row + "\n";
+            const dataToExport = filteredData.length ? filteredData : reportData;
+            if (!dataToExport.length) return showToast('No data to export', 'error');
+
+            const headers = ["Client ID", "Business Name", "Contact Name", "Assigned PM", "Open Issues", "Total Meetings", "Health Status", "Date Added", "Remaining Days"];
+            const rows = [headers.join(",")];
+
+            dataToExport.forEach(c => {
+                // Wrap every string field in quotes and escape any internal quotes (RFC 4180)
+                const esc = (val) => `"${String(val || '').replace(/"/g, '""')}"`;
+                const bizName  = esc(c.business_name || c.company_name || c.shop_name || c.company || c.organization || c.project_name || 'Direct Client');
+                const contact  = esc(c.name);
+                const pm       = esc(c.pm_name || c.onboarding_pm_name || 'Unassigned');
+                const health   = esc(c.healthText);
+                const remaining = esc(c.remainingExportText || '');
+                const rawDate  = c.created_at || c.date_added || c.createdAt || c.timestamp;
+                const date     = rawDate ? new Date(rawDate).toLocaleDateString('en-CA') : 'N/A';
+
+                rows.push([
+                    esc(c.id), bizName, contact, pm,
+                    c.openIssuesCount, c.meetingsCount,
+                    health, date, remaining
+                ].join(","));
             });
-            
-            const encodedUri = encodeURI(csvContent);
+
+            // Use Blob for reliable Unicode / special-character support
+            const blob = new Blob([rows.join("\n")], { type: 'text/csv;charset=utf-8;' });
+            const url  = URL.createObjectURL(blob);
             const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `Client_Health_Report_${new Date().toISOString().split('T')[0]}.csv`);
+            link.href = url;
+            link.download = `Client_Health_Report_${new Date().toISOString().split('T')[0]}.csv`;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            URL.revokeObjectURL(url);
         }
 
         function exportPDF() {
@@ -357,7 +373,8 @@
             doc.setTextColor(100);
             doc.text(`Generated: ${new Date().toLocaleDateString('en-IN')}`, 14, 28);
 
-            const tableData = reportData.map(c => [
+            const dataToExport = filteredData.length ? filteredData : reportData;
+            const tableData = dataToExport.map(c => [
                 c.id,
                 c.business_name || c.company_name || c.shop_name || c.company || c.organization || c.project_name || 'Direct Client',
                 c.name,

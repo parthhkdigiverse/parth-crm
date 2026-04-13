@@ -8,6 +8,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Issues — SRM AI SETU</title>
+    <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/static/css/theme.css?v=20260411">
+    <link rel="stylesheet" href="/static/css/components.css?v=20260411">
     <link rel="stylesheet" href="/frontend/css/bootstrap.min.css">
     <link rel="stylesheet" href="/frontend/css/bootstrap-icons.min.css">
     <link rel="stylesheet" href="/frontend/css/theme.css?v=20260406">
@@ -36,7 +40,7 @@
         <div class="flex-grow-1 main-wrapper">
             <!-- The top header is automatically injected here by js/auth.js?v=20260321 -->
             <div class="page-content-standard">
-                <div class="page-header-glass d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center">
+                <div class="page-header-glass mb-4 d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center">
                     <div>
                         <h2 class="page-section-title">Issues</h2>
                         <small class="text-muted" id="issue-count"></small>
@@ -56,7 +60,7 @@
                                 Issue Logs
                             </div>
                         </div>
-                        <div class="table-responsive">
+                        <div class="table-responsive mx-2 mb-2">
                             <table class="table align-middle mb-0">
                                 <thead>
                                     <tr>
@@ -67,7 +71,7 @@
                                         <th class="text-secondary fw-semibold">ISSUE</th>
                                         <th class="text-secondary fw-semibold">SEVERITY</th>
                                         <th class="text-secondary fw-semibold">STATUS</th>
-                                        <th class="text-secondary fw-semibold">PROJECT & PM</th>
+                                        <th class="text-secondary fw-semibold">CLIENT & PM</th>
                                         <th class="text-secondary fw-semibold">REPORTED BY</th>
                                         <th class="text-secondary fw-semibold">DATE</th>
                                         <th class="text-secondary fw-semibold text-end">ACTION</th>
@@ -177,12 +181,12 @@
         </div>
     </div>
 
-    <script src="/frontend/js/utils.js?v=20260403"></script>
-    <script src="/frontend/js/api.js?v=20260403"></script>
-    <script src="/frontend/js/auth.js?v=20260403"></script>
-    <script src="/frontend/js/ui_components.js?v=20260403"></script>
-    <script src="/frontend/js/app.js?v=20260403"></script>
-    <script src="/frontend/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/utils.js?v=20260411"></script>
+    <script src="/static/js/api.js?v=20260411"></script>
+    <script src="/static/js/auth.js?v=20260411"></script>
+    <script src="/static/js/ui_components.js?v=20260411"></script>
+    <script src="/static/js/app.js?v=20260411"></script>
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
     <script>
         requireAuth();
         const sb = document.getElementById('sidebar');
@@ -238,10 +242,10 @@
 
             const params = new URLSearchParams();
             params.append('limit', '200');
-            if (filters.severity) params.append('severity', filters.severity);
-            if (filters.status) params.append('status', filters.status);
-            if (filters.client) params.append('client_id', filters.client);
-            if (filters.pm) params.append('pm_id', filters.pm);
+            if (filters.severity && filters.severity !== 'ALL') params.append('severity', filters.severity);
+            if (filters.status && filters.status !== 'ALL') params.append('status', filters.status);
+            if (filters.client && filters.client !== 'ALL') params.append('client_id', filters.client);
+            if (filters.pm && filters.pm !== 'ALL') params.append('pm_id', filters.pm);
 
             const issues = await apiGet(`/issues/?${params.toString()}`);
             const open = issues.filter(i => i.status === 'OPEN').length;
@@ -274,8 +278,8 @@
                     <td>${sBadge}</td>
                     <td>${stBadge}</td>
                     <td class="text-muted">
-                        <div class="fw-medium text-dark">${i.project_name || 'N/A'}</div>
-                        <div class="small"><i class="bi bi-person me-1"></i>${i.pm_name || 'Unassigned'}</div>
+                        <div class="fw-medium text-dark">${i.project_name || i.client_name || 'N/A'}</div>
+                        <div class="small">${i.pm_name && i.pm_name !== 'Unassigned' ? `<i class="bi bi-person-fill me-1 text-primary"></i><span class="text-dark">${i.pm_name}</span>` : '<span class="text-muted fst-italic">Unassigned</span>'}</div>
                     </td>
                     <td class="text-muted">${i.reporter_name || 'System'}</td>
                     <td class="text-muted">${i.created_at ? new Date(i.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'N/A'}</td>
@@ -356,59 +360,99 @@
         let _allProjects = []; // cache for client auto-fill
         let _allClients = []; // cache for client name lookup
 
-        Promise.all([
-            apiGet('/projects/?limit=200'),
-            apiGet('/clients/')
-        ]).then(([projects, clients]) => {
-            _allProjects = projects || [];
-            _allClients = clients || [];
-
-            const projSelect = document.getElementById('i-project');
-            projSelect.innerHTML = '<option value="">-- Select Project --</option>' +
-                _allProjects.map(p => `<option value="${p.id}" data-client-id="${p.client_id}">${p.name}</option>`).join('');
-
-            // Handle URL param: if client_id passed, pre-filter projects & open modal
-            const urlClient = new URLSearchParams(window.location.search).get('client_id');
-            if (urlClient) {
-                // Pre-select first project belonging to this client
-                const match = _allProjects.find(p => String(p.client_id) === String(urlClient));
-                if (match) {
-                    projSelect.value = match.id;
-                    autoFillClientFromProject();
-                }
-                openReportModal();
-            }
-        }).catch(err => {
-            console.error('Failed to load projects/clients for issue modal', err);
-            document.getElementById('i-project').innerHTML = '<option value="">Error loading projects</option>';
-        });
-
         window.openReportModal = () => {
             const modalEl = document.getElementById('addIssueModal');
             // Clear validation state
             modalEl.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
             modalEl.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
+
+            // If a client was pre-provided, ensure dropdown is filtered
+            const clientVal = document.getElementById('i-client').value;
+            if (clientVal) {
+                const projSelect = document.getElementById('i-project');
+                const options = Array.from(projSelect.options);
+                let foundMatch = false;
+                options.forEach(opt => {
+                    const cid = opt.getAttribute('data-client-id');
+                    if (!opt.value) return; // Skip select project placeholder
+                    if (cid && String(cid) === String(clientVal)) {
+                        opt.style.display = '';
+                        foundMatch = true;
+                    } else {
+                        opt.style.display = 'none';
+                    }
+                });
+            }
+
             bootstrap.Modal.getOrCreateInstance(modalEl).show();
         };
 
-        // Load users for handler assignment
-        apiGet('/users/').then(usersRes => {
-            const users = Array.isArray(usersRes) ? usersRes : (usersRes.data || usersRes.items || usersRes.users || []);
-            const sel = document.getElementById('i-handler');
-            const activeStaff = users.filter(u => u.is_active);
-            sel.innerHTML = `
-                <option value="">-- Default (Project PM) --</option>
-                <optgroup label="Team Assignments (Broadcast)">
-                    <option value="GROUP_ALL">Assign All (Company Wide)</option>
-                    <option value="GROUP_SALES">Assign All SALES Team</option>
-                    <option value="GROUP_PM">Assign All PMs</option>
-                    <option value="GROUP_PM_SALES">Assign All PMs & SALES Team</option>
-                </optgroup>
-                <optgroup label="Individual Assignments">
-                    ${activeStaff.map(u => `<option value="${u.id}">${u.name || u.email} (${(u.role || '').replace('_', ' ')})</option>`).join('')}
-                </optgroup>
-            `;
-        }).catch(() => { });
+        async function loadModalData() {
+            const projSelect = document.getElementById('i-project');
+            const handlerSelect = document.getElementById('i-handler');
+            
+            projSelect.innerHTML = '<option value="">-- Select Project --</option>';
+            
+            try {
+                const [projects, clients, usersRes] = await Promise.all([
+                    apiGet('/projects/'),
+                    apiGet('/clients/'),
+                    apiGet('/users/')
+                ]);
+                
+                _allProjects = projects || [];
+                _allClients = clients || [];
+                const users = Array.isArray(usersRes) ? usersRes : (usersRes.data || usersRes.items || []);
+
+                // Populate Projects
+                projSelect.innerHTML = '<option value="">-- Select Project --</option>' +
+                    _allProjects.map(p => `<option value="${p.id}" data-client-id="${p.client_id}">${p.name}</option>`).join('');
+
+                // Populate Handlers
+                const activeStaff = users.filter(u => u.is_active);
+                handlerSelect.innerHTML = `
+                    <option value="">-- Default (Project PM) --</option>
+                    <optgroup label="Team Assignments (Broadcast)">
+                        <option value="GROUP_ALL">Assign All (Company Wide)</option>
+                        <option value="GROUP_SALES">Assign All SALES Team</option>
+                        <option value="GROUP_PM">Assign All PMs</option>
+                        <option value="GROUP_PM_SALES">Assign All PMs & SALES Team</option>
+                    </optgroup>
+                    <optgroup label="Individual Assignments">
+                        ${activeStaff.map(u => `<option value="${u.id}">${u.name || u.email} (${(u.role || '').replace('_', ' ')})</option>`).join('')}
+                    </optgroup>
+                `;
+
+                // Handle URL param: if client_id passed, pre-select
+                const urlParams = new URLSearchParams(window.location.search);
+                const urlClient = urlParams.get('client_id');
+                if (urlClient) {
+                    const client = _allClients.find(c => String(c.id) === String(urlClient));
+                    if (client) {
+                        document.getElementById('i-client-display').innerHTML = `<i class="bi bi-person-check-fill text-success me-2"></i>${client.name}`;
+                        document.getElementById('i-client-display').className = 'form-control bg-light text-success fw-semibold';
+                        document.getElementById('i-client').value = client.id;
+
+                        // Try to find a matching project
+                        const matches = _allProjects.filter(p => String(p.client_id) === String(urlClient));
+                        if (matches.length > 0) {
+                            projSelect.value = matches[0].id;
+                            // Trigger autofill to ensure internal state is synced
+                            if (window.autoFillClientFromProject) window.autoFillClientFromProject();
+                        }
+                    }
+                    openReportModal();
+                }
+            } catch (err) {
+                console.error('Failed to load modal data', err);
+                projSelect.innerHTML = '<option value="">Error loading data.</option>';
+                showToast('Failed to load project/client data', 'error');
+            }
+        }
+
+        /* loadModalData called at bottom - fix for auto-open */
+
+        /* Handlers populated in loadModalData */
 
         // Auto-fill client from selected project
         window.autoFillClientFromProject = () => {
@@ -468,7 +512,7 @@
             if (handlerVal.startsWith('GROUP_')) {
                 assignedGroup = handlerVal;
             } else if (handlerVal) {
-                assignedId = parseInt(handlerVal);
+                assignedId = handlerVal;
             }
 
             const btn = document.getElementById('save-issue-btn');
@@ -508,27 +552,23 @@
             });
         }
 
-        async function batchDeleteIssues() {
-            const selectedIds = Array.from(document.querySelectorAll('.issue-checkbox:checked')).map(cb => parseInt(cb.value));
-            if (!selectedIds.length) return;
-
-            if (getUser().role !== 'ADMIN') {
-                showToast('Only Admins can perform bulk delete', 'error');
-                return;
-            }
-
-            if (!confirm(`Delete ${selectedIds.length} issues permanently?`)) return;
-
-            try {
-                await ApiClient.request('/issues/batch-delete', {
-                    method: 'POST',
-                    body: selectedIds
-                });
-                showToast(`Successfully removed ${selectedIds.length} issues`, 'success');
-                loadIssues();
-            } catch (err) {
-                showToast('Bulk delete failed', 'error');
-            }
+        // Modal reset on close
+        const addIssueModalEl = document.getElementById('addIssueModal');
+        if (addIssueModalEl) {
+            addIssueModalEl.addEventListener('hidden.bs.modal', () => {
+                document.getElementById('i-project').value = '';
+                document.getElementById('i-client').value = '';
+                document.getElementById('i-title').value = '';
+                document.getElementById('i-desc').value = '';
+                document.getElementById('i-handler').value = '';
+                document.getElementById('i-sev').value = 'MEDIUM';
+                document.getElementById('i-client-display').textContent = '-- Auto-filled from Project --';
+                document.getElementById('i-client-display').className = 'form-control bg-light text-muted';
+                
+                // Clear validation state
+                addIssueModalEl.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+                addIssueModalEl.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
+            });
         }
 
         // Initialize Filters
@@ -593,6 +633,8 @@
                 showToast('You do not have permission to report issues', 'error');
             }
         });
+        
+        loadModalData();
     </script>
 </body>
 

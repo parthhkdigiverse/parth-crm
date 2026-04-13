@@ -388,23 +388,26 @@
 
             <!-- Responsive Split pane: queue on top/left, detail on bottom/right -->
             <div class="d-flex flex-column flex-md-row flex-grow-1" style="overflow:hidden;" id="projectsSplitPane">
-                
+
                 <style>
                     /* Mobile-first stacking Strategy */
                     .queue-pane-responsive {
-                        flex: 1 1 40%; /* 40% height on mobile */
+                        flex: 1 1 40%;
+                        /* 40% height on mobile */
                         border-bottom: 2px solid var(--border);
                         overflow-y: auto;
                         min-width: 0;
                         background: var(--bg-surface);
                     }
+
                     .detail-pane-responsive {
-                        flex: 1 1 60%; /* 60% height on mobile */
+                        flex: 1 1 60%;
+                        /* 60% height on mobile */
                         overflow-y: auto;
                         width: 100%;
                         background: var(--bg-app);
                     }
-                    
+
                     /* Desktop Side-by-Side */
                     @media (min-width: 768px) {
                         .queue-pane-responsive {
@@ -413,6 +416,7 @@
                             border-right: 1px solid var(--border);
                             border-bottom: none;
                         }
+
                         .detail-pane-responsive {
                             flex: 1 1 auto;
                         }
@@ -420,128 +424,149 @@
                 </style>
 
                 <div class="queue-pane queue-pane-responsive d-flex flex-column">
-            <div class="d-flex flex-column mb-4 border-bottom pb-3 px-3 pt-3">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="fw-bold mb-0" style="color: var(--text-main);">Performance Queue</h5>
+                    <div class="d-flex flex-column mb-4 border-bottom pb-3 px-3 pt-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold mb-0" style="color: var(--text-main);">Performance Queue</h5>
 
-                    <!-- View Options Dropdown (Sort + PM Filter) — preserved from original -->
-                    <div class="dropdown">
-                        <button class="btn btn-sm d-flex align-items-center gap-2 rounded-pill fw-medium border-0 bg-light" type="button"
-                            data-bs-toggle="dropdown" data-bs-auto-close="outside">
-                            <i class="bi bi-sliders2 text-primary"></i> View Options
-                        </button>
-                        <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-3"
-                            style="width: 320px; border-radius: 16px; margin-top: 10px; background: var(--bg-surface); backdrop-filter: blur(10px);">
+                            <!-- View Options Dropdown (Sort + PM Filter) — preserved from original -->
+                            <div class="dropdown">
+                                <button
+                                    class="btn btn-sm d-flex align-items-center gap-2 rounded-pill fw-medium border-0 bg-light"
+                                    type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside">
+                                    <i class="bi bi-sliders2 text-primary"></i> View Options
+                                </button>
+                                <div class="dropdown-menu dropdown-menu-end shadow-lg border-0 p-3"
+                                    style="width: 320px; border-radius: 16px; margin-top: 10px; background: var(--bg-surface); backdrop-filter: blur(10px);">
 
-                            <fieldset class="mb-3">
-                                <legend class="fw-bold text-uppercase mb-2" style="font-size: 0.65rem; letter-spacing: 1px; color: #94a3b8; padding:0; margin:0; border:none;">Order by Stage</legend>
-                                <div class="form-check mb-1">
-                                    <input class="form-check-input" type="radio" name="sortStage" id="sortStageAsc" value="asc" onchange="applySort()" checked>
-                                    <label class="form-check-label" for="sortStageAsc" style="font-size: 0.85rem; color: #475569; font-weight: 500;">
-                                        Standard (Lead ➔ Maintenance)
-                                    </label>
+                                    <fieldset class="mb-3">
+                                        <legend class="fw-bold text-uppercase mb-2"
+                                            style="font-size: 0.65rem; letter-spacing: 1px; color: #94a3b8; padding:0; margin:0; border:none;">
+                                            Order by Stage</legend>
+                                        <div class="form-check mb-1">
+                                            <input class="form-check-input" type="radio" name="sortStage"
+                                                id="sortStageAsc" value="asc" onchange="applySort()" checked>
+                                            <label class="form-check-label" for="sortStageAsc"
+                                                style="font-size: 0.85rem; color: #475569; font-weight: 500;">
+                                                Standard (Lead ➔ Maintenance)
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-1">
+                                            <input class="form-check-input" type="radio" name="sortStage"
+                                                id="sortStageDesc" value="desc" onchange="applySort()">
+                                            <label class="form-check-label" for="sortStageDesc"
+                                                style="font-size: 0.85rem; color: #475569; font-weight: 500;">
+                                                Reverse (Maintenance ➔ Lead)
+                                            </label>
+                                        </div>
+                                    </fieldset>
+
+                                    <fieldset class="mb-3">
+                                        <legend class="fw-bold text-uppercase mb-2"
+                                            style="font-size: 0.65rem; letter-spacing: 1px; color: #94a3b8; padding:0; margin:0; border:none;">
+                                            Sort by Creation</legend>
+                                        <div class="form-check mb-1">
+                                            <input class="form-check-input" type="radio" name="sortDate"
+                                                id="sortDateNewest" value="newest" onchange="applySort()" checked>
+                                            <label class="form-check-label" for="sortDateNewest"
+                                                style="font-size: 0.85rem; color: #475569; font-weight: 500;">
+                                                Newest First (Highest ID)
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-1">
+                                            <input class="form-check-input" type="radio" name="sortDate"
+                                                id="sortDateOldest" value="oldest" onchange="applySort()">
+                                            <label class="form-check-label" for="sortDateOldest"
+                                                style="font-size: 0.85rem; color: #475569; font-weight: 500;">
+                                                Oldest First (Lowest ID)
+                                            </label>
+                                        </div>
+                                    </fieldset>
+
+                                    <hr class="border-light my-3">
+
+                                    <h6 class="fw-bold text-uppercase mb-2"
+                                        style="font-size: 0.65rem; letter-spacing: 1px; color: var(--text-muted);">
+                                        Filter By PM</h6>
+                                    <select id="pm-filter-select" class="form-select form-select-sm shadow-sm"
+                                        onchange="applyPmFilter(this.value)"
+                                        style="border-radius: 8px; font-weight: 500; color: var(--text-main); border-color: var(--border); cursor: pointer; background-color: var(--bg-app);">
+                                        <option value="ALL">All Project Managers</option>
+                                        <option value="Unassigned">Unassigned Leads</option>
+                                    </select>
                                 </div>
-                                <div class="form-check mb-1">
-                                    <input class="form-check-input" type="radio" name="sortStage" id="sortStageDesc" value="desc" onchange="applySort()">
-                                    <label class="form-check-label" for="sortStageDesc" style="font-size: 0.85rem; color: #475569; font-weight: 500;">
-                                        Reverse (Maintenance ➔ Lead)
-                                    </label>
-                                </div>
-                            </fieldset>
-
-                            <fieldset class="mb-3">
-                                <legend class="fw-bold text-uppercase mb-2" style="font-size: 0.65rem; letter-spacing: 1px; color: #94a3b8; padding:0; margin:0; border:none;">Sort by Creation</legend>
-                                <div class="form-check mb-1">
-                                    <input class="form-check-input" type="radio" name="sortDate" id="sortDateNewest" value="newest" onchange="applySort()" checked>
-                                    <label class="form-check-label" for="sortDateNewest" style="font-size: 0.85rem; color: #475569; font-weight: 500;">
-                                        Newest First (Highest ID)
-                                    </label>
-                                </div>
-                                <div class="form-check mb-1">
-                                    <input class="form-check-input" type="radio" name="sortDate" id="sortDateOldest" value="oldest" onchange="applySort()">
-                                    <label class="form-check-label" for="sortDateOldest" style="font-size: 0.85rem; color: #475569; font-weight: 500;">
-                                        Oldest First (Lowest ID)
-                                    </label>
-                                </div>
-                            </fieldset>
-
-                            <hr class="border-light my-3">
-
-                            <h6 class="fw-bold text-uppercase mb-2"
-                                style="font-size: 0.65rem; letter-spacing: 1px; color: var(--text-muted);">Filter By PM</h6>
-                            <select id="pm-filter-select" class="form-select form-select-sm shadow-sm"
-                                onchange="applyPmFilter(this.value)"
-                                style="border-radius: 8px; font-weight: 500; color: var(--text-main); border-color: var(--border); cursor: pointer; background-color: var(--bg-app);">
-                                <option value="ALL">All Project Managers</option>
-                                <option value="Unassigned">Unassigned Leads</option>
-                            </select>
+                            </div>
                         </div>
+
+                        <!-- Search input -->
+                        <div class="input-group mb-3 shadow-sm" style="border-radius: 50px; overflow: hidden;">
+                            <span class="input-group-text border-0 ps-3 text-muted" style="background: var(--surface);">
+                                <i class="bi bi-search"></i>
+                            </span>
+                            <input type="text" id="hub-search" class="form-control border-0"
+                                placeholder="Search leads..." oninput="handleSearch(event)"
+                                style="box-shadow: none; background: var(--surface); color: var(--text-main);">
+                        </div>
+
+                        <!-- Filter pills -->
+                        <div class="d-flex gap-2 overflow-auto pb-1"
+                            style="scrollbar-width: none; -ms-overflow-style: none;">
+                            <button class="btn btn-sm btn-dark rounded-pill px-3 fw-medium filter-pill"
+                                onclick="setFilter('ALL', this)">All Active</button>
+                            <button
+                                class="btn btn-sm btn-light border rounded-pill px-3 text-nowrap fw-medium filter-pill"
+                                onclick="setFilter('IN_PROGRESS', this)">In Progress</button>
+                            <button
+                                class="btn btn-sm btn-light border rounded-pill px-3 text-nowrap fw-medium filter-pill"
+                                onclick="setFilter('DEMO_SET', this)">Demo Set</button>
+                        </div>
+                        <style>
+                            .overflow-auto::-webkit-scrollbar {
+                                display: none;
+                            }
+                        </style>
                     </div>
+                    <div class="queue-list" id="queue-list"></div>
                 </div>
 
-                <!-- Search input -->
-                <div class="input-group mb-3 shadow-sm" style="border-radius: 50px; overflow: hidden;">
-                    <span class="input-group-text border-0 ps-3 text-muted" style="background: var(--surface);">
-                        <i class="bi bi-search"></i>
-                    </span>
-                    <input type="text" id="hub-search" class="form-control border-0"
-                        placeholder="Search leads..." oninput="handleSearch(event)"
-                        style="box-shadow: none; background: var(--surface); color: var(--text-main);">
-                </div>
+                <div class="detail-pane detail-pane-responsive">
+                    <div class="detail-content">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div>
+                                <h2 class="fw-bold mb-1" id="detail-title">Select a Lead</h2>
+                                <div class="text-muted fw-semibold" id="detail-contact">Contact: — • —</div>
+                            </div>
+                        </div>
 
-                <!-- Filter pills -->
-                <div class="d-flex gap-2 overflow-auto pb-1" style="scrollbar-width: none; -ms-overflow-style: none;">
-                    <button class="btn btn-sm btn-dark rounded-pill px-3 fw-medium filter-pill"
-                        onclick="setFilter('ALL', this)">All Active</button>
-                    <button class="btn btn-sm btn-light border rounded-pill px-3 text-nowrap fw-medium filter-pill"
-                        onclick="setFilter('IN_PROGRESS', this)">In Progress</button>
-                    <button class="btn btn-sm btn-light border rounded-pill px-3 text-nowrap fw-medium filter-pill"
-                        onclick="setFilter('DEMO_SET', this)">Demo Set</button>
-                </div>
-                <style>.overflow-auto::-webkit-scrollbar { display: none; }</style>
-            </div>
-            <div class="queue-list" id="queue-list"></div>
-        </div>
+                        <div class="progress-tracker">
+                            <div class="step active">
+                                <div class="step-circle">1</div>
+                                <div class="step-label">Lead</div>
+                            </div>
+                            <div class="step">
+                                <div class="step-circle">2</div>
+                                <div class="step-label">Pitching</div>
+                            </div>
+                            <div class="step">
+                                <div class="step-circle">3</div>
+                                <div class="step-label">Negotiation</div>
+                            </div>
+                            <div class="step">
+                                <div class="step-circle">4</div>
+                                <div class="step-label">Delivery</div>
+                            </div>
+                            <div class="step">
+                                <div class="step-circle">5</div>
+                                <div class="step-label">Maintenance</div>
+                            </div>
+                        </div>
 
-        <div class="detail-pane detail-pane-responsive">
-            <div class="detail-content">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div>
-                        <h2 class="fw-bold mb-1" id="detail-title">Select a Lead</h2>
-                        <div class="text-muted fw-semibold" id="detail-contact">Contact: — • —</div>
-                    </div>
-                </div>
-
-                <div class="progress-tracker">
-                    <div class="step active">
-                        <div class="step-circle">1</div>
-                        <div class="step-label">Lead</div>
-                    </div>
-                    <div class="step">
-                        <div class="step-circle">2</div>
-                        <div class="step-label">Pitching</div>
-                    </div>
-                    <div class="step">
-                        <div class="step-circle">3</div>
-                        <div class="step-label">Negotiation</div>
-                    </div>
-                    <div class="step">
-                        <div class="step-circle">4</div>
-                        <div class="step-label">Delivery</div>
-                    </div>
-                    <div class="step">
-                        <div class="step-circle">5</div>
-                        <div class="step-label">Maintenance</div>
-                    </div>
-                </div>
-
-                <div class="action-center text-center">
-                    <h4 class="text-muted py-5">Please select a lead from the queue.</h4>
-                </div>
-                <div id="visit-history-section" class="mt-4">
-                </div>
-            </div><!-- /.detail-content -->
-        </div><!-- /.detail-pane -->
+                        <div class="action-center text-center">
+                            <h4 class="text-muted py-5">Please select a lead from the queue.</h4>
+                        </div>
+                        <div id="visit-history-section" class="mt-4">
+                        </div>
+                    </div><!-- /.detail-content -->
+                </div><!-- /.detail-pane -->
             </div><!-- /.d-flex split row -->
         </div><!-- /.flex-grow-1 main column -->
     </div><!-- /.hub-container -->
@@ -622,11 +647,11 @@
                 <div class="modal-footer border-0 p-4 p-md-5 pt-0 bg-surface justify-content-between">
                     <button type="button" class="btn btn-light fw-bold px-4 py-2 text-muted" data-bs-dismiss="modal"
                         style="border-radius: 12px;">Cancel</button>
-                    <button type="button" class="btn fw-bold px-5 py-2 shadow-sm text-white" id="smart-submit-btn"
+                    <button type="button" class="btn btn-sm text-white fw-bold d-flex align-items-center justify-content-center gap-2" id="smart-submit-btn"
                         onclick="smartSubmitSchedule()"
-                        style="border-radius: 12px; background: var(--bg-app); color: var(--text-main); transition: all 0.2s;"
+                        style="background: linear-gradient(135deg, #6366f1, #8b5cf6); border-radius: 10px; padding: 8px 24px; box-shadow: 0 4px 15px rgba(99,102,241,0.3); transition: all 0.2s; border: none;"
                         disabled>
-                        <i class="bi bi-send-fill me-2 text-warning"></i> Confirm & Transfer
+                        <i class="bi bi-send-fill"></i> Confirm & Transfer
                     </button>
                 </div>
             </div>
@@ -884,7 +909,7 @@
                 alert('Backend Error: ' + (e?.data?.detail || e?.message || JSON.stringify(e)));
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = '<i class="bi bi-send-fill me-2 text-warning"></i> Confirm & Transfer';
+                btn.innerHTML = '<i class="bi bi-send-fill"></i> Confirm & Transfer';
             }
         };
 
@@ -1135,4 +1160,3 @@
 </body>
 
 </html>
-

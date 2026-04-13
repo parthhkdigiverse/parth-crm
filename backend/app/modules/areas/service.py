@@ -16,8 +16,8 @@ class AreaService:
 
     async def get_areas(self, current_user: User, skip: int = 0, limit: int = 100):
         # Base query: non-archived areas
-        # Import here so the enrich_area nested closure can always access In/Or
         from beanie.operators import Or, In
+        from bson import ObjectId
         
         # 1. Evaluate the Admin check
         role_str = str(current_user.role).upper()
@@ -29,39 +29,77 @@ class AreaService:
             Area.is_deleted == False
         )
         
-        # 3. THE TRUTH SERUM (Add these print statements)
+        # Debug info
         base_count = await find_query.count()
         print("\n" + "="*50)
         print(f"🕵️ DEBUG: Is Admin?  = {is_admin}")
+        print(f"🕵️ DEBUG: User ID    = {current_user.id}")
         print(f"🕵️ DEBUG: Areas in DB= {base_count}")
         print("="*50 + "\n")
 
         if is_admin:
             areas = await find_query.skip(skip).limit(limit).to_list()
         else:
-            
-            # Fetch implicitly assigned areas via Shop relationships
-            shop_query = Shop.find(Or(
-                Shop.owner_id == current_user.id,
-                Shop.created_by_id == current_user.id,
-                Shop.project_manager_id == current_user.id,
-                In(Shop.assigned_owner_ids, [current_user.id]),
-                In(Shop.assigned_user_ids, [current_user.id])
-            ))
-            user_shops = await shop_query.to_list()
-            shop_area_ids = list(set([s.area_id for s in user_shops if getattr(s, 'area_id', None)]))
+            # Build both ObjectId and string versions of the user's ID for
+            # type-safe matching against legacy and new documents
+            try:
+                user_oid = ObjectId(str(current_user.id))
+            except Exception:
+                user_oid = current_user.id
+            user_str = str(current_user.id)
 
-            # Sales/Telesales: Can see areas they are assigned to OR areas containing shops they own/manage
-            areas = await Area.find(
-                {"is_archived": {"$nin": [True, "t", "true", "1"]}},
-                Or(
-                    In(Area.assigned_user_ids, [current_user.id]),
-                    Area.assigned_user_id == current_user.id,
-                    In(Area.id, shop_area_ids)
-                )
-            ).skip(skip).limit(limit).to_list()
+            # Fetch implicitly assigned areas via Shop relationships (type-safe)
+            user_shop_filter = {
+                "$or": [
+                    {"owner_id": user_oid},
+                    {"owner_id": user_str},
+                    {"created_by_id": user_oid},
+                    {"created_by_id": user_str},
+                    {"project_manager_id": user_oid},
+                    {"project_manager_id": user_str},
+                    {"assigned_owner_ids": {"$in": [user_oid, user_str]}},
+                    {"assigned_user_ids": {"$in": [user_oid, user_str]}},
+                ]
+            }
+            user_shops = await Shop.find(user_shop_filter).to_list()
+            
+            # Collect all area_ids from shops assigned to this user (both ObjectId and str)
+            raw_area_ids = [s.area_id for s in user_shops if getattr(s, 'area_id', None)]
+            shop_area_obj_ids = []
+            for aid in raw_area_ids:
+                try:
+                    shop_area_obj_ids.append(ObjectId(str(aid)))
+                except Exception:
+                    pass
+            shop_area_obj_ids = list(set(shop_area_obj_ids))
+            shop_area_str_ids = list(set([str(aid) for aid in raw_area_ids]))
+
+            print(f"🕵️ DEBUG: shops found for user = {len(user_shops)}")
+            print(f"🕵️ DEBUG: shop_area_ids        = {shop_area_obj_ids}")
+
+            # Type-safe area filter: match both ObjectId and string stored IDs
+            area_filter = {
+                "$and": [
+                    {"is_archived": {"$nin": [True, "t", "true", "1"]}},
+                    {"is_deleted": {"$nin": [True, "t", "true", "1"]}},
+                    {
+                        "$or": [
+                            # Direct assignment by user ID (both formats)
+                            {"assigned_user_ids": {"$in": [user_oid, user_str]}},
+                            {"assigned_user_id": {"$in": [user_oid, user_str]}},
+                            # Area contains shops assigned to this user
+                            {"_id": {"$in": shop_area_obj_ids}} if shop_area_obj_ids else {"_id": {"$in": []}},
+                        ]
+                    }
+                ]
+            }
+            areas = await Area.find(area_filter).skip(skip).limit(limit).to_list()
+
+            print(f"🕵️ DEBUG: areas found for user = {len(areas)}")
+            print("="*50 + "\n")
 
         import asyncio
+
         async def enrich_area(area):
             try:
                 # Count only active (non-deleted, non-archived) shops for the main view
@@ -124,18 +162,28 @@ class AreaService:
         if not area:
             raise HTTPException(status_code=404, detail="Area not found")
             
-        if current_user.id not in area.assigned_user_ids:
+        if str(current_user.id) not in [str(uid) for uid in area.assigned_user_ids]:
             raise HTTPException(status_code=403, detail="You are not assigned to this area.")
             
         area.assignment_status = "ACCEPTED"
         area.assigned_user_ids = [current_user.id]
         area.accepted_at = datetime.now(UTC)
         
-        # Update child shops sequentially
-        shops = await Shop.find({"area_id": str(area.id)}).to_list()
+        # Update child shops sequentially – make query type-safe for both stored formats
+        from bson import ObjectId as BsonObjectId
+        try:
+            area_oid = BsonObjectId(str(area.id))
+        except Exception:
+            area_oid = area.id
+        shops = await Shop.find({"$or": [
+            {"area_id": area_oid},
+            {"area_id": str(area.id)}
+        ]}).to_list()
         for shop in shops:
             shop.assignment_status = "ACCEPTED"
+            # Update BOTH id lists so the kanban card shows the correct assignee
             shop.assigned_owner_ids = [current_user.id]
+            shop.assigned_user_ids = [current_user.id]
             shop.accepted_at = datetime.now(UTC)
             await shop.save()
         
@@ -238,18 +286,28 @@ class AreaService:
         
         from bson import ObjectId
         
-        # Cast string IDs to ObjectId for Beanie querying
-        user_obj_ids = [ObjectId(uid) if isinstance(uid, str) else uid for uid in user_ids]
+        # Normalize all incoming IDs to PydanticObjectId for consistent MongoDB storage
+        # This prevents type mismatch bugs where some docs store ObjectId and others store strings
+        normalized_user_ids = []
+        for uid in user_ids:
+            try:
+                normalized_user_ids.append(PydanticObjectId(str(uid)))
+            except Exception:
+                normalized_user_ids.append(uid)
+        user_ids = normalized_user_ids
+        
+        # Cast to bson ObjectId for querying (Beanie In() needs this)
+        user_obj_ids = [ObjectId(str(uid)) for uid in user_ids]
         
         users = await User.find(In(User.id, user_obj_ids)).to_list()
         if not users or len(users) != len(user_ids):
             raise HTTPException(status_code=404, detail="One or more users not found")
 
-        current_user_ids = set(area.assigned_user_ids)
-        new_user_ids = set(user_ids)
+        current_user_ids = set(str(x) for x in area.assigned_user_ids)
+        new_user_ids_str = set(str(x) for x in user_ids)
         
         # Determine if we need to reset acceptance status
-        status_change = len(new_user_ids) > 1 or new_user_ids != current_user_ids
+        status_change = len(user_ids) > 1 or new_user_ids_str != current_user_ids
 
         primary_owner_id = user_ids[0]
         
@@ -274,8 +332,8 @@ class AreaService:
                     shop.accepted_at = None
                 await shop.save()
             
-            # Update Area assignments: append if not already present or replace if new set
-            area.assigned_user_ids = list(new_user_ids)
+            # Update Area assignments: use normalized user_ids list
+            area.assigned_user_ids = user_ids
             area.assigned_user_id = primary_owner_id
                      
         else:

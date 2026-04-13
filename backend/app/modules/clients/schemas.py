@@ -1,7 +1,7 @@
 import re
 from typing import Optional
 from datetime import datetime
-from pydantic import EmailStr, field_validator
+from pydantic import EmailStr, field_validator, BaseModel
 from beanie import PydanticObjectId
 from app.core.base_schema import MongoBaseSchema
 
@@ -47,6 +47,8 @@ class ClientUpdate(ClientBase):
     requirements: str | None = None
     owner_id: PydanticObjectId | None = None
     pm_id: PydanticObjectId | None = None
+    status: str | None = None
+    is_active: bool | None = None
 
 
 class ClientPMAssign(MongoBaseSchema):
@@ -65,14 +67,16 @@ class ClientRead(MongoBaseSchema):
     address: str | None = None
     project_type: str | None = None
     requirements: str | None = None
+    is_active: bool = True
+    status: str = "ACTIVE"
     created_at: datetime | None = None
 
 
-class PMWorkloadRead(MongoBaseSchema):
-    pm_id: PydanticObjectId
-    pm_name: str
-    pm_email: str
-    role: str
+class PMWorkloadRead(BaseModel):
+    pm_id: str
+    pm_name: str | None = None
+    pm_email: str | None = None
+    role: str | None = None
     active_client_count: int
 
 

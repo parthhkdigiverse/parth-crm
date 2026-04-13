@@ -31,7 +31,11 @@ class MeetingService:
         from app.utils.google_meet import generate_google_meet_link
         
         meeting_dict = meeting_in.model_dump()
+        client_id = client_id or meeting_dict.get("client_id")
+        project_id = meeting_dict.get("project_id")
+        
         meeting_dict["client_id"] = client_id
+        meeting_dict["project_id"] = project_id
         
         # Resolve target audience to attendee ObjectIDs
         target_type = meeting_dict.pop("target_type", "CLIENT")
@@ -85,7 +89,8 @@ class MeetingService:
             priority=db_meeting.priority,
             assigned_to=host_user.name if host_user else (current_user.name or current_user.email),
             related_entity=f"MEETING:{str(db_meeting.id)}",
-            client_id=client_id
+            client_id=client_id,
+            project_id=project_id
         )
         await db_todo.insert()
         db_meeting.todo_id = db_todo.id
@@ -123,6 +128,16 @@ class MeetingService:
                 if client:
                     meeting_time = db_meeting.date.strftime("%I:%M %p, %d %b %Y") if db_meeting.date else "TBD"
                     await notify_client_stakeholders(client, "📅 Meeting Scheduled", f"Meeting '{db_meeting.title}' with {client.name} scheduled for {meeting_time}.", actor_id=current_user.id)
+            elif project_id:
+                from app.modules.projects.models import Project
+                project = await Project.get(project_id)
+                if project:
+                    from app.modules.clients.models import Client
+                    client = await Client.get(project.client_id)
+                    meeting_time = db_meeting.date.strftime("%I:%M %p, %d %b %Y") if db_meeting.date else "TBD"
+                    # If project has a client, notify stakeholders; otherwise just log/internal notif
+                    if client:
+                        await notify_client_stakeholders(client, "📅 Project Meeting Scheduled", f"Meeting '{db_meeting.title}' for project '{project.name}' scheduled for {meeting_time}.", actor_id=current_user.id)
         except Exception as e: 
             print(f"Notification error: {e}")
 
@@ -146,7 +161,7 @@ class MeetingService:
                 if "title" in update_dict:
                     todo.title = f"Meeting: {db_meeting.title}"
                 if "status" in update_dict:
-                    if update_dict["status"] in [GlobalTaskStatus.COMPLETED, GlobalTaskStatus.DONE]:
+                    if update_dict["status"] in [GlobalTaskStatus.RESOLVED, GlobalTaskStatus.DONE]:
                         todo.status = TodoStatus.COMPLETED
                 await todo.save()
         
@@ -169,7 +184,7 @@ class MeetingService:
         db_meeting.transcript = transcript_text
         ai_result = await generate_ai_summary(str(meeting_id), transcript_text)
         db_meeting.ai_summary = ai_result
-        db_meeting.status = GlobalTaskStatus.COMPLETED
+        db_meeting.status = GlobalTaskStatus.RESOLVED
         await db_meeting.save()
         return db_meeting
 
@@ -207,3 +222,56 @@ class MeetingService:
         except Exception as e: print(f"Reschedule notif error: {e}")
 
         return db_meeting
+
+    async def initialize_google_meet(self, meeting_id: PydanticObjectId):
+        """Generate and persist a Google Meet link for an existing meeting."""
+        db_meeting = await self.get_meeting(meeting_id)
+        if not db_meeting:
+            raise HTTPException(status_code=404, detail="Meeting not found")
+
+        from app.utils.google_meet import generate_google_meet_link
+
+        meeting_date = db_meeting.date or datetime.now(UTC)
+        try:
+            result = generate_google_meet_link(
+                title=db_meeting.title,
+                start_time=meeting_date,
+                description=db_meeting.content or ""
+            )
+            db_meeting.meet_link = result.get("meet_link")
+            db_meeting.calendar_event_id = result.get("calendar_event_id")
+            await db_meeting.save()
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Google Meet generation failed: {e}")
+
+        return db_meeting
+
+    async def get_ai_analysis(self, meeting_id: PydanticObjectId):
+        """
+        Returns the stored ai_summary if available (cached), otherwise
+        generates one from the transcript or manual notes via Gemini.
+        Mirrors the old SQL service logic.
+        """
+        db_meeting = await self.get_meeting(meeting_id)
+        if not db_meeting:
+            return {"error": "Meeting not found"}
+
+        # Return cached result to avoid repeated Gemini calls
+        if db_meeting.ai_summary:
+            return db_meeting.ai_summary
+
+        # Prefer stored transcript, fall back to manual notes
+        source_text = db_meeting.transcript or db_meeting.content or "No notes provided."
+
+        try:
+            analysis = await generate_ai_summary(str(meeting_id), source_text)
+            # Cache in DB
+            db_meeting.ai_summary = analysis
+            await db_meeting.save()
+            return analysis
+        except Exception as e:
+            print(f"[MeetingService] AI Error: {e}")
+            return {
+                "highlights": ["Error processing AI analysis"],
+                "next_steps": "Please check your API key and connection."
+            }

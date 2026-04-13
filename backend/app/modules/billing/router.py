@@ -235,6 +235,18 @@ async def phonepe_payment_callback(
                  bill.status = "SUCCESS"
                  bill.payment_gateway_status = "SUCCESS"
                  await bill.save()
+                 
+                 # Activity Log (System action)
+                 from app.modules.activity_logs.service import ActivityLogger
+                 from app.modules.activity_logs.models import ActionType, EntityType
+                 await ActivityLogger().log_activity(
+                     user_id=None,
+                     user_role="SYSTEM",
+                     action=ActionType.STATUS_CHANGE,
+                     entity_type=EntityType.BILL,
+                     entity_id=bill.id,
+                     new_data={"status": "VERIFIED", "source": "PHONEPE_CALLBACK"}
+                 )
                  print(f"[PhonePe Callback] Updated Bill {bill.invoice_number} to VERIFIED state.")
     except Exception as exc:
         print(f"[PhonePe Callback] Parse/Update error: {exc}")

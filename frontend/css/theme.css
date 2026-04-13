@@ -138,10 +138,12 @@ body.sidebar-collapsed {
    BASE
    ═══════════════════════════════════════════════════════════════ */
 
-*,
-*::before,
-*::after {
-    box-sizing: border-box;
+html,
+body {
+    height: 100% !important;
+    margin: 0;
+    padding: 0;
+    overflow: hidden !important; /* Lock the global window scroll */
 }
 
 body {
@@ -149,11 +151,26 @@ body {
     background-color: var(--bg-page);
     color: var(--text-2);
     font-size: 15px;
-    /* Increased from 14px */
     line-height: 1.65;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    transition: opacity 0.3s ease, background-color 0.3s ease;
+}
+
+/* Root layout container */
+body > .d-flex {
+    height: 100vh;
+    width: 100%;
+    overflow: hidden;
+}
+
+.main-wrapper {
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
 }
 
 h1,

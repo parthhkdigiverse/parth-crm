@@ -85,11 +85,18 @@ class ShopService:
 
         # If Admin, return all shops unless owner_id filter is applied
         if current_user.role != "ADMIN":
-            from beanie.operators import In
-            # Logic: Assigned owners or PMs (simplified for migration)
+            from bson import ObjectId as BsonObjectId
+            # Type-safe: match both ObjectId and string forms of user ID to handle legacy data
+            try:
+                user_oid = BsonObjectId(str(current_user.id))
+            except Exception:
+                user_oid = current_user.id
+            user_str = str(current_user.id)
             query = query.find({"$or": [
-                {"assigned_user_ids": current_user.id},
-                {"project_manager_id": current_user.id}
+                {"assigned_user_ids": {"$in": [user_oid, user_str]}},
+                {"assigned_owner_ids": {"$in": [user_oid, user_str]}},
+                {"owner_id": {"$in": [user_oid, user_str]}},
+                {"project_manager_id": {"$in": [user_oid, user_str]}},
             ]})
         elif owner_id:
             query = query.find(Shop.owner_id == owner_id)
@@ -100,16 +107,34 @@ class ShopService:
             executable_query = executable_query.limit(limit)
         results = await executable_query.to_list()
         
-        # --- OPTIMIZATION: Cached bulk fetch of required users ---
+        # --- OPTIMIZATION: Cached bulk fetch of required users and areas ---
         user_ids = set()
+        area_ids_raw = set()
         for shop in results:
             if shop.owner_id: user_ids.add(shop.owner_id)
             if shop.project_manager_id: user_ids.add(shop.project_manager_id)
             if shop.created_by_id: user_ids.add(shop.created_by_id)
             for uid in getattr(shop, 'assigned_user_ids', []):
                 if uid: user_ids.add(uid)
+            if shop.area_id:
+                area_ids_raw.add(shop.area_id)
         
         user_map = await _get_user_map(list(user_ids))
+        
+        # Bulk fetch areas — handle both ObjectId and string area_id storage
+        area_name_map = {}
+        if area_ids_raw:
+            from bson import ObjectId as BsonObjectId
+            area_oids = []
+            for aid in area_ids_raw:
+                try:
+                    area_oids.append(BsonObjectId(str(aid)))
+                except Exception:
+                    pass
+            if area_oids:
+                fetched_areas = await Area.find({"_id": {"$in": area_oids}}).to_list()
+                for a in fetched_areas:
+                    area_name_map[str(a.id)] = a.name
         
         # Sequential enrichment for Shop attributes
         for shop in results:
@@ -145,6 +170,12 @@ class ShopService:
                 for uid in getattr(shop, 'assigned_user_ids', []) if uid
             ]
             
+            # 5. Area Name — resolve from bulk-fetched map, fallback to stored field
+            if shop.area_id:
+                shop.area_name = area_name_map.get(str(shop.area_id)) or getattr(shop, 'area_name', None) or "No Area Assigned"
+            else:
+                shop.area_name = getattr(shop, 'area_name', None) or "No Area Assigned"
+            
         return results
 
     @staticmethod
@@ -179,6 +210,9 @@ class ShopService:
             if shop.area_id: area_ids.add(shop.area_id)
             for uid in getattr(shop, 'assigned_user_ids', []):
                 if uid: user_ids.add(uid)
+            # Also ensure the accepted-owner is in the user_map
+            for uid in getattr(shop, 'assigned_owner_ids', []):
+                if uid: user_ids.add(uid)
 
         from beanie.operators import In
         user_map = {}
@@ -188,25 +222,64 @@ class ShopService:
             
         area_map = {}
         if area_ids:
-            areas = await Area.find(In(Area.id, list(area_ids))).to_list()
-            area_map = {str(a.id): a.name for a in areas}
+            from bson import ObjectId as BsonObjectId
+            # area_id may be stored as ObjectId or string — query with both forms
+            area_oids = []
+            area_strs = []
+            for aid in area_ids:
+                s = str(aid)
+                area_strs.append(s)
+                try:
+                    area_oids.append(BsonObjectId(s))
+                except Exception:
+                    pass
+            areas = await Area.find({"$or": [
+                {"_id": {"$in": area_oids}},
+            ]}).to_list()
+            # Build map with both str(ObjectId) and raw string keys so look-up always hits
+            for a in areas:
+                key_str = str(a.id)
+                area_map[key_str] = a.name
         
         for shop in results:
             shop_data = shop.model_dump()
             shop_data["id"] = shop.id
             shop_data["owner_name"] = user_map.get(str(shop.owner_id), "Unassigned") if shop.owner_id else "Unassigned"
-            shop_data["area_name"] = area_map.get(str(shop.area_id), "No Area Assigned") if shop.area_id else "No Area Assigned"
+            # Resolve area_name: try lookup, then the stored area_name field, then fallback
+            resolved_area_name = None
+            if shop.area_id:
+                resolved_area_name = area_map.get(str(shop.area_id))
+            if not resolved_area_name:
+                resolved_area_name = getattr(shop, 'area_name', None)
+            shop_data["area_name"] = resolved_area_name or ("No Area Assigned" if not shop.area_id else "No Area Assigned")
             shop_data["last_visitor_name"] = getattr(shop, "last_visitor_name", None)
             shop_data["last_visit_status"] = None 
             
             shop_data["assigned_users"] = [
                 {
-                    "id": str(uid), 
-                    "name": user_map.get(str(uid), "Unknown"), 
+                    "id": str(uid),
+                    "name": user_map.get(str(uid), "Unknown"),
                     "role": "STAFF"
-                } 
+                }
                 for uid in getattr(shop, 'assigned_user_ids', []) if uid
             ]
+            # When a shop has been ACCEPTED, show the accepting user (from assigned_user_ids[0])
+            # and override owner_name so it doesn't show the original shop creator/owner.
+            # The JS priority is: owner_name || extractedNames, so owner_name must be correct.
+            assignment_status = getattr(shop, 'assignment_status', None)
+            if str(assignment_status) == 'ACCEPTED':
+                accepted_ids = getattr(shop, 'assigned_user_ids', [])
+                if accepted_ids:
+                    accepted_name = user_map.get(str(accepted_ids[0]), None)
+                    if accepted_name:
+                        shop_data["owner_name"] = accepted_name
+                        shop_data["assigned_users"] = [
+                            {
+                                "id": str(accepted_ids[0]),
+                                "name": accepted_name,
+                                "role": "STAFF"
+                            }
+                        ]
             
             stage_val = str(shop.pipeline_stage.value) if hasattr(shop.pipeline_stage, "value") else str(shop.pipeline_stage)
             if stage_val in kanban:
@@ -405,6 +478,7 @@ class ShopService:
             visited_shop_ids = await Visit.get_pymongo_collection().distinct("shop_id", {"user_id": current_user.id})
 
         from beanie.operators import NotIn
+        from bson import ObjectId as BsonObjectId
         query = Shop.find(
             Shop.assignment_status == "ACCEPTED",
             Shop.pipeline_stage == MasterPipelineStage.LEAD,
@@ -412,36 +486,77 @@ class ShopService:
             Shop.is_deleted == False
         )
 
-        # Staff can only see their own assigned shops
+        # Staff can only see their own assigned shops — type-safe (ObjectId + string)
         if not is_admin:
-            query = query.find({"assigned_user_ids": current_user.id})
+            try:
+                user_oid = BsonObjectId(str(current_user.id))
+            except Exception:
+                user_oid = current_user.id
+            user_str = str(current_user.id)
+            query = query.find({"$or": [
+                {"assigned_user_ids": {"$in": [user_oid, user_str]}},
+                {"assigned_owner_ids": {"$in": [user_oid, user_str]}},
+            ]})
 
         results = await query.sort(-Shop.accepted_at).to_list()
 
-        # --- BULK FETCH USERS ---
+        # --- BULK FETCH USERS (assigned + created_by for manager name) ---
+        from beanie.operators import In
         needed_uids = set()
+        area_ids_raw = set()
         for shop in results:
             if shop.assigned_user_ids:
                 needed_uids.add(shop.assigned_user_ids[0])
-        
-        from beanie.operators import In
+            if shop.assigned_owner_ids:
+                needed_uids.add(shop.assigned_owner_ids[0])
+            if shop.created_by_id:
+                needed_uids.add(shop.created_by_id)
+            if shop.area_id:
+                area_ids_raw.add(shop.area_id)
+
         user_objects_map = {}
         if needed_uids:
             users_list = await User.find(In(User.id, list(needed_uids))).to_list()
             user_objects_map = {u.id: u.name for u in users_list}
 
+        # Bulk fetch area names — type-safe
+        area_name_map = {}
+        if area_ids_raw:
+            area_oids = []
+            for aid in area_ids_raw:
+                try:
+                    area_oids.append(BsonObjectId(str(aid)))
+                except Exception:
+                    pass
+            if area_oids:
+                from app.modules.areas.models import Area
+                fetched_areas = await Area.find({"_id": {"$in": area_oids}}).to_list()
+                area_name_map = {str(a.id): a.name for a in fetched_areas}
+
         history = []
         for shop in results:
-            assigned_to_name = "Unknown"
+            # Use assigned_user_ids[0] — this reflects the accepting user (set by accept_area/accept_shop)
+            accepted_uid = None
             if shop.assigned_user_ids:
-                assigned_to_name = user_objects_map.get(shop.assigned_user_ids[0], "Unknown")
+                accepted_uid = shop.assigned_user_ids[0]
+            assigned_to_name = user_objects_map.get(accepted_uid, "Unknown") if accepted_uid else "Unknown"
+
+            # Resolve the manager who originally assigned/created this shop
+            assigning_manager_name = "Unknown"
+            if shop.created_by_id:
+                assigning_manager_name = user_objects_map.get(shop.created_by_id, "Unknown")
+
+            # Resolve area name from bulk map, fall back to stored field
+            resolved_area = area_name_map.get(str(shop.area_id)) if shop.area_id else None
+            if not resolved_area:
+                resolved_area = getattr(shop, 'area_name', None) or "N/A"
 
             history.append({
                 "shop_id": str(shop.id),
-                "area_name": shop.area_name or "N/A",
+                "area_name": resolved_area,
                 "shop_name": shop.name,
                 "assigned_to_name": assigned_to_name,
-                "assigned_by_name": "System", 
+                "assigned_by_name": assigning_manager_name,
                 "accepted_at": shop.accepted_at
             })
         return history
@@ -761,7 +876,7 @@ class ShopService:
                 "_id": {"$ifNull": ["$pm.name", "$pm.email"]},
                 "in_demo": {"$sum": {"$cond": [{"$eq": ["$pipeline_stage", "NEGOTIATION"]}, 1, 0]}},
                 "meeting_set": {"$sum": {"$cond": [{"$eq": ["$pipeline_stage", "PITCHING"]}, 1, 0]}},
-                "converted": {"$sum": {"$cond": [{"$eq": ["$pipeline_stage", "DELIVERY"]}, 1, 0]}}
+                "converted": {"$sum": {"$cond": [{"$in": ["$pipeline_stage", ["DELIVERY", "MAINTENANCE"]]}, 1, 0]}}
             }},
             {"$project": {
                 "pm_name": "$_id",

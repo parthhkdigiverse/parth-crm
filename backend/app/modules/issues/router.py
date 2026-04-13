@@ -66,7 +66,7 @@ async def read_global_issues(
         except Exception:
             raise HTTPException(status_code=400, detail="Invalid pm_id")
 
-    return await service.get_all_issues_for_user(
+    return await service.get_all_issues(
         current_user=current_user,
         skip=skip, limit=limit, status=status, severity=severity, 
         client_id=client_id, assigned_to_id=assigned_to_id
@@ -87,7 +87,7 @@ async def create_issue(
     await _require_feature_access(current_user, "issue_create_roles", "You do not have permission to create issues")
     
     service = IssueService()
-    return await service.create_issue(issue_in, client_id, current_user, request=request, background_tasks=background_tasks)
+    return await service.create_issue(issue_in, client_id, current_user, background_tasks=background_tasks)
 
 @router.get("/{client_id}/issues", response_model=List[IssueRead])
 async def read_client_issues(
@@ -119,7 +119,7 @@ async def update_issue(
     await _require_feature_access(current_user, "issue_manage_roles", "You do not have permission to manage issues")
 
     service = IssueService()
-    return await service.update_issue(issue_id, issue_in, current_user, request)
+    return await service.update_issue(issue_id, issue_in, current_user)
 
 @router.delete("/issues/{issue_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_issue(
@@ -130,7 +130,7 @@ async def delete_issue(
     await _require_feature_access(current_user, "issue_manage_roles", "You do not have permission to delete issues")
 
     service = IssueService()
-    await service.delete_issue(issue_id, current_user, request)
+    await service.delete_issue(issue_id, current_user)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 @global_router.post("/batch-delete")

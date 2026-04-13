@@ -47,7 +47,7 @@ async def read_clients(
     skip: int = 0,
     limit: Optional[int] = None,
     search: Optional[str] = None,
-    status_filter: Optional[str] = None, # renamed from 'status' to avoid conflict
+    status: Optional[str] = None, 
     pm_id: Optional[str] = None,
     sort_by: Optional[str] = "created_at",
     sort_order: Optional[str] = "desc",
@@ -60,16 +60,9 @@ async def read_clients(
     service = ClientService()
     
     # Normalize status filter
-    normalized_status = (status_filter or "").strip().upper()
-    if normalized_status in ["ACTIVE", "REFUNDED", "ARCHIVED"]:
-        service._target_status = normalized_status
-        client_active_status = None
-    else:
-        client_active_status = True
-        if normalized_status in ["INACTIVE", "FALSE"]:
-            client_active_status = False
-        elif normalized_status == "ALL":
-            client_active_status = None
+    normalized_status = (status or "").strip().upper()
+    if not normalized_status:
+        normalized_status = "ACTIVE"
 
     pm_filter_id = None
     scoped_user_id = None
@@ -98,7 +91,7 @@ async def read_clients(
         search=search,
         sort_by=sort_by,
         sort_order=sort_order,
-        is_active=client_active_status,
+        status=normalized_status,
         pm_id=pm_filter_id,
         scoped_user_id=scoped_user_id,
         scoped_mode=scoped_mode,
@@ -127,7 +120,7 @@ async def read_my_clients(
 
 @router.get("/pm-workload", response_model=List[PMWorkloadRead])
 async def get_pm_workload(
-    current_user: User = Depends(admin_checker)
+    current_user: User = Depends(staff_checker)
 ) -> Any:
     """Admin-only: audit auto-assignment load balancing."""
     return await ClientService().get_pm_workload()
@@ -183,7 +176,7 @@ async def delete_client(
 async def refund_client(
     request: Request,
     client_id: PydanticObjectId,
-    current_user: User = Depends(admin_checker)
+    current_user: User = Depends(staff_checker)
 ):
     service = ClientService()
     return await service.refund_client(client_id, current_user, request)
@@ -192,7 +185,7 @@ async def refund_client(
 async def archive_client(
     request: Request,
     client_id: PydanticObjectId,
-    current_user: User = Depends(admin_checker)
+    current_user: User = Depends(staff_checker)
 ):
     service = ClientService()
     return await service.archive_client(client_id, current_user, request)

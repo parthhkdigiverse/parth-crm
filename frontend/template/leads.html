@@ -319,7 +319,7 @@
         <div id="sidebar"></div>
         <div class="main-wrapper flex-grow-1">
             <div class="page-content-standard">
-                <div class="page-header-glass">
+                <div class="page-header-glass d-flex align-items-center justify-content-between flex-wrap gap-3">
                     <div class="min-w-0">
                         <h2 class="page-section-title fw-bold mb-1">Project Overview</h2>
                         <p class="text-muted mb-0 small">
@@ -327,22 +327,22 @@
                             <span class="ms-1 fw-bold"><span id="total-leads-count">0</span> entries</span>
                         </p>
                     </div>
-                    <div class="d-flex align-items-center gap-2 flex-shrink-0 w-100 mt-2 mt-sm-0">
+                    <div class="d-flex align-items-center gap-2 flex-shrink-0 mt-2 mt-sm-0 ms-auto">
                         <div class="layout-toggles btn-group d-inline-flex flex-shrink-0">
-                            <button class="btn active" id="toggle-kanban" title="Kanban View">
+                            <button class="btn btn-sm glass-btn active" id="toggle-kanban" title="Kanban View" style="padding: 6px 16px; font-size: 0.875rem;">
                                 <i class="bi bi-grid-3x3-gap"></i>
                             </button>
-                            <button class="btn" id="toggle-list" title="List View">
+                            <button class="btn btn-sm glass-btn" id="toggle-list" title="List View" style="padding: 6px 16px; font-size: 0.875rem;">
                                 <i class="bi bi-list-ul"></i>
                             </button>
                         </div>
-                        <button class="btn btn-primary d-flex align-items-center justify-content-center gap-2 fw-semibold px-3 w-100"
-                                onclick="window.location.href='areas.html?add=true'">
+                        <button class="btn btn-primary btn-sm glass-btn d-flex align-items-center justify-content-center gap-2 fw-semibold"
+                                onclick="window.location.href='areas.html?add=true'" style="padding: 6px 16px; font-size: 0.875rem;">
                             <i class="bi bi-plus-lg"></i> <span>Add New Shop</span>
                         </button>
                     </div>
                 </div>
-                <div class="filter-panel">
+                <div class="filter-panel mb-4">
                     <div class="filter-panel-head" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.filter-toggle-btn').classList.toggle('open');">
                         <div class="filter-panel-head-left">
                             <i class="bi bi-filter"></i> Filters
@@ -1169,7 +1169,7 @@
         }
 
         async function batchDeleteLeads() {
-            const selectedIds = Array.from(document.querySelectorAll('.lead-checkbox:checked')).map(cb => parseInt(cb.value));
+            const selectedIds = Array.from(document.querySelectorAll('.lead-checkbox:checked')).map(cb => cb.value);
             if (!selectedIds.length) return;
 
             const u = JSON.parse(sessionStorage.getItem('srm_user') || '{}');
@@ -1189,7 +1189,7 @@
             try {
                 await window.ApiClient.request('/shops/batch-delete', {
                     method: 'POST',
-                    body: selectedIds
+                    body: { ids: selectedIds }
                 });
                 showToast(`Successfully removed ${selectedIds.length} entries`, 'success');
                 await loadLeads();
@@ -1391,7 +1391,7 @@
                 await window.ApiClient.request(`/shops/${shopId}/assign-pm`, {
                     method: 'POST',
                     body: { 
-                        pm_id: parseInt(pmId),
+                        pm_id: pmId,
                         demo_scheduled_at: scheduledAt
                     }
                 });

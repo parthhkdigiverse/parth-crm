@@ -50,7 +50,17 @@ class VisitService:
         users_list = await User.find(In(User.id, user_ids + pm_ids)).to_list() if (user_ids or pm_ids) else []
         user_map   = {str(u.id): u for u in users_list}
 
-        areas_list = await Area.find(In(Area.id, area_ids)).to_list() if area_ids else []
+        areas_list = []
+        if area_ids:
+            from bson import ObjectId as BsonObjectId
+            area_oids = []
+            for aid in area_ids:
+                try:
+                    area_oids.append(BsonObjectId(str(aid)))
+                except Exception:
+                    pass
+            if area_oids:
+                areas_list = await Area.find({"_id": {"$in": area_oids}}).to_list()
         area_map   = {str(a.id): a for a in areas_list}
 
         # ── Map enrichment in-memory ─────────────────────────────────

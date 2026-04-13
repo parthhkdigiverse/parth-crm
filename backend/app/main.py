@@ -2,9 +2,28 @@
 import sys
 import os
 import traceback
+import logging
 import motor.motor_asyncio
 import dns.resolver
 from contextlib import asynccontextmanager
+
+# ── Suppress verbose pymongo background task timeout tracebacks ────────────
+# These are non-fatal Network/socket timeouts from the background pool checker.
+# We reduce them to a single WARNING line instead of a full traceback.
+class _PymongoBackgroundFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        msg = record.getMessage()
+        if "MongoClient background task encountered an error" in msg:
+            # Demote traceback flood to a compact warning, then swallow the record
+            logging.getLogger("pymongo").warning(
+                "[MongoDB] Background pool check timed out — transient, no action needed."
+            )
+            return False
+        return True
+
+_pymongo_logger = logging.getLogger("pymongo")
+_pymongo_logger.addFilter(_PymongoBackgroundFilter())
+# ─────────────────────────────────────────────────────────────────────────────
 
 # ── Fix for dnspython/pymongo in restricted environments ───────────────────
 # If /etc/resolv.conf is inaccessible, dnspython fails. We manually configure a fallback.
@@ -12,7 +31,15 @@ try:
     dns.resolver.default_resolver = dns.resolver.Resolver(configure=True)
 except Exception:
     dns.resolver.default_resolver = dns.resolver.Resolver(configure=False)
-    dns.resolver.default_resolver.nameservers = ['8.8.8.8', '8.8.4.4', '1.1.1.1']
+
+# Always ensure robust nameservers are present in the list
+if not dns.resolver.default_resolver.nameservers:
+    dns.resolver.default_resolver.nameservers = ['8.8.8.8', '8.8.4.4', '1.1.1.1', '1.0.0.1']
+else:
+    # Append if not already present
+    for ns in ['8.8.8.8', '1.1.1.1']:
+        if ns not in dns.resolver.default_resolver.nameservers:
+            dns.resolver.default_resolver.nameservers.append(ns)
 # ─────────────────────────────────────────────────────────────────────────────
 
 from fastapi import FastAPI, Request
@@ -71,19 +98,21 @@ async def lifespan(app: FastAPI):
         mongo_client = motor.motor_asyncio.AsyncIOMotorClient(
             settings.MONGODB_URI,
             # ── Connection Pool ──────────────────────────────────
-            maxPoolSize=20,          # Allow more concurrent connections
-            minPoolSize=5,           # Keep 5 warm connections ready
-            maxIdleTimeMS=45000,     # Close idle connections after 45s
+            maxPoolSize=20,                  # Moderate pool size for Atlas free/shared tier
+            minPoolSize=0,                   # Don't maintain idle connections (Atlas drops them anyway)
+            maxIdleTimeMS=25000,             # Release connections before Atlas's 30s idle timeout
+            waitQueueTimeoutMS=10000,        # Don't wait forever for a pool connection
             # ── Timeout Tuning ───────────────────────────────────
-            serverSelectionTimeoutMS=8000,   # Fail fast if Atlas unreachable (8s)
-            connectTimeoutMS=8000,           # TCP connect timeout
-            socketTimeoutMS=15000,           # Per-query timeout (15s max)
+            serverSelectionTimeoutMS=45000,  # 45s for slow Atlas handshakes
+            connectTimeoutMS=45000,          # 45s for TCP connect
+            socketTimeoutMS=60000,           # 60s per-query timeout
             # ── Reliability ──────────────────────────────────────
             retryWrites=True,
             retryReads=True,
-            heartbeatFrequencyMS=10000,      # Heartbeat every 10s
-            # ── DNS (bypass broken system resolver) ──────────────
-            tlsAllowInvalidCertificates=False,
+            heartbeatFrequencyMS=30000,      # 30s heartbeat — less churn, fewer timeout events
+            # ── SSL/TLS & DNS ────────────────────────────────────
+            tlsDisableOCSPEndpointCheck=True, # Skip slow OCSP checks
+            appname="SRM_AI_SETU",
         )
         mongo_client.append_metadata = lambda *args, **kwargs: None
         db_name = "aisetu_db"
