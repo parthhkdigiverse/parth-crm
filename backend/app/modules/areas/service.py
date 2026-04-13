@@ -46,33 +46,47 @@ class AreaService:
             ).skip(skip).limit(limit).to_list()
 
         import asyncio
+
         async def enrich_area(area):
             # Count only active (non-deleted, non-archived) shops for the main view
-            area.shops_count = await Shop.find(Shop.area_id == area.id, Shop.is_deleted != True, Shop.is_archived != True).count()
-            
-            # Populate creator name
-            if area.created_by_id:
-                creator = await User.get(area.created_by_id)
-                area.created_by_name = creator.name if creator else None
-            else:
-                area.created_by_name = None
+            area.shops_count = await Shop.find(
+                Shop.area_id == area.id,
+                Shop.is_deleted != True,
+                Shop.is_archived != True
+            ).count()
 
-            # Populate archived by name
+            # Batch-fetch all user IDs needed for this area in one query
+            needed_ids = set()
+            if area.created_by_id:
+                needed_ids.add(area.created_by_id)
             if area.is_archived and area.archived_by_id:
-                archived_by = await User.get(area.archived_by_id)
+                needed_ids.add(area.archived_by_id)
+            if area.assigned_user_ids:
+                needed_ids.update(area.assigned_user_ids)
+
+            user_map = {}
+            if needed_ids:
+                fetched = await User.find(In(User.id, list(needed_ids))).to_list()
+                user_map = {u.id: u for u in fetched}
+
+            # Creator name
+            creator = user_map.get(area.created_by_id)
+            area.created_by_name = creator.name if creator else None
+
+            # Archived-by name
+            if area.is_archived and area.archived_by_id:
+                archived_by = user_map.get(area.archived_by_id)
                 area.archived_by_name = archived_by.name if archived_by else None
             else:
                 area.archived_by_name = None
 
-            # Populate assigned users list for UI dropdowns/tables
-            assigned_users = []
-            if area.assigned_user_ids:
-                users = await User.find(In(User.id, area.assigned_user_ids)).to_list()
-                assigned_users = [
-                    {"id": str(u.id), "name": u.name, "role": u.role.value if hasattr(u.role, 'value') else str(u.role)} 
-                    for u in users
-                ]
-            area.assigned_users = assigned_users
+            # Assigned users list
+            area.assigned_users = [
+                {"id": str(user_map[uid].id), "name": user_map[uid].name,
+                 "role": user_map[uid].role.value if hasattr(user_map[uid].role, 'value') else str(user_map[uid].role)}
+                for uid in (area.assigned_user_ids or [])
+                if uid in user_map
+            ]
             return area
 
         await asyncio.gather(*(enrich_area(area) for area in areas))

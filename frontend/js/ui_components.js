@@ -971,31 +971,27 @@ window.checkHighPriorityIssues = async function () {
             // ── Top banner: show only once per session (until user dismisses or logs out) ──
             if (!alertEl && sessionStorage.getItem('high_issue_alert_dismissed') !== '1') {
                 const html = `
-                <div id="${alertContainerId}" class="alert alert-danger d-flex align-items-center justify-content-between py-2 px-3 mb-0 border-0 rounded-0" style="background-color: #B91C1C; color: white; position: sticky; top: 0; z-index: 2000; font-size: 0.85rem; font-weight: 600;">
+                <div id="${alertContainerId}" class="d-flex align-items-center justify-content-between py-2 px-4 mb-0" style="background-color: #B91C1C; color: white; z-index: 1050; font-size: 0.85rem; font-weight: 600; flex-shrink: 0;">
                     <div class="d-flex align-items-center gap-2">
                         <i class="bi bi-exclamation-triangle-fill"></i>
                         <span>System Alert: ${unreadHigh.length} Unresolved High Priority Issue(s) detected.</span>
                     </div>
                     <div class="d-flex align-items-center gap-2">
                         <a href="issues.html" class="btn btn-sm btn-light py-0 px-2 fw-bold" style="font-size: 0.75rem; color: #B91C1C;">View Issues</a>
-                        <button type="button" onclick="(function(){ var el=document.getElementById('${alertContainerId}'); if(el) el.remove(); var th=document.querySelector('.top-header'); if(th) th.style.top='0'; var sb=document.getElementById('sidebar-container'); if(sb){sb.style.height='100vh';sb.style.top='0';} sessionStorage.setItem('high_issue_alert_dismissed','1'); })()" style="background:none;border:none;color:white;font-size:1.1rem;line-height:1;padding:0 2px;cursor:pointer;opacity:0.85;" title="Dismiss">&times;</button>
+                        <button type="button" onclick="(function(){ var el=document.getElementById('${alertContainerId}'); if(el) el.remove(); sessionStorage.setItem('high_issue_alert_dismissed','1'); })()" style="background:none;border:none;color:white;font-size:1.1rem;line-height:1;padding:0 2px;cursor:pointer;opacity:0.85;" title="Dismiss">&times;</button>
                     </div>
                 </div>`;
-                document.body.insertAdjacentHTML('afterbegin', html);
-                alertEl = document.getElementById(alertContainerId);
 
-                // Adjust top header & sidebar position
-                const topHeader = document.querySelector('.top-header');
-                if (topHeader) topHeader.style.top = alertEl.offsetHeight + 'px';
-                const sidebar = document.getElementById('sidebar-container');
-                if (sidebar) {
-                    sidebar.style.height = `calc(100vh - ${alertEl.offsetHeight}px)`;
-                    sidebar.style.top = alertEl.offsetHeight + 'px';
+                // Insert inside .main-wrapper, before page content (not at body root)
+                const mainWrapper = document.querySelector('.main-wrapper');
+                if (mainWrapper) {
+                    mainWrapper.insertAdjacentHTML('afterbegin', html);
+                } else {
+                    document.body.insertAdjacentHTML('afterbegin', html);
                 }
+                alertEl = document.getElementById(alertContainerId);
             } else if (alertEl) {
                 alertEl.querySelector('span').textContent = `System Alert: ${unreadHigh.length} Unresolved High Priority Issue(s) detected.`;
-                const topHeader = document.querySelector('.top-header');
-                if (topHeader) topHeader.style.top = alertEl.offsetHeight + 'px';
             }
 
             // ── Notification bell: inject high-priority section (always, regardless of banner) ──
