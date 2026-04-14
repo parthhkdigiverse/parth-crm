@@ -85,6 +85,7 @@ class BillingService:
         except ValueError:
             year = datetime.datetime.now(UTC).year
 
+        sync_website = False  # Default: no website sync for non-GST invoices
         if gst_type == "WITHOUT_GST":
             seq_key = "invoice_seq_without_gst"
             series  = "PINV"
@@ -465,14 +466,8 @@ class BillingService:
         bill.is_archived = True
         await bill.save()
 
-        # Sync with Shop
-        if bill.shop_id:
-            from app.modules.shops.models import Shop
-            shop = await Shop.get(bill.shop_id)
-            if shop:
-                shop.is_archived = True
-                shop.archived_by_id = current_user.id
-                await shop.save()
+        # NOTE: Archiving a bill does NOT archive the lead.
+        # Only Refund triggers lead archiving.
 
         await ActivityLogger().log_activity(
             user_id=current_user.id,

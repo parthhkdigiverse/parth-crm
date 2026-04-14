@@ -259,9 +259,32 @@ class ClientService:
         )
         
         from app.modules.billing.models import Bill
-        await Bill.find(Bill.client_id == client_id).update({"$set": {"invoice_status": "REFUNDED"}})
+        await Bill.find(Bill.client_id == client_id).update({"$set": {"invoice_status": "REFUNDED", "status": "REFUNDED"}})
+        
+        # Archive associated Lead/Shop
+        from app.modules.shops.models import Shop
+        await Shop.find(Shop.client_id == client_id, Shop.is_deleted == False).update(
+            {"$set": {"is_archived": True, "archived_by_id": current_user.id}}
+        )
         
         await db_client.save()
+
+        # Activity Log
+        try:
+            from app.modules.activity_logs.service import ActivityLogger
+            from app.modules.activity_logs.models import ActionType, EntityType
+            await ActivityLogger().log_activity(
+                user_id=current_user.id,
+                user_role=current_user.role,
+                action=ActionType.STATUS_CHANGE,
+                entity_type=EntityType.CLIENT,
+                entity_id=client_id,
+                new_data={"status": "REFUNDED", "archived_linked_shops": True},
+                request=request
+            )
+        except Exception as log_err:
+            print(f"[RefundClient] Activity log failed: {log_err}")
+
         return {"detail": "Client marked as REFUNDED. Revenue and metrics updated."}
 
     async def assign_pm(self, client_id: PydanticObjectId, pm_id: PydanticObjectId, current_user: User, request: Request):

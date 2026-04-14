@@ -1159,7 +1159,7 @@
             border-radius: 20px; 
             padding: 1px; 
             background: var(--header-outer-bg); 
-            margin-bottom: 14px; /* Reduced vs --dash-gap to compensate for visual box-shadow depth */
+            margin-bottom: 2rem; /* Reduced vs --dash-gap to compensate for visual box-shadow depth */
             margin-top: 0;
             box-shadow: 0 10px 30px rgba(0,0,0,0.15);
         }
@@ -1567,9 +1567,9 @@
 
 
 
-
-                <!-- Filter Panel (period picker integrated in header) -->
-                <div class="filter-panel dash-section">
+                <!-- ── Dashboard Filter Panel ──
+                     Moved higher to ensure it's outside any role-based container hiding -->
+                <div class="filter-panel dash-section" style="display: block !important;">
                     <div class="filter-panel-head" id="filter-panel-toggle">
                         <div class="filter-panel-head-left">
                             <i class="bi bi-sliders2"></i>
@@ -1579,45 +1579,51 @@
                         <div class="period-picker-group" onclick="event.stopPropagation()">
                             <button class="period-btn" data-period="today">Today</button>
                             <button class="period-btn" data-period="week">This Week</button>
-                            <button class="period-btn" data-period="month">This Month</button>
+                            <button class="period-btn active" data-period="this_month">This Month</button>
                             <button class="period-btn" data-period="last_3_months">Last 3M</button>
                             <button class="period-btn" data-period="last_6_months">Last 6M</button>
                             <button class="period-btn" data-period="this_year">This Year</button>
                             <button class="period-btn" data-period="last_year">Last Year</button>
-                            <button class="period-btn" data-period="all">All Time</button>
+                            <button class="period-btn" data-period="all">All</button>
                         </div>
                         <span class="period-context-badge" id="period-context-badge">All Records</span>
-                        <button class="filter-toggle-btn" id="filter-toggle-btn" type="button">
-                            <span id="filter-toggle-label">Show</span>
-                            <i class="bi bi-chevron-down"></i>
-                        </button>
-                    </div>
-                    <div class="filter-panel-body" id="filter-panel-body">
-                        <div class="filter-grid">
-                            <div class="filter-field">
-                                <label>Area</label>
-                                <select id="filter-area" class="form-select">
-                                    <option value="">All Areas</option>
-                                </select>
-                            </div>
-                            <div class="filter-field">
-                                <label>User</label>
-                                <select id="filter-user" class="form-select">
-                                    <option value="">All Users</option>
-                                </select>
-                            </div>
-                            <div class="filter-field" style="grid-column: span 2;">
-                                <label>Date Range</label>
-                                <div class="filter-date-range">
-                                    <input type="date" id="filter-start" class="form-control" placeholder="Start date">
-                                    <span><i class="bi bi-arrow-right"></i></span>
-                                    <input type="date" id="filter-end" class="form-control" placeholder="End date">
-                                </div>
+                        <div class="filter-panel-head-meta">
+                            <div class="filter-toggle-btn" id="filter-toggle-btn">
+                                <i class="bi bi-chevron-down"></i>
                             </div>
                         </div>
-                        <div class="filter-actions">
-                            <button class="btn-filter-reset" id="reset-filters"><i class="bi bi-x-circle"></i>
-                                Clear</button>
+                    </div>
+                    <div class="filter-panel-body" id="filter-panel-body">
+                        <div class="filter-panel-body-inner">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="filter-label">Area</label>
+                                    <select id="filter-area" class="form-select filter-input">
+                                        <option value="">All Areas</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="filter-label">User</label>
+                                    <select id="filter-user" class="form-select filter-input">
+                                        <option value="">All Users</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="filter-label">Date Range</label>
+                                    <div class="filter-date-range d-flex align-items-center gap-2">
+                                        <input type="date" id="filter-start" class="form-control filter-input" placeholder="Start date">
+                                        <span class="text-muted"><i class="bi bi-arrow-right"></i></span>
+                                        <input type="date" id="filter-end" class="form-control filter-input" placeholder="End date">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-12 text-end">
+                                    <button class="btn btn-sm btn-light btn-filter-reset" id="reset-filters" onclick="document.getElementById('filter-area').value=''; document.getElementById('filter-user').value=''; document.getElementById('filter-start').value=''; document.getElementById('filter-end').value=''; refreshDashboard();">
+                                        <i class="bi bi-x-circle me-1"></i> Clear Filters
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1931,16 +1937,17 @@
             // Hide ALL punch block contents for a clean Admin view
             const punchContainer = document.getElementById('punch-card-container');
             if (punchContainer) {
-                // Hide children that are NOT the admin-status-zone
-                Array.from(punchContainer.children).forEach(child => {
-                    if (child.id !== 'admin-status-zone') {
-                        child.classList.add('d-none');
-                    }
-                });
-                // Remove background/border from the container for admins to make it transparent
+                // IMPORTANT: Only hide employee-specific rows within the punch card, 
+                // NOT the entire container or its shared siblings like the filter panel.
+                const employeeRows = punchContainer.querySelectorAll('.punch-user-row, .punch-bottom-row');
+                employeeRows.forEach(row => row.classList.add('d-none'));
+
+                // Make the container transparent for admins but keep it as a structure if needed
                 punchContainer.style.background = 'none';
                 punchContainer.style.border = 'none';
                 punchContainer.style.boxShadow = 'none';
+                punchContainer.style.padding = '0';
+                punchContainer.style.margin = '0';
             }
         } else {
             // Ensure employee status is shown
@@ -2889,10 +2896,14 @@
             var parts = [];
             var area = document.getElementById('filter-area');
             var user = document.getElementById('filter-user');
-            var start = document.getElementById('filter-start').value;
-            var end = document.getElementById('filter-end').value;
-            if (area.value) parts.push({ key: 'area', label: area.options[area.selectedIndex].text, inputId: 'filter-area' });
-            if (user.value) parts.push({ key: 'user', label: user.options[user.selectedIndex].text, inputId: 'filter-user' });
+            var startEl = document.getElementById('filter-start');
+            var endEl = document.getElementById('filter-end');
+            
+            var start = startEl ? startEl.value : '';
+            var end = endEl ? endEl.value : '';
+            
+            if (area && area.value) parts.push({ key: 'area', label: area.options[area.selectedIndex].text, inputId: 'filter-area' });
+            if (user && user.value) parts.push({ key: 'user', label: user.options[user.selectedIndex].text, inputId: 'filter-user' });
             if (start) parts.push({ key: 'start', label: 'From: ' + start, inputId: 'filter-start' });
             if (end) parts.push({ key: 'end', label: 'To: ' + end, inputId: 'filter-end' });
             pills.innerHTML = parts.map(function (p) {

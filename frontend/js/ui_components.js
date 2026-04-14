@@ -971,7 +971,7 @@ window.checkHighPriorityIssues = async function () {
             // ── Top banner: show only once per session (until user dismisses or logs out) ──
             if (!alertEl && sessionStorage.getItem('high_issue_alert_dismissed') !== '1') {
                 const html = `
-                <div id="${alertContainerId}" class="d-flex align-items-center justify-content-between py-2 px-4 mb-0" style="background-color: #B91C1C; color: white; z-index: 1050; font-size: 0.85rem; font-weight: 600; flex-shrink: 0;">
+                <div id="${alertContainerId}" class="d-flex align-items-center justify-content-between py-2 px-4 mb-0" style="background-color: #B91C1C; color: white; z-index: 1050; font-size: 0.85rem; font-weight: 600; flex-shrink: 0; flex-grow: 0; height: auto; min-height: unset; max-height: 44px; overflow: hidden; width: 100%;">
                     <div class="d-flex align-items-center gap-2">
                         <i class="bi bi-exclamation-triangle-fill"></i>
                         <span>System Alert: ${unreadHigh.length} Unresolved High Priority Issue(s) detected.</span>
@@ -1674,6 +1674,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // ─── ACCESS CONTROL OVERLAY ──────────────────────────────────────────
 window.checkPageAccess = function () {
+    return; // DEPRECATED: Defer to auth.js window.enforceRoleAccess()
     const u = getUser();
     if (!u) return; // Not logged in yet
 
@@ -1893,4 +1894,17 @@ window.renderPagination = function (options) {
         getCurrentPage: () => currentPage,
         getTotalPages: () => totalPages,
     };
-};
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    const fab = document.createElement('button');
+    fab.id = 'scroll-top-fab';
+    fab.innerHTML = '<i class="bi bi-arrow-up"></i>';
+    fab.style.cssText = 'position:fixed;bottom:24px;right:24px;width:42px;height:42px;border-radius:50%;background:var(--primary);color:#fff;border:none;box-shadow:0 4px 14px rgba(0,0,0,0.18);opacity:0;transition:opacity 0.2s;z-index:999;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.1rem;';
+    document.body.appendChild(fab);
+    window.addEventListener('scroll', () => {
+      fab.style.opacity = window.scrollY > 300 ? '1' : '0';
+      fab.style.pointerEvents = window.scrollY > 300 ? 'auto' : 'none';
+    });
+    fab.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+});

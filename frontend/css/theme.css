@@ -18,6 +18,7 @@
     --title-color: #1e40af;
     --border: #e0e7ff;
     --primary: #2563eb;
+    --primary-rgb: 79, 70, 229;
     --primary-soft: rgba(37, 99, 235, 0.1);
     --primary-light: rgba(37, 99, 235, 0.1);
     --primary-ring: rgba(37, 99, 235, 0.2);
@@ -143,7 +144,6 @@ body {
     height: 100% !important;
     margin: 0;
     padding: 0;
-    overflow: hidden !important; /* Lock the global window scroll */
 }
 
 body {
@@ -158,20 +158,11 @@ body {
 
 /* Root layout container */
 body > .d-flex {
-    height: 100vh;
     width: 100%;
-    overflow: hidden;
+    min-height: 100vh;
 }
 
-.main-wrapper {
-    height: 100%;
-    overflow-y: auto;
-    overflow-x: hidden;
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-width: 0;
-}
+
 
 h1,
 h2,
@@ -1449,12 +1440,9 @@ body.dark-theme .brand-text {
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 36px;
-    /* Common unified padding for all pages */
+    padding: 48px 32px 32px 32px; /* Increased top padding from 24px to 48px for better breathing room below sticky header */
     margin: 0 auto;
-    /* Removed top/bottom artificial margin gaps */
     width: 100%;
-    /* Full component width */
     max-width: var(--page-max-width, 1440px);
     transition: padding 0.3s ease;
     min-height: 0;
@@ -1465,7 +1453,7 @@ body.dark-theme .brand-text {
     .page-content,
     .page-content-standard,
     .page-container {
-        padding: 24px;
+        padding: 32px 24px 24px 24px; /* Increased top padding for mobile */
     }
 }
 
@@ -1474,7 +1462,7 @@ body.dark-theme .brand-text {
     .page-content,
     .page-content-standard,
     .page-container {
-        padding: 16px !important;
+        padding: 24px 16px 16px 16px !important; /* Increased top padding for mobile */
     }
 }
 
@@ -1544,7 +1532,7 @@ h6 {
     padding: 32px 40px;
     /* Slightly adjusted padding */
     margin-bottom: 40px !important;
-    /* Gap above filter: 1.5rem + filter margin-top 2rem = 3.5rem total (matches gap below) */
+    /* Restored generous 40px margin for premium spacing between header and content cards */
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
@@ -3072,4 +3060,9 @@ label {
     color: var(--primary);
     border-color: var(--border);
     box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+}
+
+/* Base dark variables */
+[data-theme="dark"] {
+    --primary-rgb: 79, 70, 229;
 }
