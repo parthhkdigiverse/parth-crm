@@ -102,8 +102,15 @@ class ReportService:
             v_all_count_match["visit_date"] = date_filter
         
         # Define expressions for Visit counts
-        v_expr_curr = {"$expr": {"$and": [{"$eq": [{"$type": "$visit_date"}, "date"]}, {"$eq": [{"$month": "$visit_date"}, curr_month]}, {"$eq": [{"$year": "$visit_date"}, curr_year]}]}}
-        v_expr_prev = {"$expr": {"$and": [{"$eq": [{"$type": "$visit_date"}, "date"]}, {"$eq": [{"$month": "$visit_date"}, prev_month]}, {"$eq": [{"$year": "$visit_date"}, prev_year]}]}}
+        # Redefine expressions to be used after normalization
+        v_expr_curr = {"$and": [
+            {"$eq": [{"$month": "$v_date_dt"}, curr_month]},
+            {"$eq": [{"$year": "$v_date_dt"}, curr_year]}
+        ]}
+        v_expr_prev = {"$and": [
+            {"$eq": [{"$month": "$v_date_dt"}, prev_month]},
+            {"$eq": [{"$year": "$v_date_dt"}, prev_year]}
+        ]}
         
         c_match = {"status": "ACTIVE", "is_active": True, "is_deleted": False}
         if user_id:
@@ -156,15 +163,27 @@ class ReportService:
             {"$group": {"_id": "$status", "count": {"$sum": 1}}}
         ]
 
-        # Fetch basic stats, revenue, and presence in parallel
-        # Fetch basic stats, revenue, and presence in parallel (Visits now count Unique Shops as per UI request)
+        date_normalization = [
+            {"$addFields": {
+                "v_date_dt": {
+                    "$cond": {
+                        "if": {"$eq": [{"$type": "$visit_date"}, "date"]},
+                        "then": "$visit_date",
+                        "else": {
+                            "$cond": {
+                                "if": {"$eq": [{"$type": "$visit_date"}, "string"]},
+                                "then": {"$dateFromString": {"dateString": "$visit_date", "onError": None}},
+                                "else": None
+                            }
+                        }
+                    }
+                }
+            }}
+        ]
 
-        # Date bounds for "today" for meetings query
-        today_local = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        tomorrow_local = today_local + timedelta(days=1)
-
-        # Current month period string for incentive slip lookup
-        current_period = now.strftime("%Y-%m")
+        v_all_pipe = [{"$match": v_all_count_match}, {"$group": {"_id": "$shop_id"}}, {"$count": "total"}]
+        v_curr_pipe = date_normalization + [{"$match": {**v_match, "$expr": v_expr_curr}}, {"$group": {"_id": "$shop_id"}}, {"$count": "total"}]
+        v_prev_pipe = date_normalization + [{"$match": {**v_match, "$expr": v_expr_prev}}, {"$group": {"_id": "$shop_id"}}, {"$count": "total"}]
 
         (
             v_all_res, v_curr_res, v_prev_res,
@@ -178,9 +197,9 @@ class ReportService:
             pending_todos_count,
             meetings_today_count
         ) = await asyncio.gather(
-            Visit.get_pymongo_collection().aggregate([{"$match": v_all_count_match}, {"$group": {"_id": "$shop_id"}}, {"$count": "total"}]).to_list(length=1),
-            Visit.get_pymongo_collection().aggregate([{"$match": {**v_match, **v_expr_curr}}, {"$group": {"_id": "$shop_id"}}, {"$count": "total"}]).to_list(length=1),
-            Visit.get_pymongo_collection().aggregate([{"$match": {**v_match, **v_expr_prev}}, {"$group": {"_id": "$shop_id"}}, {"$count": "total"}]).to_list(length=1),
+            Visit.get_pymongo_collection().aggregate(v_all_pipe).to_list(length=1),
+            Visit.get_pymongo_collection().aggregate(v_curr_pipe).to_list(length=1),
+            Visit.get_pymongo_collection().aggregate(v_prev_pipe).to_list(length=1),
             Client.find(c_match).count(), 
             Client.find(c_match, {"$expr": curr_m_expr}).count(), Client.find(c_match, {"$expr": prev_m_expr}).count(),
             Shop.find({"is_deleted": False, "pipeline_stage": {"$in": ["PITCHING", "NEGOTIATION", "DELIVERY"]}}).count(), 
@@ -190,25 +209,9 @@ class ReportService:
             Attendance.get_pymongo_collection().distinct("user_id", {"date": today_start, "is_deleted": False}),
             Issue.find(Issue.status == GlobalTaskStatus.OPEN, Issue.is_deleted == False).count(),
             Visit.get_pymongo_collection().aggregate(status_pipeline).to_list(length=None),
-            # Real incentive slip for current month (returns total_incentive from admin-generated slip)
-            IncentiveSlip.find_one(
-                IncentiveSlip.user_id == user_id,
-                IncentiveSlip.period == current_period,
-                IncentiveSlip.is_visible_to_employee == True
-            ) if user_id else asyncio.sleep(0),
-            # Pending todos: only truly unstarted tasks (PENDING status, not deleted)
-            Todo.find(
-                Todo.user_id == user_id,
-                Todo.status == TodoStatus.PENDING,
-                Todo.is_deleted == False
-            ).count() if user_id else asyncio.sleep(0),
-            # Meetings today for PM: meetings where user is host or attendee, scheduled today
-            MeetingSummary.find(
-                MeetingSummary.date >= today_local,
-                MeetingSummary.date < tomorrow_local,
-                MeetingSummary.is_deleted == False,
-                MeetingSummary.status != GlobalTaskStatus.CANCELLED
-            ).count() if user_id else asyncio.sleep(0),
+            IncentiveSlip.find_one(IncentiveSlip.user_id == user_id, IncentiveSlip.period == current_period, IncentiveSlip.is_visible_to_employee == True) if user_id else asyncio.sleep(0),
+            Todo.find(Todo.user_id == user_id, Todo.status == TodoStatus.PENDING, Todo.is_deleted == False).count() if user_id else asyncio.sleep(0),
+            MeetingSummary.find(MeetingSummary.date >= today_local, MeetingSummary.date < tomorrow_local, MeetingSummary.is_deleted == False, MeetingSummary.status != GlobalTaskStatus.CANCELLED).count() if user_id else asyncio.sleep(0),
         )
 
         total_visits = v_all_res[0]["total"] if v_all_res else 0
@@ -239,9 +242,8 @@ class ReportService:
         # --- 7. Chart Data (Last 6 Months for UI) ---
         six_months_ago = now - timedelta(days=180)
         
-        # Visits Trend
-        v_chart_pipeline = [
-            {"$addFields": {"v_date_dt": {"$toDate": "$visit_date"}}},
+        # Visits Trend with Safe Date Normalization
+        v_chart_pipeline = date_normalization + [
             {"$match": {**v_match, "v_date_dt": {"$gte": six_months_ago}}},
             {"$group": {"_id": {"year": {"$year": "$v_date_dt"}, "month": {"$month": "$v_date_dt"}}, "count": {"$sum": 1}}},
             {"$sort": {"_id.year": 1, "_id.month": 1}}
@@ -283,16 +285,16 @@ class ReportService:
         project_status_breakdown = {str(r["_id"]): r["count"] for r in project_status_res}
 
         return {
-            "total_visits": total_visits,
-            "active_clients": active_clients,
-            "ongoing_projects": ongoing_projects,
+            "total_visits": int(total_visits),
+            "active_clients": int(active_clients),
+            "ongoing_projects": int(ongoing_projects),
             "revenue_mtd": float(revenue_mtd),
-            "visits_mom_pct": visits_mom_pct,
-            "clients_mom_pct": clients_mom_pct,
-            "projects_mom_pct": projects_mom_pct,
+            "visits_mom_pct": float(visits_mom_pct),
+            "clients_mom_pct": float(clients_mom_pct),
+            "projects_mom_pct": float(projects_mom_pct),
             "revenue_mom_pct": 0.0,
-            "open_issues": open_issues_count,
-            "employees_present": employees_present,
+            "open_issues": int(open_issues_count),
+            "employees_present": int(employees_present),
             "visit_status_breakdown": visit_status_breakdown,
             "visits_chart_data": visits_chart_data,
             "presence_mom_pct": 0.0,
@@ -301,10 +303,10 @@ class ReportService:
             "issue_severity_breakdown": {},
             "visit_outcomes_breakdown": visit_status_breakdown,
             "project_status_breakdown": project_status_breakdown,
-            # Role-specific KPI extras
-            "total_incentive": my_incentive,
-            "pending_todos": pending_todos,
-            "meetings_today": meetings_today,
+            # Role-specific KPI extras (Ensure consistent type)
+            "total_incentive": float(my_incentive),
+            "pending_todos": int(pending_todos),
+            "meetings_today": int(meetings_today),
         }
 
     @staticmethod

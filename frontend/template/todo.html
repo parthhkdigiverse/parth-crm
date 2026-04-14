@@ -800,13 +800,13 @@
                 const priorityOrder = { HIGH: 0, MEDIUM: 1, LOW: 2 };
                 const pa = priorityOrder[a.priority] ?? 1;
                 const pb = priorityOrder[b.priority] ?? 1;
-                
+
                 if (pa !== pb) return pa - pb;
-                
+
                 // Secondary Sort: Non-completed tasks first within same priority
                 if (a.status === 'COMPLETED' && b.status !== 'COMPLETED') return 1;
                 if (a.status !== 'COMPLETED' && b.status === 'COMPLETED') return -1;
-                
+
                 // Tertiary Sort: Date (Newest first)
                 return new Date(b.due_date || b.created_at || 0) - new Date(a.due_date || a.created_at || 0);
             });
@@ -1284,7 +1284,7 @@
             document.getElementById('mode-switcher-container').style.display = 'block';
             switchModalMode('TASK');
             configureTodoAssignmentUi();
-            
+
             // Sync Modern Multi-Select if it exists
             const msContainer = document.querySelector('.srm-multi-select-container');
             if (msContainer && msContainer.refresh) msContainer.refresh();

@@ -279,7 +279,9 @@
             </div>
             <div class="mb-3">
                 <label class="form-label">Shop Name / Business Name *</label>
-                <input type="text" class="form-control" id="shop-name" placeholder="Enter shop name" required>
+                <input type="text" class="form-control" id="shop-name" list="shop-list" placeholder="Enter shop name"
+                    required>
+                <datalist id="shop-list"></datalist>
             </div>
             <div class="mb-3">
                 <label class="form-label">Product *</label>
@@ -308,7 +310,7 @@
                 <div class="rating-slider-container">
                     <span id="emoji-display" class="emoji-display">😐</span>
                     <span id="rating-value-label" class="rating-label">5/10</span>
-                    
+
                     <div class="slider-wrapper">
                         <input type="range" min="1" max="10" value="5" class="rating-slider" id="agent-score-slider">
                         <div class="slider-ticks">
@@ -404,6 +406,57 @@
         };
         fetchAgent();
 
+        // --- Shop Sync Logic ---
+        const initShopSync = async () => {
+            const host = window.location.origin;
+            const shopInput = document.getElementById('shop-name');
+            const mobileInput = document.getElementById('client-mobile');
+            const shopDataList = document.getElementById('shop-list');
+
+            // 1. Staff Suggestions (If logged in)
+            const currentUser = typeof ApiClient !== 'undefined' ? ApiClient.getCurrentUser() : null;
+            const staffRoles = ['ADMIN', 'SALES', 'TELESALES', 'PROJECT_MANAGER', 'PROJECT_MANAGER_AND_SALES'];
+
+            if (currentUser && staffRoles.includes(currentUser.role)) {
+                try {
+                    const names = await ApiClient.request('/shops/public/names');
+                    if (Array.isArray(names)) {
+                        shopDataList.innerHTML = names.map(n => `<option value="${n}">`).join('');
+                    }
+                } catch (e) { console.warn("Could not fetch shop name suggestions", e); }
+            }
+
+            // 2. Client Auto-Fill (Mobile Lookup)
+            mobileInput.addEventListener('input', async (e) => {
+                const val = e.target.value.replace(/\D/g, '');
+
+                // Trigger lookup when 10 digits are reached
+                if (val.length === 10) {
+                    console.log("[Auto-Fill] Searching for shop with number:", val);
+                    try {
+                        const res = await fetch(`${host}/api/shops/public/lookup/${val}`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            if (data.name) {
+                                console.log("[Auto-Fill] Success! Found:", data.name);
+                                shopInput.value = data.name;
+                                // Subtle visual feedback
+                                shopInput.style.backgroundColor = '#f0fdf4';
+                                shopInput.style.borderColor = '#22c55e';
+                                setTimeout(() => {
+                                    shopInput.style.backgroundColor = '';
+                                    shopInput.style.borderColor = '';
+                                }, 3000);
+                            } else {
+                                console.log("[Auto-Fill] No shop found in database for this number.");
+                            }
+                        }
+                    } catch (e) { console.warn("[Auto-Fill] Connection error", e); }
+                }
+            });
+        };
+        initShopSync();
+
         // Emoji Slider Logic
         const slider = document.getElementById('agent-score-slider');
         const emojiDisplay = document.getElementById('emoji-display');
@@ -435,7 +488,7 @@
             const r = Math.floor(239 - (percent * (239 - 34) / 100));
             const g = Math.floor(68 + (percent * (197 - 68) / 100));
             const b = Math.floor(68 - (percent * (68 - 94) / 100));
-            
+
             slider.style.background = `linear-gradient(90deg, rgb(${r}, ${g}, ${b}) ${percent}%, #e2e8f0 ${percent}%)`;
             valueLabel.style.color = `rgb(${r}, ${g}, ${b})`;
         };

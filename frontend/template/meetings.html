@@ -85,7 +85,7 @@
         }
 
         .schedule-modal .modal-footer {
-            border-top: 1px solid rgba(0,0,0,0.06);
+            border-top: 1px solid rgba(0, 0, 0, 0.06);
             padding: 1rem 1.75rem;
             flex-shrink: 0;
             background: var(--bg-card, #fff);
@@ -94,7 +94,7 @@
         /* Section dividers inside modal */
         .sch-section {
             padding: 1.1rem 1.75rem;
-            border-bottom: 1px solid rgba(0,0,0,0.06);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
         }
 
         .sch-section:last-child {
@@ -139,7 +139,7 @@
         .target-btn:hover {
             border-color: #2563eb;
             color: #2563eb;
-            background: rgba(37,99,235,0.05);
+            background: rgba(37, 99, 235, 0.05);
         }
 
         .target-btn.active {
@@ -174,7 +174,7 @@
         .role-pill:hover {
             border-color: #7c3aed;
             color: #7c3aed;
-            background: rgba(124,58,237,0.05);
+            background: rgba(124, 58, 237, 0.05);
         }
 
         .role-pill.selected {
@@ -184,7 +184,7 @@
         }
 
         .role-pill .pill-count {
-            background: rgba(255,255,255,0.28);
+            background: rgba(255, 255, 255, 0.28);
             border-radius: 50px;
             padding: 0 5px;
             font-size: 0.7rem;
@@ -200,7 +200,9 @@
         }
 
         @media (max-width: 520px) {
-            .date-time-row { grid-template-columns: 1fr; }
+            .date-time-row {
+                grid-template-columns: 1fr;
+            }
         }
 
         /* Slot pills */
@@ -257,7 +259,9 @@
         }
 
         @media (max-width: 520px) {
-            .details-grid { grid-template-columns: 1fr; }
+            .details-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         .details-grid .full-col {
@@ -279,9 +283,10 @@
 
         .sch-input option {
             background: var(--bg-surface, #ffffff);
-            color: #000000; /* Force black dropdown text for high contrast on light bg */
+            color: #000000;
+            /* Force black dropdown text for high contrast on light bg */
         }
-        
+
         [data-theme="dark"] .sch-input option {
             color: #ffffff;
         }
@@ -289,7 +294,7 @@
         .sch-input:focus {
             border-color: #2563eb;
             background: white;
-            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
         }
 
         .sch-label {
@@ -318,7 +323,7 @@
             display: inline-flex;
             align-items: center;
             gap: 0.25rem;
-            background: rgba(37,99,235,0.08);
+            background: rgba(37, 99, 235, 0.08);
             color: #2563eb;
             border-radius: 50px;
             padding: 0.2rem 0.6rem;
@@ -351,7 +356,7 @@
         .premium-modal .modal-content {
             border-radius: 24px;
             border: none;
-            box-shadow: 0 25px 80px rgba(0,0,0,0.15);
+            box-shadow: 0 25px 80px rgba(0, 0, 0, 0.15);
             overflow: hidden;
         }
 
@@ -375,7 +380,7 @@
         [data-theme="dark"] .sch-label {
             color: #ffffff;
         }
-        
+
         [data-theme="dark"] .sch-input {
             background: #0f172a;
             border-color: #334155;
@@ -396,12 +401,14 @@
                 <div class="page-header-glass">
                     <div class="min-w-0">
                         <h2 class="page-section-title fw-bold mb-1">Meetings</h2>
-                        <p class="text-muted mb-0 small">Plan future sessions, track confirmed appointments, and review AI-generated meeting summaries.</p>
-                        <p class="text-muted mb-0 small d-none d-sm-block mt-1" id="meeting-count">Analyzing scheduled sessions...</p>
+                        <p class="text-muted mb-0 small">Plan future sessions, track confirmed appointments, and review
+                            AI-generated meeting summaries.</p>
+                        <p class="text-muted mb-0 small d-none d-sm-block mt-1" id="meeting-count">Analyzing scheduled
+                            sessions...</p>
                     </div>
                     <div class="flex-shrink-0">
-                        <button class="btn btn-primary d-flex align-items-center gap-2 fw-semibold px-3 px-sm-4" style="border-radius:10px;"
-                            data-bs-toggle="modal" data-bs-target="#addMeetingModal">
+                        <button class="btn btn-primary d-flex align-items-center gap-2 fw-semibold px-3 px-sm-4"
+                            style="border-radius:10px;" data-bs-toggle="modal" data-bs-target="#addMeetingModal">
                             <i class="bi bi-plus-lg"></i>
                             <span class="d-none d-md-inline">Schedule Session</span>
                             <span class="d-inline d-md-none">Schedule</span>
@@ -423,7 +430,8 @@
                                                 onclick="toggleAllMeetings(this)">
                                         </th>
                                         <th class="py-3 text-muted fw-bold extra-small uppercase">Client Name</th>
-                                        <th class="py-3 text-muted fw-bold extra-small uppercase">Subject &amp; Type</th>
+                                        <th class="py-3 text-muted fw-bold extra-small uppercase">Subject &amp; Type
+                                        </th>
                                         <th class="py-3 text-muted fw-bold extra-small uppercase">Scheduled Date</th>
                                         <th class="py-3 text-muted fw-bold extra-small uppercase">Status</th>
                                         <th class="py-3 text-muted fw-bold extra-small uppercase">AI Summary</th>
@@ -470,16 +478,16 @@
                             <i class="bi bi-crosshair"></i> Meeting Context
                         </div>
                         <div class="target-toggle" id="target-toggle-group">
-                            <button class="target-btn active" id="target-btn-CLIENT"
-                                onclick="setTargetType('CLIENT')" data-type="CLIENT">
+                            <button class="target-btn active" id="target-btn-CLIENT" onclick="setTargetType('CLIENT')"
+                                data-type="CLIENT">
                                 <i class="bi bi-person-badge"></i> Client
                             </button>
-                            <button class="target-btn" id="target-btn-PROJECT"
-                                onclick="setTargetType('PROJECT')" data-type="PROJECT">
+                            <button class="target-btn" id="target-btn-PROJECT" onclick="setTargetType('PROJECT')"
+                                data-type="PROJECT">
                                 <i class="bi bi-kanban"></i> Project
                             </button>
-                            <button class="target-btn" id="target-btn-INTERNAL"
-                                onclick="setTargetType('INTERNAL')" data-type="INTERNAL">
+                            <button class="target-btn" id="target-btn-INTERNAL" onclick="setTargetType('INTERNAL')"
+                                data-type="INTERNAL">
                                 <i class="bi bi-people"></i> Internal
                             </button>
                         </div>
@@ -503,7 +511,8 @@
                     <div class="sch-section">
                         <div class="sch-section-label">
                             <i class="bi bi-people-fill"></i> Attendees by Role
-                            <span id="attendee-count-badge" class="ms-auto" style="font-size:0.7rem;color:#7c3aed;font-weight:700;text-transform:none;letter-spacing:0;"></span>
+                            <span id="attendee-count-badge" class="ms-auto"
+                                style="font-size:0.7rem;color:#7c3aed;font-weight:700;text-transform:none;letter-spacing:0;"></span>
                         </div>
                         <div class="role-pills-wrap" id="role-pills-wrap">
                             <!-- Pills injected by JS -->
@@ -524,7 +533,8 @@
                             <div>
                                 <label class="sch-label">Free Slots (Common Availability)</label>
                                 <div id="slot-status-msg" class="slot-status-msg">
-                                    <i class="bi bi-info-circle me-1"></i>Select a date &amp; attendees to see free slots
+                                    <i class="bi bi-info-circle me-1"></i>Select a date &amp; attendees to see free
+                                    slots
                                 </div>
                                 <input type="hidden" id="m-time">
                             </div>
@@ -600,7 +610,8 @@
                     <input type="hidden" id="res-selected-time">
                     <div class="mb-3">
                         <label class="form-label fw-semibold">New Date</label>
-                        <input type="date" id="res-date" class="form-control border-2 shadow-none" onchange="fetchRescheduleSlots()">
+                        <input type="date" id="res-date" class="form-control border-2 shadow-none"
+                            onchange="fetchRescheduleSlots()">
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Available Slots</label>
@@ -662,19 +673,19 @@
         injectTopHeader('Meetings');
 
         // ────────── STATE ──────────
-        let allClients   = [];
-        let allProjects  = [];
-        let allUsers     = [];
+        let allClients = [];
+        let allProjects = [];
+        let allUsers = [];
         let currentTargetType = 'CLIENT';
         let selectedRoles = new Set();
         let selectedAttendeeIds = [];
         const ROLE_DEFS = [
-            { key: 'ALL',          label: 'All',           icon: 'bi-people-fill',         color: '#2563eb' },
-            { key: 'SALES',        label: 'Sales',         icon: 'bi-graph-up-arrow',       color: '#0ea5e9' },
-            { key: 'TELESALES',    label: 'Telesales',     icon: 'bi-telephone-fill',        color: '#10b981' },
-            { key: 'PROJECT_MANAGER', label: 'PM',         icon: 'bi-kanban-fill',           color: '#f59e0b' },
+            { key: 'ALL', label: 'All', icon: 'bi-people-fill', color: '#2563eb' },
+            { key: 'SALES', label: 'Sales', icon: 'bi-graph-up-arrow', color: '#0ea5e9' },
+            { key: 'TELESALES', label: 'Telesales', icon: 'bi-telephone-fill', color: '#10b981' },
+            { key: 'PROJECT_MANAGER', label: 'PM', icon: 'bi-kanban-fill', color: '#f59e0b' },
             { key: 'PROJECT_MANAGER_AND_SALES', label: 'PM+Sales', icon: 'bi-briefcase-fill', color: '#8b5cf6' },
-            { key: 'ADMIN',        label: 'Admin',         icon: 'bi-shield-fill-check',     color: '#ef4444' },
+            { key: 'ADMIN', label: 'Admin', icon: 'bi-shield-fill-check', color: '#ef4444' },
         ];
 
         // ────────── LOAD DATA ──────────
@@ -819,8 +830,8 @@
             });
 
             // Show/hide context dropdowns
-            document.getElementById('ctx-client').style.display  = (type === 'CLIENT')   ? '' : 'none';
-            document.getElementById('ctx-project').style.display = (type === 'PROJECT')  ? '' : 'none';
+            document.getElementById('ctx-client').style.display = (type === 'CLIENT') ? '' : 'none';
+            document.getElementById('ctx-project').style.display = (type === 'PROJECT') ? '' : 'none';
         }
 
         function onContextChange() {
@@ -1004,7 +1015,7 @@
                 const meetings = await apiGet(`/meetings/?${params.toString()}`);
                 const clientMap = {};
                 allClients.forEach(c => clientMap[c.id] = c);
-                
+
                 const projectMap = {};
                 allProjects.forEach(p => projectMap[p.id] = p);
 
@@ -1014,12 +1025,12 @@
 
                 const statusBadge = s => {
                     const map = {
-                        RESOLVED:    'bg-success bg-opacity-10 text-success border-success border-opacity-25',
-                        OPEN:        'bg-warning bg-opacity-10 text-dark border-warning border-opacity-25',
+                        RESOLVED: 'bg-success bg-opacity-10 text-success border-success border-opacity-25',
+                        OPEN: 'bg-warning bg-opacity-10 text-dark border-warning border-opacity-25',
                         IN_PROGRESS: 'bg-info bg-opacity-10 text-info border-info border-opacity-25',
-                        BLOCKED:     'bg-danger bg-opacity-10 text-danger border-danger border-opacity-25',
-                        CANCEL:      'bg-danger bg-opacity-10 text-danger border-danger border-opacity-25',
-                        CANCELLED:   'bg-danger bg-opacity-10 text-danger border-danger border-opacity-25',
+                        BLOCKED: 'bg-danger bg-opacity-10 text-danger border-danger border-opacity-25',
+                        CANCEL: 'bg-danger bg-opacity-10 text-danger border-danger border-opacity-25',
+                        CANCELLED: 'bg-danger bg-opacity-10 text-danger border-danger border-opacity-25',
                     };
                     return map[s] || 'bg-secondary text-white';
                 };
@@ -1041,7 +1052,7 @@
                     renderRow: (m) => {
                         const clientObj = clientMap[m.client_id] || {};
                         const projectObj = projectMap[m.project_id] || {};
-                        
+
                         let clientName = clientObj.name || "";
                         let businessName = clientObj.organization || "";
 
@@ -1049,13 +1060,13 @@
                             clientName = projectObj.name ? `Project: ${projectObj.name}` : "Project Sync";
                             businessName = "Internal Project";
                         }
-                        
+
                         if (!clientName && !m.project_id) {
                             clientName = "Internal Team Meeting";
                             businessName = "Internal";
                         }
 
-                        const isFinished  = m.status === 'RESOLVED';
+                        const isFinished = m.status === 'RESOLVED';
                         const isCancelled = m.status === 'CANCELLED' || m.status === 'CANCEL';
 
                         return `
@@ -1126,7 +1137,7 @@
             if (!aiModalEl) return;
             const modal = bootstrap.Modal.getOrCreateInstance(aiModalEl);
             const aiLabel = document.getElementById('ai-meeting-label');
-            const aiBody  = document.getElementById('ai-summary-body');
+            const aiBody = document.getElementById('ai-summary-body');
             if (aiLabel) aiLabel.textContent = `Meeting ID: ${id}`;
             if (aiBody) aiBody.innerHTML = `
                 <div class="text-center py-4">
@@ -1138,7 +1149,7 @@
             try {
                 const result = await apiPost(`/meetings/${id}/generate-ai-summary`, {});
                 const highlights = result.highlights || [];
-                const nextSteps  = result.next_steps || result.action_items || 'No action items found.';
+                const nextSteps = result.next_steps || result.action_items || 'No action items found.';
                 if (aiBody) aiBody.innerHTML = `
                     <div class="mb-4">
                         <h6 class="fw-bold text-primary mb-3"><i class="bi bi-lightbulb me-2"></i>Key Highlights</h6>
@@ -1296,8 +1307,8 @@
 
         window.confirmReschedule = async () => {
             const id = document.getElementById('reschedule-id').value;
-            const d  = document.getElementById('res-date').value;
-            const t  = document.getElementById('res-selected-time').value;
+            const d = document.getElementById('res-date').value;
+            const t = document.getElementById('res-selected-time').value;
 
             if (!d || !t) return showToast('Please select a valid date and available time slot.', 'error');
 
@@ -1365,28 +1376,32 @@
                 containerId: 'filter-wrapper',
                 filters: [
                     { type: 'select', label: 'Client', id: 'filter-client', options: [{ value: 'ALL', label: 'All Clients' }, ...allClients.map(c => ({ value: c.id, label: c.name }))] },
-                    { type: 'select', label: 'Type', id: 'filter-type', options: [
-                        { value: 'ALL', label: 'All Types' },
-                        { value: 'In-Person', label: 'In-Person' },
-                        { value: 'Google Meet', label: 'Google Meet' },
-                        { value: 'Virtual', label: 'Virtual' }
-                    ]},
-                    { type: 'select', label: 'Status', id: 'filter-status', options: [
-                        { value: 'ALL', label: 'All Status' },
-                        { value: 'OPEN', label: 'Open' },
-                        { value: 'IN_PROGRESS', label: 'In Progress' },
-                        { value: 'RESOLVED', label: 'Resolved' },
-                        { value: 'CANCELLED', label: 'Cancelled' }
-                    ]},
+                    {
+                        type: 'select', label: 'Type', id: 'filter-type', options: [
+                            { value: 'ALL', label: 'All Types' },
+                            { value: 'In-Person', label: 'In-Person' },
+                            { value: 'Google Meet', label: 'Google Meet' },
+                            { value: 'Virtual', label: 'Virtual' }
+                        ]
+                    },
+                    {
+                        type: 'select', label: 'Status', id: 'filter-status', options: [
+                            { value: 'ALL', label: 'All Status' },
+                            { value: 'OPEN', label: 'Open' },
+                            { value: 'IN_PROGRESS', label: 'In Progress' },
+                            { value: 'RESOLVED', label: 'Resolved' },
+                            { value: 'CANCELLED', label: 'Cancelled' }
+                        ]
+                    },
                     { type: 'date', label: 'Start Date', id: 'filter-start' },
-                    { type: 'date', label: 'End Date',   id: 'filter-end' }
+                    { type: 'date', label: 'End Date', id: 'filter-end' }
                 ],
                 onApply: (data) => loadMeetings({
                     client: data['client'],
-                    type:   data['type'],
+                    type: data['type'],
                     status: data['status'],
-                    start:  data['start'],
-                    end:    data['end']
+                    start: data['start'],
+                    end: data['end']
                 }),
                 onReset: () => loadMeetings()
             });

@@ -41,22 +41,41 @@
             min-width: 120px;
             /* Safer min-width for 320px screens */
         }
-        
+
         .stat-card-mobile::before {
             content: '';
             display: block;
             position: absolute;
-            top: 0; left: 0; right: 0;
+            top: 0;
+            left: 0;
+            right: 0;
             height: 4px;
             z-index: 1;
         }
 
-        .stat-card-mobile.card-primary::before { background: linear-gradient(90deg, #1e3a8a, #2563eb); }
-        .stat-card-mobile.card-warning::before { background: linear-gradient(90deg, #9a3412, #f97316); }
-        .stat-card-mobile.card-info::before { background: linear-gradient(90deg, #134e4a, #14b8a6); }
-        .stat-card-mobile.card-purple::before { background: linear-gradient(90deg, #4c1d95, #7c3aed); }
-        .stat-card-mobile.card-success::before { background: linear-gradient(90deg, #065f46, #10b981); }
-        .stat-card-mobile.card-danger::before { background: linear-gradient(90deg, #7f1d1d, #ef4444); }
+        .stat-card-mobile.card-primary::before {
+            background: linear-gradient(90deg, #1e3a8a, #2563eb);
+        }
+
+        .stat-card-mobile.card-warning::before {
+            background: linear-gradient(90deg, #9a3412, #f97316);
+        }
+
+        .stat-card-mobile.card-info::before {
+            background: linear-gradient(90deg, #134e4a, #14b8a6);
+        }
+
+        .stat-card-mobile.card-purple::before {
+            background: linear-gradient(90deg, #4c1d95, #7c3aed);
+        }
+
+        .stat-card-mobile.card-success::before {
+            background: linear-gradient(90deg, #065f46, #10b981);
+        }
+
+        .stat-card-mobile.card-danger::before {
+            background: linear-gradient(90deg, #7f1d1d, #ef4444);
+        }
 
         /* ── Mobile visit cards ─────────────────── */
         .visit-card-mobile {
@@ -146,7 +165,8 @@
                         </div>
                     </div>
                     <div class="col-6 col-md-4 col-xl-2">
-                        <div class="stat-card-mobile card border-0 shadow-sm card-purple p-2 p-md-3 d-flex flex-row align-items-center gap-2 h-100 w-100">
+                        <div
+                            class="stat-card-mobile card border-0 shadow-sm card-purple p-2 p-md-3 d-flex flex-row align-items-center gap-2 h-100 w-100">
                             <div class="stat-icon flex-shrink-0" style="color:var(--bs-indigo,#6610f2);"><i
                                     class="bi bi-shop"></i></div>
                             <div class="overflow-hidden w-100">
@@ -157,7 +177,8 @@
                         </div>
                     </div>
                     <div class="col-6 col-md-4 col-xl-2">
-                        <div class="stat-card-mobile card border-0 shadow-sm card-info p-2 p-md-3 d-flex flex-row align-items-center gap-2 h-100 w-100">
+                        <div
+                            class="stat-card-mobile card border-0 shadow-sm card-info p-2 p-md-3 d-flex flex-row align-items-center gap-2 h-100 w-100">
                             <div class="stat-icon flex-shrink-0" style="color:var(--bs-cyan,#0dcaf0);"><i
                                     class="bi bi-laptop"></i></div>
                             <div class="overflow-hidden w-100">
@@ -167,7 +188,8 @@
                         </div>
                     </div>
                     <div class="col-6 col-md-4 col-xl-2">
-                        <div class="stat-card-mobile card border-0 shadow-sm card-success p-2 p-md-3 d-flex flex-row align-items-center gap-2 h-100 w-100">
+                        <div
+                            class="stat-card-mobile card border-0 shadow-sm card-success p-2 p-md-3 d-flex flex-row align-items-center gap-2 h-100 w-100">
                             <div class="stat-icon flex-shrink-0" style="color:var(--bs-warning,#ffc107);"><i
                                     class="bi bi-trophy"></i></div>
                             <div class="overflow-hidden w-100">
