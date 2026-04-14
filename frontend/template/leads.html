@@ -725,10 +725,10 @@
                                         return `<span class="badge ms-1" style="${vstyle}font-size:0.65rem;">${vlabel}</span>`;
                                     })()}
                                 </div>` : ''}
-                                ${l.project_manager_name ? `
+                                ${(l.project_manager_id || (l.project_manager_name && l.project_manager_name !== 'null')) ? `
                                 <div class="mt-1">
                                     <span class="badge" style="background:#dbeafe;color:#1d4ed8;font-size:0.65rem;">
-                                        <i class="bi bi-person-gear me-1"></i>PM: ${l.project_manager_name}
+                                        <i class="bi bi-person-gear me-1"></i>PM: ${(l.project_manager_name && l.project_manager_name !== 'null') ? l.project_manager_name : 'Assigned (PM)'}
                                     </span>
                                 </div>` : ''}
                                 ${status === 'NEGOTIATION' ? `
@@ -848,7 +848,8 @@
                 const phone        = l.phone || '—';
                 const assigneeName = (l.assigned_to_user?.name) || l.assigned_to_name || l.owner_name || ((l.assigned_users && l.assigned_users.length > 0) ? l.assigned_users.map(u => u.name).join(', ') : null) || 'Unassigned';
                 const initials     = getInitials(assigneeName);
-                const pmName       = l.project_manager_name || null;
+                const pmName       = (l.project_manager_name && l.project_manager_name !== 'null') ? l.project_manager_name : 'Assigned (PM)';
+                const hasPm        = l.project_manager_id || (l.project_manager_name && l.project_manager_name !== 'null');
 
                 let sentimentBit = '';
                 if (l.last_visit_status) {
@@ -866,12 +867,12 @@
                     const vlabel = vsLabels[es] || es.replace(/_/g,' ');
                     sentimentBit = `<span class="badge me-1" style="${vstyle}font-size:0.62rem;">${vlabel}</span>`;
                 }
-                const pmBit = pmName
+                const pmBit = hasPm
                     ? `<span class="badge" style="background:#dbeafe;color:#1d4ed8;font-size:0.62rem;"><i class="bi bi-person-gear me-1"></i>PM: ${pmName}</span>`
                     : '';
 
                 const actionLabel = (l.pipeline_stage === 'PITCHING' && l.project_manager_id)
-                    ? 'Re-assign PM'
+                    ? 'Re-schedule / Re-assign PM'
                     : getNextActionText(l.pipeline_stage);
 
                 html += `
@@ -949,7 +950,7 @@
                 const textColor = isCompleted ? '#0f172a' : (isStep3InProgress ? '#2563eb' : '#94a3b8');
                 const weightClass = (isCompleted || isStep3InProgress) ? 'fw-bold' : 'fw-medium';
                 const subText = isStep3InProgress
-                    ? `<div class="mt-1" style="font-size:0.72rem;color:#2563eb;"><i class="bi bi-person-gear me-1"></i>Assigned to PM: ${l.project_manager_name}</div>`
+                    ? `<div class="mt-1" style="font-size:0.72rem;color:#2563eb;"><i class="bi bi-person-gear me-1"></i>Assigned to PM: ${(l.project_manager_name && l.project_manager_name !== 'null') ? l.project_manager_name : 'Assigned'}</div>`
                     : '';
                 timelineHtml += `
                     <div class="d-flex position-relative z-1" style="margin-bottom: ${isLast ? '0' : '1.5rem'};">
@@ -969,11 +970,12 @@
 
             timelineHtml += `</div></div>`;
 
-            const pmBtnLabel = l.project_manager_id ? 'Re-assign PM' : 'Assign PM &amp; Schedule Demo';
-            const pmAssignBtnHtml = (l.pipeline_stage === 'PITCHING') ? `
+            const pmBtnLabel = l.project_manager_id ? 'Re-schedule Demo / Re-assign PM' : 'Assign PM & Schedule Demo';
+            // Allow PM assignment/rescheduling in both PITCHING and NEGOTIATION stages
+            const pmAssignBtnHtml = (l.pipeline_stage === 'PITCHING' || l.pipeline_stage === 'NEGOTIATION') ? `
                 <button class="btn btn-warning w-100 mb-2 d-flex align-items-center gap-2 justify-content-center"
                     onclick="openAssignPmModal('${l.id}')">
-                    <i class="bi bi-person-badge"></i> ${pmBtnLabel}
+                    <i class="bi bi-calendar2-check"></i> ${pmBtnLabel}
                 </button>` : '';
 
             const closeDealBtnHtml = (l.pipeline_stage === 'NEGOTIATION') ? `

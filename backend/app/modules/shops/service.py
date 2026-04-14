@@ -245,6 +245,13 @@ class ShopService:
             shop_data = shop.model_dump()
             shop_data["id"] = shop.id
             shop_data["owner_name"] = user_map.get(str(shop.owner_id), "Unassigned") if shop.owner_id else "Unassigned"
+            
+            # Resolve PM Name if ID exists
+            if hasattr(shop, 'project_manager_id') and shop.project_manager_id:
+                shop_data["project_manager_name"] = user_map.get(str(shop.project_manager_id)) or getattr(shop, 'project_manager_name', None)
+            else:
+                shop_data["project_manager_name"] = getattr(shop, 'project_manager_name', None)
+
             # Resolve area_name: try lookup, then the stored area_name field, then fallback
             resolved_area_name = None
             if shop.area_id:

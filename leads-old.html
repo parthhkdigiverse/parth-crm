@@ -1,0 +1,1475 @@
+<!DOCTYPE html>
+<!-- frontend/template/leads.html -->
+<html lang="en">
+
+<head>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Project Overview | SRM AI SETU</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../css/theme.css?v=20260321">
+    <link rel="stylesheet" href="../css/components.css?v=20260321">
+    <style>
+        .kanban-board {
+            display: flex;
+            gap: 1rem;
+            overflow-x: auto;
+            padding-bottom: 2rem;
+            min-height: calc(100vh - 200px);
+            scrollbar-width: thin;
+        }
+
+        .kanban-column {
+            flex: 1;
+            min-width: 230px;
+            max-width: 280px;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-app);
+            border-radius: 12px;
+            padding: 12px;
+            max-height: calc(100vh - 240px);
+            border: 1px solid var(--border);
+        }
+
+        .kanban-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+            padding: 0 0.25rem;
+        }
+
+        .column-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .kanban-title {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: var(--text-main);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .kanban-count {
+            background: var(--bg-surface);
+            color: var(--text-muted);
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: auto;
+        }
+
+        .kanban-cards {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .kanban-cards::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .kanban-cards::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        .lead-card {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 1rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border);
+            position: relative;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+        }
+
+        .lead-card:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .lead-card.stale {
+            border-left: 4px solid var(--warning);
+        }
+
+        .lead-name {
+            font-weight: 700;
+            font-size: 1rem;
+            color: var(--text-main);
+            margin-bottom: 0.2rem;
+            padding-right: 1.5rem;
+        }
+
+        .lead-company {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .lead-info-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.825rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .lead-info-row i {
+            font-size: 1rem;
+            color: var(--text-muted);
+        }
+
+        .source-badge {
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 6px;
+            display: inline-block;
+        }
+
+        .bg-website {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .bg-cold-call {
+            background: var(--warning-light);
+            color: var(--warning-text);
+        }
+
+        .bg-social {
+            background: var(--danger-light);
+            color: var(--danger-text);
+        }
+
+        .bg-referral {
+            background: var(--success-light);
+            color: var(--success-text);
+        }
+
+        .bg-other {
+            background: var(--bg-app);
+            color: var(--text-muted);
+        }
+
+        .lead-owner {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .owner-avatar {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: var(--primary-light);
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.7rem;
+            border: 1px solid var(--border);
+        }
+
+        .column-new .column-dot {
+            background: #6366f1;
+        }
+
+        .column-contacted .column-dot {
+            background: #f59e0b;
+        }
+
+        .column-meeting .column-dot {
+            background: #10b981;
+        }
+
+        .column-converted .column-dot {
+            background: #059669;
+        }
+
+        .layout-toggles .btn {
+            padding: 6px 12px;
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+            background: var(--bg-surface);
+        }
+
+        .layout-toggles .btn.active {
+            color: var(--text-main);
+            background: var(--bg-app);
+            border-color: var(--border);
+            z-index: 1;
+        }
+
+        /* List View */
+        .list-view-container {
+            background: var(--surface);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .leads-table th {
+            text-align: left;
+            padding: 1rem 1.25rem;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            font-weight: 700;
+            background: var(--bg-app);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .leads-table td {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border-subtle);
+            vertical-align: middle;
+            font-size: 0.9rem;
+        }
+
+        .status-badge {
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 6px;
+            text-transform: uppercase;
+        }
+
+        /* Detail Panel */
+        .detail-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.3);
+            z-index: 1050;
+            display: none;
+        }
+
+        .detail-panel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 400px;
+            height: 100vh;
+            background: var(--surface);
+            z-index: 1051;
+            box-shadow: -10px 0 40px rgba(0, 0, 0, 0.1);
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+        }
+
+        .detail-panel.show {
+            transform: translateX(0);
+        }
+
+        /* Mobile Responsiveness Improvements */
+        @media (max-width: 768px) {
+
+            .kanban-board {
+                scroll-snap-type: x mandatory;
+                padding: 0 1rem 1rem;
+                gap: 1rem;
+                height: auto;
+                min-height: auto;
+            }
+
+            .kanban-column {
+                min-width: 85vw;
+                max-width: 85vw;
+                scroll-snap-align: center;
+                max-height: 70vh;
+            }
+
+            .kanban-cards {
+                padding-bottom: 1rem;
+            }
+
+            /* List View Mobile Transformation */
+            #list-view-container .table-responsive {
+                border: none;
+                background: transparent;
+            }
+
+            #list-view-container table, 
+            #list-view-container thead, 
+            #list-view-container tbody, 
+            #list-view-container th, 
+            #list-view-container td, 
+            #list-view-container tr {
+                display: block;
+                width: 100%;
+            }
+
+            #list-view-container thead tr {
+                position: absolute;
+                top: -9999px;
+                left: -9999px;
+            }
+
+            #list-view-container tr {
+                background: var(--bg-surface);
+                border: 1px solid var(--border);
+                border-radius: 16px;
+                padding: 1.25rem;
+                margin-bottom: 1rem;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            }
+
+            #list-view-container td {
+                border: none;
+                padding: 0.4rem 0;
+                position: relative;
+                text-align: left;
+            }
+
+            #list-view-container td:before {
+                content: attr(data-label);
+                display: block;
+                font-size: 0.65rem;
+                font-weight: 700;
+                text-transform: uppercase;
+                color: var(--text-muted);
+                margin-bottom: 0.1rem;
+            }
+
+            #list-view-container td.px-4.py-3.text-end {
+                text-align: left;
+                padding-top: 1rem;
+                border-top: 1px solid var(--border-subtle);
+                margin-top: 0.5rem;
+            }
+
+            .detail-panel {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="d-flex">
+        <div id="sidebar"></div>
+        <div class="main-wrapper flex-grow-1">
+            <div class="page-content-standard">
+                <div class="page-header-glass">
+                    <div class="min-w-0">
+                        <h2 class="page-section-title fw-bold mb-1">Project Overview</h2>
+                        <p class="text-muted mb-0 small">
+                            Track, qualify, and manage your sales pipeline. 
+                            <span class="ms-1 fw-bold"><span id="total-leads-count">0</span> entries</span>
+                        </p>
+                    </div>
+                    <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                        <div class="layout-toggles btn-group d-inline-flex">
+                            <button class="btn active" id="toggle-kanban" title="Kanban View">
+                                <i class="bi bi-grid-3x3-gap"></i>
+                            </button>
+                            <button class="btn" id="toggle-list" title="List View">
+                                <i class="bi bi-list-ul"></i>
+                            </button>
+                        </div>
+                        <button class="btn btn-primary d-flex align-items-center gap-2 fw-semibold px-3"
+                                onclick="window.location.href='areas.html?add=true'">
+                            <i class="bi bi-plus-lg"></i> <span class="d-none d-sm-inline">Add New Shop</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="filter-panel mb-4">
+                    <div class="filter-panel-head" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.filter-toggle-btn').classList.toggle('open');">
+                        <div class="filter-panel-head-left">
+                            <i class="bi bi-filter"></i> Filters
+                        </div>
+                        <button class="filter-toggle-btn" type="button">
+                            <i class="bi bi-chevron-down"></i>
+                        </button>
+                    </div>
+                    <div class="filter-panel-body open">
+                        <div class="filter-grid">
+                            <div class="filter-field">
+                                <label>Source</label>
+                                <select id="filter-source" class="form-select" onchange="applyKanbanFilters()">
+                                    <option value="ALL">All Sources</option>
+                                    <option value="Google Maps">Google Maps</option>
+                                    <option value="Walk-in">Walk-in</option>
+                                    <option value="Reference">Reference</option>
+                                    <option value="Cold Call">Cold Call</option>
+                                    <option value="Online">Online</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="filter-field">
+                                <label>Sentiment</label>
+                                <select id="filter-sentiment" class="form-select" onchange="applyKanbanFilters()">
+                                    <option value="ALL">All Sentiments</option>
+                                    <option value="Satisfied">Satisfied</option>
+                                    <option value="Accepted">Accepted</option>
+                                    <option value="Declined">Declined</option>
+                                    <option value="Thinking">Thinking</option>
+                                </select>
+                            </div>
+                            <div class="filter-field">
+                                <label>Assigned PM</label>
+                                <select id="filter-pm" class="form-select" onchange="applyKanbanFilters()">
+                                    <option value="ALL">All PMs / Reps</option>
+                                </select>
+                            </div>
+                            <div class="filter-field">
+                                <label>Timeframe</label>
+                                <select id="filter-timeframe" class="form-select" onchange="applyKanbanFilters()">
+                                    <option value="ALL">All Time</option>
+                                    <option value="7">Last 7 Days</option>
+                                    <option value="30">Last 30 Days</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="filter-actions mt-3">
+                            <button class="btn-filter-reset" onclick="resetKanbanFilters()">
+                                <i class="bi bi-x-circle"></i> Clear
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kanban View -->
+                <div id="kanban-view">
+                    <div class="kanban-board">
+                        <div class="kanban-column column-new">
+                            <div class="kanban-header">
+                                <div class="column-dot"></div>
+                                <span class="kanban-title">Lead</span>
+                                <span class="kanban-count" id="count-LEAD">0</span>
+                            </div>
+                            <div class="kanban-cards" id="cards-LEAD"></div>
+                        </div>
+
+                        <div class="kanban-column column-contacted">
+                            <div class="kanban-header">
+                                <div class="column-dot"></div>
+                                <span class="kanban-title">Pitching</span>
+                                <span class="kanban-count" id="count-PITCHING">0</span>
+                            </div>
+                            <div class="kanban-cards" id="cards-PITCHING"></div>
+                        </div>
+
+                        <div class="kanban-column column-meeting">
+                            <div class="kanban-header">
+                                <div class="column-dot"></div>
+                                <span class="kanban-title">Negotiation</span>
+                                <span class="kanban-count" id="count-NEGOTIATION">0</span>
+                            </div>
+                            <div class="kanban-cards" id="cards-NEGOTIATION"></div>
+                        </div>
+
+                        <div class="kanban-column column-converted">
+                            <div class="kanban-header">
+                                <div class="column-dot"></div>
+                                <span class="kanban-title">Delivery</span>
+                                <span class="kanban-count" id="count-DELIVERY">0</span>
+                            </div>
+                            <div class="kanban-cards" id="cards-DELIVERY"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- List View -->
+                <div id="list-view" class="d-none">
+                    <div id="list-view-container">
+                    </div>
+                </div>
+            </div><!-- /page-content-standard -->
+        </div>
+    </div>
+
+    <!-- Detail Panel -->
+    <div class="detail-overlay" id="detail-overlay"></div>
+    <div class="detail-panel" id="detail-panel">
+        <div class="p-4 border-bottom d-flex justify-content-between align-items-center">
+            <h5 class="fw-bold mb-0">Pipeline Details</h5>
+            <button class="btn-close" id="detail-close"></button>
+        </div>
+        <div class="p-4" id="detail-content">
+            <!-- Content injected via JS -->
+        </div>
+    </div>
+
+    <!-- Edit Shop Modal -->
+    <div class="modal fade" id="editShopModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Edit Pipeline Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="s-id" value="">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Shop / Client Name *</label>
+                        <input id="s-name" class="form-control" placeholder="e.g. Krishna Electronics">
+                    </div>
+                    
+
+
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label">Contact Person</label>
+                            <input id="s-contact" class="form-control" placeholder="Name">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Phone</label>
+                            <input id="s-phone" class="form-control" placeholder="+91 XXXXX XXXXX">
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <label class="form-label">Address</label>
+                        <input id="s-addr" class="form-control" placeholder="Shop address">
+                    </div>
+                    
+                    <div class="row g-3 mt-0">
+                        <div class="col-6">
+                            <label class="form-label">Source</label>
+                            <select id="s-source" class="form-select">
+                                <option value="">— Select —</option>
+                                <option>Walk-in</option>
+                                <option>Reference</option>
+                                <option>Cold Call</option>
+                                <option>Online</option>
+                                <option>Google Maps</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Project Type</label>
+                            <select id="s-project" class="form-select">
+                                <option value="">— Select —</option>
+                                <option>AI Integration</option>
+                                <option>SRM Setup</option>
+                                <option>Other</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button class="btn btn-primary" id="save-shop-btn" onclick="saveShopDetails()">Save Details</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assign PM Modal -->
+    <div class="modal fade" id="assignPmModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 16px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+                <div class="modal-header" style="border-bottom: 1px solid var(--border-subtle); padding: 20px 24px;">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-calendar-check text-warning me-2"></i>Schedule Demo & Assign PM</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <input type="hidden" id="assign-pm-shop-id">
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label class="form-label fw-bold text-secondary small mb-0">Select Project Manager</label>
+                            <button class="btn btn-sm text-primary fw-bold" onclick="autoSuggestPM()" id="auto-suggest-btn" style="background: #eff6ff; border: 1px solid #bfdbfe; font-size: 0.75rem; border-radius: 8px;">
+                                <i class="bi bi-magic me-1"></i>Auto Suggest
+                            </button>
+                        </div>
+                        <select class="form-select form-select-lg shadow-sm" id="pm-select" onchange="fetchTimeSlots()" style="border-radius: 10px; font-size: 0.95rem; border-color: var(--border); background-color: var(--bg-app); color: var(--text-main);">
+                            <option value="" disabled selected>— Select PM —</option>
+                        </select>
+                        <div id="pm-suggest-msg" class="text-success mt-2 d-none fw-semibold" style="font-size: 0.8rem;">
+                            <i class="bi bi-stars me-1"></i>Selected PM with the lowest workload.
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-secondary small mb-2">Demo Date</label>
+                        <input type="date" class="form-control form-control-lg shadow-sm" id="demo-date-select" onchange="fetchTimeSlots()" style="border-radius: 10px; font-size: 0.95rem; border-color: var(--border); background-color: var(--bg-app); color: var(--text-main);">
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label fw-bold text-secondary small mb-2">Available Time Slots</label>
+                        <div id="time-slots-container" class="d-flex flex-wrap gap-2">
+                            <div class="text-muted small w-100 text-center py-4" style="background: var(--bg-app); border-radius: 10px; border: 1px dashed var(--border);">
+                                Please select a PM and Date to view availability.
+                            </div>
+                        </div>
+                        <input type="hidden" id="selected-time-slot">
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top: none; padding: 0 24px 24px; justify-content: space-between;">
+                    <button type="button" class="btn btn-light fw-bold" data-bs-dismiss="modal" style="border-radius: 10px; padding: 10px 20px;">Cancel</button>
+                    <button type="button" class="btn btn-warning fw-bold text-dark shadow-sm" id="submit-assign-pm-btn" onclick="submitAssignPm()" style="border-radius: 10px; padding: 10px 24px;" disabled>
+                        <i class="bi bi-send-fill me-2"></i>Schedule & Transfer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../js/utils.js?v=20260321"></script>
+    <script src="../js/api.js?v=20260321"></script>
+    <script src="../js/auth.js?v=20260321"></script>
+    <script src="../js/ui_components.js?v=20260321"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        requireAuth();
+        const sb = document.getElementById('sidebar');
+        if (sb) sb.innerHTML = renderSidebar('leads');
+        injectTopHeader('Projects Overview');
+
+
+        const getNextActionText = (status) => {
+            switch(status) {
+                case 'LEAD': return 'Visit Shop';
+                case 'PITCHING': return 'Assign PM & Schedule Demo';
+                case 'NEGOTIATION': return 'Close Deal';
+                default: return 'View Details';
+            }
+        };
+
+        const getInitials = (name) => {
+            if (!name) return 'U';
+            return name.split(' ').map(n => n.charAt(0)).join('').toUpperCase().substring(0, 2);
+        };
+
+        let leadStore = {};
+
+        async function loadLeads(filters = {}) {
+            try {
+                // Reset bulk selection UI
+                const selectAll = document.getElementById('lead-select-all');
+                if (selectAll) {
+                    selectAll.checked = false;
+                    updateSelectedCount();
+                }
+
+                const params = new URLSearchParams();
+                if (filters.source) params.append('source', filters.source);
+                if (filters.owner) params.append('owner_id', filters.owner);
+                const selectAllBox = document.getElementById('lead-select-all');
+                if (selectAllBox) {
+                    selectAllBox.checked = false;
+                }
+                updateSelectedCount();
+
+                const kanbanData = await window.ApiClient.request(`/shops/kanban?${params.toString()}`);
+                let totalCount = 0;
+
+                ['LEAD', 'PITCHING', 'NEGOTIATION', 'DELIVERY'].forEach(status => {
+                    const container = document.getElementById(`cards-${status}`);
+                    const countEl = document.getElementById(`count-${status}`);
+                    const leads = kanbanData[status] || [];
+
+                    totalCount += leads.length;
+                    if (countEl) countEl.textContent = leads.length;
+                    
+                    if (!container) return;
+                    container.innerHTML = leads.map(l => {
+                        leadStore[l.id] = l;
+                        const sourceClass = (l.source || 'Other').toLowerCase().replace(' ', '-');
+
+                        // Stale detection (3 days)
+                        const updatedAt = l.updated_at ? new Date(l.updated_at) : null;
+                        const daysSince = updatedAt ? Math.floor((Date.now() - updatedAt) / 86400000) : null;
+                        const isStale = daysSince !== null && daysSince >= 3 && status !== 'DELIVERY';
+
+                        return `
+                            <div class="lead-card ${isStale ? 'stale' : ''}" 
+                                data-source="${(l.source || 'Other')}"
+                                data-pm="${l.project_manager_name || ''}"
+                                data-owner="${l.owner_name || ''}"
+                                data-sentiment="${(() => {
+                                    if (!l.last_visit_status) return '';
+                                    let es = l.last_visit_status;
+                                    if (l.project_manager_id && es !== 'ACCEPT') es = 'SATISFIED';
+                                    const vsLabels = { 'SATISFIED': 'Satisfied', 'ACCEPT': 'Accepted', 'DECLINE': 'Declined', 'TAKE_TIME_TO_THINK': 'Thinking', 'OTHER': 'Other' };
+                                    return vsLabels[es] || es;
+                                })()}"
+                                data-created="${l.created_at || ''}"
+                                onclick="openDetail(${l.id})">
+                                <div class="lead-name text-truncate">${l.contact_person || 'Unnamed Contact'}</div>
+                                <div class="lead-company text-truncate">${l.name}</div>
+                                <div class="lead-info-row">
+                                    <i class="bi bi-telephone"></i>
+                                    <span>${l.phone || '—'}</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-3">
+                                    <span class="source-badge bg-${sourceClass}">${l.source || 'Other'}</span>
+                                    <div class="lead-owner">
+                                        <div class="owner-avatar">${(l.owner_name || 'U')[0].toUpperCase()}</div>
+                                        <span>${l.owner_name || 'Unassigned'}</span>
+                                    </div>
+                                </div>
+                                ${l.last_visitor_name ? `
+                                <div class="mt-2">
+                                    <span class="badge bg-light text-dark border" style="font-size:0.7rem;">
+                                        <i class="bi bi-person-walking me-1"></i>Visited by: ${l.last_visitor_name}
+                                    </span>
+                                    ${(() => {
+                                        if (!l.last_visit_status) return '';
+                                        let effectiveStatus = l.last_visit_status;
+                                        // If a PM is assigned, force status to SATISFIED (unless officially ACCEPTED)
+                                        if (l.project_manager_id && effectiveStatus !== 'ACCEPT') {
+                                            effectiveStatus = 'SATISFIED';
+                                        }
+                                        const vsColors = {
+                                            'SATISFIED':          'background:#dbeafe;color:#1d4ed8;',
+                                            'ACCEPT':             'background:#dcfce7;color:#16a34a;',
+                                            'DECLINE':            'background:#fee2e2;color:#dc2626;',
+                                            'TAKE_TIME_TO_THINK': 'background:#fef9c3;color:#b45309;',
+                                            'OTHER':              'background:#f1f5f9;color:#475569;',
+                                        };
+                                        const vsLabels = {
+                                            'SATISFIED':          'Satisfied',
+                                            'ACCEPT':             'Accepted',
+                                            'DECLINE':            'Declined',
+                                            'TAKE_TIME_TO_THINK': 'Thinking',
+                                            'OTHER':              'Other',
+                                        };
+                                        const vstyle = vsColors[effectiveStatus] || 'background:#f1f5f9;color:#475569;';
+                                        const vlabel = vsLabels[effectiveStatus] || effectiveStatus.replace(/_/g, ' ');
+                                        return `<span class="badge ms-1" style="${vstyle}font-size:0.65rem;">${vlabel}</span>`;
+                                    })()}
+                                </div>` : ''}
+                                ${l.project_manager_name ? `
+                                <div class="mt-1">
+                                    <span class="badge" style="background:#dbeafe;color:#1d4ed8;font-size:0.65rem;">
+                                        <i class="bi bi-person-gear me-1"></i>PM: ${l.project_manager_name}
+                                    </span>
+                                </div>` : ''}
+                                ${status === 'NEGOTIATION' ? `
+                                <div class="mt-2">
+                                    <button class="btn btn-sm btn-success w-100 fw-bold"
+                                        onclick="event.stopPropagation(); window.location.href='billing.html?close_shop_id=${l.id}'">
+                                        <i class="bi bi-check2-circle me-1"></i>Close Deal &#10140;
+                                    </button>
+                                </div>` : ''}
+                            </div>
+                        `;
+                    }).join('');
+
+                    if (leads.length === 0) {
+                        container.innerHTML = `<div class="text-center py-4 text-muted small opacity-50">No leads</div>`;
+                    }
+                });
+
+                const totalEl = document.getElementById('total-leads-count');
+                if (totalEl) totalEl.textContent = totalCount;
+
+                // List View implementation
+                const allLeads = Object.values(kanbanData).flat();
+                renderListView(allLeads);
+
+                // Rebuild the PM filter dropdown with names from the current data
+                populatePmFilter();
+
+            } catch (err) {
+                console.error('Failed to load leads:', err);
+            }
+        }
+
+        function populatePmFilter() {
+            const pmSet = new Set();
+            document.querySelectorAll('.lead-card[data-pm]').forEach(card => {
+                const pm = card.dataset.pm;
+                if (pm) pmSet.add(pm);
+            });
+            const pmSelect = document.getElementById('filter-pm');
+            if (!pmSelect) return;
+            const current = pmSelect.value;
+            // keep the first "All PMs" option, rebuild the rest
+            pmSelect.innerHTML = '<option value="ALL">All PMs / Reps</option>';
+            [...pmSet].sort().forEach(name => {
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                if (name === current) opt.selected = true;
+                pmSelect.appendChild(opt);
+            });
+        }
+
+        function applyKanbanFilters() {
+            const source    = document.getElementById('filter-source')?.value || 'ALL';
+            const sentiment = document.getElementById('filter-sentiment')?.value || 'ALL';
+            const pm        = document.getElementById('filter-pm')?.value || 'ALL';
+            const timeframe = document.getElementById('filter-timeframe')?.value || 'ALL';
+
+            const now = Date.now();
+            const cutoff = timeframe !== 'ALL' ? now - (parseInt(timeframe) * 86400000) : null;
+
+            document.querySelectorAll('.lead-card').forEach(card => {
+                let show = true;
+                if (source !== 'ALL' && card.dataset.source !== source) show = false;
+                if (sentiment !== 'ALL' && card.dataset.sentiment !== sentiment) show = false;
+                if (pm !== 'ALL' && card.dataset.pm !== pm) show = false;
+                if (cutoff) {
+                    const created = card.dataset.created ? new Date(card.dataset.created).getTime() : 0;
+                    if (!created || created < cutoff) show = false;
+                }
+                card.style.display = show ? '' : 'none';
+            });
+
+            // Recount visible cards per column
+            ['LEAD', 'PITCHING', 'NEGOTIATION', 'DELIVERY'].forEach(status => {
+                const col = document.getElementById(`cards-${status}`);
+                const countEl = document.getElementById(`count-${status}`);
+                if (col && countEl) {
+                    const visible = col.querySelectorAll('.lead-card:not([style*="display: none"])').length;
+                    countEl.textContent = visible;
+                }
+            });
+        }
+
+        function resetKanbanFilters() {
+            ['filter-source', 'filter-sentiment', 'filter-pm', 'filter-timeframe'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = 'ALL';
+            });
+            applyKanbanFilters();
+        }
+
+        function renderListView(leads) {
+            const container = document.getElementById('list-view-container');
+            if (!leads || leads.length === 0) {
+                container.innerHTML = `<div class="text-center py-5 text-muted"><i class="bi bi-inbox fs-1 d-block mb-2"></i>No leads found.</div>`;
+                return;
+            }
+
+            const stageBadge = (stage) => {
+                const map = {
+                    'LEAD':        { bg: 'bg-primary-subtle',   text: 'text-primary'   },
+                    'PITCHING':    { bg: 'bg-warning-subtle',   text: 'text-warning'   },
+                    'NEGOTIATION': { bg: 'bg-info-subtle',      text: 'text-info'      },
+                    'DELIVERY':    { bg: 'bg-success-subtle',   text: 'text-success'   },
+                    'MAINTENANCE': { bg: 'bg-secondary-subtle', text: 'text-secondary' },
+                };
+                const s = map[stage] || map['LEAD'];
+                return `<span class="badge ${s.bg} ${s.text} rounded-pill px-3" style="font-size:0.72rem;">${(stage || 'LEAD').replace(/_/g,' ')}</span>`;
+            };
+
+            let html = '';
+            leads.forEach(l => {
+                const contactName  = l.contact_person || '—';
+                const shopName     = l.name || '—';
+                const phone        = l.phone || '—';
+                const assigneeName = (l.assigned_to_user?.name) || l.assigned_to_name || l.owner_name || 'Unassigned';
+                const initials     = getInitials(assigneeName);
+                const pmName       = l.project_manager_name || null;
+
+                // Sentiment badge (mirrors kanban card logic)
+                let sentimentBit = '';
+                if (l.last_visit_status) {
+                    let es = l.last_visit_status;
+                    if (l.project_manager_id && es !== 'ACCEPT') es = 'SATISFIED';
+                    const vsColors = {
+                        'SATISFIED':          'background:#dbeafe;color:#1d4ed8;',
+                        'ACCEPT':             'background:#dcfce7;color:#16a34a;',
+                        'DECLINE':            'background:#fee2e2;color:#dc2626;',
+                        'TAKE_TIME_TO_THINK': 'background:#fef9c3;color:#b45309;',
+                        'OTHER':              'background:#f1f5f9;color:#475569;',
+                    };
+                    const vsLabels = { 'SATISFIED':'Satisfied','ACCEPT':'Accepted','DECLINE':'Declined','TAKE_TIME_TO_THINK':'Thinking','OTHER':'Other' };
+                    const vstyle = vsColors[es] || 'background:#f1f5f9;color:#475569;';
+                    const vlabel = vsLabels[es] || es.replace(/_/g,' ');
+                    sentimentBit = `<span class="badge me-1" style="${vstyle}font-size:0.62rem;">${vlabel}</span>`;
+                }
+                const pmBit = pmName
+                    ? `<span class="badge" style="background:#dbeafe;color:#1d4ed8;font-size:0.62rem;"><i class="bi bi-person-gear me-1"></i>PM: ${pmName}</span>`
+                    : '';
+
+                const actionLabel = (l.pipeline_stage === 'PITCHING' && l.project_manager_id)
+                    ? 'Re-assign PM'
+                    : getNextActionText(l.pipeline_stage);
+
+                html += `
+                <div class="card shadow-sm mb-3 border rounded-4">
+                    <div class="card-body p-3">
+                        <!-- Top Row: Name + Status -->
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <h6 class="fw-bold mb-0 text-dark">${shopName}</h6>
+                                ${(sentimentBit || pmBit) ? `<div class="mt-1">${sentimentBit}${pmBit}</div>` : ''}
+                            </div>
+                            ${stageBadge(l.pipeline_stage)}
+                        </div>
+                        <!-- Middle Row: Grid Data -->
+                        <div class="row g-2 align-items-center" style="font-size:0.85rem;">
+                            <div class="col-4">
+                                <div class="text-muted small">Contact</div>
+                                <div class="fw-medium text-truncate">${contactName}</div>
+                            </div>
+                            <div class="col-4">
+                                <div class="text-muted small">Phone</div>
+                                <div class="fw-medium"><i class="bi bi-telephone me-1 text-muted" style="font-size:0.75rem;"></i>${phone}</div>
+                            </div>
+                            <div class="col-4 d-flex align-items-center gap-2 border-start ps-2">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                     style="background:#eef2ff;color:#2563eb;width:28px;height:28px;font-size:0.68rem;font-weight:700;">
+                                    ${initials}
+                                </div>
+                                <div>
+                                    <div class="text-muted small">Assigned To</div>
+                                    <div class="fw-medium text-truncate" style="max-width:70px;">${assigneeName}</div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Bottom Row: Action -->
+                        <div class="mt-3">
+                            <button class="btn btn-outline-secondary btn-sm w-100 rounded-pill fw-medium"
+                                    onclick="event.stopPropagation(); window.openDetail(${l.id});">
+                                ${actionLabel} <i class="bi bi-arrow-right-short ms-1"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+            });
+
+            container.innerHTML = html;
+        }
+
+        window.openDetail = (id) => {
+            const l = leadStore[id];
+            if (!l) return;
+
+            // Define pipeline logic based on shop status
+            const pipelineStatuses = ['LEAD', 'PITCHING', 'NEGOTIATION', 'DELIVERY'];
+            const currentStatusIndex = pipelineStatuses.indexOf(l.pipeline_stage || 'LEAD');
+            const steps = [
+                { label: 'Assign the Shop', index: 0 },
+                { label: 'Visit & Explain the Product', index: 1 },
+                { label: 'Schedule the Demo', index: 2 },
+                { label: 'Project Started', index: 3 }
+            ];
+
+            let timelineHtml = `<div class="mt-4 pt-3 border-top"><h6 class="fw-bold mb-3" style="font-size:0.85rem;color:#64748b;">PIPELINE PROGRESS</h6><div class="px-2">`;
+
+            steps.forEach((step, i) => {
+                const isCompleted = currentStatusIndex >= step.index;
+                const isLast = i === steps.length - 1;
+
+                // Step 2 (index 2 = "Schedule the Demo") gets special "In Progress" treatment
+                // when a PM is assigned but demo_stage < 3
+                const isStep3InProgress = (step.index === 2) && !isCompleted && l.project_manager_id && (l.demo_stage || 0) < 3;
+
+                // Colors: Green if done, Blue spinner if in-progress, Gray if pending
+                const dotColor = isCompleted ? '#10b981' : (isStep3InProgress ? '#2563eb' : '#e2e8f0');
+                const iconHtml = isCompleted
+                    ? `<i class="bi bi-check text-white" style="font-size: 0.75rem;"></i>`
+                    : (isStep3InProgress ? `<i class="bi bi-arrow-repeat text-white" style="font-size: 0.6rem;"></i>` : '');
+                const textColor = isCompleted ? '#0f172a' : (isStep3InProgress ? '#2563eb' : '#94a3b8');
+                const weightClass = (isCompleted || isStep3InProgress) ? 'fw-bold' : 'fw-medium';
+                const subText = isStep3InProgress
+                    ? `<div class="mt-1" style="font-size:0.72rem;color:#2563eb;"><i class="bi bi-person-gear me-1"></i>Assigned to PM: ${l.project_manager_name}</div>`
+                    : '';
+                timelineHtml += `
+                    <div class="d-flex position-relative z-1" style="margin-bottom: ${isLast ? '0' : '1.5rem'};">
+                        ${isCompleted && !isLast ? `<div class="position-absolute" style="left: 7px; top: 16px; bottom: -24px; width: 2px; background: #10b981; z-index: -1;"></div>` : ''}
+                        
+                        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" 
+                             style="width: 16px; height: 16px; margin-top: 2px; background: ${dotColor}; transition: background 0.3s;">
+                            ${iconHtml}
+                        </div>
+                        <div class="ms-3">
+                            <div class="${weightClass}" style="font-size: 0.8rem; color: ${textColor};">${step.label}</div>
+                            ${subText}
+                        </div>
+                    </div>
+                `;
+            });
+
+            timelineHtml += `</div></div>`;
+
+            const pmBtnLabel = l.project_manager_id ? 'Re-assign PM' : 'Assign PM &amp; Schedule Demo';
+            const pmAssignBtnHtml = (l.pipeline_stage === 'PITCHING') ? `
+                <button class="btn btn-warning w-100 mb-2 d-flex align-items-center gap-2 justify-content-center"
+                    onclick="openAssignPmModal(${l.id})">
+                    <i class="bi bi-person-badge"></i> ${pmBtnLabel}
+                </button>` : '';
+
+            const closeDealBtnHtml = (l.pipeline_stage === 'NEGOTIATION') ? `
+                <button class="btn btn-success w-100 mb-2 d-flex align-items-center gap-2 justify-content-center"
+                    onclick="window.location.href='billing.html?close_shop_id=${l.id}'">
+                    <i class="bi bi-check2-circle"></i> Close Deal &#10140;
+                </button>` : '';
+
+            const content = `
+                <div class="mb-4">
+                    <label class="text-muted small text-uppercase fw-bold mb-1">Company</label>
+                    <div class="h5 fw-bold">${l.name}</div>
+                </div>
+                <div class="mb-4">
+                    <label class="text-muted small text-uppercase fw-bold mb-1">Contact</label>
+                    <div class="fw-bold">${l.contact_person || '—'}</div>
+                    <div class="text-primary">${l.phone || '—'}</div>
+                </div>
+                <div class="mb-4">
+                    <label class="text-muted small text-uppercase fw-bold mb-1">Area</label>
+                    <div class="fw-bold"><i class="bi bi-geo-alt me-1"></i>${l.area_name || '—'}</div>
+                </div>
+                ${l.project_manager_name ? `
+                <div class="mb-4">
+                    <label class="text-muted small text-uppercase fw-bold mb-1">Assigned PM</label>
+                    <div class="fw-bold text-success"><i class="bi bi-person-check me-1"></i>${l.project_manager_name}</div>
+                    <div class="small text-muted mt-1">Demos completed: ${l.demo_stage || 0}</div>
+                    ${l.demo_scheduled_at ? `<div class="mt-1"><span class="badge" style="background:#e0e7ff;color:#2563eb;font-size:0.68rem;"><i class="bi bi-calendar-event me-1"></i>Next Demo: ${new Date(l.demo_scheduled_at).toLocaleString('en-IN', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</span></div>` : ''}
+                </div>` : ''}
+
+                <div class="mt-4 pt-4 border-top">
+                    <!-- Changed redirect to open Edit modal -->
+                    <button class="btn btn-outline-primary w-100 mb-2" onclick="openEditShopModal(${l.id})">Edit Details</button>
+                    ${closeDealBtnHtml}
+                    ${pmAssignBtnHtml}
+                </div>
+                ${timelineHtml}
+            `;
+            document.getElementById('detail-content').innerHTML = content;
+            document.getElementById('detail-overlay').style.display = 'block';
+            document.getElementById('detail-panel').classList.add('show');
+        };
+
+        window.openEditShopModal = async (shopId) => {
+            console.log("Opening shop modal for ID:", shopId);
+            try {
+                // Fetch the latest shop details to populate the form
+                const shop = await window.ApiClient.getShop(shopId);
+                
+                // Pre-fill form fields
+                document.getElementById('s-id').value = shop.id;
+                document.getElementById('s-name').value = shop.name || '';
+                document.getElementById('s-contact').value = shop.contact_person || '';
+                document.getElementById('s-phone').value = shop.phone || '';
+                document.getElementById('s-addr').value = shop.address || '';
+                document.getElementById('s-source').value = shop.source || '';
+                document.getElementById('s-project').value = shop.project_type || '';
+
+                // Show the modal
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('editShopModal')).show();
+            } catch(e) {
+                console.error("Failed to fetch shop details", e);
+                const errorMsg = e?.data?.detail || e?.message || "Failed to load details for editing.";
+                showToast(errorMsg, "error");
+            }
+        };
+
+        window.saveShopDetails = async () => {
+            const btn = document.getElementById('save-shop-btn');
+            const shopId = document.getElementById('s-id').value;
+            const name = document.getElementById('s-name').value.trim();
+
+            if (!name) {
+                showToast('Shop name is required', 'error');
+                return;
+            }
+
+            const payload = {
+                name: name,
+                contact_person: document.getElementById('s-contact').value,
+                phone: document.getElementById('s-phone').value,
+                address: document.getElementById('s-addr').value,
+                source: document.getElementById('s-source').value || 'Other',
+                project_type: document.getElementById('s-project').value || null,
+            };
+
+            try {
+                btn.disabled = true;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Saving...';
+                
+                await window.ApiClient.updateShop(shopId, payload);
+                showToast('Details updated successfully!', 'success');
+                
+                // Keep the detail panel open but refresh the Kanban board underneath
+                bootstrap.Modal.getInstance(document.getElementById('editShopModal')).hide();
+                await loadLeads();
+                
+                // Re-open/refresh the side panel details
+                window.openDetail(shopId); 
+
+            } catch(e) {
+                console.error("Failed to save shop details", e);
+                showToast(e?.data?.detail || "Failed to save details.", "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Save Details';
+            }
+        };
+
+        window.approvePipelineEntry = async (id) => {
+            if (!confirm('Are you sure you want to approve this entry and move it to the project stage?')) return;
+
+            const btn = document.getElementById(`approve-btn-${id}`);
+            try {
+                if (btn) {
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Approving...';
+                }
+
+                await window.ApiClient.approvePipelineEntry(id);
+                showToast('Entry approved successfully!', 'success');
+
+                // Reload leads to update Kanban
+                await loadLeads();
+
+                // Close detail panel
+                const overlay = document.getElementById('detail-overlay');
+                if (overlay) overlay.click();
+            } catch (err) {
+                console.error('Failed to approve entry:', err);
+                showToast(err.data?.detail || 'Failed to approve entry', 'error');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = 'Approve & Start Project';
+                }
+            }
+        };
+
+        const detailClose = document.getElementById('detail-close');
+        const detailOverlay = document.getElementById('detail-overlay');
+        
+        if (detailClose && detailOverlay) {
+            detailClose.onclick = detailOverlay.onclick = () => {
+                detailOverlay.style.display = 'none';
+                const detailPanel = document.getElementById('detail-panel');
+                if (detailPanel) detailPanel.classList.remove('show');
+            };
+        }
+
+        // View Toggling
+        const toggleKanban = document.getElementById('toggle-kanban');
+        const toggleList = document.getElementById('toggle-list');
+        const kanbanView = document.getElementById('kanban-view');
+        const listView = document.getElementById('list-view');
+        
+        if (toggleKanban) {
+            toggleKanban.onclick = function () {
+                this.classList.add('active');
+                if (toggleList) toggleList.classList.remove('active');
+                if (kanbanView) kanbanView.classList.remove('d-none');
+                if (listView) listView.classList.add('d-none');
+            };
+        }
+        
+        if (toggleList) {
+            toggleList.onclick = function () {
+                this.classList.add('active');
+                if (toggleKanban) toggleKanban.classList.remove('active');
+                if (listView) listView.classList.remove('d-none');
+                if (kanbanView) kanbanView.classList.add('d-none');
+            };
+        }
+
+        function toggleAllLeads(master) {
+            document.querySelectorAll('.lead-checkbox').forEach(cb => cb.checked = master.checked);
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            const selected = document.querySelectorAll('.lead-checkbox:checked').length;
+
+            window.updateBulkActionBar({
+                count: selected,
+                onDelete: () => batchDeleteLeads(),
+                onCancel: () => {
+                    document.querySelectorAll('.lead-checkbox').forEach(cb => cb.checked = false);
+                    const selectAllEl = document.getElementById('lead-select-all');
+                    if (selectAllEl) {
+                        selectAllEl.checked = false;
+                    }
+                    updateSelectedCount();
+                }
+            });
+        }
+
+        async function batchDeleteLeads() {
+            const selectedIds = Array.from(document.querySelectorAll('.lead-checkbox:checked')).map(cb => parseInt(cb.value));
+            if (!selectedIds.length) return;
+
+            const u = JSON.parse(sessionStorage.getItem('srm_user') || '{}');
+            if (u.role !== 'ADMIN') {
+                showToast('Only Admins can perform bulk delete', 'error');
+                return;
+            }
+
+            if (!confirm(`Permanently delete ${selectedIds.length} lead entries?`)) return;
+
+            const btn = document.getElementById('batch-delete-btn');
+            if (!btn) return;
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+
+            try {
+                await window.ApiClient.request('/shops/batch-delete', {
+                    method: 'POST',
+                    body: selectedIds
+                });
+                showToast(`Successfully removed ${selectedIds.length} entries`, 'success');
+                await loadLeads();
+            } catch (err) {
+                showToast('Bulk delete failed', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        }
+
+        // Initialize Filters
+        async function initFilters() {
+            try {
+                const usersRes = await apiGet('/users/');
+                const users = Array.isArray(usersRes) ? usersRes : (usersRes.items || []);
+
+                renderFilterPanel({
+                    containerId: 'filter-wrapper',
+                    filters: [
+                        { type: 'select', label: 'Source', id: 'filter-source', options: [
+                            { value: 'ALL', label: 'All Sources' },
+                            { value: 'Website', label: 'Website' },
+                            { value: 'Cold Call', label: 'Cold Call' },
+                            { value: 'Social', label: 'Social' },
+                            { value: 'Referral', label: 'Referral' },
+                            { value: 'Other', label: 'Other' }
+                        ]},
+                        { type: 'select', label: 'Owner', id: 'filter-owner', options: [{ value: 'ALL', label: 'All Owners' }, ...users.map(u => ({ value: u.id, label: u.name || u.email }))] }
+                    ],
+                    onApply: (data) => loadLeads({
+                        source: data['source'],
+                        owner: data['owner']
+                    }),
+                    onReset: () => loadLeads()
+                });
+            } catch (err) {
+                console.error("Filter Init Failed", err);
+            }
+        }
+
+        // Init
+        document.addEventListener('DOMContentLoaded', () => {
+            initFilters();
+            loadLeads();
+        });
+
+        // ── Assign PM Modal Functions ──
+        // ── Smart Demo Scheduling Engine ──
+        
+        window.openAssignPmModal = async (shopId) => {
+            document.getElementById('assign-pm-shop-id').value = shopId;
+            
+            // Reset UI
+            const pmSelect = document.getElementById('pm-select');
+            pmSelect.innerHTML = '<option value="">— Loading PMs... —</option>';
+            document.getElementById('pm-suggest-msg').classList.add('d-none');
+            document.getElementById('selected-time-slot').value = '';
+            document.getElementById('submit-assign-pm-btn').disabled = true;
+            
+            // Set date bounds (No booking in the past!)
+            const today = new Date().toISOString().split('T')[0];
+            const dateInput = document.getElementById('demo-date-select');
+            dateInput.value = today;
+            dateInput.min = today;
+            
+            document.getElementById('time-slots-container').innerHTML = `
+                <div class="text-muted small w-100 text-center py-4" style="background: #f8fafc; border-radius: 10px; border: 1px dashed #cbd5e1;">
+                    Please select a PM and Date to view availability.
+                </div>`;
+
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('assignPmModal')).show();
+
+            try {
+                // Fetch PMs to populate the dropdown
+                const usersRes = await apiGet('/users/project-managers');
+                const pms = Array.isArray(usersRes) ? usersRes : (usersRes.items || []);
+                pmSelect.innerHTML = '<option value="" disabled selected>— Select PM —</option>' +
+                    pms.map(u => `<option value="${u.id}">${u.name || u.email} (${u.role.replace(/_/g, ' ')})</option>`).join('');
+            } catch (e) {
+                pmSelect.innerHTML = '<option value="">— Failed to load —</option>';
+                console.error('Failed to load users', e);
+            }
+        };
+
+        window.autoSuggestPM = async () => {
+            const btn = document.getElementById('auto-suggest-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+            btn.disabled = true;
+
+            try {
+                // Call the workload intelligence endpoint
+                const response = await window.ApiClient.request('/users/suggest-pm', { method: 'GET' });
+                
+                // CRITICAL FIX: The backend returns 'user_id', not 'id'!
+                if (response && response.user_id) {
+                    const pmSelect = document.getElementById('pm-select');
+                    pmSelect.value = response.user_id;
+                    
+                    // Update the success message with the PM's name
+                    const msgEl = document.getElementById('pm-suggest-msg');
+                    msgEl.classList.remove('d-none');
+                    msgEl.innerHTML = `<i class="bi bi-stars me-1"></i>Selected ${response.name} (Least busy)`;
+                    
+                    // Automatically fetch their calendar slots!
+                    fetchTimeSlots(); 
+                } else {
+                    showToast('Could not find an available PM.', 'error');
+                }
+            } catch (e) {
+                console.error("Auto suggest failed", e);
+                showToast(e?.data?.detail || e?.message || 'Failed to suggest PM', 'error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        };
+
+        window.fetchTimeSlots = async () => {
+            const pmId = document.getElementById('pm-select').value;
+            const date = document.getElementById('demo-date-select').value;
+            const container = document.getElementById('time-slots-container');
+            
+            // Reset selection
+            document.getElementById('selected-time-slot').value = '';
+            document.getElementById('submit-assign-pm-btn').disabled = true;
+
+            if (!pmId || !date) return;
+
+            container.innerHTML = '<div class="w-100 text-center py-4"><div class="spinner-border text-primary" style="width: 2rem; height: 2rem;"></div></div>';
+
+            try {
+                // Call the PM availability calendar endpoint
+                const response = await window.ApiClient.request(`/users/${pmId}/availability?date=${date}`, { method: 'GET' });
+                const slots = response.slots || []; 
+                
+                if (!slots || slots.length === 0) {
+                    container.innerHTML = '<div class="text-muted small w-100 text-center py-3">No working hours configured for this day.</div>';
+                    return;
+                }
+
+                // Helper to format the time range beautifully for the UI
+                const formatRange = (hour24) => {
+                    if (hour24 === 10) return "10 to 11 AM";
+                    if (hour24 === 11) return "11 to 12 PM";
+                    if (hour24 === 12) return "12 to 01 PM";
+                    if (hour24 === 13) return "01 to 02 PM (Lunch)";
+                    if (hour24 === 14) return "02 to 03 PM";
+                    if (hour24 === 15) return "03 to 04 PM";
+                    if (hour24 === 16) return "04 to 05 PM";
+                    if (hour24 === 17) return "05 to 06 PM";
+                    return `${hour24}:00`; 
+                };
+
+                let html = '';
+                slots.forEach(slot => {
+                    // Ignore any slots 6:00 PM (18) or later to prevent overtime
+                    if (slot.hour24 >= 18) return; 
+
+                    // Force 1 PM (hour24 = 13) to ALWAYS be unavailable for lunch
+                    if (slot.hour24 === 13) {
+                        slot.is_available = false;
+                    }
+
+                    const displayLabel = formatRange(slot.hour24);
+                    
+                    // CRITICAL FIX: Convert hour24 (e.g., 14) to a valid 24-hour string (e.g., "14:00")
+                    const timeValue24 = String(slot.hour24).padStart(2, '0') + ':00';
+
+                    if (slot.is_available) {
+                        // Pass the safe 24-hour time to the hidden input
+                        html += `<button class="btn btn-outline-success slot-btn fw-bold px-3 py-2" style="border-radius: 8px; font-size: 0.85rem; border-width: 2px;" onclick="selectTimeSlot(this, '${timeValue24}')">${displayLabel}</button>`;
+                    } else {
+                        html += `<button class="btn btn-light text-muted fw-bold px-3 py-2" style="border-radius: 8px; font-size: 0.85rem; text-decoration: line-through; opacity: 0.6; border: 1px solid #e2e8f0;" disabled>${displayLabel}</button>`;
+                    }
+                });
+                container.innerHTML = html;
+
+            } catch (err) {
+                console.error("Availability Error:", err);
+                container.innerHTML = '<div class="text-danger small w-100 text-center py-3"><i class="bi bi-exclamation-triangle-fill me-1"></i> Failed to load calendar.</div>';
+            }
+        };
+
+        window.selectTimeSlot = (btnEl, timeValue) => {
+            document.querySelectorAll('.slot-btn').forEach(b => {
+                b.classList.remove('btn-success', 'text-white');
+                b.classList.add('btn-outline-success');
+            });
+            btnEl.classList.remove('btn-outline-success');
+            btnEl.classList.add('btn-success', 'text-white');
+            
+            document.getElementById('selected-time-slot').value = timeValue;
+            document.getElementById('submit-assign-pm-btn').disabled = false;
+        };
+
+        window.submitAssignPm = async () => {
+            const shopId = document.getElementById('assign-pm-shop-id').value;
+            const pmId = document.getElementById('pm-select').value;
+            const date = document.getElementById('demo-date-select').value;
+            const time = document.getElementById('selected-time-slot').value;
+            const btn = document.getElementById('submit-assign-pm-btn');
+
+            if (!pmId || !date || !time) { 
+                showToast('Please select a PM, Date, and Time Slot', 'error'); 
+                return; 
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Processing...';
+            
+            try {
+                // Combine date and time for the backend
+                const scheduledAt = new Date(`${date}T${time}:00`).toISOString();
+
+                // Send the assignment to the queue!
+                await window.ApiClient.request(`/shops/${shopId}/assign-pm`, {
+                    method: 'POST',
+                    body: { 
+                        pm_id: parseInt(pmId),
+                        demo_scheduled_at: scheduledAt
+                    }
+                });
+                
+                showToast('Lead scheduled and sent to Demo Queue!', 'success');
+                bootstrap.Modal.getInstance(document.getElementById('assignPmModal')).hide();
+                await loadLeads();
+                
+                // Refresh the detail pane if it's currently open
+                if (document.getElementById('detail-panel').classList.contains('show')) {
+                    window.openDetail(shopId);
+                }
+            } catch (e) {
+                console.error('Assign PM failed', e);
+                showToast(e?.data?.detail || 'Failed to schedule demo', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-send-fill me-2"></i>Schedule & Transfer';
+            }
+        };
+        if (window.checkUrlForQuickAdd) checkUrlForQuickAdd();
+    </script>
+</body>
+
+</html>
