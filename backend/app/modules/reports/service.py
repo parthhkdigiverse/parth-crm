@@ -46,6 +46,11 @@ class ReportService:
         now = datetime.now(UTC)
         curr_month = now.month
         curr_year = now.year
+        current_period = now.strftime('%Y-%m')
+        
+        # Local time boundaries for meeting queries
+        today_local = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        tomorrow_local = today_local + timedelta(days=1)
         
         # Calculate comparison timeframe (MoM)
         prev_month = 12 if curr_month == 1 else curr_month - 1
@@ -327,35 +332,21 @@ class ReportService:
     @staticmethod
     async def get_employee_performance(requesting_user: User, month: str = None, **kwargs):
         """Refined performance aggregation with custom timeframe support and Pydantic alignment."""
-        # 1. Parse timeframe from kwargs
         now = datetime.now(UTC)
         
-        # FIX: If start_date is empty string (All Time), default to very old date
-        start_date_str = kwargs.get("start_date")
-        if start_date_str == "":
-            start_dt = datetime(2000, 1, 1, tzinfo=UTC)
-        else:
-            start_dt = ReportService._parse_date(start_date_str) or datetime(now.year, now.month, 1, tzinfo=UTC)
-            
-        end_dt = ReportService._parse_date(kwargs.get("end_date"), is_end=True) or now
-        if start_date_str:
-             try: 
-                 # Handle empty or null strings from frontend
-                 if str(start_date_str).strip():
-                     start_dt = datetime.fromisoformat(str(start_date_str)).replace(tzinfo=UTC)
-                 else:
-                     # Default to last 3 months if empty
-                     start_dt = now - timedelta(days=90)
-             except: pass
-        else:
-             # Default to last 3 months if no start_date
-             start_dt = now - timedelta(days=90)
-             
-        if end_date_str:
-             try: 
-                 if str(end_date_str).strip():
-                     end_dt = datetime.fromisoformat(str(end_date_str)).replace(tzinfo=UTC)
-             except: pass
+        # 1. Standardize date parameters from frontend (handle null/empty strings)
+        start_date_raw = kwargs.get("start_date")
+        end_date_raw = kwargs.get("end_date")
+        
+        # Consistent parsing: default to last 90 days if missing/empty
+        start_dt = ReportService._parse_date(start_date_raw)
+        if not start_dt:
+            if start_date_raw == "": # Explicit "All Time" hint if passed as empty but handled by logic
+                 start_dt = datetime(2000, 1, 1, tzinfo=UTC)
+            else:
+                 start_dt = now - timedelta(days=90)
+                 
+        end_dt = ReportService._parse_date(end_date_raw, is_end=True) or now
 
         match_stage = {"is_deleted": False, "role": {"$ne": "CLIENT"}}
 

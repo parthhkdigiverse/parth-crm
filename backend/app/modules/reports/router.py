@@ -152,8 +152,8 @@ async def export_report(
                 "Visits": row.get('total_visits', 0),
                 "Leads": row.get('total_leads', 0),
                 "Success Rate": f"{row.get('success_rate', 0)}%",
-                "Target Achieved": f"INR {sales:,.0f} ({pct}%)",
-                "Incentive": f"INR {row.get('total_incentive', 0):,.0f}"
+                "Target Achieved": f"₹{sales:,.0f}",
+                "Incentive": f"₹{row.get('total_incentive', 0):,.0f}"
             })
         filename = f"employee_report_{datetime.now().strftime('%Y%m%d')}.csv"
         
