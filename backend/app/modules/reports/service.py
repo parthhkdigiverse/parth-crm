@@ -154,6 +154,15 @@ class ReportService:
             if end_dt: date_filter["$lte"] = end_dt
             p_match["created_at"] = date_filter
 
+        shop_match = {"is_deleted": False, "pipeline_stage": {"$in": ["PITCHING", "NEGOTIATION", "DELIVERY"]}}
+        if user_id:
+            shop_match["$or"] = [
+                {"assigned_user_ids": user_id},
+                {"assigned_owner_ids": user_id},
+                {"owner_id": user_id},
+                {"project_manager_id": user_id}
+            ]
+
         # Revenue filter: only count confirmed SUCCESSful payments
         b_match = {"status": "SUCCESS", "is_deleted": False}
         if user_id: b_match["created_by_id"] = user_id
@@ -212,9 +221,9 @@ class ReportService:
             Visit.get_pymongo_collection().aggregate(v_prev_pipe).to_list(length=1),
             Client.find(c_match).count(), 
             Client.find(c_match, {"$expr": curr_m_expr}).count(), Client.find(c_match, {"$expr": prev_m_expr}).count(),
-            Shop.find({"is_deleted": False, "pipeline_stage": {"$in": ["PITCHING", "NEGOTIATION", "DELIVERY"]}}).count(), 
-            Shop.find({"is_deleted": False, "pipeline_stage": {"$in": ["PITCHING", "NEGOTIATION", "DELIVERY"]}, "$expr": curr_m_expr}).count(), 
-            Shop.find({"is_deleted": False, "pipeline_stage": {"$in": ["PITCHING", "NEGOTIATION", "DELIVERY"]}, "$expr": prev_m_expr}).count(),
+            Shop.find({**shop_match}).count(), 
+            Shop.find({"$expr": curr_m_expr, **shop_match}).count(), 
+            Shop.find({"$expr": prev_m_expr, **shop_match}).count(),
             Bill.get_pymongo_collection().aggregate(rev_pipeline).to_list(length=None),
             Attendance.get_pymongo_collection().distinct("user_id", {"date": today_start, "is_deleted": False}),
             Issue.find(Issue.status == GlobalTaskStatus.OPEN, Issue.is_deleted == False).count(),

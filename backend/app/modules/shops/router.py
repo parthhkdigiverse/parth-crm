@@ -50,7 +50,7 @@ async def read_kanban_shops(
     source: Optional[str] = Query(None),
     current_user: User = Depends(staff_checker)
 ) -> Any:
-    employee_roles = {UserRole.SALES, UserRole.TELESALES}
+    employee_roles = {UserRole.SALES, UserRole.TELESALES, UserRole.PROJECT_MANAGER_AND_SALES}
     effective_owner_id = owner_id
     if (current_user and current_user.role in employee_roles) or my_view:
         effective_owner_id = current_user.id if current_user else None
