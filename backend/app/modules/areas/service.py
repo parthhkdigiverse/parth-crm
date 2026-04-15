@@ -30,12 +30,12 @@ class AreaService:
         )
         
         # Debug info
-        base_count = await find_query.count()
-        print("\n" + "="*50)
-        print(f"🕵️ DEBUG: Is Admin?  = {is_admin}")
-        print(f"🕵️ DEBUG: User ID    = {current_user.id}")
-        print(f"🕵️ DEBUG: Areas in DB= {base_count}")
-        print("="*50 + "\n")
+        # base_count = await find_query.count()
+        # print("\n" + "="*50)
+        # print(f"DEBUG: Is Admin?  = {is_admin}")
+        # print(f"DEBUG: User ID    = {current_user.id}")
+        # print(f"DEBUG: Areas in DB= {base_count}")
+        # print("="*50 + "\n")
 
         if is_admin:
             areas = await find_query.skip(skip).limit(limit).to_list()
@@ -74,8 +74,8 @@ class AreaService:
             shop_area_obj_ids = list(set(shop_area_obj_ids))
             shop_area_str_ids = list(set([str(aid) for aid in raw_area_ids]))
 
-            print(f"🕵️ DEBUG: shops found for user = {len(user_shops)}")
-            print(f"🕵️ DEBUG: shop_area_ids        = {shop_area_obj_ids}")
+            # print(f"DEBUG: shops found for user = {len(user_shops)}")
+            # print(f"DEBUG: shop_area_ids        = {shop_area_obj_ids}")
 
             # Type-safe area filter: match both ObjectId and string stored IDs
             area_filter = {
@@ -95,8 +95,8 @@ class AreaService:
             }
             areas = await Area.find(area_filter).skip(skip).limit(limit).to_list()
 
-            print(f"🕵️ DEBUG: areas found for user = {len(areas)}")
-            print("="*50 + "\n")
+            # print(f"DEBUG: areas found for user = {len(areas)}")
+            # print("="*50 + "\n")
 
         import asyncio
 
