@@ -61,6 +61,11 @@
                         <p class="text-muted mb-0" style="font-size:0.93rem;">Apply for leaves and track approval status.</p>
                     </div>
                     <div class="d-flex align-items-center gap-3">
+                        <!-- Admin Tab Switcher -->
+                        <div id="admin-tabs" class="nav nav-pills p-1 bg-light rounded-3 shadow-sm border" style="display:none; font-size: 0.85rem;">
+                            <button class="nav-link active px-3 py-2 fw-semibold" id="tab-team" onclick="switchTab('team')">Team Leaves</button>
+                            <button class="nav-link px-3 py-2 fw-semibold" id="tab-my" onclick="switchTab('my')">My Leaves</button>
+                        </div>
                         <button id="apply-leave-btn" class="btn btn-primary fw-semibold shadow-sm" style="border-radius:10px;" onclick="openLeaveModal()">
                             <i class="bi bi-calendar-plus me-2"></i>Apply Leave
                         </button>
@@ -260,6 +265,31 @@
         let leaveEditMode = false;
         let editingLeaveId = null;
         let currentLeaveRows = [];
+        let activeTab = canManageLeave ? 'team' : 'my';
+
+        window.switchTab = function(tab) {
+            activeTab = tab;
+            
+            // Update UI tabs
+            if (document.getElementById('admin-tabs')) {
+                document.getElementById('tab-team').classList.toggle('active', tab === 'team');
+                document.getElementById('tab-my').classList.toggle('active', tab === 'my');
+            }
+
+            // Toggle filter and summary visibility
+            const filterWrapper = document.getElementById('filter-wrapper');
+            const summaryBar = document.getElementById('leave-summary-bar');
+            
+            if (tab === 'team') {
+                if (filterWrapper) filterWrapper.style.display = 'block';
+                if (summaryBar) summaryBar.style.display = 'flex';
+            } else {
+                if (filterWrapper) filterWrapper.style.display = 'none';
+                if (summaryBar) summaryBar.style.display = 'none';
+            }
+
+            loadLeaves();
+        };
 
         const applyBtn = document.getElementById('apply-leave-btn');
         if (applyBtn && !canApplyLeave) {
@@ -302,6 +332,7 @@
         }
 
         if (canManageLeave) {
+            document.getElementById('admin-tabs').style.display = 'flex';
             document.getElementById('leave-summary-bar').style.display = 'flex';
             document.getElementById('filter-wrapper').style.display = 'block';
             ApiClient.getEmployees().then(emps => {
@@ -435,13 +466,17 @@
 
 
 
-        // Load leaves
-        async function loadLeaves() {
+        async function loadLeaves(filters = {}) {
             const tbody = document.getElementById('leaves-tbody');
+            
+            // Standardize pagination params
+            const skip = filters.skip || 0;
+            const limit = filters.limit || 200;
+
             try {
                 let allLeaves = null;
                 let leaves;
-                if (canManageLeave) {
+                if (canManageLeave && activeTab === 'team') {
                     allLeaves = await ApiClient.getAllLeaves();
                     leaves = [...allLeaves];
                 } else {

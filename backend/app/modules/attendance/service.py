@@ -10,6 +10,15 @@ from beanie import PydanticObjectId
 
 class AttendanceService:
     @staticmethod
+    def _normalize_dt(dt: Optional[datetime]) -> Optional[datetime]:
+        """Ensures datetime is UTC-aware for correct frontend processing."""
+        if not dt is None:
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=UTC)
+            return dt.astimezone(UTC)
+        return None
+
+    @staticmethod
     async def get_setting(key: str, default: str) -> str:
         row = await AppSetting.find_one(AppSetting.key == key)
         return row.value if row and row.value is not None else default
@@ -131,30 +140,28 @@ class AttendanceService:
         today = AttendanceService.get_ist_today()
 
         # Restore get_pymongo_collection() - valid on these models
-        att_coll   = Attendance.get_pymongo_collection()
-        leave_coll = LeaveRecord.get_pymongo_collection()
-
         start_dt, _  = AttendanceService._day_range(start_date)
         _,  end_dt   = AttendanceService._day_range(end_date)
 
-        # FIX 1: range query instead of date equality
-        all_att = await att_coll.find({
-            "user_id":    user.id,
-            "date":       {"$gte": start_dt, "$lte": end_dt},
-            "is_deleted": False
-        }).to_list(length=1000)
+        all_att = await Attendance.find(
+            Attendance.user_id == user.id,
+            Attendance.date >= start_dt,
+            Attendance.date <= end_dt,
+            Attendance.is_deleted == False
+        ).to_list()
 
-        all_leaves = await leave_coll.find({
-            "user_id":    user.id,
-            "start_date": {"$lte": end_dt},
-            "end_date":   {"$gte": start_dt},
-            "is_deleted": False
-        }).to_list(length=100)
+        all_leaves = await LeaveRecord.find(
+            LeaveRecord.user_id == user.id,
+            LeaveRecord.start_date <= end_dt,
+            LeaveRecord.end_date >= start_dt,
+            LeaveRecord.is_deleted == False
+        ).to_list()
 
         att_by_date = {}
         for a in all_att:
-            d = AttendanceService._to_date(a["date"])
-            att_by_date.setdefault(d, []).append(a)
+            d = AttendanceService._to_date(a.date)
+            # Use model_dump for compute_daily_summary compatibility
+            att_by_date.setdefault(d, []).append(a.model_dump())
 
         day = start_date
         while day <= end_date:
@@ -164,7 +171,7 @@ class AttendanceService:
 
             # FIX 4: removed isinstance guard — normalize both sides with _to_date
             has_leave = any(
-                AttendanceService._to_date(l["start_date"]) <= day <= AttendanceService._to_date(l["end_date"])
+                AttendanceService._to_date(l.start_date) <= day <= AttendanceService._to_date(l.end_date)
                 for l in all_leaves
             )
             if has_leave:
@@ -400,10 +407,8 @@ class AttendanceService:
         # The browser will automatically shift this to the user's local time (IST).
         # This single fix handles both the "In at" display and the "Duration" timer math.
         def normalize_dt(dt):
-            if not dt: return None, None
-            if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=UTC)
-            utc_dt = dt.astimezone(UTC)
+            utc_dt = AttendanceService._normalize_dt(dt)
+            if not utc_dt: return None, None
             return utc_dt, utc_dt.timestamp() * 1000
 
         last_punch_utc, last_punch_ts = normalize_dt(last_punch)
@@ -432,6 +437,11 @@ class AttendanceService:
             Attendance.date       <= day_end,
             Attendance.is_deleted == False
         ).sort("punch_in").to_list()
+        
+        # Normalize logs for frontend
+        for log in logs:
+            log.punch_in = AttendanceService._normalize_dt(log.punch_in)
+            log.punch_out = AttendanceService._normalize_dt(log.punch_out)
         return logs
 
     @staticmethod
@@ -456,46 +466,44 @@ class AttendanceService:
 
         user_ids = [u.id for u in users_to_report]
 
-        # Restore get_pymongo_collection
-        att_coll   = Attendance.get_pymongo_collection()
-        leave_coll = LeaveRecord.get_pymongo_collection()
-
         start_dt, _  = AttendanceService._day_range(start_date)
         _,  end_dt   = AttendanceService._day_range(end_date)
 
-        all_att = await att_coll.find({
-            "user_id":    {"$in": user_ids},
-            "date":       {"$gte": start_dt, "$lte": end_dt},   # FIX 1
-            "is_deleted": False
-        }).to_list(length=10000)
+        all_att = await Attendance.find(
+            {"user_id": {"$in": user_ids}},
+            Attendance.date >= start_dt,
+            Attendance.date <= end_dt,
+            Attendance.is_deleted == False
+        ).to_list()
 
-        all_leaves = await leave_coll.find({
-            "user_id":    {"$in": user_ids},
-            "start_date": {"$lte": end_dt},
-            "end_date":   {"$gte": start_dt},
-            "is_deleted": False
-        }).to_list(length=2000)
+        all_leaves = await LeaveRecord.find(
+            {"user_id": {"$in": user_ids}},
+            LeaveRecord.start_date <= end_dt,
+            LeaveRecord.end_date >= start_dt,
+            LeaveRecord.is_deleted == False
+        ).to_list()
 
         att_map = {}
         for a in all_att:
-            d = AttendanceService._to_date(a["date"])
+            d = AttendanceService._to_date(a.date)
             # Normalize ID to string for reliable dict lookup
-            uid = str(a["user_id"])
-            att_map.setdefault((uid, d), []).append(a)
+            uid = str(a.user_id)
+            # Use model_dump for compute_daily_summary compatibility
+            att_map.setdefault((uid, d), []).append(a.model_dump())
 
         # Efficient mapping for nested lookup
         leave_map = {}
         for l in all_leaves:
-            uid = str(l["user_id"])
-            sd = AttendanceService._to_date(l["start_date"])
-            ed = AttendanceService._to_date(l["end_date"])
+            uid = str(l.user_id)
+            sd = AttendanceService._to_date(l.start_date)
+            ed = AttendanceService._to_date(l.end_date)
             
             # Map each day in the leave period to the status for O(1) lookup
             curr_l = sd
             while curr_l <= ed:
                 # Only map days within the requested range to save memory
                 if start_date <= curr_l <= end_date:
-                    leave_map[(uid, curr_l)] = l.get("status")
+                    leave_map[(uid, curr_l)] = l.status
                 curr_l += timedelta(days=1)
 
         records     = []
@@ -511,10 +519,14 @@ class AttendanceService:
                 day_status = "PRESENT"
                 if AttendanceService.is_official_leave(day, settings):
                     day_status = "OFF"
-                elif summary["total_hours"] <= float(settings.get("absent_hours_threshold") or 0.0):
-                    day_status = "ABSENT"
-                elif summary["total_hours"] < float(settings.get("half_day_hours_threshold") or 4.0):
-                    day_status = "HALF"
+                elif summary["first_punch_in"] is not None:
+                    if day != AttendanceService.get_ist_today() and summary["total_hours"] < float(settings.get("half_day_hours_threshold") or 4.0):
+                        day_status = "HALF"
+                else:
+                    if summary["total_hours"] <= float(settings.get("absent_hours_threshold") or 0.0):
+                        day_status = "ABSENT"
+                    elif summary["total_hours"] < float(settings.get("half_day_hours_threshold") or 4.0):
+                        day_status = "HALF"
 
                 day_leave_status = leave_map.get((uid_str, day))
 
@@ -522,10 +534,11 @@ class AttendanceService:
                     "date":           day,
                     "user_id":        u.id,
                     "user_name":      u.name or u.email,
-                    "first_punch_in": summary["first_punch_in"],
-                    "last_punch_out": summary["last_punch_out"],
+                    "first_punch_in": AttendanceService._normalize_dt(summary["first_punch_in"]),
+                    "last_punch_out": AttendanceService._normalize_dt(summary["last_punch_out"]),
                     "total_hours":    summary["total_hours"],
                     "day_status":     day_status,
+                    "is_punched_in":  summary.get("missing_punch_out", False),
                     "leave_status":   day_leave_status,
                 })
                 total_hours += summary["total_hours"]

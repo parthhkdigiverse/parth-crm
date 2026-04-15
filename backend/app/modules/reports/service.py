@@ -20,6 +20,7 @@ from app.modules.billing.models import Bill
 from app.modules.salary.models import SalarySlip
 from app.modules.incentives.models import IncentiveSlip
 from app.modules.attendance.models import Attendance
+from app.modules.attendance.service import AttendanceService
 from app.modules.todos.models import Todo, TodoStatus
 from app.modules.meetings.models import MeetingSummary
 
@@ -43,6 +44,10 @@ class ReportService:
             user_id = requesting_user.id
 
         now = datetime.now(UTC)
+        today_ist = AttendanceService.get_ist_today()
+        # Ensure today_start matches the BSON Date storage (UTC 00:00:00)
+        today_start = datetime.combine(today_ist, datetime.min.time()).replace(tzinfo=UTC)
+        
         curr_month = now.month
         curr_year = now.year
         
@@ -149,7 +154,7 @@ class ReportService:
             {"$match": b_match},
             {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
         ]
-        today_start = datetime.combine(now.date(), datetime.min.time())
+        # today_start already defined above
         status_pipeline = [
             {"$match": v_match},
             {"$group": {"_id": "$status", "count": {"$sum": 1}}}
@@ -513,3 +518,26 @@ class ReportService:
             "net_profit": float(revenue - expenses),
             "new_clients": await Client.find({"$expr": {"$and": [{"$eq": [{"$type": "$created_at"}, "date"]}, {"$eq": [{"$month": "$created_at"}, m]}, {"$eq": [{"$year": "$created_at"}, year]}]}}).count()
         }
+    @staticmethod
+    async def get_present_employees(limit: int = 10):
+        """Get list of employees currently marked as present/active."""
+        today_ist = AttendanceService.get_ist_today()
+        today_start = datetime.combine(today_ist, datetime.min.time()).replace(tzinfo=UTC)
+        
+        present_user_ids = await Attendance.get_pymongo_collection().distinct(
+            "user_id", {"date": today_start, "is_deleted": False}
+        )
+        
+        if not present_user_ids:
+            return []
+            
+        users = await User.find(In(User.id, present_user_ids)).limit(limit).to_list()
+        
+        return [
+            {
+                "id": str(u.id),
+                "name": u.name or u.email.split('@')[0],
+                "role": u.role,
+                "email": u.email
+            } for u in users
+        ]

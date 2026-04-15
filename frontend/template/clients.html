@@ -555,6 +555,9 @@
                 let clients = [];
                 try {
                     const params = new URLSearchParams();
+                    params.append('limit', filters.limit || '200');
+                    if (filters.skip) params.append('skip', filters.skip);
+                    
                     if (filters.status) params.append('status', filters.status);
                     if (filters.pm) params.append('pm_id', filters.pm);
 
@@ -727,6 +730,10 @@
             async function populateEditModalWithPMs(currentPmId) {
                 const pmSelect = document.getElementById('edit-client-pm');
                 if (!pmSelect) return;
+                
+                // Set to loading first
+                pmSelect.innerHTML = '<option value="">Checking staff workload...</option>';
+                
                 try {
                     let pms = [];
                     try {
@@ -735,22 +742,31 @@
                     } catch (e) {
                         console.warn("Workload API failed, falling back to general PM list");
                         // Fallback to the general PM list used in leads.html
-                        const res = await window.ApiClient.request('/users/project-managers');
-                        pms = (res || []).map(u => ({ pm_id: u.id, pm_name: u.name || u.email, active_client_count: '?' }));
+                        try {
+                            const res = await window.ApiClient.request('/users/project-managers');
+                            pms = (res || []).map(u => ({ pm_id: u.id, pm_name: u.name || u.email, active_client_count: '?' }));
+                        } catch (innerE) {
+                            console.error("Staff list fallback failed:", innerE);
+                            pms = []; // Ensure pms is an array
+                        }
                     }
 
-                    pmSelect.innerHTML = '<option value="">-- Unassigned --</option>' + 
-                        pms.map(pm => {
-                            const id = pm.pm_id || pm.id;
-                            const name = pm.pm_name || pm.name || pm.email;
-                            const count = pm.active_client_count !== undefined ? pm.active_client_count : '?';
-                            return `<option value="${id}">${name} (${count} active clients)</option>`;
-                        }).join('');
+                    if (pms && pms.length > 0) {
+                        pmSelect.innerHTML = '<option value="">-- Unassigned --</option>' + 
+                            pms.map(pm => {
+                                const id = pm.pm_id || pm.id;
+                                const name = pm.pm_name || pm.name || pm.email;
+                                const count = pm.active_client_count !== undefined ? pm.active_client_count : '?';
+                                return `<option value="${id}">${name} (${count} active clients)</option>`;
+                            }).join('');
+                    } else {
+                        pmSelect.innerHTML = '<option value="">-- No PMs Available --</option>';
+                    }
                         
                     if (currentPmId) pmSelect.value = String(currentPmId);
                 } catch (err) {
                     console.error("Critical failure loading PMs:", err);
-                    pmSelect.innerHTML = '<option value="">Error loading staff list</option>';
+                    pmSelect.innerHTML = '<option value="">Error loading staff list (Basic info editable)</option>';
                 }
             }
 
@@ -764,7 +780,11 @@
                     document.getElementById('edit-c-org').value = client.organization || '';
                     document.getElementById('edit-c-addr').value = client.address || '';
                     
-                    await populateEditModalWithPMs(client.pm_id); // 🚀 NEW
+                    try {
+                        await populateEditModalWithPMs(client.pm_id);
+                    } catch (pmErr) {
+                        console.error("Non-blocking PM load error:", pmErr);
+                    }
 
                     new bootstrap.Modal(document.getElementById('editClientModal')).show();
                 } catch (e) {

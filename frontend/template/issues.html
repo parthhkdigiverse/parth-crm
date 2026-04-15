@@ -56,6 +56,33 @@
                                 <i class="bi bi-bug"></i>
                                 Issue Logs
                             </div>
+                            <!-- Status Filter Dropdown -->
+                            <div class="dropdown">
+                                <button class="btn btn-sm dropdown-toggle d-flex align-items-center gap-2 px-3" 
+                                    type="button" id="statusViewDropdown" data-bs-toggle="dropdown" aria-expanded="false"
+                                    style="background: var(--bg-app); border: 1.5px solid var(--border); border-radius: 10px; font-weight: 700; color: var(--text-main); height: 32px; font-size: 0.75rem;">
+                                    <i class="bi bi-grid-fill text-secondary"></i>
+                                    <span id="current-status-label">All Issues</span>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="statusViewDropdown" style="font-size: 0.85rem; border-radius: 12px; padding: 8px; min-width: 180px;">
+                                    <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 rounded-2 active" href="javascript:void(0)" onclick="switchStatusTab('ALL', 'All Issues', 'bi-grid-fill')">
+                                        <i class="bi bi-grid-fill text-secondary"></i> All Issues
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 rounded-2" href="javascript:void(0)" onclick="switchStatusTab('OPEN', 'Open Issues', 'bi-exclamation-circle-fill')">
+                                        <i class="bi bi-exclamation-circle-fill text-primary"></i> Open Issues
+                                    </a></li>
+                                    <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 rounded-2" href="javascript:void(0)" onclick="switchStatusTab('IN_PROGRESS', 'In Progress', 'bi-command')">
+                                        <i class="bi bi-command text-info"></i> In Progress
+                                    </a></li>
+                                    <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 rounded-2" href="javascript:void(0)" onclick="switchStatusTab('RESOLVED', 'Resolved Issues', 'bi-check-circle-fill')">
+                                        <i class="bi bi-check-circle-fill text-success"></i> Resolved
+                                    </a></li>
+                                    <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 rounded-2" href="javascript:void(0)" onclick="switchStatusTab('CANCELLED', 'Cancelled Issues', 'bi-x-circle-fill')">
+                                        <i class="bi bi-x-circle-fill text-muted"></i> Cancelled
+                                    </a></li>
+                                </ul>
+                            </div>
                         </div>
                         <div class="table-responsive mx-2 mb-2">
                             <table class="table align-middle mb-0">
@@ -204,6 +231,46 @@
             CANCELLED:   'badge-slate-light'
         };
 
+        let currentTabStatus = 'ALL';
+
+        window.switchStatusTab = function(status, label, iconClass) {
+            currentTabStatus = status;
+            
+            // Update UI Dropdown Label & Icon
+            if (label && iconClass) {
+                const labelEl = document.getElementById('current-status-label');
+                const btnEl = document.getElementById('statusViewDropdown');
+                if (labelEl) labelEl.textContent = label;
+                if (btnEl) {
+                    const icon = btnEl.querySelector('i');
+                    if (icon) {
+                        icon.className = `bi ${iconClass}`;
+                        if (status === 'OPEN') icon.style.color = 'var(--primary)';
+                        else if (status === 'RESOLVED') icon.style.color = 'var(--success-text)';
+                        else icon.style.color = 'var(--text-muted)';
+                    }
+                }
+            }
+
+            // Update active state in dropdown items
+            const menu = document.querySelector('#statusViewDropdown + .dropdown-menu');
+            if (menu) {
+                menu.querySelectorAll('.dropdown-item').forEach(el => {
+                    const clickAttr = el.getAttribute('onclick') || '';
+                    el.classList.toggle('active', clickAttr.includes(`'${status}'`));
+                });
+            }
+
+            // Update filter dropdown if it exists (for sync with renderFilterPanel)
+            const statusDropdown = document.getElementById('filter-status');
+            if (statusDropdown) {
+                statusDropdown.value = status;
+            }
+
+            // Load data
+            loadIssues({ status: status });
+        };
+
         const sevIcons = {
             HIGH: `<i class="bi bi-exclamation-triangle text-danger me-2"></i>`,
             MEDIUM: `<i class="bi bi-exclamation-triangle text-warning me-2"></i>`,
@@ -238,7 +305,9 @@
                 </tr>`;
 
             const params = new URLSearchParams();
-            params.append('limit', '200');
+            params.append('limit', filters.limit || '200');
+            if (filters.skip) params.append('skip', filters.skip);
+            
             if (filters.severity && filters.severity !== 'ALL') params.append('severity', filters.severity);
             if (filters.status && filters.status !== 'ALL') params.append('status', filters.status);
             if (filters.client && filters.client !== 'ALL') params.append('client_id', filters.client);
@@ -261,7 +330,7 @@
                     const stBadge = `<span class="badge rounded-pill fw-medium px-3 py-2 ${stStyle[i.status] || stStyle.PENDING}">${stLabel}</span>`;
                     const isCritical = i.severity === 'HIGH' && !['RESOLVED', 'CANCELLED'].includes(i.status);
                     const criticalClass = isCritical ? 'critical-issue-row' : '';
-                    const canUpdateIssue = isAdminUser || i.assigned_to_id === currentUser.id || i.reporter_id === currentUser.id;
+                    const canUpdateIssue = isAdminUser || (currentUser.id && (i.assigned_to_id === currentUser.id || i.reporter_id === currentUser.id));
                     const canDeleteIssue = isAdminUser;
                     return `
                 <tr class="align-middle ${criticalClass}" style="height: 60px; cursor: ${canUpdateIssue ? 'pointer' : 'default'};" ${canUpdateIssue ? `onclick="openHandleModal('${i.id}', '${i.status}', '${(i.remarks || '').replace(/'/g, "\\'")}')"` : ''}>
@@ -491,7 +560,7 @@
                 'i-title': 'Issue title is required'
             };
 
-            if (!window.validateForm(modalEl, rules)) {
+            if (window.validateForm && !window.validateForm(modalEl, rules)) {
                 return;
             }
 

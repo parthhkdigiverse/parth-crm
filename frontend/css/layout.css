@@ -15,9 +15,11 @@
     display: flex;
     flex-direction: column;
     min-width: 0;
-    width: 0; /* Allow flexbox to compute width correctly */
+    width: 0;
+    /* Allow flexbox to compute width correctly */
     position: relative;
-    overflow-x: hidden; /* Prevent horizontal scroll on the whole page */
+    overflow-x: hidden;
+    /* Prevent horizontal scroll on the whole page */
     transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -73,28 +75,37 @@
 /* Profile dropdown handled in theme.css & ui_components.js */
 
 /* Page Content Area - Final Standardized System */
-.page-content-standard, 
-.page-content, 
+.page-content-standard,
+.page-content,
 .page-container {
     flex-grow: 1;
     display: flex;
     flex-direction: column;
-    padding: 48px 32px 32px 32px; /* Standardized to prevent header overlap - Increased top padding to 48px */
-    margin: 0 auto; /* Removed top/bottom artificial margin gaps */
-    width: 100%; /* Full component width */
+    padding: 16px 36px 24px;
+    /* Restored original padding — sticky header does not overlap content */
+    margin: 0 auto;
+    /* Removed top/bottom artificial margin gaps */
+    width: 100%;
+    /* Full component width */
     max-width: var(--page-max-width, 1440px);
     transition: all 0.3s ease;
     min-height: 0;
 }
 
 @media (max-width: 991.98px) {
-    .page-content-standard, .page-content, .page-container {
+
+    .page-content-standard,
+    .page-content,
+    .page-container {
         padding: 20px;
     }
 }
 
 @media (max-width: 767.98px) {
-    .page-content-standard, .page-content, .page-container {
+
+    .page-content-standard,
+    .page-content,
+    .page-container {
         padding: 16px !important;
     }
 }

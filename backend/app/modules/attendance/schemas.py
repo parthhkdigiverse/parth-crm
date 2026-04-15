@@ -43,6 +43,7 @@ class AttendanceDaySummary(MongoBaseSchema):
     last_punch_out: datetime.datetime | None = None
     total_hours: float = 0.0
     day_status: str = "PRESENT"  # PRESENT | HALF | ABSENT | OFF
+    is_punched_in: bool = False
     leave_status: str | None = None
 
 

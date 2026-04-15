@@ -930,7 +930,7 @@
                 title: title || 'Meeting',
                 date: `${date}T${time || '09:00'}:00`,
                 meeting_type: document.getElementById('m-type').value,
-                status: document.getElementById('m-status').value,
+                status: document.getElementById('m-status')?.value || 'OPEN',
                 content: document.getElementById('m-notes').value || '',
                 target_type: currentTargetType,
                 attendee_ids: selectedAttendeeIds
@@ -1393,10 +1393,14 @@
         }
 
         // ────────── INITIALIZE ──────────
-        Promise.all([loadClients(), loadProjects(), loadAllUsers()]).then(() => {
+        Promise.allSettled([loadClients(), loadProjects(), loadAllUsers()]).then(() => {
             initFilters();
             loadMeetings();
             initDatePicker();
+        }).catch(err => {
+            console.error("Initialization failed partially, attempting to load dashboard anyway:", err);
+            initFilters();
+            loadMeetings();
         });
     </script>
 </body>

@@ -157,7 +157,7 @@ body {
 }
 
 /* Root layout container */
-body > .d-flex {
+body>.d-flex {
     width: 100%;
     min-height: 100vh;
 }
@@ -1440,7 +1440,8 @@ body.dark-theme .brand-text {
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 48px 32px 32px 32px; /* Increased top padding from 24px to 48px for better breathing room below sticky header */
+    padding: 48px 32px 32px 32px;
+    /* Increased top padding from 24px to 48px for better breathing room below sticky header */
     margin: 0 auto;
     width: 100%;
     max-width: var(--page-max-width, 1440px);
@@ -1453,7 +1454,8 @@ body.dark-theme .brand-text {
     .page-content,
     .page-content-standard,
     .page-container {
-        padding: 32px 24px 24px 24px; /* Increased top padding for mobile */
+        padding: 32px 24px 24px 24px;
+        /* Increased top padding for mobile */
     }
 }
 
@@ -1462,7 +1464,8 @@ body.dark-theme .brand-text {
     .page-content,
     .page-content-standard,
     .page-container {
-        padding: 24px 16px 16px 16px !important; /* Increased top padding for mobile */
+        padding: 24px 16px 16px 16px !important;
+        /* Increased top padding for mobile */
     }
 }
 
@@ -2369,14 +2372,18 @@ label {
 }
 
 [data-theme="dark"] .sb-link.active {
-    background: rgba(99, 102, 241, 0.22); /* Deep indigo glow — visible on dark bg */
-    color: #ffffff !important;            /* Pure white for maximum readability */
+    background: rgba(99, 102, 241, 0.22);
+    /* Deep indigo glow — visible on dark bg */
+    color: #ffffff !important;
+    /* Pure white for maximum readability */
     font-weight: 700;
-    box-shadow: inset 3px 0 0 #6366f1;   /* Left accent line in indigo */
+    box-shadow: inset 3px 0 0 #6366f1;
+    /* Left accent line in indigo */
 }
 
 [data-theme="dark"] .sb-link.active i {
-    color: #818cf8 !important;            /* Indigo-400 — bright & clear on dark */
+    color: #818cf8 !important;
+    /* Indigo-400 — bright & clear on dark */
 }
 
 [data-theme="dark"] .card,
@@ -3006,7 +3013,7 @@ label {
     background: transparent;
 }
 
-[data-theme="dark"] .breadcrumb-item + .breadcrumb-item::before {
+[data-theme="dark"] .breadcrumb-item+.breadcrumb-item::before {
     color: var(--text-muted);
 }
 
@@ -3059,10 +3066,10 @@ label {
     background: var(--surface);
     color: var(--primary);
     border-color: var(--border);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
 }
 
 /* Base dark variables */
 [data-theme="dark"] {
     --primary-rgb: 79, 70, 229;
-}
+}

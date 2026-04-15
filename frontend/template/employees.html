@@ -178,6 +178,34 @@
             border: 1px solid #ffe4e6;
         }
 
+        /* Live Status Animations */
+        @keyframes pulse-soft {
+            0% { transform: scale(0.9); opacity: 0.7; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(0.9); opacity: 0.7; }
+        }
+        .pulse-dot {
+            animation: pulse-soft 2s infinite;
+            display: inline-block;
+        }
+        .status-working-pulse {
+            position: relative;
+        }
+        .status-working-pulse::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border-radius: inherit;
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+            animation: status-glow 2s infinite;
+            pointer-events: none;
+        }
+        @keyframes status-glow {
+            0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+            70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
         /* Action Buttons */
         .btn-action {
             width: 32px;
@@ -797,10 +825,10 @@
 
     <!-- ─── Edit Employee Modal ─────────────────────────────────── -->
     <div class="srm-overlay" id="editEmployeeModal">
-        <div class="srm-box" style="max-width:680px;padding:0;overflow:hidden;border-radius:20px;">
+        <div class="srm-box" style="max-width:680px;padding:0;overflow:hidden;border-radius:20px; max-height: 95vh; display: flex; flex-direction: column;">
 
             <!-- Modal Header -->
-            <div style="background:linear-gradient(135deg,#1e3a8a,#4f46e5);padding:24px 28px;">
+            <div style="background:linear-gradient(135deg,#1e3a8a,#4f46e5);padding:24px 28px; flex-shrink: 0;">
                 <div class="d-flex justify-content-between align-items-center">
                     <div class="d-flex align-items-center gap-3">
                         <div
@@ -819,7 +847,7 @@
             </div>
 
             <!-- Modal Body -->
-            <div style="padding:24px 28px;">
+            <div style="padding:24px 28px; overflow-y: auto;">
                 <input type="hidden" id="edit-id">
                 <div class="col-12" id="editEmpResetBanner" style="display:none; margin-bottom:1rem;">
                     <div class="alert alert-warning d-flex align-items-center gap-3 w-100 shadow-sm mb-0" style="border:1px solid #f59e0b; background:#fef3c7; color:#92400e; border-radius:12px;">
@@ -1268,6 +1296,18 @@
 
             filters.push({ type: 'date', label: 'From', id: 'att-from' });
             filters.push({ type: 'date', label: 'To', id: 'att-to' });
+            filters.push({
+                type: 'select',
+                label: 'Status',
+                id: 'att-status',
+                options: [
+                    { value: 'ALL', label: 'All Status' },
+                    { value: 'PRESENT', label: 'Present' },
+                    { value: 'ABSENT', label: 'Absent' },
+                    { value: 'HALF', label: 'Half Day' },
+                    { value: 'OFF', label: 'Weekly Off' }
+                ]
+            });
 
             renderFilterPanel({
                 containerId: containerId,
@@ -1437,7 +1477,7 @@
             return dt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
         }
 
-        function statusBadge(status) {
+        function statusBadge(status, isPunchedIn = false, isToday = false) {
             const colors = {
                 'PRESENT': 'background:rgba(16,185,129,0.1);color:#10b981;border:1px solid rgba(16,185,129,0.2);',
                 'ABSENT': 'background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.2);',
@@ -1454,10 +1494,27 @@
                 'WEEKLY_OFF': 'bi-calendar-x',
                 'HOLIDAY': 'bi-gift-fill'
             };
-            const s = (status || '').toUpperCase();
-            const style = colors[s] || 'background:rgba(107,114,128,0.05);color:#6b7280;border:1px solid rgba(107,114,128,0.1);';
-            const icon = icons[s] || 'bi-info-circle';
-            return `<span class="badge" style="display:inline-flex;align-items:center;gap:5px;font-size:0.68rem;font-weight:700;padding:4px 10px;border-radius:20px;letter-spacing:0.04em;${style}"><i class="bi ${icon}"></i>${s.replace(/_/g, ' ')}</span>`;
+            
+            let s = (status || '').toUpperCase();
+            let style = colors[s] || 'background:rgba(107,114,128,0.05);color:#6b7280;border:1px solid rgba(107,114,128,0.1);';
+            let icon = icons[s] || 'bi-info-circle';
+            let label = s.replace(/_/g, ' ');
+
+            // Handle Live Status for Today
+            if (isToday && s === 'PRESENT') {
+                if (isPunchedIn) {
+                    style = 'background:rgba(16,185,129,0.12);color:#065f46;border:1px solid #10b981;';
+                    icon = 'bi-record-circle-fill';
+                    label = 'WORKING';
+                    return `<span class="badge status-working-pulse" style="display:inline-flex;align-items:center;gap:6px;font-size:0.68rem;font-weight:700;padding:4px 10px;border-radius:20px;letter-spacing:0.04em;${style}"><i class="bi ${icon} pulse-dot"></i>${label}</span>`;
+                } else {
+                    style = 'background:rgba(245,158,11,0.1);color:#92400e;border:1px solid #f59e0b;';
+                    icon = 'bi-clock-history';
+                    label = 'ON BREAK';
+                }
+            }
+
+            return `<span class="badge" style="display:inline-flex;align-items:center;gap:5px;font-size:0.68rem;font-weight:700;padding:4px 10px;border-radius:20px;letter-spacing:0.04em;${style}"><i class="bi ${icon}"></i>${label}</span>`;
         }
 
         function leaveBadge(status) {
@@ -1521,11 +1578,20 @@
                 if (userId) params.user_id = userId;
 
                 const data = await ApiClient.getAttendanceSummary(params);
-                const records = (data.records || []).sort((a, b) => new Date(b.date) - new Date(a.date));
+                let records = (data.records || []).sort((a, b) => new Date(b.date) - new Date(a.date));
+                
+                // Frontend Filtering for Status
+                const statusFilter = attendanceFilters['att-status'] || 'ALL';
+                if (statusFilter !== 'ALL') {
+                    records = records.filter(r => r.day_status === statusFilter);
+                }
+
+                const filteredTotalHours = records.reduce((sum, r) => sum + (r.total_hours || 0), 0);
+
                 const countBadge = document.getElementById('attendance-count-badge');
                 if (countBadge) countBadge.textContent = `${records.length} Records`;
                 const hoursBadge = document.getElementById('attendance-total-hours');
-                if (hoursBadge) hoursBadge.textContent = `${(data.total_hours || 0).toFixed(2)} HRS`;
+                if (hoursBadge) hoursBadge.textContent = `${filteredTotalHours.toFixed(2)} HRS`;
 
                 renderPagination({
                     data: records,
@@ -1546,7 +1612,7 @@
                             <td>
                                 <span class="fw-bold" style="font-family:'JetBrains Mono', monospace;color:var(--primary);">${(r.total_hours || 0).toFixed(2)}</span>
                             </td>
-                            <td>${statusBadge(r.day_status)}</td>
+                            <td>${statusBadge(r.day_status, r.is_punched_in, new Date(r.date).toDateString() === new Date().toDateString())}</td>
                             <td class="d-mobile-none">${leaveBadge(r.leave_status)}</td>
                             <td>
                                 <button class="btn-action" onclick="viewPunchLogs('${r.date}', '${r.user_id}')" title="View Details" style="width:30px;height:30px;border-radius:10px;margin-left:12px;margin-right:auto;">
