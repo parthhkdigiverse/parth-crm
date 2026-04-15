@@ -245,6 +245,13 @@ class ShopService:
             shop_data = shop.model_dump()
             shop_data["id"] = shop.id
             shop_data["owner_name"] = user_map.get(str(shop.owner_id), "Unassigned") if shop.owner_id else "Unassigned"
+            
+            # Resolve PM Name if ID exists
+            if hasattr(shop, 'project_manager_id') and shop.project_manager_id:
+                shop_data["project_manager_name"] = user_map.get(str(shop.project_manager_id)) or getattr(shop, 'project_manager_name', None)
+            else:
+                shop_data["project_manager_name"] = getattr(shop, 'project_manager_name', None)
+
             # Resolve area_name: try lookup, then the stored area_name field, then fallback
             resolved_area_name = None
             if shop.area_id:
@@ -574,10 +581,10 @@ class ShopService:
             raise HTTPException(status_code=404, detail="User not found")
 
         shop.project_manager_id = body.pm_id
-        shop.pipeline_stage = MasterPipelineStage.NEGOTIATION
         if body.demo_scheduled_at:
             shop.demo_scheduled_at = body.demo_scheduled_at
             shop.scheduled_by_id = current_user.id
+            shop.pipeline_stage = MasterPipelineStage.NEGOTIATION  # Advance only when demo is set
 
         await shop.save()
 
@@ -765,9 +772,44 @@ class ShopService:
 
     @staticmethod
     async def schedule_demo(shop_id: PydanticObjectId, payload, current_user: User):
+        from app.modules.visits.models import Visit, VisitStatus
+        from datetime import datetime, UTC
+
         shop = await Shop.find_one(Shop.id == shop_id, Shop.is_deleted == False)
         if not shop:
             raise HTTPException(status_code=404, detail="Shop not found")
+
+        # ── Determine if this is a reschedule or a fresh schedule ──
+        is_reschedule = shop.demo_scheduled_at is not None
+        actor_id = shop.project_manager_id or current_user.id
+
+        # ── Create audit Visit record BEFORE overwriting demo_scheduled_at ──
+        try:
+            if is_reschedule:
+                # Rescheduling: log the old slot being replaced
+                old_slot_str = shop.demo_scheduled_at.strftime("%d %b %Y, %I:%M %p") if shop.demo_scheduled_at else "—"
+                new_slot_str = payload.scheduled_at.strftime("%d %b %Y, %I:%M %p") if payload.scheduled_at else "—"
+                reschedule_visit = Visit(
+                    shop_id=shop.id,
+                    user_id=current_user.id,
+                    status=VisitStatus.DEMO_RESCHEDULED,
+                    remarks=f"Demo rescheduled from {old_slot_str} → {new_slot_str}.",
+                    visit_date=datetime.now(UTC),
+                )
+                await reschedule_visit.insert()
+            else:
+                # First-time scheduling: log the new demo slot
+                new_slot_str = payload.scheduled_at.strftime("%d %b %Y, %I:%M %p") if payload.scheduled_at else "—"
+                scheduled_visit = Visit(
+                    shop_id=shop.id,
+                    user_id=current_user.id,
+                    status=VisitStatus.SCHEDULED,
+                    remarks=f"Demo scheduled for {new_slot_str}.",
+                    visit_date=datetime.now(UTC),
+                )
+                await scheduled_visit.insert()
+        except Exception as e:
+            print(f"[schedule_demo] Warning: could not write audit Visit record: {e}")
 
         shop.demo_scheduled_at = payload.scheduled_at
         shop.demo_title = payload.title
@@ -780,7 +822,7 @@ class ShopService:
 
         await shop.save()
 
-        # Notify PM
+        # ── Notify PM ──
         if shop.project_manager_id and shop.scheduled_by_id != shop.project_manager_id:
             try:
                 notif = Notification(

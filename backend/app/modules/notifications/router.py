@@ -82,14 +82,18 @@ async def mark_all_read(
     """Mark all of the current user's notifications as read."""
     user_id = current_user.id if current_user else None
     if not user_id:
-        return {"status": "ok"}
-        
-    await Notification.find(
-        Notification.user_id == user_id,
-        Notification.is_read == False
-    ).set({"is_read": True})
-    
-    return {"status": "ok"}
+        return {"status": "ok", "updated": 0}
+
+    # Use PyMongo directly — Beanie's .find().set() silently fails to persist in bulk
+    from bson import ObjectId as BsonObjectId
+    collection = Notification.get_pymongo_collection()
+    result = await collection.update_many(
+        {"user_id": BsonObjectId(str(user_id)), "is_read": {"$ne": True}},
+        {"$set": {"is_read": True}}
+    )
+
+    return {"status": "ok", "updated": result.modified_count}
+
 
 @router.delete("/{notification_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_notification(

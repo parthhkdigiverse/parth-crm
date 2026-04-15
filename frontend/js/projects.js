@@ -412,7 +412,7 @@ async function loadVisitHistory(shopId) {
         };
 
         // Statuses that are system-generated logs, NOT real visits — must NOT increment the visit counter
-        const systemLogs = ['DEMO_RESCHEDULED', 'MEETING_RESCHEDULED', 'DEMO_CANCELLED', 'MEETING_CANCELLED'];
+        const systemLogs = ['DEMO_RESCHEDULED', 'MEETING_RESCHEDULED', 'DEMO_CANCELLED', 'MEETING_CANCELLED', 'SCHEDULED'];
 
         const chronologicalVisits = [...visits].sort((a, b) => new Date(a.visit_date) - new Date(b.visit_date));
         let demoCount = 1;
@@ -601,6 +601,25 @@ async function loadVisitHistory(shopId) {
                                 </div>
                                 <div class="mt-3 p-3 bg-white rounded shadow-sm text-dark border" style="font-size: 0.9rem;">
                                     <strong><i class="bi bi-info-circle text-warning me-1"></i>Change Details:</strong> ${v.remarks || '<span class="text-muted fst-italic">No details provided.</span>'}
+                                </div>
+                            </div>
+                        </div>`;
+                }
+                // Demo First Scheduled
+                else if (v.status === 'SCHEDULED') {
+                    html += `
+                        <div class="card mb-3 border-0 shadow-sm" style="border-radius: 12px; overflow: hidden; background: linear-gradient(to right, #f5f3ff, #ede9fe); border-left: 4px solid #6366f1 !important;">
+                            <div class="card-body p-4">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h6 class="fw-bold mb-1" style="color: #4f46e5;"><i class="bi bi-calendar-plus me-1"></i> Demo Scheduled</h6>
+                                        <div class="text-muted small mb-1"><i class="bi bi-clock me-1"></i>${dateStr}</div>
+                                        <div class="text-muted mt-2" style="font-size: 0.8rem;"><i class="bi bi-person-badge text-secondary me-1"></i>Scheduled by: <span class="fw-bold text-dark">${repName}</span></div>
+                                    </div>
+                                    <span class="badge shadow-sm" style="background:#6366f1; color:#fff;"><i class="bi bi-calendar-check me-1"></i>Scheduled</span>
+                                </div>
+                                <div class="mt-3 p-3 bg-white rounded shadow-sm text-dark border" style="font-size: 0.9rem;">
+                                    <strong><i class="bi bi-info-circle me-1" style="color:#6366f1;"></i>Details:</strong> ${v.remarks || '<span class="text-muted fst-italic">No details provided.</span>'}
                                 </div>
                             </div>
                         </div>`;

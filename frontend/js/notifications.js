@@ -302,16 +302,29 @@ function renderNotifications(notifications) {
 
 function renderEmptyState(msg = 'All caught up.') {
     const highSection = document.getElementById('high-priority-notif-section');
-    if (highSection) return; // Don't overwrite if issues are showing
     const listEl = document.getElementById('notif-list');
-    if (listEl) listEl.innerHTML = `
-        <div class="text-center py-5">
+    if (!listEl) return;
+
+    const emptyHtml = `
+        <div id="notif-empty-state" class="text-center py-5">
             <i class="bi bi-bell-slash text-muted" style="font-size:3rem;"></i>
             <p class="text-muted mt-3">${msg}</p>
         </div>`;
+
+    if (highSection) {
+        // Only clear the notification cards below the high-priority section
+        const children = Array.from(listEl.children);
+        children.forEach(c => { if (c.id !== 'high-priority-notif-section') c.remove(); });
+        highSection.insertAdjacentHTML('afterend', emptyHtml);
+    } else {
+        listEl.innerHTML = emptyHtml;
+    }
 }
 
 async function clearNotifications() {
+    // Debounce: disable button during request to prevent triple-fire
+    const btn = document.querySelector('[onclick="clearNotifications()"]');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i> Marking…'; }
     try {
         await apiPost('/notifications/mark-all-read');
         _allNotifications = _allNotifications.map(n => ({ ...n, is_read: true }));
@@ -320,8 +333,11 @@ async function clearNotifications() {
         showToast('All notifications marked as read', 'success');
     } catch (error) {
         showToast('Failed to clear notifications', 'error');
+    } finally {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-check2-all me-2 fs-5"></i> Mark All as Read'; }
     }
 }
+window.clearNotifications = clearNotifications;
 
 window.markSingleAsRead = async function (id) {
     // BUG 6 FIX: Only update local state AFTER the API call succeeds.

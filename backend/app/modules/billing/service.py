@@ -85,7 +85,6 @@ class BillingService:
         except ValueError:
             year = datetime.datetime.now(UTC).year
 
-        sync_website = False  # Default: no website sync for non-GST invoices
         if gst_type == "WITHOUT_GST":
             seq_key = "invoice_seq_without_gst"
             series  = "PINV"
@@ -362,6 +361,42 @@ class BillingService:
             new_data={"invoice_number": db_bill.invoice_number, "amount": db_bill.amount, "payment_type": db_bill.payment_type}
         )
 
+        # ─── Notify Admins about new invoice ───
+        try:
+            from app.utils.notify_helpers import notify_admins
+            client_name = db_bill.invoice_client_name or "Unknown Client"
+            amount_fmt = f"₹{db_bill.amount:,.0f}"
+            payment_label = {
+                "BUSINESS_ACCOUNT": "Bank (Business)",
+                "PERSONAL_ACCOUNT": "Bank (Personal)",
+                "CASH": "Cash",
+            }.get(db_bill.payment_type, db_bill.payment_type or "—")
+
+            if db_bill.invoice_status == "PENDING_VERIFICATION":
+                # Needs admin verification — urgent alert
+                await notify_admins(
+                    title=f"🧾 New Invoice Pending Verification — {db_bill.invoice_number}",
+                    message=(
+                        f"Invoice {db_bill.invoice_number} for {client_name} "
+                        f"| Amount: {amount_fmt} | Mode: {payment_label} "
+                        f"| Created by: {current_user.name}. Please verify."
+                    ),
+                    actor_id=current_user.id,
+                )
+            else:
+                # BUSINESS_ACCOUNT invoices are auto-VERIFIED via PhonePe — informational
+                await notify_admins(
+                    title=f"✅ Invoice Auto-Verified (PhonePe) — {db_bill.invoice_number}",
+                    message=(
+                        f"Invoice {db_bill.invoice_number} for {client_name} "
+                        f"| Amount: {amount_fmt} | Mode: {payment_label} "
+                        f"| Created & auto-verified by: {current_user.name}."
+                    ),
+                    actor_id=current_user.id,
+                )
+        except Exception as e:
+            print(f"[create_invoice] Warning: admin notification failed: {e}")
+
         return db_bill
 
     async def get_bill(self, bill_id: PydanticObjectId, current_user: User = None) -> Bill | None:
@@ -411,9 +446,19 @@ class BillingService:
         if gst_type and gst_type.upper() != "ALL":
             filters["gst_type"] = gst_type.upper()
              
+        # shop_id filter — CRITICAL: scope invoices to the specific lead/shop
+        shop_id_val = kwargs.get("shop_id")
+        if shop_id_val is not None:
+            try:
+                filters["shop_id"] = PydanticObjectId(shop_id_val) if not isinstance(shop_id_val, PydanticObjectId) else shop_id_val
+            except Exception:
+                pass  # ignore invalid shop_id
+
         if "archived" in kwargs:
             val = kwargs["archived"]
-            if val == "ARCHIVED":
+            if val and str(val).upper() == "ALL":
+                pass  # No archive filter — return both archived and non-archived
+            elif val == "ARCHIVED":
                 filters["is_archived"] = True
             elif val == "ACTIVE":
                 filters["is_archived"] = False
@@ -462,8 +507,14 @@ class BillingService:
         bill.is_archived = True
         await bill.save()
 
-        # NOTE: Archiving a bill does NOT archive the lead.
-        # Only Refund triggers lead archiving.
+        # Sync with Shop
+        if bill.shop_id:
+            from app.modules.shops.models import Shop
+            shop = await Shop.get(bill.shop_id)
+            if shop:
+                shop.is_archived = True
+                shop.archived_by_id = current_user.id
+                await shop.save()
 
         await ActivityLogger().log_activity(
             user_id=current_user.id,

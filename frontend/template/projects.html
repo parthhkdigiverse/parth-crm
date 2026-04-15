@@ -872,9 +872,15 @@
 
             const rules = {
                 'smart-pm-select': 'Please select a Project Manager',
-                'smart-demo-date': 'Please select a date',
-                'smart-time-slots-container': () => time || 'Please select a time slot'
+                'smart-demo-date': 'Please select a date'
             };
+
+            // Time slot is in a hidden input — validate independently
+            if (!time) {
+                if (window.showToast) window.showToast('Please select a time slot before confirming.', 'warning');
+                else alert('Please select a time slot');
+                return;
+            }
 
             if (!window.validateForm(document.querySelector('#smartScheduleModal .modal-body'), rules)) {
                 return;
