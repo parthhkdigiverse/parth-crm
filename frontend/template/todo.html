@@ -17,6 +17,11 @@
             background-color: var(--bg-app);
         }
 
+        ::placeholder {
+            color: #94a3b8 !important;
+            opacity: 1;
+        }
+
         .filter-bar {
             background: var(--bg-surface);
             border-radius: 16px;
@@ -47,7 +52,7 @@
         }
 
         .search-input-group .form-control {
-            padding-left: 40px;
+            padding-left: 15px;
             border-radius: 12px;
             height: 45px;
             border: 1px solid var(--border-subtle);
@@ -684,7 +689,10 @@
             search: '',
             status: 'ALL',
             priority: 'ALL',
-            assignee: 'ALL'
+            assignee: 'ALL',
+            dateRange: 'ALL',
+            startDate: '',
+            endDate: ''
         };
 
         const todayStr = new Date().toISOString().split('T')[0];
@@ -753,19 +761,53 @@
                 const matchesStatus = filters.status === 'ALL' || t.status.toUpperCase() === filters.status.toUpperCase();
                 const matchesPriority = filters.priority === 'ALL' || t.priority.toUpperCase() === filters.priority.toUpperCase();
                 const matchesAssignee = !isAdmin || filters.assignee === 'ALL' || t.assigned_to === filters.assignee;
-                // [END]
 
-                return matchesSearch && matchesStatus && matchesPriority && matchesAssignee;
+                // Date Range Filtering
+                let matchesDate = true;
+                if (filters.dateRange !== 'ALL') {
+                    const taskDate = new Date(t.due_date || t.created_at);
+                    const now = new Date();
+                    const todayMid = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+                    if (filters.dateRange === 'TODAY') {
+                        matchesDate = taskDate >= todayMid;
+                    } else if (filters.dateRange === 'YESTERDAY') {
+                        const yesterday = new Date(todayMid);
+                        yesterday.setDate(yesterday.getDate() - 1);
+                        const endOfYesterday = new Date(todayMid);
+                        matchesDate = taskDate >= yesterday && taskDate < endOfYesterday;
+                    } else if (filters.dateRange === 'THIS_WEEK') {
+                        const curr = new Date(todayMid);
+                        const first = curr.getDate() - curr.getDay();
+                        const weekStart = new Date(curr.setDate(first));
+                        matchesDate = taskDate >= weekStart;
+                    } else if (filters.dateRange === 'THIS_MONTH') {
+                        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+                        matchesDate = taskDate >= monthStart;
+                    } else if (filters.dateRange === 'CUSTOM' && filters.startDate && filters.endDate) {
+                        const start = new Date(filters.startDate);
+                        const end = new Date(filters.endDate);
+                        end.setHours(23, 59, 59, 999);
+                        matchesDate = taskDate >= start && taskDate <= end;
+                    }
+                }
+
+                return matchesSearch && matchesStatus && matchesPriority && matchesAssignee && matchesDate;
             });
 
             filteredTasks.sort((a, b) => {
-                if (a.status === 'COMPLETED' && b.status !== 'COMPLETED') return 1;
-                if (a.status !== 'COMPLETED' && b.status === 'COMPLETED') return -1;
-                // Among non-completed: HIGH priority first
+                // Primary Sort: Priority (High > Medium > Low)
                 const priorityOrder = { HIGH: 0, MEDIUM: 1, LOW: 2 };
                 const pa = priorityOrder[a.priority] ?? 1;
                 const pb = priorityOrder[b.priority] ?? 1;
+
                 if (pa !== pb) return pa - pb;
+
+                // Secondary Sort: Non-completed tasks first within same priority
+                if (a.status === 'COMPLETED' && b.status !== 'COMPLETED') return 1;
+                if (a.status !== 'COMPLETED' && b.status === 'COMPLETED') return -1;
+
+                // Tertiary Sort: Date (Newest first)
                 return new Date(b.due_date || b.created_at || 0) - new Date(a.due_date || a.created_at || 0);
             });
 
@@ -774,6 +816,12 @@
 
         function handleFilterChange(key, value) {
             filters[key] = value;
+            if (key === 'dateRange') {
+                const customContainer = document.getElementById('filter-custom-date-container');
+                if (customContainer) {
+                    customContainer.style.display = value === 'CUSTOM' ? 'flex' : 'none';
+                }
+            }
             applyFilters();
         }
 
@@ -801,6 +849,11 @@
             if (filters.status !== 'ALL' && status) items.push({ label: status.options[status.selectedIndex].text, key: 'status' });
             if (filters.priority !== 'ALL' && priority) items.push({ label: priority.options[priority.selectedIndex].text, key: 'priority' });
             if (filters.assignee !== 'ALL' && assignee) items.push({ label: assignee.options[assignee.selectedIndex].text, key: 'assignee' });
+            if (filters.dateRange !== 'ALL') {
+                const dr = document.getElementById('filter-date-range');
+                const label = dr ? dr.options[dr.selectedIndex].text : filters.dateRange;
+                items.push({ label: 'Date: ' + label, key: 'dateRange' });
+            }
 
             pills.innerHTML = items.map(item => '<span class="filter-pill">' + item.label +
                 '<button class="filter-pill-remove" type="button" data-key="' + item.key + '" title="Remove">&times;</button></span>'
@@ -824,10 +877,22 @@
             const status = document.getElementById('filter-status');
             const priority = document.getElementById('filter-priority');
             const assignee = document.getElementById('filter-assignee');
+            const dr = document.getElementById('filter-date-range');
+            const ds = document.getElementById('filter-start-date');
+            const de = document.getElementById('filter-end-date');
+
             if (search) search.value = filters.search;
             if (status) status.value = filters.status;
             if (priority) priority.value = filters.priority;
             if (assignee) assignee.value = filters.assignee;
+            if (dr) dr.value = filters.dateRange;
+            if (ds) ds.value = filters.startDate;
+            if (de) de.value = filters.endDate;
+
+            const customContainer = document.getElementById('filter-custom-date-container');
+            if (customContainer) {
+                customContainer.style.display = filters.dateRange === 'CUSTOM' ? 'flex' : 'none';
+            }
         }
 
         function clearTodoFilters() {
@@ -835,7 +900,10 @@
                 search: '',
                 status: 'ALL',
                 priority: 'ALL',
-                assignee: 'ALL'
+                assignee: 'ALL',
+                dateRange: 'ALL',
+                startDate: '',
+                endDate: ''
             };
             syncTodoFilterInputs();
             applyFilters();
@@ -863,6 +931,19 @@
 
         let employeesList = []; // [START] - Store full user objects for ID mapping
 
+        /**
+         * Helper to get the current user's unique identifier (name or email)
+         */
+        function getCurrentUserLabel() {
+            try {
+                const u = typeof getUser === 'function' ? getUser() : null;
+                return u ? (u.name || u.email) : '';
+            } catch (e) {
+                console.warn("Could not determine current user label:", e);
+                return '';
+            }
+        }
+
         async function configureTodoAssignmentUi() {
             const assigneeSelect = document.getElementById('ev-user');
             if (!assigneeSelect) return;
@@ -879,11 +960,15 @@
                     employeesList = await ApiClient.getUsers(); // [START] - Store list
                     assigneeSelect.innerHTML = `
                         <option value="">— Unassigned —</option>
-                        <option value="All Employees" style="font-weight:bold; color:var(--primary);">👥 All Employees (Bulk)</option>
+                        <option value="All Employees" style="font-weight:bold; color:var(--primary);">👤 All Employees (Bulk)</option>
                         <hr>
                         ${employeesList.map(u => `<option value="${u.name || u.email}">${u.name || u.email} (${u.role})</option>`).join('')}
                     `;
                     assigneeSelect.disabled = false;
+
+                    // [START] Initialize Modern Multi-Select
+                    window.initSrmMultiSelect('ev-user');
+                    // [END]
 
                     // Also populate the filter sidebar if present
                     const filterAssignee = document.getElementById('filter-assignee');
@@ -999,7 +1084,6 @@
                                 <div class="filter-field">
                                     <label>Search</label>
                                     <div class="search-input-group">
-                                        <i class="bi bi-search"></i>
                                         <input type="text" id="filter-search" class="form-control shadow-none border-light-subtle" placeholder="Search objectives, projects, or operators..." oninput="handleFilterChange('search', this.value)">
                                     </div>
                                 </div>
@@ -1028,6 +1112,27 @@
                                         <option value="ALL">All Operators</option>
                                     </select>
                                 </div>` : ''}
+                                <div class="filter-field">
+                                    <label>Date Range</label>
+                                    <select id="filter-date-range" class="form-select filter-select shadow-none border-light-subtle" onchange="handleFilterChange('dateRange', this.value)">
+                                        <option value="ALL">All Time</option>
+                                        <option value="TODAY">Today</option>
+                                        <option value="YESTERDAY">Yesterday</option>
+                                        <option value="THIS_WEEK">This Week</option>
+                                        <option value="THIS_MONTH">This Month</option>
+                                        <option value="CUSTOM">Custom Date</option>
+                                    </select>
+                                </div>
+                                <div id="filter-custom-date-container" style="display: none; gap: 10px; align-items: flex-end;">
+                                    <div class="filter-field">
+                                        <label>Start</label>
+                                        <input type="date" id="filter-start-date" class="form-control shadow-none border-light-subtle" onchange="handleFilterChange('startDate', this.value)">
+                                    </div>
+                                    <div class="filter-field">
+                                        <label>End</label>
+                                        <input type="date" id="filter-end-date" class="form-control shadow-none border-light-subtle" onchange="handleFilterChange('endDate', this.value)">
+                                    </div>
+                                </div>
                             </div>
                             <div class="filter-actions">
                                 <button class="btn-filter-reset" type="button" onclick="clearTodoFilters()">
@@ -1063,6 +1168,7 @@
                                 <tbody id="todo-tbody"></tbody>
                             </table>
                         </div>
+                        <div id="todo-pagination"></div>
                     </div>
                 </div>`;
 
@@ -1089,7 +1195,7 @@
                         const assigneeSel = document.getElementById('ev-user');
                         if (assigneeSel && isAdmin) {
                             assigneeSel.innerHTML =
-                                '<option value="All Employees" style="font-weight:700;color:var(--primary);">👥 Assign All Staff</option>';
+                                '<option value="All Employees" style="font-weight:700;color:var(--primary);">👤 All Employees (Bulk)</option>';
                             activeEmps.forEach(e => {
                                 const opt = document.createElement('option');
                                 opt.value = e.name || e.email;
@@ -1175,9 +1281,13 @@
             document.getElementById('modal-title-text').textContent = 'New Workspace Task';
             document.getElementById('btn-delete-event').style.display = 'none';
             document.getElementById('save-task-btn').innerHTML = '<i class="bi bi-send-check me-1"></i>Publish Task';
-            document.getElementById('mode-switcher-container').style.display = 'flex';
+            document.getElementById('mode-switcher-container').style.display = 'block';
             switchModalMode('TASK');
             configureTodoAssignmentUi();
+
+            // Sync Modern Multi-Select if it exists
+            const msContainer = document.querySelector('.srm-multi-select-container');
+            if (msContainer && msContainer.refresh) msContainer.refresh();
 
             // Clear validation state
             const modalBody = document.querySelector('#taskModal .modal-body');
@@ -1226,6 +1336,10 @@
             switchModalMode('TASK');
             configureTodoAssignmentUi();
 
+            // Sync Modern Multi-Select if it exists
+            const msContainer = document.querySelector('.srm-multi-select-container');
+            if (msContainer && msContainer.refresh) msContainer.refresh();
+
             // Clear validation state
             const modalBody = document.querySelector('#taskModal .modal-body');
             if (modalBody) {
@@ -1253,65 +1367,63 @@
         };
 
         window.saveActivity = async () => {
-            const title = document.getElementById('ev-title').value.trim();
-            const date = document.getElementById('td-due').value;
-            const selectedOptions = Array.from(document.getElementById('ev-user').selectedOptions).map(o => o.value).filter(v => v !== '');
-            const clientIdAttr = document.getElementById('td-client')?.value || null;
+            try {
+                const titleEl = document.getElementById('ev-title');
+                const dateEl = document.getElementById('td-due');
+                if (!titleEl || !dateEl) throw new Error("Crucial form fields missing from DOM");
 
-            let assignees = [];
-            if (selectedOptions.includes('All Employees')) {
-                assignees = employeesList.map(e => e.name || e.email);
-            } else if (selectedOptions.length > 0) {
-                assignees = selectedOptions;
-            } else {
-                assignees = [getCurrentUserLabel()];
-            }
+                const title = titleEl.value.trim();
+                const date = dateEl.value;
+                const userSel = document.getElementById('ev-user');
+                const selectedOptions = userSel ? Array.from(userSel.selectedOptions).map(o => o.value).filter(v => v !== '') : [];
+                const clientId = document.getElementById('td-client')?.value || null;
 
-            const priority = document.getElementById('td-priority').value;
-            const description = document.getElementById('td-desc').value;
-            const related = document.getElementById('td-related').value;
-            const startTime = document.getElementById('ev-start').value || null;
-            const endTime = document.getElementById('ev-end').value || null;
-
-            if (!title || !date) {
-                showToast('Title and Date are required', 'error');
-                return;
-            }
-
-            // [START] Prevent scheduling in the past
-            if (!editingTaskId) {
-                const now = new Date();
-                const [year, month, day] = date.split('-').map(Number);
-                const selectedDateOnly = new Date(year, month - 1, day);
-                const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-                if (selectedDateOnly < todayOnly) {
-                    showToast('Cannot schedule an activity for a past date.', 'error');
+                if (!title || !date) {
+                    showToast('Title and Date are required', 'error');
                     return;
-                } else if (selectedDateOnly.getTime() === todayOnly.getTime() && startTime) {
-                    const [sh, sm] = startTime.split(':').map(Number);
-                    if (now.getHours() > sh || (now.getHours() === sh && now.getMinutes() > sm)) {
-                        showToast('Cannot schedule an activity for a past time today.', 'error');
+                }
+
+                let assignees = [];
+                if (selectedOptions.includes('All Employees')) {
+                    assignees = (employeesList && employeesList.length > 0)
+                        ? employeesList.map(e => e.name || e.email)
+                        : [getCurrentUserLabel()];
+                } else if (selectedOptions.length > 0) {
+                    assignees = selectedOptions;
+                } else {
+                    assignees = [getCurrentUserLabel()];
+                }
+
+                const priority = document.getElementById('td-priority').value;
+                const description = document.getElementById('td-desc').value;
+                const related = document.getElementById('td-related').value;
+                const startTime = document.getElementById('ev-start').value || null;
+                const endTime = document.getElementById('ev-end').value || null;
+
+                // [START] Prevent scheduling in the past for new tasks
+                if (!editingTaskId) {
+                    const now = new Date();
+                    const [year, month, day] = date.split('-').map(Number);
+                    const selectedDateOnly = new Date(year, month - 1, day);
+                    const todayOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+                    if (selectedDateOnly < todayOnly) {
+                        showToast('Cannot schedule an activity for a past date.', 'error');
                         return;
                     }
                 }
-            }
-            // [END]
 
-            // [START] - Unified meeting creation: EVENT mode routes through /meetings/ API
-            const clientId = document.getElementById('td-client')?.value || null;
-            try {
+                // API Payload mapping
                 if (currentMode === 'EVENT' && !editingTaskId) {
                     const user = getUser();
-                    // Resolve attendee user IDs from names
                     const attendeeIds = selectedOptions.map(name => {
-                        const found = employeesList.find(u => (u.name || u.email) === name);
+                        const found = (employeesList || []).find(u => (u.name || u.email) === name);
                         return found ? found.id : null;
                     }).filter(id => id !== null);
 
                     const meetingPayload = {
                         title: title,
-                        date: `${date}T${startTime || '10:00'}:00`,
+                        date: date.includes('T') ? date : `${date}T${startTime || '10:00'}:00`,
                         meeting_type: related.toLowerCase().includes('office') || related.toLowerCase().includes('visit') ? 'In-Person' : 'Google Meet',
                         content: description,
                         host_id: user.id,
@@ -1325,7 +1437,9 @@
                     const promises = assignees.map(async (assignedTo) => {
                         if (currentMode === 'TASK') {
                             const payload = {
-                                title, due_date: date, assigned_to: assignedTo,
+                                title,
+                                due_date: date.includes('T') ? date : `${date}T${startTime || '10:00'}:00`,
+                                assigned_to: assignedTo,
                                 description, priority, related_entity: related,
                                 start_time: startTime, end_time: endTime,
                                 client_id: clientId || null
@@ -1337,7 +1451,7 @@
                                 return ApiClient.createTodo(payload);
                             }
                         } else {
-                            // Edit of existing timetable event
+                            // Edit existing event
                             const ttPayload = {
                                 title, date,
                                 start_time: startTime || "10:00",
@@ -1351,13 +1465,21 @@
                     });
                     await Promise.all(promises);
                 }
-                // [END]
 
                 showToast(editingTaskId ? 'Activity updated' : 'Unified Activity Published');
                 bsModal.hide();
                 loadTasks();
             } catch (e) {
-                showToast('Failed to save activity: ' + e.message, 'error');
+                console.error("Submission Crash:", e);
+                let errorMsg = e.message;
+                if (e.data && e.data.detail) {
+                    if (Array.isArray(e.data.detail)) {
+                        errorMsg = e.data.detail.map(d => `${d.loc.join('.')}: ${d.msg}`).join(' | ');
+                    } else {
+                        errorMsg = e.data.detail;
+                    }
+                }
+                showToast('Failed to save: ' + errorMsg, 'error');
             }
         };
 
@@ -1374,6 +1496,8 @@
                     await ApiClient.updateMeeting(originalId, { status: newStatus });
                 } else if (type === 'VISIT') {
                     await ApiClient.updateVisit(originalId, { status: newStatus });
+                } else if (type === 'TIMETABLE') {
+                    await ApiClient.updateTimetableEvent(originalId, { status: newStatus });
                 }
                 showToast("Status updated");
                 loadTasks();
@@ -1432,7 +1556,7 @@
         ApiClient.getEmployees().then(emps => {
             const sel = document.getElementById('ev-user');
             if (sel && isAdmin) {
-                sel.innerHTML = '<option value="All Employees" style="font-weight:bold; color:var(--primary);">👥 Assign All Staff</option>' +
+                sel.innerHTML = '<option value="All Employees" style="font-weight:bold; color:var(--primary);">👤 All Employees (Bulk)</option>' +
                     emps.map(e => {
                         const uniqueVal = e.name || e.email;
                         const role = (e.role || '').replace(/_/g, ' ');

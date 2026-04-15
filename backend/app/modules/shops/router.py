@@ -213,3 +213,37 @@ async def read_accepted_leads_history(
     current_user: User = Depends(staff_checker)
 ) -> Any:
     return await ShopService().get_accepted_leads(current_user)
+
+@router.get("/public/lookup/{phone}")
+async def lookup_shop_by_phone(phone: str):
+    import re
+    # 1. Standardize incoming phone (digits only)
+    clean_phone = re.sub(r"\D", "", phone)
+    if len(clean_phone) < 10:
+        return {"name": None}
+    
+    # 2. Resilient pattern: matches digits separated by any chars (spaces, dashes, etc.)
+    flexible_pattern = "[^\\d]*" + "[^\\d]*".join(list(clean_phone)) + "[^\\d]*$"
+    regex_query = re.compile(flexible_pattern, re.IGNORECASE)
+    
+    # Check Shops (Leads)
+    from app.modules.shops.models import Shop
+    shop = await Shop.find_one({"phone": regex_query}, Shop.is_deleted != True)
+    if shop:
+        return {"name": shop.name}
+        
+    # Check Clients (Active Organizations)
+    from app.modules.clients.models import Client
+    client = await Client.find_one({"phone": regex_query}, Client.is_deleted != True)
+    if client:
+        return {"name": client.organization or client.name}
+
+    return {"name": None}
+
+@router.get("/public/names")
+async def get_all_shop_names(current_user: User = Depends(staff_checker)):
+    from app.modules.shops.models import Shop
+    # Unique active shop names sorted alphabetically
+    shops = await Shop.find(Shop.is_deleted != True).to_list()
+    names = sorted(list(set(s.name for s in shops if s.name)))
+    return names

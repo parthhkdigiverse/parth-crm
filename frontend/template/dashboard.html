@@ -162,16 +162,14 @@
         }
 
         .kpi-icon-wrapper {
-            position: absolute;
-            top: 16px;
-            right: 16px;
-            width: 34px;
-            height: 34px;
-            border-radius: 8px;
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 16px;
+            font-size: 18px;
+            flex-shrink: 0;
         }
 
         /* ── Professional Attendance Widget (Dashboard) ── */
@@ -948,9 +946,11 @@
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: 10px;
-            overflow: visible; /* Ensure buttons aren't clipped if wrapped or slightly overflow */
+            overflow: visible;
+            /* Ensure buttons aren't clipped if wrapped or slightly overflow */
             box-shadow: var(--shadow-xs);
-            flex-wrap: wrap; /* Allow wrapping on narrow containers */
+            flex-wrap: wrap;
+            /* Allow wrapping on narrow containers */
         }
 
         .period-btn {
@@ -967,7 +967,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            min-width: 80px; /* Prevent text from disappearing */
+            min-width: 80px;
+            /* Prevent text from disappearing */
             flex: 1 0 auto;
         }
 
@@ -1148,20 +1149,28 @@
         }
 
         /* Standard alignment for Dashboard Overview */
-        .main-wrapper { padding-top: 0 !important; }
+        .main-wrapper {
+            padding-top: 0 !important;
+        }
 
         /* ── Unified Dashboard Section Gap ── */
-        :root { --dash-gap: 28px; }
-        .dash-section { margin-bottom: var(--dash-gap); }
+        :root {
+            --dash-gap: 28px;
+        }
+
+        .dash-section {
+            margin-bottom: var(--dash-gap);
+        }
 
         /* PREMIUM HEADER REDESIGN - ENHANCED PROPORTIONS */
-        .header-outer { 
-            border-radius: 20px; 
-            padding: 1px; 
-            background: var(--header-outer-bg); 
-            margin-bottom: 2rem; /* Reduced vs --dash-gap to compensate for visual box-shadow depth */
+        .header-outer {
+            border-radius: 20px;
+            padding: 1px;
+            background: var(--header-outer-bg);
+            margin-bottom: 2rem;
             margin-top: 0;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+            /* Reduced from 1rem */
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
         }
 
         .header-inner {
@@ -1620,72 +1629,72 @@
 
                 <!-- KPI Cards -->
                 <div class="row g-2 g-md-3 dash-section" id="admin-kpis">
-                    <div class="col-6 col-sm-6 col-xl-3" data-widget-id="kpi-visits">
+                    <div class="col-6 col-sm-6 col-xl-3">
                         <a href="visits.html" class="text-decoration-none d-block h-100">
                             <div class="kpi-card kpi-visits h-100">
-                                <div class="d-flex justify-content-between align-items-start w-100 kpi-inner-mobile">
-                                    <div class="flex-grow-1 me-2 kpi-text-container">
-                                        <div class="kpi-label" id="kpi-visits-label">Visits (MTD)</div>
+                                <div class="d-flex align-items-center gap-3 w-100 kpi-inner-mobile">
+                                    <div class="kpi-icon-wrapper kpi-icon-bg-1">
+                                        <i class="bi bi-calendar-check"></i>
+                                    </div>
+                                    <div class="flex-grow-1 kpi-text-container">
+                                        <div class="kpi-label">Total Visits</div>
                                         <div class="kpi-value" id="kpi-leads">
                                             <span class="spinner-border spinner-border-sm text-secondary"></span>
                                         </div>
-                                    </div>
-                                    <div class="kpi-icon-wrapper kpi-icon-bg-1">
-                                        <i class="bi bi-calendar-check"></i>
                                     </div>
                                 </div>
                                 <div class="kpi-trend" id="kpi-leads-trend">—</div>
                             </div>
                         </a>
                     </div>
-                    <div class="col-6 col-sm-6 col-xl-3" data-widget-id="kpi-clients">
+                    <div class="col-6 col-sm-6 col-xl-3">
                         <a href="clients.html" class="text-decoration-none d-block h-100">
                             <div class="kpi-card kpi-clients h-100">
-                                <div class="d-flex justify-content-between align-items-start w-100 kpi-inner-mobile">
-                                    <div class="flex-grow-1 me-2 kpi-text-container">
-                                        <div class="kpi-label" id="kpi-clients-label">Active Clients</div>
+                                <div class="d-flex align-items-center gap-3 w-100 kpi-inner-mobile">
+                                    <div class="kpi-icon-wrapper kpi-icon-bg-2">
+                                        <i class="bi bi-people"></i>
+                                    </div>
+                                    <div class="flex-grow-1 kpi-text-container">
+                                        <div class="kpi-label">Active Clients</div>
                                         <div class="kpi-value" id="kpi-clients">
                                             <span class="spinner-border spinner-border-sm text-secondary"></span>
                                         </div>
-                                    </div>
-                                    <div class="kpi-icon-wrapper kpi-icon-bg-2">
-                                        <i class="bi bi-people"></i>
                                     </div>
                                 </div>
                                 <div class="kpi-trend" id="kpi-clients-trend">—</div>
                             </div>
                         </a>
                     </div>
-                    <div class="col-6 col-sm-6 col-xl-3" data-widget-id="kpi-employees">
+                    <div class="col-6 col-sm-6 col-xl-3">
                         <a href="employees.html" class="text-decoration-none d-block h-100">
                             <div class="kpi-card kpi-employees h-100">
-                                <div class="d-flex justify-content-between align-items-start w-100 kpi-inner-mobile">
-                                    <div class="flex-grow-1 me-2 kpi-text-container">
-                                        <div class="kpi-label" id="kpi-employees-label">Active Users</div>
+                                <div class="d-flex align-items-center gap-3 w-100 kpi-inner-mobile">
+                                    <div class="kpi-icon-wrapper kpi-icon-bg-3">
+                                        <i class="bi bi-person-check-fill"></i>
+                                    </div>
+                                    <div class="flex-grow-1 kpi-text-container">
+                                        <div class="kpi-label">Active Users</div>
                                         <div class="kpi-value" id="kpi-employees">
                                             <span class="spinner-border spinner-border-sm text-secondary"></span>
                                         </div>
-                                    </div>
-                                    <div class="kpi-icon-wrapper kpi-icon-bg-3">
-                                        <i class="bi bi-person-check-fill"></i>
                                     </div>
                                 </div>
                                 <div class="kpi-trend" id="kpi-employees-trend">—</div>
                             </div>
                         </a>
                     </div>
-                    <div class="col-6 col-sm-6 col-xl-3" data-widget-id="kpi-revenue">
+                    <div class="col-6 col-sm-6 col-xl-3">
                         <a href="billing.html" class="text-decoration-none d-block h-100">
                             <div class="kpi-card kpi-revenue h-100">
-                                <div class="d-flex justify-content-between align-items-start w-100 kpi-inner-mobile">
-                                    <div class="flex-grow-1 me-2 kpi-text-container">
-                                        <div class="kpi-label" id="kpi-revenue-label">Revenue (MTD)</div>
+                                <div class="d-flex align-items-center gap-3 w-100 kpi-inner-mobile">
+                                    <div class="kpi-icon-wrapper kpi-icon-bg-4">
+                                        <i class="bi bi-currency-rupee"></i>
+                                    </div>
+                                    <div class="flex-grow-1 kpi-text-container">
+                                        <div class="kpi-label" id="kpi-revenue-label">Total Revenue</div>
                                         <div class="kpi-value" id="kpi-revenue">
                                             <span class="spinner-border spinner-border-sm text-secondary"></span>
                                         </div>
-                                    </div>
-                                    <div class="kpi-icon-wrapper kpi-icon-bg-4">
-                                        <i class="bi bi-currency-rupee"></i>
                                     </div>
                                 </div>
                                 <div class="kpi-trend" id="kpi-revenue-trend">—</div>
@@ -1723,19 +1732,27 @@
                                     <div class="chart-card-sub" id="outcomes-chart-sub">Distribution of results</div>
                                 </div>
                                 <div class="dropdown">
-                                    <button class="btn btn-sm btn-light py-0 px-2" type="button" data-bs-toggle="dropdown" style="border-radius:6px; font-size: 0.7rem;">
+                                    <button class="btn btn-sm btn-light py-0 px-2" type="button"
+                                        data-bs-toggle="dropdown" style="border-radius:6px; font-size: 0.7rem;">
                                         <i class="bi bi-three-dots-vertical"></i>
                                     </button>
-                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="font-size: 0.75rem; border-radius: 8px;">
-                                        <li><a class="dropdown-item fw-medium" href="javascript:void(0)" onclick="switchOutcomesChart('visits')"><i class="bi bi-calendar-check me-2"></i>Visit Outcomes</a></li>
-                                        <li><a class="dropdown-item fw-medium" href="javascript:void(0)" onclick="switchOutcomesChart('projects')"><i class="bi bi-stack me-2"></i>Project Status</a></li>
+                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0"
+                                        style="font-size: 0.75rem; border-radius: 8px;">
+                                        <li><a class="dropdown-item fw-medium" href="javascript:void(0)"
+                                                onclick="switchOutcomesChart('visits')"><i
+                                                    class="bi bi-calendar-check me-2"></i>Visit Outcomes</a></li>
+                                        <li><a class="dropdown-item fw-medium" href="javascript:void(0)"
+                                                onclick="switchOutcomesChart('projects')"><i
+                                                    class="bi bi-stack me-2"></i>Project Status</a></li>
                                     </ul>
                                 </div>
                             </div>
-                            <div class="d-flex justify-content-center flex-grow-1" style="position:relative;height:200px;">
+                            <div class="d-flex justify-content-center flex-grow-1"
+                                style="position:relative;height:200px;">
                                 <canvas id="outcomesChart"></canvas>
                             </div>
-                            <div id="outcomes-legend" class="d-flex flex-wrap justify-content-center gap-2 mt-3" style="font-size:0.7rem;"></div>
+                            <div id="outcomes-legend" class="d-flex flex-wrap justify-content-center gap-2 mt-3"
+                                style="font-size:0.7rem;"></div>
                         </div>
                     </div>
                 </div>
@@ -2137,7 +2154,7 @@
                     title = "Visit Outcomes";
                     sub = "Real-world field results";
                     const rawData = stats.visit_status_breakdown || {};
-                    
+
                     const config = {
                         'SATISFIED': { label: 'Satisfied (Demo Set)', color: '#3b82f6' },
                         'ACCEPT': { label: 'Accepted', color: '#10b981' },
@@ -2157,15 +2174,15 @@
                     title = "Shop Pipeline";
                     sub = "Conversion funnel stages";
                     const rawData = stats.project_status_breakdown || {};
-                    
+
                     const config = {
-                        'LEAD':        { label: 'Lead', color: '#6366f1' },
-                        'PITCHING':    { label: 'Pitching', color: '#f59e0b' },
+                        'LEAD': { label: 'Lead', color: '#6366f1' },
+                        'PITCHING': { label: 'Pitching', color: '#f59e0b' },
                         'NEGOTIATION': { label: 'Negotiation', color: '#0ea5e9' },
-                        'DELIVERY':    { label: 'Delivery', color: '#10b981' },
+                        'DELIVERY': { label: 'Delivery', color: '#10b981' },
                         'MAINTENANCE': { label: 'Maintenance', color: '#1e293b' }
                     };
-                    
+
                     Object.entries(config).forEach(([stage, item]) => {
                         labels.push(item.label);
                         data.push(rawData[stage] || 0);
@@ -2177,7 +2194,7 @@
                 document.getElementById('outcomes-chart-sub').textContent = sub;
 
                 if (outcomesChartObj) outcomesChartObj.destroy();
-                
+
                 if (data.length === 0) {
                     labels = ['No Data'];
                     data = [1];
@@ -2218,7 +2235,7 @@
                             ctx.restore();
                             const total = data.reduce((a, b) => a + b, 0);
                             const text = (labels[0] === 'No Data') ? '0' : total.toString();
-                            
+
                             ctx.font = `700 1.8em 'Inter'`;
                             ctx.textBaseline = "middle";
                             ctx.fillStyle = '#1e293b';
@@ -2379,6 +2396,87 @@
                 });
             } catch (e) { console.error("Revenue Chart Error:", e); }
 
+            // 3. Visit Outcomes (Donut)
+            try {
+                let sData = stats.visit_outcomes_breakdown || {};
+                if (Object.keys(sData).length === 0) { sData = { 'No Data': 1 }; }
+
+                const sLabels = Object.keys(sData);
+                const sValues = Object.values(sData);
+
+                // Map statuses to specific semantic colors
+                const colorMap = {
+                    'COMPLETED': '#10b981',          // Emerald Green
+                    'ACCEPTED': '#10b981',           // Emerald Green
+                    'SATISFIED': '#38bdf8',          // Light Blue
+                    'SCHEDULED': '#8b5cf6',          // Purple
+                    'TAKE_TIME_TO_THINK': '#f59e0b', // Amber/Orange
+                    'THINKING': '#f59e0b',           // Amber/Orange
+                    'CANCELLED': '#ef4444',          // Red
+                    'DECLINED': '#ef4444',           // Red
+                    'MISSED': '#64748b'              // Slate Gray
+                };
+
+                // Generate the colors array by looking up each label
+                const dynamicColors = sLabels.map(label => colorMap[label.toUpperCase()] || '#cbd5e1');
+
+                const outcomesCanvas = document.getElementById('outcomesChart');
+                if (outcomesCanvas) {
+                    if (outcomesChartObj) outcomesChartObj.destroy();
+                    outcomesChartObj = new Chart(outcomesCanvas, {
+                        type: 'doughnut',
+                        data: {
+                            labels: sLabels,
+                            datasets: [{
+                                data: sValues,
+                                backgroundColor: dynamicColors,
+                                borderWidth: 2,
+                                borderColor: '#ffffff',
+                                hoverOffset: 4
+                            }]
+                        },
+                        options: {
+                            plugins: {
+                                legend: { display: false },
+                                tooltip: { enabled: false, external: externalTooltipHandler }
+                            },
+                            cutout: '75%',
+                            maintainAspectRatio: false
+                        },
+                        plugins: [{
+                            id: 'centerText',
+                            beforeDraw: function (chart) {
+                                if (chart.config.type !== 'doughnut') return;
+                                const width = chart.width, height = chart.height, ctx = chart.ctx;
+                                ctx.restore();
+                                const fontSize = (height / 114).toFixed(2);
+                                ctx.font = `600 ${fontSize}em 'Inter'`;
+                                ctx.textBaseline = "middle";
+                                const text = sValues.reduce((a, b) => a + b, 0),
+                                    textX = Math.round((width - ctx.measureText(text).width) / 2),
+                                    textY = height / 2;
+                                ctx.fillStyle = '#1e293b';
+                                ctx.fillText(text, textX, textY);
+
+                                ctx.font = `500 0.75em 'Inter'`;
+                                const label = "TOTAL",
+                                    labelX = Math.round((width - ctx.measureText(label).width) / 2),
+                                    labelY = (height / 2) + 20;
+                                ctx.fillStyle = '#64748b';
+                                ctx.fillText(label, labelX, labelY);
+                                ctx.save();
+                            }
+                        }]
+                    });
+
+                    document.getElementById('outcomes-legend').innerHTML = sLabels.map((s, i) =>
+                        `<div class="d-flex align-items-center gap-2 fw-medium text-secondary" style="font-size: 0.7rem;">
+                            <span style="width:8px;height:8px;background:${dynamicColors[i]};border-radius:2px;display:inline-block;"></span> 
+                            <span>${s.replace(/_/g, ' ')}</span>
+                        </div>`
+                    ).join('');
+                }
+            } catch (e) { console.error("Outcomes Chart Error:", e); }
             // 3. Outcomes (Donut) - Grouped or Project Status
             renderOutcomesChart(stats);
         }
@@ -2595,7 +2693,7 @@
                 console.log("PM Pipeline: Fetching data...");
                 const data = await apiGet('/shops/analytics/pm-pipeline');
                 console.log("PM Pipeline: Data received:", data);
-                
+
                 if (!data || !data.length) {
                     console.log("PM Pipeline: No data available for chart.");
                     return;
@@ -2659,7 +2757,7 @@
                                 stacked: true,
                                 beginAtZero: true,
                                 min: 0,
-                                ticks: { 
+                                ticks: {
                                     stepSize: 1,
                                     precision: 0
                                 },
@@ -2685,11 +2783,16 @@
         }
 
         async function loadDashboard() {
+            console.log("loadDashboard started");
             try {
                 // Show/hide Punch In card based on role
                 const currentUser = getUser();
                 if (currentUser && currentUser.role !== 'ADMIN') {
-                    initAttendance();
+                    try {
+                        initAttendance();
+                    } catch (attErr) {
+                        console.error("Attendance Init Error:", attErr);
+                    }
                 }
 
                 // ... existing data fetching ...
@@ -2709,11 +2812,19 @@
                 if (end) query += `&end_date=${end}`;
                 if (query) query = '?' + query.substring(1);
 
+                let stats = {};
                 try {
+                    console.log("Fetching stats from:", '/reports/dashboard' + query);
                     // Load pre-aggregated stats from backend
-                    const stats = await apiGet('/reports/dashboard' + query);
+                    stats = await apiGet('/reports/dashboard' + query) || {};
+                    console.log("Stats received:", stats);
+                } catch (e) {
+                    console.error("Dashboard Stats API Error:", e);
+                    // Partial fallback to keep the page from crashing
+                    stats = { visits_chart_data: {}, revenue_by_month: {}, visit_status_breakdown: {}, project_status_breakdown: {} };
+                }
 
-                    // Update KPIs (with null guards since non-admin dashboard may differ)
+                try {
                     // Update KPIs (with null guards since non-admin dashboard may differ)
                     const flags = getRoleFlags(currentUser?.role);
 
@@ -2727,7 +2838,7 @@
                     if (kpiLeadsTrend) {
                         if (isAllTime) kpiLeadsTrend.style.display = 'none';
                         else {
-                            kpiLeadsTrend.innerHTML = formatTrend(flags.isPM ? stats.projects_mom_pct : stats.visits_mom_pct || 0);
+                            kpiLeadsTrend.innerHTML = formatTrend(flags.isPM ? stats.projects_mom_pct : (stats.visits_mom_pct || 0));
                             kpiLeadsTrend.style.display = 'flex';
                         }
                     }
@@ -2795,9 +2906,10 @@
 
                     // PM Pipeline
                     loadDashboardPipelineChart();
+                    console.log("loadDashboard sync parts finished");
 
                 } catch (e) {
-                    console.error("Dashboard Stats Error:", e);
+                    console.error("Dashboard Rendering Core Error:", e);
                     ['leads', 'clients', 'employees', 'revenue'].forEach(id => {
                         const el = document.getElementById('kpi-' + id);
                         if (el) el.textContent = '—';

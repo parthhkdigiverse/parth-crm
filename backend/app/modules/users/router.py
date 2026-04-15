@@ -217,14 +217,23 @@ async def get_effective_access_policy(
 async def list_users(
     current_user: User = Depends(get_current_active_user)
 ) -> Any:
-    if current_user.role != UserRole.ADMIN:
-        return [current_user]
-    # Cached for 90 seconds — invalidated on any user mutation
-    return await get_or_set(
-        "all_users_list",
-        lambda: User.find(User.is_deleted != True).to_list(),
-        ttl_seconds=90
-    )
+    try:
+        if current_user.role != UserRole.ADMIN:
+            return [current_user]
+
+        # Cached for 90 seconds — invalidated on any user mutation
+        # This is the main logic which includes both caching and the is_deleted check
+        users = await get_or_set(
+            "all_users_list",
+            lambda: User.find(User.is_deleted != True).to_list(),
+            ttl_seconds=90
+        )
+        return users
+
+    except Exception as e:
+        import logging
+        logging.error(f"list_users error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to load users: {str(e)}")
 
 @router.get("/project-managers", response_model=List[UserRead])
 async def list_project_managers(

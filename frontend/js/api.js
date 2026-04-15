@@ -132,7 +132,7 @@ class ApiClient {
                 } else if (typeof data === 'string') {
                     message = data;
                 }
-                
+
                 const error = new Error(message);
                 error.status = response.status;
                 error.data = data;
@@ -163,7 +163,7 @@ class ApiClient {
         try {
             const response = await fetch(url, { headers });
             if (!response.ok) throw new Error(`Download failed: ${response.status}`);
-            
+
             const blob = await response.blob();
             const downloadUrl = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -172,7 +172,7 @@ class ApiClient {
             a.download = filename;
             document.body.appendChild(a);
             a.click();
-            
+
             setTimeout(() => {
                 document.body.removeChild(a);
                 window.URL.revokeObjectURL(downloadUrl);
@@ -458,25 +458,25 @@ class ApiClient {
 
     // ─── Feedback ────────────────────────────────────────────
     static async getClientFeedback(clientId) {
-        return this.request(`/feedback/?client_id=${clientId}`);
+        return this.request(`/feedback?client_id=${clientId}`);
     }
     static async getAllClientFeedbacks() {
         return this.request('/feedback/all');
     }
     static async getClientFeedbacks(clientId) {
-        return this.request(`/feedback/?client_id=${clientId}`);
+        return this.request(`/feedback?client_id=${clientId}`);
     }
     static async createFeedback(data) {
-        return this.request('/feedback/', { method: 'POST', body: data });
+        return this.request('/feedback', { method: 'POST', body: data });
     }
     static async deleteFeedback(feedbackId) {
         return this.request(`/feedback/${feedbackId}`, { method: 'DELETE' });
-    }   
+    }
     static async createUserFeedback(data) {
         return this.request('/feedback/', { method: 'POST', body: data });
     }
     static async getUserFeedbacks() {
-        return this.request('/feedback/');
+        return this.request('/feedback');
     }
 
     // ─── ID Cards ────────────────────────────────────────────
@@ -531,9 +531,9 @@ class ApiClient {
         return this.request('/hrm/salary/generate', { method: 'POST', body: data });
     }
     static async generateSalaryBulk(month) {
-        return this.request('/hrm/salary/generate-bulk', { 
-            method: 'POST', 
-            body: { month, extra_deduction_default: 0 } 
+        return this.request('/hrm/salary/generate-bulk', {
+            method: 'POST',
+            body: { month, extra_deduction_default: 0 }
         });
     }
     static async regenerateSalarySlip(data) {

@@ -17,6 +17,32 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <style>
+        /* CRITICAL: Force native browser scrolling by overriding theme-level locks */
+        html,
+        body {
+            overflow: auto !important;
+            height: auto !important;
+            scrollbar-width: thin;
+        }
+
+        body {
+            background-color: var(--bg-app);
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+        }
+
+        body>.d-flex {
+            height: auto !important;
+            overflow: visible !important;
+            min-height: 100vh;
+        }
+
+        .page-content-standard {
+            padding-bottom: 100px;
+            /* Generous space at the bottom */
+            flex: 1;
+        }
+
         .clickable-name {
             cursor: pointer;
             transition: all 0.2s;
@@ -59,53 +85,88 @@
                         <p class="text-muted mb-0 small">Analyze team productivity and performance analytics.</p>
                     </div>
                     <div class="d-flex gap-2">
-                        <button class="btn-premium-action text-white shadow-sm" style="background: #10b981;"
+                        <button class="btn btn-light border bg-white fw-semibold shadow-sm" style="border-radius:10px;"
                             onclick="exportReport('csv')">
-                            <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
+                            <i class="bi bi-filetype-csv text-success me-2"></i> Export CSV
                         </button>
-                        <button class="btn-premium-action text-white shadow-sm" style="background: #ef4444;"
+                        <button class="btn btn-light border bg-white fw-semibold shadow-sm" style="border-radius:10px;"
                             onclick="exportReport('pdf')">
-                            <i class="bi bi-file-earmark-pdf me-1"></i> Export PDF
+                            <i class="bi bi-file-earmark-pdf text-danger me-2"></i> Export PDF
                         </button>
                     </div>
                 </div>
 
                 <!-- KPI Overview -->
                 <div class="row g-4 mb-4">
+                    <!-- Total Visits -->
                     <div class="col-md-3">
-                        <div class="kpi-card">
-                            <div class="kpi-icon-wrapper icon-blue">
-                                <i class="bi bi-person-check"></i>
+                        <div class="card border-0 shadow-sm bg-primary-subtle p-3 h-100 rounded-4">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                    style="width:48px; height:48px; font-size:1.25rem;">
+                                    <i class="bi bi-person-check"></i>
+                                </div>
+                                <div>
+                                    <div class="text-primary fw-bold mb-1"
+                                        style="font-size:0.75rem; letter-spacing:0.5px; text-transform: uppercase;">
+                                        Total Visits</div>
+                                    <div class="fs-4 fw-bold text-dark" id="total-visits">0</div>
+                                </div>
                             </div>
-                            <div class="kpi-title">Total Visits</div>
-                            <div class="kpi-value" id="total-visits">0</div>
                         </div>
                     </div>
+
+                    <!-- Leads Generated -->
                     <div class="col-md-3">
-                        <div class="kpi-card">
-                            <div class="kpi-icon-wrapper icon-teal">
-                                <i class="bi bi-graph-up-arrow"></i>
+                        <div class="card border-0 shadow-sm bg-info-subtle p-3 h-100 rounded-4">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-info text-dark rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                    style="width:48px; height:48px; font-size:1.25rem;">
+                                    <i class="bi bi-graph-up-arrow"></i>
+                                </div>
+                                <div>
+                                    <div class="text-info-emphasis fw-bold mb-1"
+                                        style="font-size:0.75rem; letter-spacing:0.5px; text-transform: uppercase;">
+                                        Leads Generated</div>
+                                    <div class="fs-4 fw-bold text-dark" id="total-leads">0</div>
+                                </div>
                             </div>
-                            <div class="kpi-title">Leads Generated</div>
-                            <div class="kpi-value" id="total-leads">0</div>
                         </div>
                     </div>
+
+                    <!-- Target Achieved -->
                     <div class="col-md-3">
-                        <div class="kpi-card">
-                            <div class="kpi-icon-wrapper icon-purple">
-                                <i class="bi bi-currency-rupee"></i>
+                        <div class="card border-0 shadow-sm bg-white p-3 h-100 rounded-4">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="text-white rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                    style="width:48px; height:48px; font-size:1.25rem; background-color: #4f46e5;">
+                                    <i class="bi bi-currency-rupee"></i>
+                                </div>
+                                <div>
+                                    <div class="fw-bold mb-1"
+                                        style="font-size:0.75rem; letter-spacing:0.5px; text-transform: uppercase; color: #4338ca;">
+                                        Target Achieved</div>
+                                    <div class="fs-4 fw-bold text-dark" id="total-sales">₹0</div>
+                                </div>
                             </div>
-                            <div class="kpi-title">Target Achieved</div>
-                            <div class="kpi-value" id="total-sales">₹0</div>
                         </div>
                     </div>
+
+                    <!-- Total Incentives -->
                     <div class="col-md-3">
-                        <div class="kpi-card">
-                            <div class="kpi-icon-wrapper icon-yellow">
-                                <i class="bi bi-gift"></i>
+                        <div class="card border-0 shadow-sm bg-warning-subtle p-3 h-100 rounded-4">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="bg-warning text-dark rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                    style="width:48px; height:48px; font-size:1.25rem;">
+                                    <i class="bi bi-gift"></i>
+                                </div>
+                                <div>
+                                    <div class="text-warning-emphasis fw-bold mb-1"
+                                        style="font-size:0.75rem; letter-spacing:0.5px; text-transform: uppercase;">
+                                        Total Incentives</div>
+                                    <div class="fs-4 fw-bold text-dark" id="total-incentives">₹0</div>
+                                </div>
                             </div>
-                            <div class="kpi-title">Total Incentives</div>
-                            <div class="kpi-value" id="total-incentives">₹0</div>
                         </div>
                     </div>
                 </div>
@@ -161,9 +222,10 @@
                 <div class="modal-body pt-3">
                     <!-- Employee Brief -->
                     <div class="d-flex align-items-center mb-4 p-3 bg-app rounded-4">
-                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold me-3"
-                            style="width: 50px; height: 50px; font-size: 1.2rem;" id="modal-emp-initials">
-                            JD
+                        <div class="text-white rounded-circle d-flex align-items-center justify-content-center fw-bold me-3 shadow-sm"
+                            style="width: 50px; height: 50px; font-size: 1.2rem; background-color: #0d6efd !important;"
+                            id="modal-emp-initials">
+                            NS
                         </div>
                         <div>
                             <h5 class="fw-bold mb-0" id="modal-emp-name">John Doe</h5>
@@ -187,13 +249,13 @@
                         <div class="col-4">
                             <div class="p-2 border rounded-3">
                                 <div class="text-muted x-small fw-bold text-uppercase">Target</div>
-                                <div class="fw-bold text-main">₹2.5L</div>
+                                <div class="fw-bold text-main" id="modal-target">₹0</div>
                             </div>
                         </div>
                         <div class="col-4">
                             <div class="p-2 border rounded-3">
                                 <div class="text-muted x-small fw-bold text-uppercase">Rank</div>
-                                <div class="fw-bold text-warning">Top 5</div>
+                                <div class="fw-bold text-warning" id="modal-rank">#—</div>
                             </div>
                         </div>
                     </div>
@@ -218,15 +280,28 @@
                         </table>
                     </div>
 
-                    <!-- Admin Notes -->
-                    <div class="p-3 border rounded-4 bg-app bg-opacity-50">
-                        <label class="form-label fw-bold small mb-2">Admin Performance Notes</label>
-                        <textarea id="admin-note" class="form-control border-0 bg-surface" rows="3"
+                    <!-- Admin Notes Section -->
+                    <div id="admin-note-input-section" class="p-3 border rounded-4 bg-app bg-opacity-50 mb-4">
+                        <h6 class="fw-bold mb-3 d-flex align-items-center">
+                            <i class="bi bi-pencil-square me-2 text-primary"></i> Add Performance Note
+                        </h6>
+                        <textarea id="admin-note" class="form-control border-0 bg-surface shadow-none" rows="3"
                             placeholder="Add a private note regarding this employee's performance..."></textarea>
                         <div class="text-end mt-2">
-                            <button class="btn btn-primary btn-sm px-4" onclick="saveAdminNote()">
-                                <i class="bi bi-save me-1"></i>Save Note
+                            <button class="btn btn-primary btn-sm px-4 rounded-pill shadow-sm" id="save-note-btn"
+                                onclick="saveAdminNote()">
+                                <i class="bi bi-send-fill me-1"></i>Save Note
                             </button>
+                        </div>
+                    </div>
+
+                    <!-- Notes History / Feedback View -->
+                    <div id="notes-history-section" class="mt-2" style="display: none;">
+                        <h6 id="feedback-section-title" class="fw-bold mb-3 d-flex align-items-center text-main">
+                            <i class="bi bi-chat-left-dots-fill me-2 text-primary"></i>Admin Performance Notes
+                        </h6>
+                        <div id="notes-history-list" class="vstack gap-3" style="max-height: 250px; overflow-y: auto;">
+                            <!-- Populated via JS -->
                         </div>
                     </div>
                 </div>
@@ -258,6 +333,33 @@
                 `,
                 filters: [
                     { id: 'employee-dropdown', label: 'Employee', type: 'select', options: [{ value: 'all', label: 'All Employees' }] },
+                    {
+                        id: 'role-filter',
+                        label: 'Role',
+                        type: 'select',
+                        options: [
+                            { value: 'all', label: 'All Roles' },
+                            { value: 'SALES', label: 'Sales' },
+                            { value: 'TELESALES', label: 'Telesales' },
+                            { value: 'PROJECT_MANAGER', label: 'Project Manager' },
+                            { value: 'PROJECT_MANAGER_AND_SALES', label: 'PM & Sales' },
+                            { value: 'ADMIN', label: 'Admin' }
+                        ]
+                    },
+                    {
+                        id: 'range-preset',
+                        label: 'Date Range',
+                        type: 'select',
+                        options: [
+                            { value: 'ALL', label: 'All Time' },
+                            { value: 'TODAY', label: 'Today' },
+                            { value: 'YESTERDAY', label: 'Yesterday' },
+                            { value: 'THIS_WEEK', label: 'This Week' },
+                            { value: 'THIS_MONTH', label: 'This Month' },
+                            { value: 'LAST_30', label: 'Last 30 Days' },
+                            { value: 'CUSTOM', label: 'Custom Date' }
+                        ]
+                    },
                     { id: 'date-from', label: 'From', type: 'date' },
                     { id: 'date-to', label: 'To', type: 'date' }
                 ],
@@ -268,12 +370,94 @@
                     const searchInput = document.getElementById('emp-search');
                     if (searchInput) searchInput.value = '';
 
+                    document.getElementById('role-filter').value = 'all';
+                    document.getElementById('range-preset').value = 'ALL';
                     document.getElementById('date-from').value = '';
                     document.getElementById('date-to').value = '';
+
+                    const startField = document.getElementById('date-from')?.closest('.filter-field');
+                    const endField = document.getElementById('date-to')?.closest('.filter-field');
+                    if (startField) startField.style.display = 'none';
+                    if (endField) endField.style.display = 'none';
 
                     loadEmployeeReport();
                 }
             });
+
+            // Date Range Preset Logic
+            const dateRangeEl = document.getElementById('range-preset');
+            const fromInput = document.getElementById('date-from');
+            const toInput = document.getElementById('date-to');
+            const startField = fromInput?.closest('.filter-field');
+            const endField = toInput?.closest('.filter-field');
+
+            if (dateRangeEl) {
+                const updateVisibility = () => {
+                    const isCustom = dateRangeEl.value === 'CUSTOM';
+                    if (startField) startField.style.display = isCustom ? 'block' : 'none';
+                    if (endField) endField.style.display = isCustom ? 'block' : 'none';
+                };
+
+                const calculateDates = () => {
+                    const range = dateRangeEl.value;
+                    const now = new Date();
+                    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    let from = '', to = '';
+
+                    switch (range) {
+                        case 'TODAY':
+                            from = to = today.toISOString().split('T')[0];
+                            break;
+                        case 'YESTERDAY':
+                            const yest = new Date(today);
+                            yest.setDate(yest.getDate() - 1);
+                            from = to = yest.toISOString().split('T')[0];
+                            break;
+                        case 'THIS_WEEK':
+                            const startOfWeek = new Date(today);
+                            startOfWeek.setDate(today.getDate() - today.getDay());
+                            from = startOfWeek.toISOString().split('T')[0];
+                            to = today.toISOString().split('T')[0];
+                            break;
+                        case 'THIS_MONTH':
+                            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+                            from = startOfMonth.toISOString().split('T')[0];
+                            to = today.toISOString().split('T')[0];
+                            break;
+                        case 'LAST_30':
+                            const start30 = new Date(today);
+                            start30.setDate(today.getDate() - 30);
+                            from = start30.toISOString().split('T')[0];
+                            to = today.toISOString().split('T')[0];
+                            break;
+                        case 'ALL':
+                            from = to = '';
+                            break;
+                        case 'CUSTOM':
+                            return; // Don't change values
+                    }
+
+                    if (fromInput) fromInput.value = from;
+                    if (toInput) toInput.value = to;
+                    loadEmployeeReport();
+                };
+
+                dateRangeEl.addEventListener('change', () => {
+                    updateVisibility();
+                    calculateDates();
+                });
+
+                // Add role filter listener
+                const roleFilterEl = document.getElementById('role-filter');
+                if (roleFilterEl) {
+                    roleFilterEl.addEventListener('change', () => {
+                        renderReportTable(currentReportMetrics);
+                    });
+                }
+
+                // Initial setup
+                updateVisibility();
+            }
 
             // Search listener
             const searchInput = document.getElementById('emp-search');
@@ -287,6 +471,7 @@
         const currentUser = getUser();
         let employeesList = [];
         let currentReportMetrics = []; // Store current filtered data for export
+        let lastDrillDownUserId = null;
 
         function formatRole(role) {
             if (!role) return '';
@@ -297,7 +482,6 @@
         async function initFilters() {
             const user = getUser();
             const isAdmin = user && user.role === 'ADMIN';
-            const dropdown = document.getElementById('employee-dropdown');
 
             try {
                 if (isAdmin) {
@@ -319,13 +503,16 @@
                         dropdown.classList.add('bg-light');
                     }
                 }
-
-                document.getElementById('date-from').value = '';
-                document.getElementById('date-to').value = '';
-
-                loadEmployeeReport();
             } catch (err) {
-                console.error("Failed to init filters", err);
+                console.error("Failed to load employee list:", err);
+                // Keep dropdown usable with "All Employees" default
+            } finally {
+                // Always load the report regardless of filter setup success
+                const dateFrom = document.getElementById('date-from');
+                const dateTo = document.getElementById('date-to');
+                if (dateFrom) dateFrom.value = '';
+                if (dateTo) dateTo.value = '';
+                loadEmployeeReport();
             }
         }
 
@@ -348,12 +535,13 @@
                     name: emp.name || 'Unknown',
                     email: emp.email,
                     role: emp.role,
+                    target: emp.target || 0,
+                    emp_code: emp.employee_code || '',
                     visits: emp.total_visits,
                     leads: emp.total_leads,
                     success_rate: emp.success_rate || 0,
                     sales: emp.total_revenue,
-                    incentive: emp.total_incentive,
-                    target: emp.target || 0
+                    incentive: emp.total_incentive
                 }));
 
                 currentReportMetrics = metrics; // Save for export
@@ -366,14 +554,21 @@
         }
 
         function renderReportTable(data) {
+            const tbody = document.getElementById('report-tbody');
             const searchInput = document.getElementById('emp-search');
+            const roleFilter = document.getElementById('role-filter')?.value || 'all';
             const searchTerm = searchInput ? searchInput.value.toLowerCase() : '';
 
-            const filteredData = data.filter(item =>
-                item.name.toLowerCase().includes(searchTerm) ||
-                item.email.toLowerCase().includes(searchTerm) ||
-                formatRole(item.role).toLowerCase().includes(searchTerm)
-            );
+            // Apply search and role filtering on top of data
+            const filteredData = data.filter(item => {
+                const matchesSearch = item.name.toLowerCase().includes(searchTerm) ||
+                    item.email.toLowerCase().includes(searchTerm);
+
+                const matchesRole = roleFilter === 'all' ||
+                    (item.role && item.role.replace('UserRole.', '') === roleFilter);
+
+                return matchesSearch && matchesRole;
+            });
 
             document.getElementById('record-count').textContent = `${filteredData.length} Records`;
 
@@ -381,19 +576,19 @@
                 data: filteredData,
                 tbodyId: 'report-tbody',
                 paginationId: 'report-pagination',
-                emptyMsg: '<tr><td colspan="8" class="text-center py-5 text-muted">No records found.</td></tr>',
+                emptyMsg: '<tr><td colspan="7" class="text-center py-5 text-muted">No records found.</td></tr>',
                 renderRow: (item) => `
                     <tr class="employee-row">
                         <td class="text-center">
-                            <div class="pill-badge pill-neutral">${item.id.toString().padStart(2, '0')}</div>
+                            <div class="pill-badge pill-neutral">${item.emp_code ? item.emp_code : item.id.toString().substring(0, 8)}</div>
                         </td>
                         <td>
-                            <div class="employee-name-container clickable-name" onclick="openDrillDown('${item.id}', '${item.name}', '${item.role}', '${item.leads}', '${item.sales}')">
+                            <div class="employee-name-container clickable-name" onclick="openDrillDown('${item.id}', '${item.name}', '${item.role}', ${item.visits}, ${item.leads}, ${item.sales}, ${item.target}, '${item.emp_code}')">
                                 <span class="employee-main-name">${item.name}</span>
                                 <span class="employee-email">${item.email}</span>
                             </div>
                         </td>
-                        <td class="text-center"><span class="pill-badge pill-info">${formatRole(item.role)}</span></td>
+                        <td class="text-center"><span class="pill-badge pill-info" style="white-space: nowrap;">${formatRole(item.role)}</span></td>
                         <td class="text-center"><span class="fw-bold">${item.visits}</span></td>
                         <td class="text-center"><span class="text-success fw-bold"><i class="bi bi-lightning-fill me-1 small"></i>${item.leads}</span></td>
                         <td class="text-center">
@@ -403,13 +598,11 @@
                         </td>
                         <td class="text-center">
                             <span class="currency-value">₹${item.sales.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
-                            <span class="text-muted small ms-1">(${item.target > 0 ? Math.round((item.sales / item.target) * 100) : 0}%)</span>
                         </td>
                         <td class="text-center">
                             <span class="text-primary fw-bold" style="font-family: 'Outfit';">₹${item.incentive.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
                         </td>
-                    </tr>
-                `
+                    </tr>`
             });
         }
 
@@ -502,8 +695,8 @@
                     row.visits,
                     row.leads,
                     `${row.success_rate}%`,
-                    `INR ${row.sales.toLocaleString('en-IN')} (${row.target > 0 ? Math.round((row.sales / row.target) * 100) : 0}%)`,
-                    `INR ${row.incentive.toLocaleString('en-IN')}`
+                    `Rs. ${row.sales.toLocaleString('en-IN')}`,
+                    `Rs. ${row.incentive.toLocaleString('en-IN')}`
                 ]);
 
                 // Calculate Totals
@@ -550,10 +743,10 @@
                 doc.setFont("helvetica", "normal");
                 doc.setTextColor(50);
                 doc.text(`Total Target Achieved:`, 125, finalY + 15);
-                doc.text(`INR ${totalSales.toLocaleString('en-IN')}`, 190, finalY + 15, { align: 'right' });
+                doc.text(`Rs. ${totalSales.toLocaleString('en-IN')}`, 190, finalY + 15, { align: 'right' });
 
                 doc.text(`Total Incentive:`, 125, finalY + 20);
-                doc.text(`INR ${totalIncentive.toLocaleString('en-IN')}`, 190, finalY + 20, { align: 'right' });
+                doc.text(`Rs. ${totalIncentive.toLocaleString('en-IN')}`, 190, finalY + 20, { align: 'right' });
 
                 doc.save(`Employee_Performance_${new Date().toISOString().split('T')[0]}.pdf`);
                 showToast("Premium PDF Exported successfully", "success");
@@ -562,19 +755,39 @@
 
 
 
-        async function openDrillDown(id, name, role, leads, sales) {
+        async function openDrillDown(id, name, role, visits, leads, sales, target, empCode) {
+            lastDrillDownUserId = id;
             const modal = new bootstrap.Modal(document.getElementById('drillDownModal'));
+
+            // Clear previous input
+            document.getElementById('admin-note').value = '';
 
             // Set details
             document.getElementById('modal-emp-name').textContent = name;
-            document.getElementById('modal-emp-id').textContent = `#EMP-0${id}`;
+            document.getElementById('modal-emp-id').textContent = empCode ? `#C-${empCode}` : '#EMP-' + id.substring(0, 8);
             document.getElementById('modal-emp-role').textContent = formatRole(role);
             document.getElementById('modal-emp-initials').textContent = name.split(' ').map(n => n[0]).join('').toUpperCase();
 
-            // Conversion logic
-            const visits = parseInt(leads) * 2.5; // Back-simulating visits for conversion view
-            const conversion = visits > 0 ? ((parseInt(leads) / visits) * 100).toFixed(1) : "0";
+            // Real Data Calculation
+            const v = parseFloat(visits) || 0;
+            const l = parseFloat(leads) || 0;
+
+            const conversion = (v > 0) ? ((l / v) * 100).toFixed(1) : "0.0";
             document.getElementById('modal-conversion').textContent = `${conversion}%`;
+
+            const t = parseFloat(target) || 0;
+            document.getElementById('modal-target').textContent = '₹' + t.toLocaleString('en-IN');
+
+            // Calculate Rank dynamically based on sales, then visits, then leads (tie-breakers)
+            const sorted = [...currentReportMetrics]
+                .filter(e => e.sales > 0 || e.visits > 0)
+                .sort((a, b) => b.sales - a.sales || b.visits - a.visits || b.leads - a.leads);
+
+            const rankIndex = sorted.findIndex(emp => emp.id === id);
+            document.getElementById('modal-rank').textContent = rankIndex >= 0 ? `#${rankIndex + 1}` : '#—';
+
+            // Load Admin Notes History
+            loadAdminNotes(id);
 
             // Populate actual activity data
             const activityTbody = document.getElementById('modal-activity-tbody');
@@ -604,22 +817,101 @@
             }
 
             // Load saved note if any (simulated)
-            const savedNote = localStorage.getItem(`emp_note_${id}`) || "";
-            document.getElementById('admin-note').value = savedNote;
-            document.getElementById('admin-note').setAttribute('data-current-emp', id);
+            // (Removed simulated logic, now using loadAdminNotes above)
 
             modal.show();
         }
 
-        function saveAdminNote() {
-            const noteArea = document.getElementById('admin-note');
-            const empId = noteArea.getAttribute('data-current-emp');
-            const noteText = noteArea.value;
+        async function loadAdminNotes(userId) {
+            const notesList = document.getElementById('notes-history-list');
+            const historySection = document.getElementById('notes-history-section');
+            const noteInputSection = document.getElementById('admin-note-input-section');
+            const sectionTitle = document.getElementById('feedback-section-title');
+            const user = getUser();
+            const isAdmin = user && user.role === 'ADMIN';
 
-            if (!empId) return;
+            notesList.innerHTML = '<div class="text-center py-2"><div class="spinner-border spinner-border-sm text-primary"></div></div>';
+            historySection.style.display = 'block';
 
-            localStorage.setItem(`emp_note_${empId}`, noteText);
-            showToast("Performance note saved successfully!", "success");
+            // Show/Hide input section based on role
+            if (noteInputSection) {
+                noteInputSection.style.display = isAdmin ? 'block' : 'none';
+            }
+
+            // Update title for employees
+            if (sectionTitle) {
+                sectionTitle.innerHTML = isAdmin
+                    ? '<i class="bi bi-chat-left-dots-fill me-2 text-primary"></i> Admin Performance Notes'
+                    : '<i class="bi bi-journal-check me-2 text-success"></i> Performance Feedback from Management';
+            }
+
+            try {
+                const notes = await apiGet(`/reports/employees/${userId}/notes`);
+
+                if (notes.length === 0) {
+                    notesList.innerHTML = '<div class="text-center py-3 text-muted border rounded-3 bg-light bg-opacity-50 small">No feedback history yet.</div>';
+                } else {
+                    notesList.innerHTML = notes.map(n => `
+                        <div class="p-3 bg-app rounded-3 border-start border-primary border-4 shadow-sm mb-3 position-relative">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-bold text-main small">${n.admin_name}</span>
+                                <div class="d-flex align-items-center">
+                                    <span class="text-muted x-small me-2">${new Date(n.created_at).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                                    ${isAdmin ? `
+                                        <button class="btn btn-link text-danger p-0 border-0" onclick="deleteAdminNote('${n.id}')" title="Delete Note">
+                                            <i class="bi bi-trash small"></i>
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            <div class="text-secondary small" style="white-space: pre-wrap;">${n.content}</div>
+                        </div>
+                    `).join('');
+                }
+            } catch (err) {
+                notesList.innerHTML = '<div class="text-center text-danger small">Failed to load notes history</div>';
+            }
+        }
+
+        async function saveAdminNote() {
+            if (!lastDrillDownUserId) return;
+
+            const noteInput = document.getElementById('admin-note');
+            const content = noteInput.value.trim();
+
+            if (!content) {
+                showToast("Please enter a note", "warning");
+                return;
+            }
+
+            const saveBtn = document.getElementById('save-note-btn');
+            const originalHtml = saveBtn.innerHTML;
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
+
+            try {
+                await apiPost(`/reports/employees/${lastDrillDownUserId}/notes`, { content });
+                noteInput.value = '';
+                showToast("Feedback saved successfully", "success");
+                loadAdminNotes(lastDrillDownUserId);
+            } catch (err) {
+                showToast("Failed to save note: " + err.message, "danger");
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = originalHtml;
+            }
+        }
+
+        async function deleteAdminNote(noteId) {
+            if (!confirm("Are you sure you want to delete this note?")) return;
+
+            try {
+                await apiDelete(`/reports/employees/notes/${noteId}`);
+                showToast("Note deleted successfully", "success");
+                if (lastDrillDownUserId) loadAdminNotes(lastDrillDownUserId);
+            } catch (err) {
+                showToast("Failed to delete note: " + err.message, "danger");
+            }
         }
 
         document.addEventListener('DOMContentLoaded', initFilters);

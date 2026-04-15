@@ -179,6 +179,77 @@
                 opacity: 1;
             }
         }
+
+        /* Modern Slider Styles */
+        .rating-slider-container {
+            background: var(--crm-bg);
+            padding: 20px;
+            border-radius: 15px;
+            border: 1px solid var(--crm-border);
+            text-align: center;
+        }
+
+        .emoji-display {
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+            display: block;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .emoji-display.pop {
+            transform: scale(1.2);
+        }
+
+        .rating-label {
+            font-weight: 700;
+            color: var(--crm-primary);
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .slider-wrapper {
+            position: relative;
+            padding: 10px 0;
+        }
+
+        .rating-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            outline: none;
+            transition: background 0.3s;
+            cursor: pointer;
+        }
+
+        .rating-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #ffffff;
+            border: 3px solid var(--crm-primary);
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+            transition: transform 0.1s;
+        }
+
+        .rating-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.1);
+        }
+
+        .slider-ticks {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 5px;
+            margin-top: 10px;
+            color: #94a3b8;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
     </style>
 </head>
 
@@ -208,7 +279,9 @@
             </div>
             <div class="mb-3">
                 <label class="form-label">Shop Name / Business Name *</label>
-                <input type="text" class="form-control" id="shop-name" placeholder="Enter shop name" required>
+                <input type="text" class="form-control" id="shop-name" list="shop-list" placeholder="Enter shop name"
+                    required>
+                <datalist id="shop-list"></datalist>
             </div>
             <div class="mb-3">
                 <label class="form-label">Product *</label>
@@ -221,15 +294,32 @@
             </div>
 
 
-            <div class="mb-3">
-                <label class="form-label">Sales Person Rating</label>
-                <div class="star-rating" id="sales-stars">
-                    <input type="radio" name="sales_rating" id="s5" value="5"><label for="s5">★</label>
-                    <input type="radio" name="sales_rating" id="s4" value="4"><label for="s4">★</label>
-                    <input type="radio" name="sales_rating" id="s3" value="3"><label for="s3">★</label>
-                    <input type="radio" name="sales_rating" id="s2" value="2"><label for="s2">★</label>
-                    <input type="radio" name="sales_rating" id="s1" value="1"><label for="s1">★</label>
+            <div class="mb-4">
+                <label class="form-label d-block">1. Product Satisfaction *</label>
+                <div class="star-rating" id="product-stars">
+                    <input type="radio" name="product_rating" id="p5" value="5"><label for="p5">★</label>
+                    <input type="radio" name="product_rating" id="p4" value="4"><label for="p4">★</label>
+                    <input type="radio" name="product_rating" id="p3" value="3"><label for="p3">★</label>
+                    <input type="radio" name="product_rating" id="p2" value="2"><label for="p2">★</label>
+                    <input type="radio" name="product_rating" id="p1" value="1"><label for="p1">★</label>
                 </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label d-block">2. Sales Person Performance Score *</label>
+                <div class="rating-slider-container">
+                    <span id="emoji-display" class="emoji-display">😐</span>
+                    <span id="rating-value-label" class="rating-label">5/10</span>
+
+                    <div class="slider-wrapper">
+                        <input type="range" min="1" max="10" value="5" class="rating-slider" id="agent-score-slider">
+                        <div class="slider-ticks">
+                            <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+                            <span>6</span><span>7</span><span>8</span><span>9</span><span>10</span>
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" id="agent-score-input" value="5">
             </div>
 
             <div class="mb-3">
@@ -316,6 +406,96 @@
         };
         fetchAgent();
 
+        // --- Shop Sync Logic ---
+        const initShopSync = async () => {
+            const host = window.location.origin;
+            const shopInput = document.getElementById('shop-name');
+            const mobileInput = document.getElementById('client-mobile');
+            const shopDataList = document.getElementById('shop-list');
+
+            // 1. Staff Suggestions (If logged in)
+            const currentUser = typeof ApiClient !== 'undefined' ? ApiClient.getCurrentUser() : null;
+            const staffRoles = ['ADMIN', 'SALES', 'TELESALES', 'PROJECT_MANAGER', 'PROJECT_MANAGER_AND_SALES'];
+
+            if (currentUser && staffRoles.includes(currentUser.role)) {
+                try {
+                    const names = await ApiClient.request('/shops/public/names');
+                    if (Array.isArray(names)) {
+                        shopDataList.innerHTML = names.map(n => `<option value="${n}">`).join('');
+                    }
+                } catch (e) { console.warn("Could not fetch shop name suggestions", e); }
+            }
+
+            // 2. Client Auto-Fill (Mobile Lookup)
+            mobileInput.addEventListener('input', async (e) => {
+                const val = e.target.value.replace(/\D/g, '');
+
+                // Trigger lookup when 10 digits are reached
+                if (val.length === 10) {
+                    console.log("[Auto-Fill] Searching for shop with number:", val);
+                    try {
+                        const res = await fetch(`${host}/api/shops/public/lookup/${val}`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            if (data.name) {
+                                console.log("[Auto-Fill] Success! Found:", data.name);
+                                shopInput.value = data.name;
+                                // Subtle visual feedback
+                                shopInput.style.backgroundColor = '#f0fdf4';
+                                shopInput.style.borderColor = '#22c55e';
+                                setTimeout(() => {
+                                    shopInput.style.backgroundColor = '';
+                                    shopInput.style.borderColor = '';
+                                }, 3000);
+                            } else {
+                                console.log("[Auto-Fill] No shop found in database for this number.");
+                            }
+                        }
+                    } catch (e) { console.warn("[Auto-Fill] Connection error", e); }
+                }
+            });
+        };
+        initShopSync();
+
+        // Emoji Slider Logic
+        const slider = document.getElementById('agent-score-slider');
+        const emojiDisplay = document.getElementById('emoji-display');
+        const valueLabel = document.getElementById('rating-value-label');
+        const hiddenInput = document.getElementById('agent-score-input');
+
+        const updateSlider = (val) => {
+            const value = parseInt(val);
+            hiddenInput.value = value;
+            valueLabel.textContent = `${value}/10`;
+
+            // Update Emoji
+            let emoji = '😐';
+            if (value <= 2) emoji = '😡';
+            else if (value <= 4) emoji = '😟';
+            else if (value <= 6) emoji = '😐';
+            else if (value <= 8) emoji = '🙂';
+            else emoji = '😍';
+
+            if (emojiDisplay.textContent !== emoji) {
+                emojiDisplay.textContent = emoji;
+                emojiDisplay.classList.add('pop');
+                setTimeout(() => emojiDisplay.classList.remove('pop'), 200);
+            }
+
+            // Update Color Gradient (Red to Green)
+            // 0% is Red (#ef4444), 100% is Green (#22c55e)
+            const percent = ((value - 1) / 9) * 100;
+            const r = Math.floor(239 - (percent * (239 - 34) / 100));
+            const g = Math.floor(68 + (percent * (197 - 68) / 100));
+            const b = Math.floor(68 - (percent * (68 - 94) / 100));
+
+            slider.style.background = `linear-gradient(90deg, rgb(${r}, ${g}, ${b}) ${percent}%, #e2e8f0 ${percent}%)`;
+            valueLabel.style.color = `rgb(${r}, ${g}, ${b})`;
+        };
+
+        slider.addEventListener('input', (e) => updateSlider(e.target.value));
+        updateSlider(5); // Init
+
         // Handle Form Submission
         document.getElementById('feedback-form').addEventListener('submit', async function (e) {
             e.preventDefault();
@@ -325,7 +505,8 @@
                 'client-mobile': 'Mobile number is required',
                 'shop-name': 'Shop name is required',
                 'feedback-product': 'Please select a product',
-                'sales-stars': () => !!document.querySelector('input[name="sales_rating"]:checked') || 'Please provide a rating'
+                'product-stars': () => !!document.querySelector('input[name="product_rating"]:checked') || 'Please provide product satisfaction rating',
+                'agent-score-input': () => parseInt(document.getElementById('agent-score-input').value) > 0 || 'Please provide agent performance score'
             };
 
             if (!window.validateForm(this, rules)) {
@@ -341,7 +522,9 @@
                 mobile: document.getElementById('client-mobile').value,
                 shop_name: document.getElementById('shop-name').value,
                 product: document.getElementById('feedback-product').value,
-                rating: parseInt(document.querySelector('input[name="sales_rating"]:checked')?.value || 0),
+                product_rating: parseInt(document.querySelector('input[name="product_rating"]:checked')?.value || 0),
+                agent_score: parseInt(document.getElementById('agent-score-input').value),
+                rating: parseInt(document.querySelector('input[name="product_rating"]:checked')?.value || 0), // Legacy fallback
                 comments: document.getElementById('feedback-comment').value,
                 agent_name: agentNameEl.textContent,
                 referral_code: refCode

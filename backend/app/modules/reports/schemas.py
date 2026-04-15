@@ -1,7 +1,7 @@
 import datetime
 from typing import Optional
 from pydantic import BaseModel
-from app.core.base_schema import MongoBaseSchema
+from app.core.base_schema import MongoBaseSchema, PydanticObjectId
 
 class DashboardStats(MongoBaseSchema):
     total_visits: int
@@ -78,3 +78,12 @@ class EmployeeActivity(BaseModel):
     client: str
     type: str # Map from visit status or remarks
     status: str
+
+class PerformanceNoteCreate(BaseModel):
+    content: str
+
+class PerformanceNoteResponse(MongoBaseSchema):
+    id: PydanticObjectId
+    admin_name: str
+    content: str
+    created_at: datetime.datetime

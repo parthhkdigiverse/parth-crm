@@ -850,11 +850,13 @@
             <div style="padding:24px 28px; overflow-y: auto;">
                 <input type="hidden" id="edit-id">
                 <div class="col-12" id="editEmpResetBanner" style="display:none; margin-bottom:1rem;">
-                    <div class="alert alert-warning d-flex align-items-center gap-3 w-100 shadow-sm mb-0" style="border:1px solid #f59e0b; background:#fef3c7; color:#92400e; border-radius:12px;">
+                    <div class="alert alert-warning d-flex align-items-center gap-3 w-100 shadow-sm mb-0"
+                        style="border:1px solid #f59e0b; background:#fef3c7; color:#92400e; border-radius:12px;">
                         <i class="bi bi-shield-exclamation fs-4"></i>
                         <div>
                             <h6 class="mb-0 fw-bold">Password Reset Requested</h6>
-                            <small>This user requested a password reset on <span id="editEmpResetTime"></span>. Changing their password now will automatically resolve this request.</small>
+                            <small>This user requested a password reset on <span id="editEmpResetTime"></span>. Changing
+                                their password now will automatically resolve this request.</small>
                         </div>
                     </div>
                 </div>
@@ -997,16 +999,16 @@
             }
 
             const banner = document.getElementById('editEmpResetBanner');
-            if(banner) banner.style.display = 'none';
+            if (banner) banner.style.display = 'none';
             if (isAdmin) {
                 try {
                     const rr = await ApiClient.request('/auth/reset-requests');
                     const req = rr.find(r => r.user_id === id && r.status === 'PENDING');
-                    if(req && banner) {
+                    if (req && banner) {
                         banner.style.display = 'flex';
                         document.getElementById('editEmpResetTime').textContent = new Date(req.requested_at).toLocaleString();
                     }
-                } catch(e) {}
+                } catch (e) { }
             }
 
             document.getElementById('editEmployeeModal').classList.add('show');
@@ -1106,12 +1108,12 @@
             try {
                 // Fetch using universal API endpoint with query params
                 employeesData = await apiGet('/employees/' + query);
-                
+
                 let requests = [];
                 if (isAdmin) {
                     try {
                         requests = await apiGet('/auth/reset-requests');
-                    } catch(e) {}
+                    } catch (e) { }
                 }
                 const pendingIds = new Set(requests.filter(r => r.status === 'PENDING').map(r => r.user_id));
                 employeesData.forEach(e => {

@@ -45,8 +45,7 @@ api_router.include_router(issues.router, prefix="/clients", tags=["issues"])
 api_router.include_router(issues_global_router, prefix="/issues", tags=["issues"])
 api_router.include_router(meetings.router, prefix="/clients", tags=["meetings"])
 api_router.include_router(meetings.global_router, prefix="/meetings", tags=["meetings"])
-api_router.include_router(feedback.router, prefix="/clients", tags=["feedback"])
-api_router.include_router(feedback.global_router, prefix="/feedback", tags=["feedback"])
+api_router.include_router(feedback.router, prefix="/feedback", tags=["feedback"])
 
 # Field Operations
 api_router.include_router(areas.router, prefix="/areas", tags=["areas"])
@@ -91,14 +90,8 @@ def get_system_ip():
 
 @api_router.get("/")
 async def health_check():
-    return {"status": "ok", "version": 2, "source": "api_routes_health"}
+    return {"status": "ok"}
 
 @api_router.get("/health")
 def health_check():
-    return {"status": "ok", "version": 2, "source": "api_router"}
-
-@api_router.get("/feedback/form")
-def get_feedback_form():
-    # Depending on your setup, you might return an HTML file or a JSON response
-    # For now, this will stop the 404 error
-    return {"status": "feedback_form_ready"}
+    return {"status": "ok"}

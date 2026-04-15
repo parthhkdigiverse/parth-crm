@@ -84,8 +84,8 @@ class MeetingService:
             title=f"Meeting: {db_meeting.title}",
             description=db_meeting.content,
             due_date=db_meeting.date,
-            start_time=db_meeting.date.time() if db_meeting.date else None,
-            end_time=(db_meeting.date + timedelta(minutes=30)).time() if db_meeting.date else None,
+            start_time=db_meeting.date.strftime("%H:%M:%S") if db_meeting.date else None,
+            end_time=(db_meeting.date + timedelta(minutes=30)).strftime("%H:%M:%S") if db_meeting.date else None,
             priority=db_meeting.priority,
             assigned_to=host_user.name if host_user else (current_user.name or current_user.email),
             related_entity=f"MEETING:{str(db_meeting.id)}",
@@ -104,8 +104,8 @@ class MeetingService:
                 title=db_meeting.title,
                 assignee_name=host_user.name if host_user else "Staff",
                 date=db_meeting.date.date() if db_meeting.date else datetime.now(UTC).date(),
-                start_time=db_meeting.date.time() if db_meeting.date else None,
-                end_time=(db_meeting.date + timedelta(hours=1)).time() if db_meeting.date else None,
+                start_time=db_meeting.date.strftime("%H:%M:%S") if db_meeting.date else None,
+                end_time=(db_meeting.date + timedelta(hours=1)).strftime("%H:%M:%S") if db_meeting.date else None,
                 location=str(db_meeting.meeting_type),
                 priority=db_meeting.priority
             ).insert()

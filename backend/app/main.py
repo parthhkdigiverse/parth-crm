@@ -70,6 +70,7 @@ from app.modules.salary.models import LeaveRecord, SalarySlip
 from app.modules.incentives.models import IncentiveSlab, EmployeePerformance, IncentiveSlip
 from app.modules.notifications.models import Notification
 from app.modules.settings.models import SystemSettings, AppSetting
+from app.modules.reports.models import PerformanceNote
 from app.modules.todos.models import Todo
 from app.modules.timetable.models import TimetableEvent
 from app.modules.attendance.models import Attendance
@@ -82,6 +83,8 @@ DOCUMENT_MODELS = [
     Payment, Bill,
     LeaveRecord, SalarySlip, AppSetting,
     IncentiveSlab, EmployeePerformance, IncentiveSlip,
+    Notification, SystemSettings,
+    Todo, TimetableEvent, Attendance, ActivityLog, PerformanceNote,
     Notification, SystemSettings, PasswordResetRequest,
     Todo, TimetableEvent, Attendance, ActivityLog,
 ]

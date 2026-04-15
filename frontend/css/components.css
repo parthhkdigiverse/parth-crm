@@ -2635,3 +2635,152 @@ input[type="password"]::-ms-clear {
         font-size: 0.55rem;
     }
 }
+/* ── Modern Multi-Select (SRM) ────────────────────────── */
+.srm-multi-select-container {
+    position: relative;
+    width: 100%;
+    min-height: 48px;
+    background: var(--bg-surface);
+    border: 1.5px solid #cbd5e1; /* Darkened border for better visibility */
+    border-radius: 12px;
+    padding: 6px 12px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    cursor: text;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); /* Added subtle shadow */
+}
+
+.srm-multi-select-container:focus-within {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-shadow);
+}
+
+.srm-multi-select-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.srm-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--primary-soft);
+    color: var(--primary);
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.srm-tag-remove {
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    opacity: 0.6;
+}
+
+.srm-tag-remove:hover {
+    opacity: 1;
+}
+
+.srm-multi-select-input {
+    flex: 1;
+    min-width: 80px;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 0.85rem;
+    padding: 4px 0;
+    color: var(--text-main);
+}
+
+.srm-multi-select-input::placeholder {
+    color: #94a3b8; /* More distinct placeholder color */
+    opacity: 1;
+}
+
+.srm-multi-select-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    margin-top: 6px;
+    box-shadow: var(--shadow-lg);
+    max-height: 250px;
+    overflow-y: auto;
+    z-index: 1100;
+    display: none;
+}
+
+.srm-multi-select-dropdown.show {
+    display: block;
+}
+
+.srm-multi-select-item {
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.srm-multi-select-item:hover {
+    background: var(--bg-app);
+}
+
+.srm-multi-select-item .srm-checkbox {
+    width: 18px;
+    height: 18px;
+    border: 2px solid #cbd5e1; /* Darkened border for better visibility */
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.srm-multi-select-item.selected .srm-checkbox {
+    background: var(--primary);
+    border-color: var(--primary);
+}
+
+.srm-multi-select-item.selected .srm-checkbox::after {
+    content: '\F633'; /* bi-check */
+    font-family: 'bootstrap-icons';
+    color: white;
+    font-size: 14px;
+}
+
+.srm-multi-select-item-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.srm-multi-select-item-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.srm-multi-select-item-role {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.srm-multi-select-bulk {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    padding: 10px 16px;
+    border-bottom: 2px solid var(--border-subtle);
+    background: #f8faff; /* Solid light background for sticky header */
+}

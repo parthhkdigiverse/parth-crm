@@ -37,10 +37,11 @@ class TimetableEventBase(MongoBaseSchema):
     title: str
     assignee_name: str | None = None
     date: datetime.date
-    start_time: datetime.time
-    end_time: datetime.time
+    start_time: str | None = None
+    end_time: str | None = None
     location: str | None = None
     priority: str | None = "MEDIUM"
+    status: str | None = "PENDING"
 
 class TimetableEventCreate(TimetableEventBase):
     pass
@@ -49,10 +50,11 @@ class TimetableEventUpdate(MongoBaseSchema):
     title: str | None = None
     assignee_name: str | None = None
     date: datetime.date | None = None
-    start_time: datetime.time | None = None
-    end_time: datetime.time | None = None
+    start_time: str | None = None
+    end_time: str | None = None
     location: str | None = None
     priority: str | None = None
+    status: str | None = None
 
 class TimetableEventRead(TimetableEventBase):
     id: PydanticObjectId

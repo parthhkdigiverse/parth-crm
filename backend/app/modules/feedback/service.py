@@ -75,11 +75,11 @@ class FeedbackService:
         return await self._attach_roles(feedbacks)
 
     async def get_feedbacks(self, current_user: User, skip: int = 0, limit: Optional[int] = None) -> List[Feedback]:
-        """List feedbacks. PMs see only their assigned feedbacks."""
+        """List feedbacks with restricted visibility for non-admins."""
         if current_user.role == UserRole.ADMIN:
             return await self.get_all_client_feedbacks(skip, limit)
         
-        # Non-admins: only see feedbacks for clients they own or manage
+        # 1. Identify all clients managed/owned by the user
         from app.modules.clients.models import Client as ClientModel
         raw_client_ids = await ClientModel.get_pymongo_collection().distinct("_id", {
             "$or": [
@@ -90,9 +90,35 @@ class FeedbackService:
         })
         client_ids = [PydanticObjectId(cid) for cid in raw_client_ids if cid]
         
-        query = Feedback.find(In(Feedback.client_id, client_ids)).sort("-created_at").skip(skip)
+        # 2. Identify all Admin referral codes (using motor collection for distinct)
+        admin_ref_codes = await User.get_pymongo_collection().distinct("referral_code", {"role": UserRole.ADMIN.value})
+        admin_ref_codes = [c.upper() for c in admin_ref_codes if c]
+        
+        # 3. Build strictly restricted query
+        mongo_conditions = []
+        
+        # Condition A: Feedback collected by the user themselves
+        if current_user.referral_code:
+            mongo_conditions.append({
+                "referral_code": {"$regex": f"^{current_user.referral_code.strip()}$", "$options": "i"}
+            })
+        
+        # Condition B: Feedback for user's client AND collected by an Admin
+        if client_ids and admin_ref_codes:
+            mongo_conditions.append({
+                "client_id": {"$in": client_ids},
+                "referral_code": {"$in": admin_ref_codes}
+            })
+            
+        if not mongo_conditions:
+            return []
+            
+        # Execute the optimized query
+        query = Feedback.find({"$or": mongo_conditions}).sort("-created_at").skip(skip)
+        
         if limit is not None:
             query = query.limit(limit)
+            
         feedbacks = await query.to_list()
         return await self._attach_roles(feedbacks)
 
@@ -113,3 +139,9 @@ class FeedbackService:
              raise HTTPException(status_code=404, detail="Feedback not found")
         await db_feedback.delete()
         return True
+
+    async def batch_delete_feedbacks(self, ids: List[PydanticObjectId]):
+        """Delete multiple feedbacks by their IDs."""
+        if not ids:
+            return
+        await Feedback.find(In(Feedback.id, ids)).delete()

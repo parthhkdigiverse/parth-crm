@@ -22,8 +22,8 @@ class Todo(Document):
     description: Optional[str] = None
     
     due_date: Optional[datetime] = None
-    start_time: Optional[time] = None
-    end_time: Optional[time] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
     status: TodoStatus = TodoStatus.PENDING
     priority: TodoPriority = TodoPriority.MEDIUM
     assigned_to: Optional[str] = None

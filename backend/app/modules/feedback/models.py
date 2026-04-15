@@ -10,7 +10,9 @@ class Feedback(Document):
     mobile: Optional[str] = None
     shop_name: Optional[str] = None
     product: Optional[str] = None
-    rating: int # Sales Person Rating
+    rating: int = 0 # Legacy Sales Person Rating (1-5)
+    product_rating: int = 0 # New Product Rating (1-5)
+    agent_score: int = 0 # New Agent Performance Score (1-10)
     comments: Optional[str] = None
     agent_name: Optional[str] = None
     agent_role: Optional[str] = None

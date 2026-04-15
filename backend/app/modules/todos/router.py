@@ -20,11 +20,14 @@ async def _resolve_target_user(assigned_to: Optional[str]) -> Optional[User]:
     if not assigned_to:
         return None
 
-    normalized = assigned_to.strip().lower()
+    import re
+    # Strip any trailing role suffix from UI, e.g., "Nency Savaliya (SALES)" -> "Nency Savaliya"
+    clean_name = re.sub(r'\s*\([^)]*\)$', '', assigned_to.strip())
+    normalized = clean_name.lower()
+    
     if not normalized:
         return None
 
-    import re
     pattern = re.compile(f"^{re.escape(normalized)}$", re.IGNORECASE)
     
     return await User.find_one(

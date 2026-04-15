@@ -7,8 +7,8 @@ class TodoBase(MongoBaseSchema):
     title: str
     description: str | None = None
     due_date: datetime.datetime | None = None
-    start_time: datetime.time | None = None
-    end_time: datetime.time | None = None
+    start_time: str | None = None
+    end_time: str | None = None
     status: TodoStatus | None = TodoStatus.PENDING
     priority: TodoPriority | None = TodoPriority.MEDIUM
     assigned_to: str | None = None
@@ -23,8 +23,8 @@ class TodoUpdate(MongoBaseSchema):
     title: str | None = None
     description: str | None = None
     due_date: datetime.datetime | None = None
-    start_time: datetime.time | None = None
-    end_time: datetime.time | None = None
+    start_time: str | None = None
+    end_time: str | None = None
     status: TodoStatus | None = None
     priority: TodoPriority | None = None
     assigned_to: str | None = None

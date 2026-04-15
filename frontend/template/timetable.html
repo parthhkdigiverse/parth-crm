@@ -998,6 +998,12 @@
             box-shadow: 0 3px 6px rgba(0, 0, 0, 0.08);
         }
 
+        .tt-pinned-capsule.done {
+            opacity: 0.5;
+            text-decoration: line-through;
+            filter: grayscale(0.5);
+        }
+
         .tt-pinned-row-week {
             display: flex;
             flex-direction: column;
@@ -1341,6 +1347,7 @@
         let currentView = 'week';
         let showTaskView = false;          // NEW: task list mode toggle
         let taskFilter = 'all';          // 'all' | 'pending' | 'done' | 'my' | 'employees'
+        let currentTaskPage = 1;         // Pagination state for task list view
         let bsModal;
         const completedIds = new Set();
         let miniMonthOffset = 0;
@@ -1433,74 +1440,10 @@
         }
 
 
-        async function completeEvent(uid) {
-            const [type, id] = uid.split('_');
-            const isDoneNow = !completedIds.has(uid);
+        // ── Consolidated Navigation & Logic ─────────────────────
+        // (Redundant functions removed. Primary definitions found at bottom of script.)
 
-            if (isDoneNow) {
-                completedIds.add(uid);
-            } else {
-                completedIds.delete(uid);
-            }
 
-            // Re-render immediately for UI responsiveness
-            renderCalendarLocal();
-
-            if (type === 'TODO') {
-                try {
-                    await ApiClient.updateTodo(id, { status: isDoneNow ? 'RESOLVED' : 'OPEN' });
-                    // Refresh data from server to ensure consistency
-                    await renderCalendar();
-                } catch (error) {
-                    console.error("Failed to update task status:", error);
-                    // Rollback on error? Maybe just show toast.
-                }
-            }
-        }
-
-        // ── Navigation functions ────────────────────────────────
-        function navWeek(n) {
-            weekStart = addDays(weekStart, n * 7);
-            renderCalendar();
-        }
-
-        function navDay(n) {
-            selectedDate = addDays(selectedDate, n);
-            weekStart = getWeekStart(selectedDate);
-            renderCalendar();
-        }
-
-        function goToday() {
-            weekStart = getWeekStart(new Date());
-            selectedDate = new Date();
-            renderCalendar();
-        }
-
-        function setView(view) {
-            currentView = view;
-            renderCalendar();
-        }
-
-        function selectDay(dateStr) {
-            selectedDate = new Date(dateStr);
-            currentView = 'day';
-            renderCalendar();
-        }
-
-        function toggleTaskView() {
-            showTaskView = !showTaskView;
-            renderCalendar();
-        }
-
-        function setTaskFilter(filter) {
-            taskFilter = filter;
-            renderCalendar();
-        }
-
-        function toggleCalSidebar() {
-            isSidebarMinimized = !isSidebarMinimized;
-            renderCalendarLocal();
-        }
 
         // ── Sidebar generator ───────────────────────────────────
         function buildSidebar() {
@@ -1629,24 +1572,35 @@
             eventsList.sort((a, b) => {
                 const sA = a.sh * 60 + a.sm, eA = a.eh * 60 + a.em;
                 const sB = b.sh * 60 + b.sm, eB = b.eh * 60 + b.em;
-
-                // Priority sorting: HIGH > MEDIUM > LOW
                 const pMap = { 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1, 'NORMAL': 2 };
                 const pA = pMap[(a.priority || '').toUpperCase()] || 0;
                 const pB = pMap[(b.priority || '').toUpperCase()] || 0;
-
-                // If priorities differ, high priority takes precedence for column placement (left-most)
                 if (pA !== pB) return pB - pA;
                 if (sA !== sB) return sA - sB;
-                return eB - eA;
+                return eA - eB;
             });
+
             const placed = [];
             let columns = [];
             let lastEnd = null;
+            let clusterCounter = 0;
+
+            if (!window._clusterCache) window._clusterCache = {};
+
             function flush() {
+                if (columns.length === 0) return;
                 const numCols = columns.length;
-                columns.forEach((col, c) => col.forEach(ev => placed.push({ ev, slot: c, slots: numCols })));
+                const clusterId = 'c_' + Date.now() + '_' + clusterCounter++;
+                const uids = [];
+                columns.forEach((col, c) => {
+                    col.forEach(ev => {
+                        uids.push(ev._uid);
+                        placed.push({ ev, slot: c, slots: numCols, clusterId: clusterId });
+                    });
+                });
+                window._clusterCache[clusterId] = uids;
             }
+
             eventsList.forEach(ev => {
                 const evS = ev.sh * 60 + ev.sm, evE = ev.eh * 60 + ev.em;
                 if (lastEnd !== null && evS >= lastEnd) {
@@ -1655,15 +1609,15 @@
                 let placedInCol = false;
                 for (let c = 0; c < columns.length; c++) {
                     const col = columns[c];
-                    const lastEv = col[col.length - 1];
-                    if (evS >= lastEv.eh * 60 + lastEv.em) {
+                    const lastEvInCol = col[col.length - 1];
+                    if (evS >= lastEvInCol.eh * 60 + lastEvInCol.em) {
                         col.push(ev); placedInCol = true; break;
                     }
                 }
                 if (!placedInCol) columns.push([ev]);
                 if (lastEnd === null || evE > lastEnd) lastEnd = evE;
             });
-            if (columns.length > 0) flush();
+            flush();
             return placed;
         }
 
@@ -1714,75 +1668,36 @@
 
             // ── TASK LIST VIEW ──────────────────────────────────────
             if (showTaskView) {
-                // Group events by date, sort by time
                 const currUserUnique = currentUser ? (currentUser.email || currentUser.name) : '';
-                const grouped = {};
-                filteredEvents.forEach(ev => {
+
+                // 1. Filter events based on task filter
+                const tasksForList = filteredEvents.filter(ev => {
                     const s = (ev.status || '').toUpperCase();
-                    const isDone = (s === 'RESOLVED' || s === 'CANCELLED' || s === 'CANCEL' || completedIds.has(ev._uid));
+                    const isDone = (s === 'RESOLVED' || s === 'COMPLETED' || s === 'CANCELLED' || s === 'CANCEL' || completedIds.has(ev._uid));
                     const isMyTask = (ev.user === currUserUnique || ev.assignee_name === currUserUnique);
 
-                    if (taskFilter === 'pending' && isDone) return;
-                    if (taskFilter === 'done' && !isDone) return;
-                    if (taskFilter === 'my' && !isMyTask) return;
-                    if (taskFilter === 'employees' && isMyTask) return;
-
-                    if (!grouped[ev.date]) grouped[ev.date] = [];
-                    grouped[ev.date].push(ev);
+                    if (taskFilter === 'pending' && isDone) return false;
+                    if (taskFilter === 'done' && !isDone) return false;
+                    if (taskFilter === 'my' && !isMyTask) return false;
+                    if (taskFilter === 'employees' && isMyTask) return false;
+                    return true;
                 });
 
-                // Sort dates ascending
-                const dates = Object.keys(grouped).sort();
+                // 2. Sort globally: Date Desc > Priority > Time
+                const pMap = { 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1, 'NORMAL': 2 };
+                tasksForList.sort((a, b) => {
+                    // Date Desc
+                    const dComp = b.date.localeCompare(a.date);
+                    if (dComp !== 0) return dComp;
+                    // Priority Desc
+                    const pa = pMap[a.priority] || 0;
+                    const pb = pMap[b.priority] || 0;
+                    if (pb !== pa) return pb - pa;
+                    // Time Asc
+                    return (a.sh * 60 + a.sm) - (b.sh * 60 + b.sm);
+                });
 
-                let html = '';
-                if (dates.length === 0) {
-                    html = `<div class="text-center text-muted mt-5" style="max-width:300px;margin:0 auto;">
-                                <i class="bi bi-inbox fs-1 mb-2"></i>
-                                <h6>No tasks found</h6>
-                                <p class="small">There are no tasks matching this filter for the selected scope.</p>
-                            </div>`;
-                } else {
-                    dates.forEach(d => {
-                        const dateObj = new Date(d);
-                        const dayName = dateObj.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
-                        const isTodayStr = (d === todayStr) ? ' <span class="badge bg-primary ms-2 rounded-pill px-2">Today</span>' : '';
-
-                        // Sort events in day: Priority (HIGH > MEDIUM > LOW) then Time
-                        const pMap = { 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1, 'NORMAL': 2 };
-                        grouped[d].sort((a, b) => {
-                            const pa = pMap[(a.priority || '').toUpperCase()] || 0;
-                            const pb = pMap[(b.priority || '').toUpperCase()] || 0;
-                            if (pb !== pa) return pb - pa;
-                            return (a.sh * 60 + a.sm) - (b.sh * 60 + b.sm);
-                        });
-
-                        const rows = grouped[d].map(ev => {
-                            const u = getEventStyles(ev);
-                            const timeLbl = `${fmtH(ev.sh, ev.sm)} – ${fmtH(ev.eh, ev.em)}`;
-                            const s = (ev.status || '').toUpperCase();
-                            const isDone = (s === 'RESOLVED' || s === 'CANCELLED' || s === 'CANCEL' || completedIds.has(ev._uid));
-                            return `
-                            <div class="task-row ${isDone ? 'done-row' : ''}" style="border-left-color:${u.color};">
-                                ${ev.event_type === 'TODO' ? `<div class="t-circle ${isDone ? 't-done' : ''}" style="color:${u.color};"
-                                    onclick="completeEvent('${ev._uid}')" title="${isDone ? 'Mark incomplete' : 'Mark complete'}"></div>` : '<div style="width:24px; flex-shrink:0;"></div>'}
-                                <div class="t-info">
-                                    <div class="t-title">${ev.event_type === 'MEETING' ? '<i class="bi bi-camera-video me-1"></i>' : ''}${ev.title}</div>
-                                    <div class="t-meta"><i class="bi bi-clock me-1"></i>${timeLbl} <span class="mx-2">•</span> <i class="bi bi-geo-alt me-1"></i>${ev.loc} <span class="mx-2">•</span> <i class="bi bi-person me-1"></i>${ev.user}</div>
-                                </div>
-                                <div class="t-actions">
-                                    <button class="btn btn-sm btn-light border rounded-pill px-3" onclick="openEditModal('${ev._uid}')" style="font-size:.75rem;">Edit</button>
-                                </div>
-                            </div>`;
-                        }).join('');
-
-                        html += `
-                        <div class="task-date-group">
-                            <div class="task-date-lbl">${dayName}${isTodayStr}</div>
-                            ${rows}
-                        </div>`;
-                    });
-                }
-
+                // 3. Render base layout
                 document.getElementById('main-content').innerHTML = `
                 <div class="cal-toolbar">
                     <div class="d-flex align-items-center gap-3">
@@ -1811,12 +1726,97 @@
                     <div class="cal-sidebar ${isSidebarMinimized ? 'minimized' : ''}">
                         ${buildSidebar().replace('<div class="cal-sidebar">', '').replace('</div>', '')}
                     </div>
-                    <div class="cal-root task-view-wrap bg-light ${isSidebarMinimized ? 'expanded' : ''}">
-                        <div style="max-width:800px;margin:0 auto;width:100%;">
-                            ${html}
+                    <div class="cal-root task-view-wrap bg-light ${isSidebarMinimized ? 'expanded' : ''} p-3">
+                        <div style="max-width:900px;margin:0 auto;width:100%;">
+                            <div class="card border-0 shadow-sm grid-card overflow-hidden">
+                                <div class="card-header border-bottom-0 pt-3 pb-3 d-flex justify-content-between align-items-center" style="background:transparent;">
+                                    <h6 class="fw-bold mb-0 d-flex align-items-center" style="color: var(--primary);">
+                                        <i class="bi bi-journal-check me-2" style="color: var(--primary);"></i>Tasks & To-Do
+                                    </h6>
+                                    <div class="d-flex align-items-center">
+                                        <span id="count-all-tasks" class="badge bg-secondary rounded-pill px-3">${tasksForList.length}</span>
+                                    </div>
+                                </div>
+                                <div class="card-body p-4 pt-1" style="min-height:400px;">
+                                    <div id="task-list-container"></div>
+                                    <div id="task-list-pagination" class="mt-4"></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>`;
+
+                // 4. Initialize Pagination
+                let lastDate = null;
+                renderPagination({
+                    data: tasksForList,
+                    paginationId: 'task-list-pagination',
+                    currentPage: currentTaskPage,
+                    pageSize: 10,
+                    targets: [{
+                        id: 'task-list-container',
+                        renderRow: (ev, idx, pageSlice) => {
+                            // On page change or start of target render, lastDate logic needs care.
+                            // However, renderRow is called for each item in the slice.
+
+                            // To correctly show headers, we must know if this item is the first of its date IN THE CURRENT SLICE
+                            // or if it's the very first item of the page.
+                            let headerHtml = '';
+                            if (ev.date !== lastDate) {
+                                const dateObj = new Date(ev.date);
+                                const dayName = dateObj.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
+                                const isTodayStr = (ev.date === todayStr) ? ' <span class="badge bg-primary ms-2 rounded-pill px-2">Today</span>' : '';
+                                headerHtml = `<div class="task-date-group pt-3">
+                                                <div class="task-date-lbl">${dayName}${isTodayStr}</div>
+                                              </div>`;
+                                lastDate = ev.date;
+                            }
+
+                            const u = getEventStyles(ev);
+                            const timeLbl = `${fmtH(ev.sh, ev.sm)} – ${fmtH(ev.eh, ev.em)}`;
+                            const s = (ev.status || '').toUpperCase();
+                            const isDone = (s === 'RESOLVED' || s === 'COMPLETED' || s === 'CANCELLED' || s === 'CANCEL' || completedIds.has(ev._uid));
+
+                            return `
+                            ${headerHtml}
+                            <div class="task-row ${isDone ? 'done-row' : ''}" style="border-left-color:${u.color}; margin-bottom: 8px;">
+                                ${ev.event_type === 'TODO' ? `<div class="t-circle ${isDone ? 't-done' : ''}" style="color:${u.color};"
+                                    onclick="completeEvent('${ev._uid}')" title="${isDone ? 'Mark incomplete' : 'Mark complete'}"></div>` : '<div style="width:24px; flex-shrink:0;"></div>'}
+                                <div class="t-info">
+                                    <div class="t-title">${ev.event_type === 'MEETING' ? '<i class="bi bi-camera-video me-1"></i>' : ''}${ev.title}</div>
+                                    <div class="t-meta"><i class="bi bi-clock me-1"></i>${timeLbl} <span class="mx-2">•</span> <i class="bi bi-geo-alt me-1"></i>${ev.loc} <span class="mx-2">•</span> <i class="bi bi-person me-1"></i>${ev.user}</div>
+                                </div>
+                                <div class="t-actions">
+                                    <button class="btn btn-sm btn-light border rounded-pill px-3" onclick="openEditModal('${ev._uid}')" style="font-size:.75rem;">Edit</button>
+                                </div>
+                            </div>`;
+                        },
+                        emptyMsg: `<div class="text-center text-muted mt-5">
+                                    <i class="bi bi-inbox fs-1 mb-2"></i>
+                                    <h6>No tasks found</h6>
+                                    <p class="small">There are no tasks matching this filter for the selected scope.</p>
+                                   </div>`
+                    }]
+                });
+
+                // Overload the pagination page click to update our state
+                const paginationEl = document.getElementById('task-list-pagination');
+                if (paginationEl) {
+                    paginationEl.addEventListener('click', (e) => {
+                        const btn = e.target.closest('.srm-page-btn');
+                        if (btn) {
+                            const p = parseInt(btn.dataset.page);
+                            if (!isNaN(p)) {
+                                currentTaskPage = p;
+                                // We don't need to re-renderCalendarLocal fully, but it's simpler
+                                // for synchronization.
+                                renderCalendarLocal();
+                                window.scrollTo(0, 0); // Scroll to top for UX
+                            }
+                        }
+                    });
+                }
+
                 return;
             }
 
@@ -1842,8 +1842,8 @@
                 for (let r = 0; r < (END_HR - START_HR); r++) {
                     const h = START_HR + r;
                     const hStr = h.toString().padStart(2, '0');
-                    lines += `<div class="cal-hline"      style="top:${r * HOUR_H}px; height:${HOUR_H / 2}px; cursor:pointer;" onclick="openCreateModal('${sdStr}', '${hStr}:00', '${hStr}:30')"></div>`;
-                    lines += `<div class="cal-hline-half" style="top:${r * HOUR_H + HOUR_H / 2}px; height:${HOUR_H / 2}px; cursor:pointer;" onclick="openCreateModal('${sdStr}', '${hStr}:30', '${(h + 1).toString().padStart(2, '0')}:00')"></div>`;
+                    lines += `<div class="cal-hline"      style="top:${r * HOUR_H}px; height:${HOUR_H / 2}px;"></div>`;
+                    lines += `<div class="cal-hline-half" style="top:${r * HOUR_H + HOUR_H / 2}px; height:${HOUR_H / 2}px;"></div>`;
                 }
 
                 // Events for this day
@@ -1853,31 +1853,55 @@
 
                 const pinnedHtml = pinnedEvts.length > 0 ? `
                     <div class="tt-pinned-row-day">
-                        <div style="font-size: 0.65rem; font-weight: 800; color: #b91c1c; margin-right: 8px; flex-shrink: 0; letter-spacing:.04em;">HIGH PRIORITY:</div>
                         ${pinnedEvts.map(ev => {
                     const u = getEventStyles(ev);
+                    const s = (ev.status || '').toUpperCase();
+                    const isDone = (s === 'COMPLETED' || s === 'DONE' || s === 'CANCELLED' || s === 'CANCEL' || completedIds.has(ev._uid));
                     const timeStr = ev.event_type === 'MEETING' ? `[${String(ev.sh).padStart(2, '0')}:${String(ev.sm).padStart(2, '0')}] ` : '';
-                    return `<div class="tt-pinned-capsule" style="background:${u.bg}; border-left:3px solid ${u.color}; color:${u.color}; width: auto; max-width: 200px;" onclick="openEditModal('${ev._uid}')" title="${timeStr}${ev.title}">
+                    return `<div class="tt-pinned-capsule ${isDone ? 'done' : ''}" style="background:${u.bg}; border-left:3px solid ${u.color}; color:${u.color}; width: auto; max-width: 200px;" onclick="openEditModal('${ev._uid}')" title="${timeStr}${ev.title}">
                                 ${ev.event_type === 'MEETING' ? '<i class="bi bi-camera-video-fill"></i>' : '<i class="bi bi-exclamation-circle-fill"></i>'} <span class="text-truncate">${timeStr}${ev.title}</span>
                             </div>`;
                 }).join('')}
                     </div>` : '';
 
-                const placed = packEvents(scrollEvts);
-                const evHtml = placed.map(({ ev, slot, slots }) => {
+                // ── DAY VIEW: Split events into first-time-slot cluster + later-time events ──
+                // (packEvents sorts by start time, so 12AM events always come first)
+                const allPlaced = packEvents(scrollEvts);
+                const MAX_VISIBLE = 4; // More space in day view
+
+                const mainHtml = allPlaced.map(({ ev, slot, slots, clusterId }) => {
+                    const hasOvf = slots > MAX_VISIBLE;
+                    if (slot >= MAX_VISIBLE) return '';
+
+                    const isLast = (slot === MAX_VISIBLE - 1) && hasOvf;
                     const u = getEventStyles(ev);
                     const t = Math.max(topPx(ev.sh, ev.sm), 0);
                     const h = Math.max(hPx(ev.sh, ev.sm, ev.eh, ev.em), 22);
-                    const wPct = 96 / slots;
+                    
+                    const visibleCount = Math.min(slots, MAX_VISIBLE);
+                    const wPct = 96 / visibleCount;
                     const lPct = 2 + slot * wPct;
-                    const rPct = 2 + (slots - slot - 1) * wPct;
+                    
                     const timeLbl = `${fmtH(ev.sh, ev.sm)} – ${fmtH(ev.eh, ev.em)}`;
                     const s = (ev.status || '').toUpperCase();
                     const isDone = (s === 'COMPLETED' || s === 'DONE' || s === 'CANCELLED' || s === 'CANCEL' || completedIds.has(ev._uid));
+
+                    const ovfHtml = isLast ? `
+                        <div style="
+                            position:absolute; inset:0;
+                            backdrop-filter: blur(3px); background: rgba(255,255,255,0.45);
+                            border-radius: 6px; display:flex; flex-direction:column;
+                            align-items:center; justify-content:center;
+                            cursor:pointer; z-index:10; gap:2px;
+                        " onclick="event.stopPropagation(); showOverflowModal('${clusterId}', '${sdStr}')">
+                            <div style="font-size:1.1rem; font-weight:800; color:#1e3a8a; line-height:1;">+${slots - MAX_VISIBLE + 1}</div>
+                            <div style="font-size:0.6rem; font-weight:600; color:#1e3a8a; opacity:.8; letter-spacing:.03em;">more</div>
+                        </div>` : '';
+
                     return `
-                    <div class="cal-evt${isDone ? ' evt-done' : ''}" style="top:${t}px;height:${h}px;left:${lPct}%;right:${rPct}%;background:${u.bg};border-left:3px solid ${u.color};display:flex;flex-direction:column;padding-left:${ev.event_type === 'TODO' ? '17px' : '8px'};overflow:hidden;"
+                    <div class="cal-evt${isDone ? ' evt-done' : ''}" style="top:${t}px;height:${h}px;left:${lPct}%;width:${wPct}%;background:${u.bg};border-left:3px solid ${u.color};display:flex;flex-direction:column;padding-left:${ev.event_type === 'TODO' ? '17px' : '8px'};overflow:hidden;position:absolute;"
                          title="${ev.title} (${ev.user})\n${timeLbl}\n${ev.loc}"
-                         onclick="event.stopPropagation();openEditModal('${ev._uid}')">
+                         onclick="event.stopPropagation();${isLast ? '' : `openEditModal('${ev._uid}')`}">
                         ${ev.event_type === 'TODO' ? `<button class="evt-complete-btn${isDone ? ' done' : ''}" style="color:${u.color};"
                             onclick="event.stopPropagation();completeEvent('${ev._uid}')" title="${isDone ? 'Mark incomplete' : 'Mark complete'}"></button>` : ''}
                         <div class="evt-inner-title" style="color:${u.color};font-size:.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
@@ -1885,8 +1909,11 @@
                         </div>
                         ${h > 30 ? `<div class="evt-time" style="color:${u.color};font-size:0.7rem;">${timeLbl}</div>` : ''}
                         <div style="font-size:.72rem;color:${u.color};opacity:.7;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><i class="bi bi-person me-1"></i>${ev.user}</div>
+                        ${ovfHtml}
                     </div>`;
                 }).join('');
+
+                const evHtml = mainHtml;
 
                 // Current time
                 const nowH = today.getHours(), nowM = today.getMinutes();
@@ -2089,8 +2116,10 @@
                     <div class="tt-pinned-row-week">
                         ${dayPinned.map(ev => {
                     const u = getEventStyles(ev);
+                    const s = (ev.status || '').toUpperCase();
+                    const isDone = (s === 'COMPLETED' || s === 'DONE' || s === 'CANCELLED' || s === 'CANCEL' || completedIds.has(ev._uid));
                     const timeStr = ev.event_type === 'MEETING' ? `[${String(ev.sh).padStart(2, '0')}:${String(ev.sm).padStart(2, '0')}] ` : '';
-                    return `<div class="tt-pinned-capsule" style="background:${u.bg}; border-left:3px solid ${u.color}; color:${u.color};" onclick="openEditModal('${ev._uid}')" title="${ev.title}">
+                    return `<div class="tt-pinned-capsule ${isDone ? 'done' : ''}" style="background:${u.bg}; border-left:3px solid ${u.color}; color:${u.color};" onclick="openEditModal('${ev._uid}')" title="${ev.title}">
                                 ${ev.event_type === 'MEETING' ? '<i class="bi bi-camera-video-fill"></i>' : ''} <span class="text-truncate" style="flex:1; text-align:left;">${timeStr}${ev.title}</span>
                             </div>`;
                 }).join('') || '<div style="text-align:center;"><span style="opacity:0.2; font-size:0.6rem;">—</span></div>'}
@@ -2103,41 +2132,68 @@
                 const ds = dStr(d);
                 const isToday = ds === todayStr;
 
-                // Hour lines with click-to-create capability
+                // Hour lines
                 let lines = '';
                 for (let r = 0; r < (END_HR - START_HR); r++) {
                     const h = START_HR + r;
                     const hStr = h.toString().padStart(2, '0');
-                    lines += `<div class="cal-hline"      style="top:${r * HOUR_H}px; height:${HOUR_H / 2}px; pointer-events:auto; cursor:pointer;" onclick="openCreateModal('${ds}', '${hStr}:00', '${hStr}:30')"></div>`;
-                    lines += `<div class="cal-hline-half" style="top:${r * HOUR_H + HOUR_H / 2}px; height:${HOUR_H / 2}px; pointer-events:auto; cursor:pointer;" onclick="openCreateModal('${ds}', '${hStr}:30', '${(h + 1).toString().padStart(2, '0')}:00')"></div>`;
+                    lines += `<div class="cal-hline"      style="top:${r * HOUR_H}px; height:${HOUR_H / 2}px;"></div>`;
+                    lines += `<div class="cal-hline-half" style="top:${r * HOUR_H + HOUR_H / 2}px; height:${HOUR_H / 2}px;"></div>`;
                 }
 
                 // Events for this day — filter out HIGH priority for main scroll
                 const dayEvts = filteredEvents.filter(e => e.date === ds && (e.priority || '').toUpperCase() !== 'HIGH');
                 const placed = packEvents(dayEvts);
 
-                const evHtml = placed.map(({ ev, slot, slots }) => {
+                // ── PER-CLUSTER OVERFLOW LOGIC ──
+                const MAX_VISIBLE = 3;
+                
+                const evHtml = placed.map(({ ev, slot, slots, clusterId }, idx) => {
+                    const hasOverflow = slots > MAX_VISIBLE;
+                    if (slot >= MAX_VISIBLE) return ''; // Hide events beyond limit
+
                     const u = getEventStyles(ev);
                     const t = Math.max(topPx(ev.sh, ev.sm), 0);
                     const h = Math.max(hPx(ev.sh, ev.sm, ev.eh, ev.em), 22);
-                    const w = 96 / slots;
+                    
+                    // Width is shared across the VISIBLE count in this cluster
+                    const visibleCount = Math.min(slots, MAX_VISIBLE);
+                    const w = 96 / visibleCount;
                     const l = 2 + slot * w;
-                    const r = 2 + (slots - slot - 1) * w;
+
                     const timeLbl = `${fmtH(ev.sh, ev.sm)} – ${fmtH(ev.eh, ev.em)}`;
                     const s = (ev.status || '').toUpperCase();
                     const isDone = (s === 'COMPLETED' || s === 'DONE' || s === 'CANCELLED' || s === 'CANCEL' || completedIds.has(ev._uid));
+
+                    // If this is the last visible item AND there is an overflow in THIS cluster
+                    const isLastVisible = (slot === MAX_VISIBLE - 1) && hasOverflow;
+                    const overflowCount = slots - MAX_VISIBLE + 1;
+
+                    const overflayHtml = isLastVisible ? `
+                        <div style="
+                            position:absolute; inset:0;
+                            backdrop-filter: blur(3px); background: rgba(255,255,255,0.45);
+                            border-radius: 6px; display:flex; flex-direction:column;
+                            align-items:center; justify-content:center;
+                            cursor:pointer; z-index:10; gap:2px;
+                        " onclick="event.stopPropagation(); showOverflowModal('${clusterId}', '${ds}')">
+                            <div style="font-size:1.1rem; font-weight:800; color:#1e3a8a; line-height:1;">+${overflowCount}</div>
+                            <div style="font-size:0.6rem; font-weight:600; color:#1e3a8a; opacity:.8; letter-spacing:.03em;">more</div>
+                        </div>` : '';
+
                     return `
-            <div class="cal-evt${isDone ? ' evt-done' : ''}" title="${ev.title} (${ev.user})\n${timeLbl}\n${ev.loc}"
-                style="top:${t}px;height:${h}px;left:${l}%;width:${w}%;background:${u.bg};border-left:3px solid ${u.color};padding-left:${ev.event_type === 'TODO' ? '17px' : '8px'};min-width:40px;display:flex;flex-direction:column;"
-                onclick="event.stopPropagation();openEditModal('${ev._uid}')">
-                ${ev.event_type === 'TODO' ? `<button class="evt-complete-btn${isDone ? ' done' : ''}" style="color:${u.color};"
-                    onclick="event.stopPropagation();completeEvent('${ev._uid}')" title="${isDone ? 'Mark incomplete' : 'Mark complete'}"></button>` : ''}
-                <div class="evt-inner-title" style="color:${u.color};font-size:.7rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                    ${ev.event_type === 'MEETING' ? '<i class="bi bi-camera-video me-1"></i>' : ''}${ev.title}
-                </div>
-                ${h > 30 ? `<div class="evt-time" style="font-size:0.6rem;white-space:nowrap;overflow:hidden;">${timeLbl}</div>` : ''}
-                <div class="evt-user" style="color:${u.color};">${u.initials}</div>
-            </div>`;
+                    <div class="cal-evt${isDone ? ' evt-done' : ''}" title="${ev.title} (${ev.user})\n${timeLbl}\n${ev.loc}"
+                        style="top:${t}px;height:${h}px;left:${l}%;width:${w}%;background:${u.bg};border-left:3px solid ${u.color};padding-left:${ev.event_type === 'TODO' ? '17px' : '8px'};min-width:40px;display:flex;flex-direction:column;position:absolute;overflow:hidden;"
+                        onclick="event.stopPropagation();${isLastVisible ? '' : `openEditModal('${ev._uid}')`}">
+                        ${ev.event_type === 'TODO' ? `<button class="evt-complete-btn${isDone ? ' done' : ''}" style="color:${u.color};"
+                            onclick="event.stopPropagation();completeEvent('${ev._uid}')" title="${isDone ? 'Mark incomplete' : 'Mark complete'}"></button>` : ''}
+                        <div class="evt-inner-title" style="color:${u.color};font-size:.7rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                            ${ev.event_type === 'MEETING' ? '<i class="bi bi-camera-video me-1"></i>' : ''}${ev.title}
+                        </div>
+                        ${h > 30 ? `<div class="evt-time" style="font-size:0.6rem;white-space:nowrap;overflow:hidden;">${timeLbl}</div>` : ''}
+                        <div class="evt-user" style="color:${u.color};">${u.initials}</div>
+                        ${overflayHtml}
+                    </div>`;
                 }).join('');
 
                 const nowHtml = (isToday && showNow && nowTop >= 0 && nowTop <= TOTAL_H) ? `
@@ -2216,6 +2272,11 @@
         }
 
         // ── Navigation ──────────────────────────────────────────
+        function navDay(dir) {
+            miniMonthOffset = 0;
+            selectedDate = addDays(selectedDate, dir);
+            renderCalendar();
+        }
         function navWeek(dir) {
             miniMonthOffset = 0;
             if (currentView === 'day') {
@@ -2263,11 +2324,17 @@
         // ── Tasks view toggle ───────────────────────────────────
         function toggleTaskView() {
             showTaskView = !showTaskView;
+            currentTaskPage = 1; // Always reset pagination when switching views
             renderCalendar();
         }
         function setTaskFilter(f) {
             taskFilter = f;
+            currentTaskPage = 1; // Important: reset pagination when filtering
             renderCalendar();
+        }
+        function toggleCalSidebar() {
+            isSidebarMinimized = !isSidebarMinimized;
+            renderCalendarLocal();
         }
 
         // ── Actions ─────────────────────────────────────────────
@@ -2312,6 +2379,10 @@
 
             const delBtn = document.getElementById('btn-delete-event');
             if (delBtn) delBtn.style.display = 'none';
+
+            // [START] Initialize Modern Multi-Select
+            window.initSrmMultiSelect('ev-user');
+            // [END]
 
             bsModal.show();
         }
@@ -2362,11 +2433,15 @@
             saveBtn.innerHTML = '<i class="bi bi-floppy me-1"></i>Update';
 
             // Show delete button
-            let delBtn = document.getElementById('btn-delete-event');
+            const delBtn = document.getElementById('btn-delete-event');
             if (delBtn) {
                 delBtn.style.display = 'block';
                 delBtn.onclick = () => deleteActivity(ev.id, ev.event_type);
             }
+
+            // [START] Initialize Modern Multi-Select
+            window.initSrmMultiSelect('ev-user');
+            // [END]
 
             bsModal.show();
         }
@@ -2554,7 +2629,8 @@
                 const title = document.getElementById('ev-title').value.trim();
                 const user = isTimetableAdmin() ? document.getElementById('ev-user').value : getCurrentUserLabel();
                 const priority = document.getElementById('td-priority').value;
-                let due = document.getElementById('td-start').value || document.getElementById('ev-date').value;
+                // Extract the start and end times properly without overwriting the actual Date Object
+                let due = document.getElementById('ev-date').value;
                 const startStr = document.getElementById('td-start').value;
                 const endStr = document.getElementById('td-end').value;
                 const related = document.getElementById('td-related').value.trim();
@@ -2625,32 +2701,66 @@
         }
 
         // ── Complete event (circle button click) ────────────────────
+        // ── Complete event (circle button click) ────────────────────
         async function completeEvent(uid) {
             const ev = events.find(e => e._uid === uid);
-            if (!ev) return;
+            if (!ev && !uid.includes('TODO')) {
+                // If not found in current view but is a TODO, it might be from another page
+                // Fallback to purely using completedIds for non-TODOs or if not in events array
+            }
 
-            if (ev.event_type === 'TODO') {
-                const isCompleted = ev.status === 'COMPLETED';
-                const newStatus = isCompleted ? 'PENDING' : 'COMPLETED';
+            const [type, id] = uid.split('_');
+            const wasCompleted = completedIds.has(uid);
+            const isDoneNow = !wasCompleted;
+
+            if (isDoneNow) {
+                completedIds.add(uid);
+            } else {
+                completedIds.delete(uid);
+            }
+
+            // Immediate UI update
+            renderCalendarLocal();
+
+            if (type === 'TODO') {
+                const newStatus = isDoneNow ? 'COMPLETED' : 'PENDING';
                 try {
-                    await ApiClient.updateTodo(ev.id, { status: newStatus });
-                    ev.status = newStatus;
-                    renderCalendarLocal();
-                    if (!isCompleted) showCompletedToast(uid);
+                    await ApiClient.updateTodo(id, { status: newStatus });
+                    if (ev) ev.status = newStatus;
+
+                    // Show confirmation
+                    if (isDoneNow) {
+                        showCompletedToast(uid);
+                    } else {
+                        showToastMsg('Task marked as incomplete.');
+                    }
+
+                    // Refresh full data to keep in sync
+                    await renderCalendar();
                 } catch (e) {
                     console.error("Failed to update Todo status.", e);
-                    showToastMsg("Failed to update Todo");
+                    showToastMsg("Failed to update status on server.");
                 }
             } else {
-                const wasCompleted = completedIds.has(uid);
-                if (wasCompleted) {
-                    completedIds.delete(uid);
-                    renderCalendarLocal();
-                    showToastMsg('Task marked as incomplete.');
-                } else {
-                    completedIds.add(uid);
-                    renderCalendarLocal();
-                    showCompletedToast(uid);
+                // For meetings/other events, use GlobalTaskStatus (RESOLVED/OPEN)
+                const newStatus = isDoneNow ? 'RESOLVED' : 'OPEN';
+                try {
+                    if (type === 'MEETING') {
+                        await ApiClient.updateMeeting(id, { status: newStatus });
+                    } else if (type === 'TIMETABLE') {
+                        const ttStatus = isDoneNow ? 'COMPLETED' : 'PENDING';
+                        await ApiClient.updateTimetableEvent(id, { status: ttStatus });
+                    }
+                    // For local state/fading
+                    if (isDoneNow) {
+                        showCompletedToast(uid);
+                    } else {
+                        showToastMsg('Task marked as incomplete.');
+                    }
+                    await renderCalendar();
+                } catch (e) {
+                    console.error("Failed to update event status.", e);
+                    showToastMsg("Failed to update status on server.");
                 }
             }
         }
@@ -2684,6 +2794,11 @@
                     await ApiClient.updateTodo(ev.id, { status: 'PENDING' });
                     ev.status = 'PENDING';
                 } catch (e) { console.error("Could not undo Todo status:", e); }
+            } else if (ev && ev.event_type === 'TIMETABLE') {
+                try {
+                    await ApiClient.updateTimetableEvent(ev.id, { status: 'PENDING' });
+                    ev.status = 'PENDING';
+                } catch (e) { console.error("Could not undo Timetable status:", e); }
             } else {
                 completedIds.delete(uid);
             }
@@ -2700,6 +2815,124 @@
             setTimeout(() => t.remove(), 3000);
         }
 
+        // ── Day View Overflow Modal ────────────────────────────────
+        // Shows ONLY the hidden overflow events from the 12AM cluster (not other-time events)
+        function showDayOverflowModal(dateStr) {
+            const uids = (window._dayOvfCache || {})[dateStr] || [];
+            const dayEvts = events.filter(e => uids.includes(e._uid));
+            dayEvts.sort((a, b) => (a.sh * 60 + a.sm) - (b.sh * 60 + b.sm));
+
+            const dateObj = new Date(dateStr);
+            const dateLabel = dateObj.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
+
+            const titleEl = document.getElementById('hiddenTasksModalTitle');
+            const listEl = document.getElementById('hiddenTasksList');
+            if (!titleEl || !listEl) return;
+
+            titleEl.textContent = dateLabel;
+            listEl.innerHTML = dayEvts.map(ev => {
+                const u = getEventStyles(ev);
+                const timeLbl = `${fmtH(ev.sh, ev.sm)} – ${fmtH(ev.eh, ev.em)}`;
+                const s = (ev.status || '').toUpperCase();
+                const isDone = (s === 'COMPLETED' || s === 'RESOLVED' || s === 'DONE' || s === 'CANCELLED' || completedIds.has(ev._uid));
+                const icon = ev.event_type === 'MEETING' ? '<i class="bi bi-camera-video me-2"></i>' : '<i class="bi bi-check-circle me-2"></i>';
+                return `
+                <div style="
+                    display:flex; align-items:center; gap:12px;
+                    padding: 10px 12px; border-radius:10px;
+                    background: ${u.bg}; border-left: 3px solid ${u.color};
+                    margin-bottom: 8px; cursor:pointer;
+                    opacity: ${isDone ? '0.5' : '1'};
+                    text-decoration: ${isDone ? 'line-through' : 'none'};
+                " onclick="openEditModal('${ev._uid}'); bootstrap.Modal.getInstance(document.getElementById('hiddenTasksModal'))?.hide();">
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-size:.85rem; font-weight:700; color:${u.color}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                            ${icon}${ev.title}
+                        </div>
+                        <div style="font-size:.72rem; color:#64748b; margin-top:2px;">
+                            <i class="bi bi-clock me-1"></i>${timeLbl}
+                            ${ev.user ? ` &nbsp;&middot;&nbsp; <i class="bi bi-person me-1"></i>${ev.user}` : ''}
+                        </div>
+                    </div>
+                    ${ev.event_type === 'TODO' ? `
+                    <button style="
+                        width:22px; height:22px; border-radius:50%;
+                        border: 2px solid ${u.color}; background: ${isDone ? u.color : 'transparent'};
+                        flex-shrink:0; cursor:pointer; display:flex; align-items:center; justify-content:center;
+                    " onclick="event.stopPropagation(); completeEvent('${ev._uid}')">
+                        ${isDone ? '<i class="bi bi-check text-white" style="font-size:0.65rem;"></i>' : ''}
+                    </button>` : ''}
+                </div>`;
+            }).join('') || '<p class="text-muted text-center small mt-3">No overflow events.</p>';
+
+            const modal = new bootstrap.Modal(document.getElementById('hiddenTasksModal'));
+            modal.show();
+        }
+
+        // ── Overflow Modal (More Events) – Refined to specific cluster ──────
+        function showOverflowModal(clusterId, dateStr) {
+            const uids = window._clusterCache ? window._clusterCache[clusterId] : null;
+            let dayEvts;
+
+            if (uids) {
+                dayEvts = events.filter(e => uids.includes(e._uid));
+            } else {
+                // Fallback to day view if cache missing
+                dayEvts = events.filter(e => e.date === dateStr && (e.priority || '').toUpperCase() !== 'HIGH');
+            }
+            
+            dayEvts.sort((a, b) => (a.sh * 60 + a.sm) - (b.sh * 60 + b.sm));
+
+            const dateObj = new Date(dateStr);
+            const dateLabel = dateObj.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
+            // Add cluster time info if possible
+            const timeRange = dayEvts.length > 0 ? ` (${fmtH(dayEvts[0].sh, dayEvts[0].sm)} group)` : '';
+
+            const titleEl = document.getElementById('hiddenTasksModalTitle');
+            const listEl = document.getElementById('hiddenTasksList');
+            if (!titleEl || !listEl) return;
+
+            titleEl.textContent = dateLabel + timeRange;
+            listEl.innerHTML = dayEvts.map(ev => {
+                const u = getEventStyles(ev);
+                const timeLbl = `${fmtH(ev.sh, ev.sm)} – ${fmtH(ev.eh, ev.em)}`;
+                const s = (ev.status || '').toUpperCase();
+                const isDone = (s === 'COMPLETED' || s === 'RESOLVED' || s === 'DONE' || s === 'CANCELLED' || completedIds.has(ev._uid));
+                const icon = ev.event_type === 'MEETING' ? '<i class="bi bi-camera-video me-2"></i>' : '<i class="bi bi-check-circle me-2"></i>';
+                return `
+                <div style="
+                    display:flex; align-items:center; gap:12px;
+                    padding: 10px 12px; border-radius:10px;
+                    background: ${u.bg}; border-left: 3px solid ${u.color};
+                    margin-bottom: 8px; cursor:pointer;
+                    opacity: ${isDone ? '0.5' : '1'};
+                    text-decoration: ${isDone ? 'line-through' : 'none'};
+                " onclick="openEditModal('${ev._uid}'); bootstrap.Modal.getInstance(document.getElementById('hiddenTasksModal'))?.hide();">
+                    <div style="flex:1; min-width:0;">
+                        <div style="font-size:.85rem; font-weight:700; color:${u.color}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                            ${icon}${ev.title}
+                        </div>
+                        <div style="font-size:.72rem; color:#64748b; margin-top:2px;">
+                            <i class="bi bi-clock me-1"></i>${timeLbl}
+                            ${ev.user ? ` &nbsp;&middot;&nbsp; <i class="bi bi-person me-1"></i>${ev.user}` : ''}
+                        </div>
+                    </div>
+                    ${ev.event_type === 'TODO' ? `
+                    <button style="
+                        width:22px; height:22px; border-radius:50%;
+                        border: 2px solid ${u.color}; background: ${isDone ? u.color : 'transparent'};
+                        flex-shrink:0; cursor:pointer; display:flex; align-items:center; justify-content:center;
+                    " onclick="event.stopPropagation(); completeEvent('${ev._uid}')">
+                        ${isDone ? '<i class="bi bi-check text-white" style="font-size:0.65rem;"></i>' : ''}
+                    </button>` : ''}
+                </div>`;
+            }).join('') || '<p class="text-muted text-center small mt-3">No events for this day.</p>';
+
+            const modal = new bootstrap.Modal(document.getElementById('hiddenTasksModal'));
+            modal.show();
+        }
+
+
         // ── Auto-update current time line every minute ───────────
         setInterval(() => renderCalendar(), 60000);
 
@@ -2708,9 +2941,18 @@
             bsModal = new bootstrap.Modal(document.getElementById('scheduleModal'));
             document.getElementById('ev-date').value = dStr(new Date());
 
+            // Instantly paint the blank calendar grid so the user isn't stuck staring at white space while data loads
+            renderCalendarLocal();
+
             try {
                 currentUser = ApiClient.getCurrentUser();
-                const emps = await ApiClient.getEmployees();
+
+                // Fire requests concurrently to prevent the 3-second UI sequence lock
+                const [emps, clients] = await Promise.all([
+                    ApiClient.getEmployees(),
+                    ApiClient.getClients()
+                ]);
+
                 ALL_USERS_LIST = isTimetableAdmin()
                     ? emps
                     : emps.filter(e => e.id === currentUser?.id || (e.name || e.email) === getCurrentUserLabel());
@@ -2718,7 +2960,7 @@
                 // Populate Assignee dropdown
                 const sel = document.getElementById('ev-user');
                 sel.innerHTML = '<option value="">— Unassigned —</option>' +
-                    (isTimetableAdmin() ? '<option value="All Employees" style="font-weight:bold; color:var(--primary);">Assign All Employees</option>' : '') +
+                    (isTimetableAdmin() ? '<option value="All Employees" style="font-weight:bold; color:var(--primary);">👤 All Employees (Bulk)</option>' : '') +
                     ALL_USERS_LIST.map(e => {
                         const uniqueVal = e.name || e.email;
                         const role = (e.role || '').replace(/_/g, ' ');
@@ -2726,7 +2968,11 @@
                     }).join('');
                 configureTimetableAssigneeSelect();
 
-                const clients = await ApiClient.getClients();
+                // [START] Initialize Modern Multi-Select
+                window.initSrmMultiSelect('ev-user');
+                // [END]
+
+                // clients variable is now pre-loaded by Promise.all
                 const clientSel = document.getElementById('ev-client');
                 if (clientSel) {
                     clientSel.innerHTML = '<option value="">— No Client —</option>' +
@@ -2793,6 +3039,23 @@
 
         initApp();
     </script>
+
+    <!-- Hidden Tasks Modal -->
+    <div class="modal fade" id="hiddenTasksModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm" style="max-width: 340px;">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 24px;">
+                <div class="modal-header border-0 pb-0 pt-4 px-4">
+                    <h6 class="modal-title fw-bold text-dark" id="hiddenTasksModalTitle" style="font-size: 1.1rem;">
+                    </h6>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4" id="hiddenTasksList" style="max-height: 480px; overflow-y: auto;">
+                    <!-- Tasks will be injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>

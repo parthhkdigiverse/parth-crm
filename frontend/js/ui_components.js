@@ -165,12 +165,12 @@ window.renderSidebar = function (active) {
 
         const highCount = sessionStorage.getItem('crm_high_issue_count');
         const hasHighIssues = highCount && highCount !== '0';
-        
+
         const resetCount = sessionStorage.getItem('crm_reset_req_count');
         const hasResets = resetCount && resetCount !== '0';
 
         const sectionHasAlert = (hasHighIssues && filteredItems.some(item => item.id === 'issues')) ||
-                               (hasResets && id === 'admin');
+            (hasResets && id === 'admin');
 
         return `
         <div class="sb-section" id="sb-sec-${id}">
@@ -1031,7 +1031,7 @@ window.checkHighPriorityIssues = async function () {
             // Remove bell section if it exists
             const bellHigh = document.getElementById('bell-high-issues-section');
             if (bellHigh) bellHigh.remove();
-            
+
             sessionStorage.removeItem('crm_high_issue_count');
         }
     } catch (e) {
@@ -1499,7 +1499,7 @@ window.initAttendance = async function () {
                 if (res && res.requires_manual_punchout) {
                     punchBtn.innerHTML = origHTML;
                     punchBtn.classList.remove('loading');
-                    if(typeof window.showManualPunchOutModal === 'function') {
+                    if (typeof window.showManualPunchOutModal === 'function') {
                         window.showManualPunchOutModal(res.open_sessions);
                     }
                     return;
@@ -1529,7 +1529,7 @@ window.initAttendance = async function () {
 
 
 
-window.showManualPunchOutModal = function(sessions) {
+window.showManualPunchOutModal = function (sessions) {
     let modalEl = document.getElementById('manualPunchOutModal');
     if (!modalEl) {
         document.body.insertAdjacentHTML('beforeend', `
@@ -1552,11 +1552,11 @@ window.showManualPunchOutModal = function(sessions) {
         `);
         modalEl = document.getElementById('manualPunchOutModal');
     }
-    
+
     const container = document.getElementById('manualPunchOutContainer');
     container.innerHTML = sessions.map(s => {
         const dateStr = window.formatDateToApp ? window.formatDateToApp(s.date) : s.date;
-        const timeIn = s.punch_in ? new Date(s.punch_in).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Unknown';
+        const timeIn = s.punch_in ? new Date(s.punch_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Unknown';
         return `
             <div class="card p-3 bg-light border-0 shadow-sm">
                 <h6 class="fw-bold mb-1">${dateStr}</h6>
@@ -1573,7 +1573,7 @@ window.showManualPunchOutModal = function(sessions) {
 
     const modal = new bootstrap.Modal(modalEl);
     modal.show();
-    
+
     window.submitManualPunchOut = async (recordId) => {
         const timeInput = document.getElementById(`punch_out_${recordId}`).value;
         if (!timeInput) {
@@ -1589,7 +1589,7 @@ window.showManualPunchOutModal = function(sessions) {
                 const btn = document.getElementById('header-punch-btn-new');
                 if (btn) btn.click();
             }, 500);
-        } catch(e) {
+        } catch (e) {
             console.error('Manual punch out failed', e);
             window.showToast(e.data?.detail || 'Failed to close session', 'error');
         }
@@ -1597,7 +1597,7 @@ window.showManualPunchOutModal = function(sessions) {
 };
 
 // Fetch reset requests count for sidebar badge
-window.refreshResetBadge = async function() {
+window.refreshResetBadge = async function () {
     const u = getUser();
     if (u?.role !== 'ADMIN') return;
     try {
@@ -1605,7 +1605,7 @@ window.refreshResetBadge = async function() {
         const pendingCount = requests.filter(r => r.status === 'PENDING').length;
         const old = sessionStorage.getItem('crm_reset_req_count');
         sessionStorage.setItem('crm_reset_req_count', pendingCount);
-        
+
         if (String(old) !== String(pendingCount)) {
             // Re-render sidebar if count changed to update dot/badge
             const sbInput = document.getElementById('sidebar');
@@ -1797,7 +1797,19 @@ window.renderPagination = function (options) {
             if (data.length === 0) {
                 el.innerHTML = eMsg || emptyMsg;
             } else {
-                el.innerHTML = slice.map(rRow).join('');
+                try {
+                    el.innerHTML = slice.map((item, index) => {
+                        try {
+                            return rRow(item);
+                        } catch (err) {
+                            console.error(`[Pagination] Row render failed for index ${index}:`, err);
+                            return `<tr class="table-danger text-center"><td colspan="20">Error rendering record: ${err.message}</td></tr>`;
+                        }
+                    }).join('');
+                } catch (containerErr) {
+                    console.error("[Pagination] Target container update failed:", containerErr);
+                    el.innerHTML = `<tr class="table-warning text-center"><td colspan="20">Could not render table contents. Check console for details.</td></tr>`;
+                }
             }
         };
 
@@ -1896,15 +1908,147 @@ window.renderPagination = function (options) {
     };
 };
 
-document.addEventListener('DOMContentLoaded', () => {
-    const fab = document.createElement('button');
-    fab.id = 'scroll-top-fab';
-    fab.innerHTML = '<i class="bi bi-arrow-up"></i>';
-    fab.style.cssText = 'position:fixed;bottom:24px;right:24px;width:42px;height:42px;border-radius:50%;background:var(--primary);color:#fff;border:none;box-shadow:0 4px 14px rgba(0,0,0,0.18);opacity:0;transition:opacity 0.2s;z-index:999;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.1rem;';
-    document.body.appendChild(fab);
-    window.addEventListener('scroll', () => {
-      fab.style.opacity = window.scrollY > 300 ? '1' : '0';
-      fab.style.pointerEvents = window.scrollY > 300 ? 'auto' : 'none';
+/**
+ * SRM Modern Multi-Select Initialization
+ * @param {string} elementId - ID of the original <select multiple>
+ * @param {object} options - Configuration options
+ */
+window.initSrmMultiSelect = function (elementId, options = {}) {
+    const originalSelect = document.getElementById(elementId);
+    if (!originalSelect) return;
+
+    // Remove existing wrapper if already initialized
+    const existingWrapper = originalSelect.parentElement.querySelector('.srm-multi-select-container');
+    if (existingWrapper) existingWrapper.remove();
+
+    originalSelect.style.display = 'none';
+
+    const container = document.createElement('div');
+    container.className = 'srm-multi-select-container';
+    container.innerHTML = `
+        <div class="srm-multi-select-tags"></div>
+        <input type="text" class="srm-multi-select-input" placeholder="${options.placeholder || 'Search employees...'}">
+        <div class="srm-multi-select-dropdown"></div>
+    `;
+
+    originalSelect.parentElement.appendChild(container);
+
+    const tagsArea = container.querySelector('.srm-multi-select-tags');
+    const input = container.querySelector('.srm-multi-select-input');
+    const dropdown = container.querySelector('.srm-multi-select-dropdown');
+
+    const updateTags = () => {
+        tagsArea.innerHTML = '';
+        Array.from(originalSelect.selectedOptions).forEach(opt => {
+            if (opt.value === '' || opt.value === 'All Employees') return;
+            const tag = document.createElement('span');
+            tag.className = 'srm-tag';
+            tag.innerHTML = `
+                ${opt.text.split('(')[0].trim()}
+                <span class="srm-tag-remove" data-value="${opt.value}">&times;</span>
+            `;
+            tag.querySelector('.srm-tag-remove').onclick = (e) => {
+                e.stopPropagation();
+                opt.selected = false;
+                originalSelect.dispatchEvent(new Event('change'));
+                updateTags();
+                renderDropdown();
+            };
+            tagsArea.appendChild(tag);
+        });
+
+        // Special tag for All Employees
+        const bulkOpt = Array.from(originalSelect.options).find(o => o.value === 'All Employees');
+        if (bulkOpt && bulkOpt.selected) {
+            const tag = document.createElement('span');
+            tag.className = 'srm-tag';
+            tag.style.background = 'var(--primary)';
+            tag.style.color = 'white';
+            tag.innerHTML = `
+                 👤 All Employees
+                 <span class="srm-tag-remove" data-value="All Employees">&times;</span>
+             `;
+            tag.querySelector('.srm-tag-remove').onclick = (e) => {
+                e.stopPropagation();
+                bulkOpt.selected = false;
+                // Deselect everyone if All Employees was unchecked? 
+                // Actually, let's keep it simple: just uncheck the bulk option.
+                originalSelect.dispatchEvent(new Event('change'));
+                updateTags();
+                renderDropdown();
+            };
+            tagsArea.prepend(tag);
+        }
+    };
+
+    const renderDropdown = (filter = '') => {
+        const query = filter.toLowerCase();
+        dropdown.innerHTML = '';
+
+        Array.from(originalSelect.options).forEach(opt => {
+            if (opt.value === '') return;
+            if (query && !opt.text.toLowerCase().includes(query)) return;
+
+            const isBulk = opt.value === 'All Employees';
+            const isSelected = opt.selected;
+            const item = document.createElement('div');
+            item.className = `srm-multi-select-item ${isSelected ? 'selected' : ''} ${isBulk ? 'srm-multi-select-bulk' : ''}`;
+
+            const [name, role] = opt.text.split('(');
+            item.innerHTML = `
+                ${isBulk ? '' : '<div class="srm-checkbox"></div>'}
+                <div class="srm-multi-select-item-info">
+                    <span class="srm-multi-select-item-name">${name.trim()}</span>
+                    ${role ? `<span class="srm-multi-select-item-role">${role.replace(')', '').trim()}</span>` : ''}
+                </div>
+            `;
+
+            item.onclick = (e) => {
+                e.stopPropagation();
+                if (isBulk) {
+                    const shouldSelect = !opt.selected;
+                    Array.from(originalSelect.options).forEach(o => {
+                        if (o.value !== '') o.selected = shouldSelect;
+                    });
+                } else {
+                    opt.selected = !opt.selected;
+                }
+                originalSelect.dispatchEvent(new Event('change'));
+                updateTags();
+                renderDropdown(input.value);
+            };
+
+            dropdown.appendChild(item);
+        });
+    };
+
+    input.onfocus = () => dropdown.classList.add('show');
+    container.onclick = () => {
+        input.focus();
+        dropdown.classList.add('show');
+    };
+
+    input.oninput = (e) => {
+        renderDropdown(e.target.value);
+    };
+
+    document.addEventListener('click', (e) => {
+        if (!container.contains(e.target)) {
+            dropdown.classList.remove('show');
+            input.value = '';
+        }
     });
-    fab.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
-});
+
+    // Initial render
+    updateTags();
+    renderDropdown();
+
+    // Expose a way to refresh if the original select options change dynamically
+    container.refresh = () => {
+        updateTags();
+        renderDropdown();
+    };
+
+    return container;
+};
+

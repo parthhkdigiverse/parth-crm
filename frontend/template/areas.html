@@ -24,7 +24,8 @@
             z-index: 1055 !important;
         }
 
-        html, body {
+        html,
+        body {
             overflow-x: hidden;
             max-width: 100vw;
         }
@@ -51,7 +52,8 @@
         }
 
         .area-search-container {
-            padding: 1.5rem; /* Standardized Breathable Padding */
+            padding: 1.5rem;
+            /* Standardized Breathable Padding */
             border-bottom: 1px solid var(--border);
         }
 
@@ -87,7 +89,8 @@
         }
 
         .shops-header {
-            padding: 1.5rem 2rem; /* Standardized Breathable Padding */
+            padding: 1.5rem 2rem;
+            /* Standardized Breathable Padding */
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
@@ -311,21 +314,24 @@
                 opacity: 1;
             }
         }
+
         @media (max-width: 991.98px) {
             .split-panel {
                 height: auto !important;
                 min-height: 0 !important;
             }
+
             .panel-sidebar {
                 width: 100% !important;
                 height: 350px !important;
                 border-right: none !important;
                 border-bottom: 2px solid var(--border-subtle) !important;
             }
+
             .panel-content {
                 min-height: 500px !important;
             }
-            
+
             /* Responsive UI Redesign styling */
             .area-sidebar-header {
                 display: block !important;
@@ -334,6 +340,7 @@
                 padding: 1.25rem 1.5rem 0 1.5rem;
                 color: var(--text-1);
             }
+
             .area-item {
                 flex-direction: column;
                 align-items: flex-start;
@@ -343,20 +350,26 @@
                 border-radius: 12px;
                 margin-bottom: 12px;
                 position: relative;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
             }
+
             .area-item.active {
                 border-color: var(--primary);
                 background: var(--primary-soft);
                 border-left: 1px solid var(--primary);
             }
+
             .area-item .area-info {
                 font-size: 1rem;
                 font-weight: 700;
                 color: var(--text-1);
                 margin-bottom: 4px;
             }
-            .area-item .area-info i { display: none; }
+
+            .area-item .area-info i {
+                display: none;
+            }
+
             .area-item .area-count-pill {
                 border: none;
                 background: transparent;
@@ -365,6 +378,7 @@
                 font-weight: 500;
                 color: var(--text-muted);
             }
+
             .area-item .area-mobile-actions {
                 display: block !important;
                 position: absolute;
@@ -372,22 +386,24 @@
                 top: 16px;
                 z-index: 2;
             }
-            
+
             .shops-header {
                 background: var(--bg-app) !important;
                 border-bottom: none !important;
                 border-top: 4px solid var(--primary) !important;
                 border-radius: 0 0 12px 12px !important;
-                box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05) !important;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05) !important;
                 flex-direction: column;
                 align-items: flex-start !important;
                 padding: 1.5rem !important;
                 margin-bottom: 1rem;
                 position: relative;
             }
+
             #selectedAreaTitle {
                 width: 100%;
             }
+
             #shops-panel-count {
                 position: absolute;
                 bottom: 1.5rem;
@@ -396,18 +412,20 @@
                 font-size: 0.85rem;
                 color: var(--text-muted);
             }
-            
+
             .shop-card-mobile {
                 background: var(--surface);
                 border: 1px solid var(--border);
                 border-radius: 12px;
                 padding: 16px;
                 margin-bottom: 16px;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
             }
+
             .shop-card-mobile:nth-child(even) {
                 background: var(--bg-app) !important;
             }
+
             .shop-card-mobile .card-header {
                 border-bottom: 1px solid var(--border-subtle);
                 padding-bottom: 12px;
@@ -416,12 +434,14 @@
                 justify-content: space-between;
                 align-items: flex-start;
             }
+
             .shop-card-mobile .card-title {
                 font-weight: 700;
                 font-size: 1rem;
                 color: var(--text-1);
                 margin: 0;
             }
+
             .shop-card-mobile .billing-grid {
                 display: grid;
                 grid-template-columns: repeat(3, 1fr);
@@ -431,21 +451,25 @@
                 border-radius: 8px;
                 margin-bottom: 16px;
             }
+
             .shop-card-mobile .billing-item {
                 display: flex;
                 flex-direction: column;
             }
+
             .shop-card-mobile .billing-label {
                 font-size: 0.7rem;
                 color: var(--text-muted);
                 text-transform: uppercase;
                 font-weight: 600;
             }
+
             .shop-card-mobile .billing-value {
                 font-size: 0.85rem;
                 font-weight: 700;
                 color: var(--text-main);
             }
+
             .shop-card-mobile .card-footer {
                 display: flex;
                 gap: 8px;
@@ -453,16 +477,22 @@
                 border: none;
                 padding: 0;
             }
+
             .shop-card-mobile .card-footer .btn {
                 flex: 1;
                 font-size: 0.8rem;
                 padding: 8px;
             }
         }
-        
+
         @media (min-width: 992px) {
-            .area-sidebar-header { display: none !important; }
-            .area-mobile-actions { display: none !important; }
+            .area-sidebar-header {
+                display: none !important;
+            }
+
+            .area-mobile-actions {
+                display: none !important;
+            }
         }
     </style>
     <link rel="stylesheet" href="/frontend/css/theme.css?v=20260406">
@@ -478,22 +508,29 @@
                     <div class="page-header-glass" style="overflow: visible !important;">
                         <div class="min-w-0">
                             <h2 class="page-section-title fw-bold text-truncate-mobile mb-1">Areas &amp; Shops</h2>
-                            <p class="text-muted mb-0 small text-truncate-mobile">Manage geographical areas and shop locations.</p>
+                            <p class="text-muted mb-0 small text-truncate-mobile">Manage geographical areas and shop
+                                locations.</p>
                         </div>
-                        <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center justify-content-sm-end gap-2 flex-shrink-0 w-100 mt-3 mt-sm-0" style="overflow: visible !important; max-width: 400px; margin-left: auto;">
+                        <div class="d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center justify-content-sm-end gap-2 flex-shrink-0 w-100 mt-3 mt-sm-0"
+                            style="overflow: visible !important; max-width: 400px; margin-left: auto;">
                             <div class="dropdown w-100" id="btn-view-archive-container">
-                                <button class="btn btn-outline-light d-flex align-items-center justify-content-center gap-2 px-3 shadow-sm dropdown-toggle w-100" type="button"
-                                    id="btn-view-archive" data-bs-toggle="dropdown" aria-expanded="false"
+                                <button
+                                    class="btn btn-outline-light d-flex align-items-center justify-content-center gap-2 px-3 shadow-sm dropdown-toggle w-100"
+                                    type="button" id="btn-view-archive" data-bs-toggle="dropdown" aria-expanded="false"
                                     style="font-size:0.875rem; border-radius: 8px; height: 40px;">
                                     <i class="bi bi-archive-fill"></i> <span class="fw-semibold">View Archive</span>
                                 </button>
-                                <ul class="dropdown-menu shadow border-0 w-100" aria-labelledby="btn-view-archive" style="z-index: 1050;">
-                                    <li><a class="dropdown-item" href="javascript:void(0)" onclick="areasArchiveOffcanvas.open()">Archived Areas</a></li>
-                                    <li><a class="dropdown-item" href="javascript:void(0)" onclick="shopsArchiveOffcanvas.open()">Archived Shops</a></li>
+                                <ul class="dropdown-menu shadow border-0 w-100" aria-labelledby="btn-view-archive"
+                                    style="z-index: 1050;">
+                                    <li><a class="dropdown-item" href="javascript:void(0)"
+                                            onclick="areasArchiveOffcanvas.open()">Archived Areas</a></li>
+                                    <li><a class="dropdown-item" href="javascript:void(0)"
+                                            onclick="shopsArchiveOffcanvas.open()">Archived Shops</a></li>
                                 </ul>
                             </div>
-                            <button class="btn btn-primary d-flex align-items-center justify-content-center gap-2 px-3 shadow-sm w-100" type="button"
-                                onclick="new bootstrap.Modal(document.getElementById('addModal')).show()"
+                            <button
+                                class="btn btn-primary d-flex align-items-center justify-content-center gap-2 px-3 shadow-sm w-100"
+                                type="button" onclick="new bootstrap.Modal(document.getElementById('addModal')).show()"
                                 style="font-size:0.875rem; border-radius: 8px; height: 40px; margin-top: 0 !important;">
                                 <i class="bi bi-plus-lg"></i> Add Area/Shop
                             </button>
@@ -503,13 +540,17 @@
                     <div id="filter-wrapper" class="mb-4"></div>
 
                     <!-- Main Content Card -->
-                    <div class="card shadow-sm border-0 flex-grow-1 d-flex flex-column mb-0" style="border-radius: 12px; overflow: hidden; min-height: 0;">
+                    <div class="card shadow-sm border-0 flex-grow-1 d-flex flex-column mb-0"
+                        style="border-radius: 12px; overflow: hidden; min-height: 0;">
                         <div class="card-body p-0 d-flex flex-column h-100">
-                            <div class="split-panel flex-grow-1 d-flex flex-column flex-lg-row h-100" style="min-height: 0;">
+                            <div class="split-panel flex-grow-1 d-flex flex-column flex-lg-row h-100"
+                                style="min-height: 0;">
                                 <!-- Left: Area Sidebar -->
-                                <div class="panel-sidebar d-flex flex-column" style="width: 320px; border-right: 1px solid var(--border); background: var(--surface); flex-shrink: 0;">
+                                <div class="panel-sidebar d-flex flex-column"
+                                    style="width: 320px; border-right: 1px solid var(--border); background: var(--surface); flex-shrink: 0;">
                                     <div class="area-search-container d-flex flex-column">
-                                        <select id="area-status-filter" class="form-select form-select-sm mb-2" onchange="renderAreaList(currentFilters.search)">
+                                        <select id="area-status-filter" class="form-select form-select-sm mb-2"
+                                            onchange="renderAreaList(currentFilters.search)">
                                             <option value="ALL">All Statuses</option>
                                             <option value="UNASSIGNED">Unassigned</option>
                                             <option value="PENDING">Pending Acceptance</option>
@@ -517,16 +558,21 @@
                                         </select>
                                         <div class="d-flex align-items-center gap-2">
                                             <div class="position-relative flex-grow-1">
-                                                <input type="text" id="area-search-input" class="form-control" placeholder="Search areas..." oninput="window.filterAreas(this.value)">
-                                                <i class="bi bi-search position-absolute" style="right: 12px; top: 10px; color: var(--text-muted); opacity: 0.5;"></i>
+                                                <input type="text" id="area-search-input" class="form-control"
+                                                    placeholder="Search areas..."
+                                                    oninput="window.filterAreas(this.value)">
+                                                <i class="bi bi-search position-absolute"
+                                                    style="right: 12px; top: 10px; color: var(--text-muted); opacity: 0.5;"></i>
                                             </div>
-                                            <span id="area-count-display" class="text-muted small fw-bold text-nowrap"></span>
+                                            <span id="area-count-display"
+                                                class="text-muted small fw-bold text-nowrap"></span>
                                         </div>
                                     </div>
                                     <ul class="area-list flex-grow-1" id="area-list"
                                         style="list-style: none; padding: 10px; margin: 0; overflow-y: auto;">
                                         <li class="area-list-empty p-4 text-center text-muted">
-                                            <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
+                                            <div class="spinner-border spinner-border-sm text-primary mb-2"
+                                                role="status"></div>
                                             <div>Fetching workspaces...</div>
                                         </li>
                                     </ul>
@@ -537,36 +583,47 @@
                                     <div class="shops-header flex-shrink-0 d-flex flex-column flex-xl-row justify-content-between align-items-xl-center gap-3 mb-4 pb-3 border-bottom"
                                         style="padding: 1.5rem 2rem; border-color: var(--border-subtle) !important; background: var(--surface);">
                                         <div class="d-flex flex-column gap-2">
-                                            <h3 class="fw-bold mb-0 d-flex align-items-center gap-2 text-main" id="selectedAreaTitle" style="font-family: 'Outfit', sans-serif;">
-                                                <div class="bg-primary bg-opacity-10 p-2 rounded-3 text-primary d-flex align-items-center justify-content-center">
+                                            <h3 class="fw-bold mb-0 d-flex align-items-center gap-2 text-main"
+                                                id="selectedAreaTitle" style="font-family: 'Outfit', sans-serif;">
+                                                <div
+                                                    class="bg-primary bg-opacity-10 p-2 rounded-3 text-primary d-flex align-items-center justify-content-center">
                                                     <i class="bi bi-shop fs-5"></i>
                                                 </div>
                                                 <span>Select an Area</span>
                                             </h3>
 
-                                            <div class="d-flex align-items-center gap-2 flex-wrap" id="areaBadgesDisplay">
+                                            <div class="d-flex align-items-center gap-2 flex-wrap"
+                                                id="areaBadgesDisplay">
                                                 <!-- Badges injected dynamically via JS -->
                                             </div>
                                         </div>
 
                                         <div class="d-flex flex-column align-items-xl-end gap-2">
                                             <div id="areaActionButtons" class="d-flex flex-wrap gap-2 d-none">
-                                                <button class="btn btn-sm btn-light shadow-sm hover-lift fw-bold border" style="color: var(--text-main); border-radius: 8px;" onclick="editArea(currentAreaId)">
+                                                <button class="btn btn-sm btn-light shadow-sm hover-lift fw-bold border"
+                                                    style="color: var(--text-main); border-radius: 8px;"
+                                                    onclick="editArea(currentAreaId)">
                                                     <i class="bi bi-pencil me-1"></i> Edit Area
                                                 </button>
-                                                <button class="btn btn-sm shadow-sm hover-lift fw-bold" style="background: rgba(239, 68, 68, 0.1); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px;" onclick="archiveArea(currentAreaId)">
+                                                <button class="btn btn-sm shadow-sm hover-lift fw-bold"
+                                                    style="background: rgba(239, 68, 68, 0.1); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 8px;"
+                                                    onclick="archiveArea(currentAreaId)">
                                                     <i class="bi bi-archive me-1"></i> Archive
                                                 </button>
                                             </div>
                                             <div class="d-flex align-items-center gap-3 mt-1">
-                                                <div class="text-muted fw-bold" style="font-size: 0.85rem;" id="shopCountDisplay">0 shops</div>
-                                                <div class="text-muted fw-bold" style="font-size: 0.85rem;" id="areaManagerDisplay"></div>
+                                                <div class="text-muted fw-bold" style="font-size: 0.85rem;"
+                                                    id="shopCountDisplay">0 shops</div>
+                                                <div class="text-muted fw-bold" style="font-size: 0.85rem;"
+                                                    id="areaManagerDisplay"></div>
                                             </div>
                                         </div>
                                     </div>
                                     <div id="shops-panel-body" class="flex-grow-1" style="overflow-y: auto;">
-                                        <div class="h-100 d-flex flex-column align-items-center justify-content-center p-5 text-muted opacity-50">
-                                            <i class="bi bi-geo-alt" style="font-size: 4rem; display: block; margin-bottom: 1rem;"></i>
+                                        <div
+                                            class="h-100 d-flex flex-column align-items-center justify-content-center p-5 text-muted opacity-50">
+                                            <i class="bi bi-geo-alt"
+                                                style="font-size: 4rem; display: block; margin-bottom: 1rem;"></i>
                                             <p>Click an area on the left to view its shops</p>
                                         </div>
                                     </div>
@@ -693,7 +750,8 @@
                                         </div>
                                     </div>
 
-                                    <div class="form-check form-switch mt-4 mb-2 border rounded p-3 bg-app" style="border-color: var(--border) !important;">
+                                    <div class="form-check form-switch mt-4 mb-2 border rounded p-3 bg-app"
+                                        style="border-color: var(--border) !important;">
                                         <input class="form-check-input ms-0 me-2 mt-1" type="checkbox"
                                             id="a-auto-discovery" style="cursor:pointer;" checked>
                                         <label class="form-check-label fw-bold text-main" for="a-auto-discovery"
@@ -948,8 +1006,8 @@
                     emptyEl.style.display = 'block';
                     emptyEl.innerHTML = `<div class="p-4 text-center text-muted">No areas match "${query}"</div>`;
                 } else if (visibleCount === 0 && allAreas.length === 0) {
-                     emptyEl.style.display = 'block';
-                     emptyEl.innerHTML = `<div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div><div>Fetching workspaces...</div>`;
+                    emptyEl.style.display = 'block';
+                    emptyEl.innerHTML = `<div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div><div>Fetching workspaces...</div>`;
                 } else {
                     emptyEl.style.display = 'none';
                 }
@@ -965,12 +1023,12 @@
             if (typeof v === 'object' && v.$oid) return v.$oid;
             return String(v);
         };
-        
+
         // Compatibility Aliases for UI RESTORATION
         window.editArea = (id) => openEditAreaModal(id);
         Object.defineProperty(window, 'currentAreaId', {
-            get: function() { return selectedAreaId; },
-            set: function(v) { selectedAreaId = v; }
+            get: function () { return selectedAreaId; },
+            set: function (v) { selectedAreaId = v; }
         });
 
 
@@ -1047,7 +1105,7 @@
 
                 // Defensively extract user array from common response wrappers
                 allUsers = Array.isArray(usersRes) ? usersRes : (usersRes.data || usersRes.items || usersRes.users || []);
-                
+
                 const user = ApiClient.getCurrentUser();
                 const isAdmin = user && user.role && user.role.toUpperCase() === 'ADMIN';
                 const isStaff = user && ['ADMIN', 'SALES', 'TELESALES', 'PROJECT_MANAGER', 'PROJECT_MANAGER_AND_SALES'].includes(user.role?.toUpperCase());
@@ -1116,7 +1174,7 @@
                     // Self-sourced: has a creator who is NOT the current user (or any staff-sourced lead)
                     if (!a.created_by_id || (currentUser && normalizeId(a.created_by_id) === normalizeId(currentUser.id) && currentUser.role?.toUpperCase() === 'ADMIN')) return false;
                 }
-                
+
                 // Status filter
                 if (statusFilter === 'UNASSIGNED') {
                     if (a.assigned_users && a.assigned_users.length > 0) return false;
@@ -1176,7 +1234,7 @@
             let sourcedByBadge = area && area.created_by_name && area.created_by_id && (!user || area.created_by_id !== user.id)
                 ? `<span class="badge bg-info bg-opacity-10 text-info rounded-pill px-3 py-2 fw-bold ms-1" style="border: 1px solid rgba(13, 202, 240, 0.2);"><i class="bi bi-person-plus me-1"></i> Sourced by: ${area.created_by_name}</span>`
                 : '';
-            
+
             if (isPendingArea) {
                 statusBadge = isAdmin ? `<span class="badge bg-warning bg-opacity-10 text-warning rounded-pill px-3 py-2 fw-bold" style="border: 1px solid rgba(245, 158, 11, 0.2);">Pending Staff Acceptance</span>` : `<span class="badge bg-warning bg-opacity-10 text-warning rounded-pill px-3 py-2 fw-bold placeholder-glow" style="border: 1px solid rgba(245, 158, 11, 0.2);">Pending Acceptance</span>`;
             } else if (isAcceptedArea && isAdmin) {
@@ -1190,10 +1248,10 @@
                 <span>Shops in ${areaName}</span>
             `;
             document.getElementById('areaBadgesDisplay').innerHTML = statusBadge + sourcedByBadge + badgeHtml;
-            
+
             // Show action buttons
             document.getElementById('areaActionButtons').classList.remove('d-none');
-            
+
             // Update shop count, Accept button (non-admin) and Assign button (admin)
             document.getElementById('shopCountDisplay').innerHTML = `
                 <div class="d-flex align-items-center gap-2 flex-wrap">
@@ -1208,7 +1266,7 @@
                     ${isAdmin ? `<button class="btn btn-sm fw-semibold d-flex align-items-center gap-2" onclick="openAssignModal('${areaId}')" style="background:#4f46e5;color:white;border:none;border-radius:8px;padding:6px 14px;"><i class="bi bi-person-plus"></i> Assign</button>` : ''}
                 </div>
             `;
-            
+
             // Populate manager info if available
             const managerDisplay = document.getElementById('areaManagerDisplay');
             if (area && area.assigned_users && area.assigned_users.length > 0) {
@@ -1234,7 +1292,7 @@
                     if (s.assigned_users.length === 1) {
                         assignedHtml = `<div class="d-flex align-items-center gap-2"><div class="avatar-owner">${ownerInit}</div><span class="fw-medium">${primaryUser}</span></div>`;
                     } else {
-                        assignedHtml = `<div class="d-flex align-items-center gap-2 flex-wrap" title="${s.assigned_users.map(u=>u.name).join(', ')}"><span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle rounded-pill d-flex align-items-center gap-1 p-1 pe-2"><div class="avatar-owner" style="width:20px;height:20px;font-size:0.7rem;">${ownerInit}</div><span style="font-size: 0.85rem; font-weight: 500;">${primaryUser}</span></span><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle rounded-pill px-2 py-1" style="font-size: 0.75rem;">+${s.assigned_users.length - 1} others</span></div>`;
+                        assignedHtml = `<div class="d-flex align-items-center gap-2 flex-wrap" title="${s.assigned_users.map(u => u.name).join(', ')}"><span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle rounded-pill d-flex align-items-center gap-1 p-1 pe-2"><div class="avatar-owner" style="width:20px;height:20px;font-size:0.7rem;">${ownerInit}</div><span style="font-size: 0.85rem; font-weight: 500;">${primaryUser}</span></span><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle rounded-pill px-2 py-1" style="font-size: 0.75rem;">+${s.assigned_users.length - 1} others</span></div>`;
                     }
                 } else {
                     assignedHtml = `<div class="d-flex align-items-center gap-2"><span class="text-muted"><i class="bi bi-person-dash me-1"></i>Unassigned</span></div>`;
@@ -1276,7 +1334,7 @@
                     const pu = s.assigned_users[0].name;
                     const oi = (pu || 'U')[0].toUpperCase();
                     if (s.assigned_users.length === 1) mobileAssignedHtml = `<div class="d-flex align-items-center gap-2"><div class="avatar-owner" style="width:24px;height:24px;font-size:0.8rem;">${oi}</div><span class="fw-medium text-dark small">${pu}</span></div>`;
-                    else mobileAssignedHtml = `<div class="d-flex align-items-center gap-2 flex-wrap" title="${s.assigned_users.map(u=>u.name).join(', ')}"><span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle rounded-pill d-flex align-items-center gap-1 p-1 pe-2"><div class="avatar-owner" style="width:20px;height:20px;font-size:0.7rem;">${oi}</div><span style="font-size:0.85rem;font-weight:500;">${pu}</span></span><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle rounded-pill px-2 py-1" style="font-size:0.75rem;">+${s.assigned_users.length-1} others</span></div>`;
+                    else mobileAssignedHtml = `<div class="d-flex align-items-center gap-2 flex-wrap" title="${s.assigned_users.map(u => u.name).join(', ')}"><span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle rounded-pill d-flex align-items-center gap-1 p-1 pe-2"><div class="avatar-owner" style="width:20px;height:20px;font-size:0.7rem;">${oi}</div><span style="font-size:0.85rem;font-weight:500;">${pu}</span></span><span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary-subtle rounded-pill px-2 py-1" style="font-size:0.75rem;">+${s.assigned_users.length - 1} others</span></div>`;
                 } else mobileAssignedHtml = `<div class="d-flex align-items-center gap-2"><span class="text-muted small fst-italic"><i class="bi bi-person-dash me-1"></i>Unassigned</span></div>`;
 
                 const mobilePhoneBtns = s.phone
@@ -1327,7 +1385,7 @@
                 modalBody.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
             }
             const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-            
+
             document.getElementById('tab-area-btn').style.cssText = tab === 'area'
                 ? `border-radius:8px;background:var(--primary-soft);color:var(--primary);border:none;padding:7px 18px;`
                 : `border-radius:8px;background:var(--bg-app);color:var(--text-3);border:none;padding:7px 18px;`;
@@ -1550,7 +1608,7 @@
                     const a = allAreas.find(x => normalizeId(x.id) === normalizeId(selectedAreaId));
                     if (a) selectArea(a.id, a.name);
                 }
-                
+
                 if (shopsArchiveOffcanvas.offcanvasEl && shopsArchiveOffcanvas.offcanvasEl.classList.contains('show')) {
                     shopsArchiveOffcanvas.loadData();
                 }
@@ -1587,7 +1645,7 @@
                         <p>Click an area on the left to view its shops</p>
                     </div>`;
                 await loadAll();
-                
+
                 if (areasArchiveOffcanvas.offcanvasEl && areasArchiveOffcanvas.offcanvasEl.classList.contains('show')) {
                     areasArchiveOffcanvas.loadData();
                 }
@@ -1811,7 +1869,7 @@
                 await ApiClient.acceptItem(moduleName, id);
                 showToast(`Successfully accepted the ${moduleName.slice(0, -1)}!`, 'success');
                 await loadAll();
-                
+
                 // Re-render the side panel if appropriate
                 if (moduleName === 'areas') {
                     const area = allAreas.find(a => String(a.id) === String(id));
@@ -1838,4 +1896,3 @@
 </body>
 
 </html>
-
