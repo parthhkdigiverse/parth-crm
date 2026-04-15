@@ -2044,6 +2044,7 @@ input[type="password"]::-ms-clear {
 /* Purple / Violet */
 .stat-card:has(.icon-purple)::before,
 .stat-card:has(.stat-icon-wrapper.icon-purple)::before,
+.kpi-card:has(.icon-purple)::before,
 .kpi-card:has(.kpi-icon-bg-1)::before,
 .stat-card.card-purple::before {
     background: linear-gradient(90deg, #4c1d95, #7c3aed);
@@ -2052,19 +2053,22 @@ input[type="password"]::-ms-clear {
 /* Orange / Amber */
 .stat-card:has(.icon-orange)::before,
 .stat-card:has(.stat-icon-wrapper.icon-orange)::before,
+.kpi-card:has(.icon-orange)::before,
 .stat-card.card-warning::before {
     background: linear-gradient(90deg, #9a3412, #f97316);
 }
 
 /* Yellow */
 .stat-card:has(.icon-yellow)::before,
-.stat-card:has(.stat-icon-wrapper.icon-yellow)::before {
+.stat-card:has(.stat-icon-wrapper.icon-yellow)::before,
+.kpi-card:has(.icon-yellow)::before {
     background: linear-gradient(90deg, #78350f, #f59e0b);
 }
 
 /* Green / Emerald */
 .stat-card:has(.icon-green)::before,
 .stat-card:has(.stat-icon-wrapper.icon-green)::before,
+.kpi-card:has(.icon-green)::before,
 .kpi-card:has(.kpi-icon-bg-2)::before,
 .stat-card.card-success::before {
     background: linear-gradient(90deg, #065f46, #10b981);
@@ -2073,6 +2077,7 @@ input[type="password"]::-ms-clear {
 /* Red / Rose */
 .stat-card:has(.icon-red)::before,
 .stat-card:has(.stat-icon-wrapper.icon-red)::before,
+.kpi-card:has(.icon-red)::before,
 .stat-card.card-danger::before {
     background: linear-gradient(90deg, #7f1d1d, #ef4444);
 }
@@ -2080,6 +2085,7 @@ input[type="password"]::-ms-clear {
 /* Teal / Cyan */
 .stat-card:has(.icon-teal)::before,
 .stat-card:has(.stat-icon-wrapper.icon-teal)::before,
+.kpi-card:has(.icon-teal)::before,
 .stat-card.card-info::before {
     background: linear-gradient(90deg, #134e4a, #14b8a6);
 }
@@ -2087,6 +2093,7 @@ input[type="password"]::-ms-clear {
 /* Blue / Indigo */
 .stat-card:has(.icon-blue)::before,
 .stat-card:has(.stat-icon-wrapper.icon-blue)::before,
+.kpi-card:has(.icon-blue)::before,
 .kpi-card:has(.kpi-icon-bg-4)::before,
 .stat-card.card-primary::before {
     background: linear-gradient(90deg, #1e3a8a, #2563eb);
