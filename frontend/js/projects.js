@@ -276,21 +276,146 @@ function renderActionCenter(project) {
                     </div>`;
         // 👆 END NEW BLOCK 👆
     } else if (project.pipeline_stage === "DELIVERY") {
+        // Show loading placeholder, then fill with async bill tracker
         actionContainer.innerHTML = `
-                    <div class="text-center py-5">
-                        <div class="mb-3"><i class="bi bi-receipt-cutoff text-success" style="font-size: 3rem;"></i></div>
-                        <h4 class="fw-bold text-success">Ready for Billing</h4>
-                        <p class="text-muted mb-4">This deal is won. Click below to generate an invoice and collect payment.</p>
-                        <a href="billing.html?close_shop_id=${project.id}" class="btn btn-success px-5 fw-bold"><i class="bi bi-currency-rupee me-2"></i>Generate Invoice</a>
+                    <div id="bill-tracker-container" class="text-center py-4">
+                        <div class="spinner-border spinner-border-sm text-success mb-2" role="status"></div>
+                        <p class="text-muted small mb-0">Loading Bill Tracker...</p>
                     </div>`;
+        loadBillTracker(project);
+
     } else if (project.pipeline_stage === "MAINTENANCE") {
+        // Client is onboarded — show onboarding summary card
+        const clientId = project.client_id || null;
         actionContainer.innerHTML = `
-                    <div class="text-center py-5">
-                        <div class="spinner-border text-success mb-3" role="status"></div>
-                        <h5 class="fw-bold text-muted">Loading Live Billing Tracker...</h5>
+                    <div class="text-center py-4">
+                        <div class="mb-3"><i class="bi bi-person-check-fill text-success" style="font-size: 3rem;"></i></div>
+                        <h4 class="fw-bold text-success">Client Onboarded!</h4>
+                        <p class="text-muted mb-4 px-3">The invoice has been verified and sent. This lead is now an active client in the Maintenance pipeline.</p>
+                        <div class="d-flex justify-content-center gap-3 flex-wrap">
+                            ${clientId
+                                ? `<a href="clients.html?id=${clientId}" class="btn btn-success px-4 fw-semibold"><i class="bi bi-person-lines-fill me-2"></i>View Client Profile</a>`
+                                : `<a href="clients.html" class="btn btn-outline-success px-4 fw-semibold"><i class="bi bi-people me-2"></i>Go to Clients</a>`
+                            }
+                            <a href="billing.html?close_shop_id=${project.id}" class="btn btn-outline-primary px-4 fw-semibold"><i class="bi bi-receipt me-2"></i>View Invoices</a>
+                        </div>
                     </div>`;
     } else {
         actionContainer.innerHTML = `<div class="text-center py-4"><h4 class="fw-bold">${project.pipeline_stage} Stage</h4></div>`;
+    }
+}
+
+// ── Async 3-Step Bill Tracker for DELIVERY stage ─────────────────────────
+async function loadBillTracker(project) {
+    const container = document.getElementById('bill-tracker-container');
+    if (!container) return;
+
+    try {
+        const invoices = await window.ApiClient.request(`/billing/?shop_id=${project.id}&archived=ALL`);
+        const invoice = Array.isArray(invoices) && invoices.length > 0 ? invoices[0] : null;
+
+        if (!invoice) {
+            // No invoice generated yet
+            container.innerHTML = `
+                <div class="text-center py-4">
+                    <div class="mb-3"><i class="bi bi-receipt-cutoff text-success" style="font-size: 3rem;"></i></div>
+                    <h4 class="fw-bold text-success">Ready for Billing</h4>
+                    <p class="text-muted mb-3">This deal is won. Generate an invoice to begin the billing process.</p>
+                    <a href="billing.html?close_shop_id=${project.id}" class="btn btn-success px-5 fw-bold">
+                        <i class="bi bi-currency-rupee me-2"></i>Generate Invoice
+                    </a>
+                </div>`;
+            return;
+        }
+
+        // Determine step completion
+        const step1Done = true; // Invoice exists
+        const step2Done = invoice.invoice_status === 'VERIFIED' || invoice.invoice_status === 'SENT';
+        const step3Done = invoice.whatsapp_sent === true || invoice.invoice_status === 'SENT';
+
+        const stepHtml = (done, num, label, sublabel) => `
+            <div class="d-flex align-items-start gap-3 mb-3">
+                <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle"
+                     style="width:38px;height:38px;background:${done ? '#dcfce7' : '#f1f5f9'};">
+                    ${done
+                        ? `<i class="bi bi-check-lg" style="color:#16a34a;font-size:1.1rem;"></i>`
+                        : `<span style="color:#94a3b8;font-weight:700;font-size:0.9rem;">${num}</span>`
+                    }
+                </div>
+                <div class="text-start">
+                    <div class="fw-semibold" style="color:${done ? '#16a34a' : '#64748b'};font-size:0.9rem;">${label}</div>
+                    <div class="text-muted" style="font-size:0.78rem;">${sublabel}</div>
+                </div>
+            </div>`;
+
+        // Action button logic
+        let actionHtml = '';
+        if (!step2Done) {
+            actionHtml = `
+                <div class="alert alert-warning py-2 px-3 mb-0 mt-2 text-center" style="font-size:0.83rem;border-radius:10px;">
+                    <i class="bi bi-hourglass-split me-1"></i>
+                    Waiting for Admin to verify <strong>${invoice.invoice_number}</strong>
+                </div>`;
+        } else if (!step3Done) {
+            actionHtml = `
+                <button class="btn btn-success px-4 fw-bold mt-2 w-100" onclick="sendInvoiceWhatsApp('${invoice.id}', '${project.id}')">
+                    <i class="bi bi-whatsapp me-2"></i>Send Invoice to WhatsApp
+                </button>`;
+        } else {
+            actionHtml = `
+                <div class="alert alert-success py-2 px-3 mb-0 mt-2 text-center" style="font-size:0.83rem;border-radius:10px;">
+                    <i class="bi bi-check-circle-fill me-1"></i>
+                    Invoice sent! Lead advancing to Maintenance...
+                </div>`;
+            // Trigger data refresh after a short delay
+            setTimeout(() => loadHubData(), 1500);
+        }
+
+        container.innerHTML = `
+            <div class="px-3 py-3">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <i class="bi bi-receipt text-success fs-5"></i>
+                    <span class="fw-bold text-dark">Bill Tracker — ${invoice.invoice_number}</span>
+                    <span class="badge ms-auto" style="background:${step3Done?'#dcfce7':step2Done?'#fef9c3':'#fee2e2'};color:${step3Done?'#16a34a':step2Done?'#a16207':'#b91c1c'};font-size:0.72rem;">
+                        ${step3Done ? '✅ Complete' : step2Done ? '⏳ Pending Send' : '⏳ Pending Verification'}
+                    </span>
+                </div>
+                <div class="p-3 rounded-3" style="background:#f8fafc;border:1px solid #e2e8f0;">
+                    ${stepHtml(step1Done, 1, 'Invoice Generated', `${invoice.invoice_number} · ₹${invoice.amount?.toLocaleString('en-IN') || '—'}`)}
+                    ${stepHtml(step2Done, 2, 'Verified by Admin', step2Done ? `Verified ✓` : 'Awaiting admin approval')}
+                    ${stepHtml(step3Done, 3, 'Sent to WhatsApp', step3Done ? 'Delivered to client' : 'Send after verification')}
+                </div>
+                ${actionHtml}
+                <div class="text-center mt-2">
+                    <a href="billing.html?close_shop_id=${project.id}" class="text-muted" style="font-size:0.78rem;text-decoration:none;">
+                        <i class="bi bi-box-arrow-up-right me-1"></i>Open Full Invoice Page
+                    </a>
+                </div>
+            </div>`;
+
+    } catch (e) {
+        console.error('Bill tracker load failed:', e);
+        if (container) container.innerHTML = `
+            <div class="text-center py-4">
+                <i class="bi bi-exclamation-circle text-warning" style="font-size:2rem;"></i>
+                <p class="text-muted mt-2 small">Could not load tracker. <a href="billing.html?close_shop_id=${project.id}">Open billing page</a></p>
+            </div>`;
+    }
+}
+
+// ── Send Invoice via WhatsApp (Step 3) ────────────────────────────────────
+async function sendInvoiceWhatsApp(billId, shopId) {
+    const btn = document.querySelector(`[onclick="sendInvoiceWhatsApp('${billId}', '${shopId}')"]`);
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending...'; }
+    try {
+        await window.ApiClient.request(`/billing/${billId}/send-whatsapp`, { method: 'POST' });
+        showToast('Invoice sent to WhatsApp! Lead advancing to Maintenance.', 'success');
+        // Reload the lead data so the stage refreshes
+        setTimeout(() => loadHubData(), 800);
+    } catch (e) {
+        console.error('WhatsApp send failed:', e);
+        showToast('Failed to send invoice. Please try again.', 'error');
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-whatsapp me-2"></i>Send Invoice to WhatsApp'; }
     }
 }
 

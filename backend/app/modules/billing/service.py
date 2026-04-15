@@ -85,6 +85,7 @@ class BillingService:
         except ValueError:
             year = datetime.datetime.now(UTC).year
 
+        sync_website = False  # Default: no website_payment conflict check
         if gst_type == "WITHOUT_GST":
             seq_key = "invoice_seq_without_gst"
             series  = "PINV"
@@ -93,7 +94,7 @@ class BillingService:
             seq_key = "invoice_seq_with_gst"
             series = "INV"
             prefix = "Inv"
-            sync_website = True
+            sync_website = True  # WITH_GST invoices sync with website_payment table
 
         # 1. BOSS: Get the starting number from Settings
         start_str = await self._get_setting(seq_key, "1")
@@ -340,13 +341,14 @@ class BillingService:
         )
         await db_bill.insert()
 
-        # ─── Advance Shop Stage ───
+        # ─── Keep shop in DELIVERY stage (bill tracker: step 1 of 3) ───
+        # Stage advances to MAINTENANCE only AFTER WhatsApp send (step 3)
         if db_bill.shop_id:
             from app.modules.shops.models import Shop
             from app.core.enums import MasterPipelineStage
             shop = await Shop.get(db_bill.shop_id)
             if shop:
-                shop.pipeline_stage = MasterPipelineStage.MAINTENANCE
+                shop.pipeline_stage = MasterPipelineStage.DELIVERY  # Stay in DELIVERY
                 if db_bill.client_id:
                     shop.client_id = db_bill.client_id
                 await shop.save()
@@ -543,8 +545,14 @@ class BillingService:
         bill.whatsapp_sent = True
         await bill.save()
         
-        # NOTE: Stage advancement is now handled in create_invoice for better responsiveness.
-        # This keeps the logic consistent even if WhatsApp is skipped.
+        # ─── Step 3 of 3: Advance shop to MAINTENANCE now that bill is sent ───
+        if bill.shop_id:
+            from app.modules.shops.models import Shop
+            from app.core.enums import MasterPipelineStage
+            shop = await Shop.get(bill.shop_id)
+            if shop and shop.pipeline_stage == MasterPipelineStage.DELIVERY:
+                shop.pipeline_stage = MasterPipelineStage.MAINTENANCE
+                await shop.save()
 
         return {"bill": bill, "status": "sent"}
 
