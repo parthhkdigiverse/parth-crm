@@ -118,22 +118,41 @@ window.requireAuth = function() {
 
     if (params.get('dev') === 'true' && isLocal) {
         console.log('requireAuth: Dev mode detected');
-        // Mock an ADMIN user for testing dev mode features if no session exists or if explicitly requested via dev=admin
-        if (!window.getUser() || params.get('dev_role') === 'ADMIN') {
-            sessionStorage.setItem('access_token', 'dev-token');
-            sessionStorage.setItem('srm_user', JSON.stringify({
-                id: 1, 
-                name: 'System Administrator (Dev)', 
-                email: 'admin@crm.dev', 
-                role: 'ADMIN'
-            }));
-        }
+        // Support mocking any role via ?dev_role=SALES|TELESALES|PROJECT_MANAGER|PROJECT_MANAGER_AND_SALES|CLIENT|ADMIN
+        const devRole = (params.get('dev_role') || 'ADMIN').toUpperCase();
+        const VALID_DEV_ROLES = ['ADMIN', 'SALES', 'TELESALES', 'PROJECT_MANAGER', 'PROJECT_MANAGER_AND_SALES', 'CLIENT'];
+        const effectiveDevRole = VALID_DEV_ROLES.includes(devRole) ? devRole : 'ADMIN';
+        const roleNameMap = {
+            ADMIN: 'System Administrator (Dev)',
+            SALES: 'Sales Staff (Dev)',
+            TELESALES: 'Telesales Staff (Dev)',
+            PROJECT_MANAGER: 'Project Manager (Dev)',
+            PROJECT_MANAGER_AND_SALES: 'PM + Sales (Dev)',
+            CLIENT: 'Client User (Dev)'
+        };
+        // Always overwrite dev user to match the requested role (allows role-switching mid-session)
+        sessionStorage.setItem('access_token', 'dev-token');
+        const devUserJson = JSON.stringify({
+            id: 1,
+            name: roleNameMap[effectiveDevRole] || 'Dev User',
+            email: effectiveDevRole.toLowerCase() + '@crm.dev',
+            role: effectiveDevRole
+        });
+        sessionStorage.setItem('srm_user', devUserJson);
+        // Also sync to localStorage so getUser() finds it
+        localStorage.setItem('srm_user', devUserJson);
+        // CRITICAL: Clear any stale access policy cache from a previous session
+        // so the fallback role→page map is used for the current dev role
+        localStorage.removeItem('crm_access_policy');
+        window.__crmEffectiveAccessPolicy = null;
+
         document.body.style.visibility = 'visible';
         document.body.style.opacity = '1';
         let pageName = document.title.split('—')[0].trim();
         if (!pageName || pageName === 'SRM AI SETU') pageName = 'Dashboard';
         if (typeof window.injectTopHeader === 'function') window.injectTopHeader(pageName);
-        console.log('requireAuth: Dev mode setup complete, returning early');
+        if (typeof window.enforceRoleAccess === 'function') window.enforceRoleAccess(effectiveDevRole);
+        console.log('requireAuth: Dev mode setup complete for role:', effectiveDevRole);
         return;
     }
 
@@ -156,23 +175,64 @@ window.requireAuth = function() {
 
     // --- ROLE BASED ROUTING GUARD ---
     // --- DYNAMIC PERMISSIONS (Sole Source of Truth) ---
+
+    // Default page access by role — used as fallback when no server policy is loaded yet.
+    // ADMIN has '*' (all). Other roles have explicit lists.
+    const DEFAULT_PAGE_ACCESS = {
+        ADMIN: ['*'],
+        SALES: [
+            'dashboard.html', 'profile.html', 'notifications.html', 'search.html',
+            'clients.html', 'billing.html', 'leaves.html', 'incentives.html',
+            'visits.html', 'areas.html', 'leads.html', 'todo.html', 'timetable.html',
+            'feedback.html', 'issues.html', 'projects.html', 'salary.html', 'employees.html',
+            'salary_slip_view.html', 'settings.html', 'meetings.html',
+            'employee_report.html', 'client_report.html', 'projects_demo.html'
+        ],
+        TELESALES: [
+            'dashboard.html', 'profile.html', 'notifications.html', 'search.html',
+            'clients.html', 'billing.html', 'leaves.html', 'incentives.html',
+            'visits.html', 'areas.html', 'leads.html', 'todo.html', 'timetable.html',
+            'feedback.html', 'issues.html', 'salary.html', 'employees.html',
+            'salary_slip_view.html', 'settings.html', 'meetings.html',
+            'employee_report.html', 'client_report.html', 'projects_demo.html'
+        ],
+        PROJECT_MANAGER: [
+            'dashboard.html', 'profile.html', 'notifications.html', 'search.html',
+            'clients.html', 'billing.html', 'leaves.html', 'incentives.html',
+            'projects.html', 'meetings.html', 'issues.html', 'todo.html', 'timetable.html',
+            'feedback.html', 'salary.html', 'employees.html',
+            'salary_slip_view.html', 'settings.html', 'areas.html', 'leads.html',
+            'employee_report.html', 'client_report.html', 'projects_demo.html'
+        ],
+        PROJECT_MANAGER_AND_SALES: [
+            'dashboard.html', 'profile.html', 'notifications.html', 'search.html',
+            'clients.html', 'billing.html', 'leaves.html', 'incentives.html',
+            'projects.html', 'meetings.html', 'issues.html', 'todo.html', 'timetable.html',
+            'feedback.html', 'visits.html', 'areas.html', 'leads.html',
+            'salary.html', 'employees.html', 'salary_slip_view.html', 'settings.html',
+            'employee_report.html', 'client_report.html', 'projects_demo.html'
+        ],
+        CLIENT: [
+            'dashboard.html', 'profile.html', 'notifications.html', 'search.html', 'todo.html'
+        ]
+    };
+
     function getAllowedPagesForRole(role) {
         const roleName = (role || '').toUpperCase();
-        const effective = window.__crmEffectiveAccessPolicy;
         
-        // 1. Try memory
+        // 1. Try memory (server-fetched effective policy takes priority)
         if (window.__crmEffectiveAccessPolicy) return window.__crmEffectiveAccessPolicy.allowed_pages || [];
 
-        // 2. Try localStorage (unified cache)
+        // 2. Try localStorage (cached policy from previous session)
         const cached = JSON.parse(localStorage.getItem('crm_access_policy') || 'null');
         if (cached && (cached.allowed_pages || cached.page_access)) {
             window.__crmEffectiveAccessPolicy = cached;
-            return cached.allowed_pages || (cached.page_access ? (cached.page_access[role] || []) : []);
+            return cached.allowed_pages || (cached.page_access ? (cached.page_access[roleName] || []) : []);
         }
-        // 3. Fallback to basic pages only if nothing else is available
-        // This ensures the system remains functional during initial load
-        return ['dashboard.html', 'profile.html', 'notifications.html', 'search.html', 'index.html', 'login.html'];
+        // 3. Fallback to the built-in role→page map (covers dev mode and initial load)
+        return DEFAULT_PAGE_ACCESS[roleName] || ['dashboard.html', 'profile.html', 'notifications.html', 'search.html'];
     }
+
 
     // Exported to window for use in syncAccessControl
     window.enforceRoleAccess = function(role) {
@@ -302,15 +362,18 @@ window.requireAuth = function() {
 
 // --- AUTOMATIC ACCESS SYNC ---
 async function syncAccessControl(isInitial = false) {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('dev') === 'true') return; // Do not run background sync in dev mode
+
     const token = getToken();
     if (!token) return;
 
     try {
-        const response = await fetch(`${window.API}/users/access-policy/status`, {
+        const response = await fetch(`${window.API || '/api'}/users/access-policy/status`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (!response.ok) {
-            if (response.status === 401) logout();
+            if (response.status === 401) window.logout && window.logout();
             return;
         }
         const status = await response.json();
@@ -325,7 +388,7 @@ async function syncAccessControl(isInitial = false) {
 
         if (deactivation) {
             alert('Your account has been deactivated. Logging out.');
-            logout();
+            window.logout && window.logout();
             return;
         }
 
@@ -334,11 +397,12 @@ async function syncAccessControl(isInitial = false) {
             
             if (roleChanged || policyChanged) {
                 console.log('Access control update detected, refreshing permissions...');
+                let userData = cachedUser;
                 
                 // Try to fetch profile to get roles and preferences
-                const profile = await window.ApiClient.getProfile().catch(() => null);
+                const profile = window.ApiClient ? await window.ApiClient.getProfile().catch(() => null) : null;
                 if (profile) {
-                    const userData = {
+                    userData = {
                         id: profile.id,
                         name: profile.name || profile.email,
                         email: profile.email,
@@ -364,17 +428,19 @@ async function syncAccessControl(isInitial = false) {
                     }
                 }
 
-                // Update UI: Dispatch event for SPA components to re-render
-                window.dispatchEvent(new CustomEvent('permissions-changed', { 
-                    detail: { role: userData.role, policy: window.__crmEffectiveAccessPolicy } 
-                }));
-                
-                // Re-enforce access for current page
-                if (window.enforceRoleAccess) {
-                    window.enforceRoleAccess(userData.role);
+                if (userData) {
+                    // Update UI: Dispatch event for SPA components to re-render
+                    window.dispatchEvent(new CustomEvent('permissions-changed', { 
+                        detail: { role: userData.role, policy: window.__crmEffectiveAccessPolicy } 
+                    }));
+                    
+                    // Re-enforce access for current page
+                    if (window.enforceRoleAccess) {
+                        window.enforceRoleAccess(userData.role);
+                    }
                 }
                 
-                if (typeof showToast === 'function') showToast('Permissions updated automatically', 'info');
+                if (typeof window.showToast === 'function') window.showToast('Permissions updated automatically', 'info');
             }
         }
     } catch (e) {

@@ -1066,6 +1066,48 @@
 
         /* ── Responsive adjustments (Dashboard specific) ── */
         @media (max-width: 767.98px) {
+            .filter-panel-head {
+                display: grid !important;
+                grid-template-columns: 1fr auto !important;
+                gap: 12px !important;
+                padding: 12px 16px !important;
+            }
+            .filter-panel-head-left {
+                grid-column: 1;
+                grid-row: 1;
+                width: 100%;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            .filter-panel-head-meta {
+                grid-column: 2;
+                grid-row: 1;
+                position: static !important;
+                display: flex !important;
+                align-items: center;
+                justify-content: center;
+                margin: 0;
+            }
+            .period-picker-group {
+                grid-column: 1 / -1;
+                grid-row: 2;
+                overflow-x: auto !important;
+                white-space: nowrap !important;
+                flex-wrap: nowrap !important;
+                -webkit-overflow-scrolling: touch !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+            .period-picker-group::-webkit-scrollbar {
+                display: none;
+            }
+            .period-context-badge {
+                display: none !important;
+            }
+
             .page-content-standard {
                 padding: 12px 10px !important;
             }
@@ -1576,9 +1618,9 @@
 
 
 
-
-                <!-- Filter Panel (period picker integrated in header) -->
-                <div class="filter-panel dash-section">
+                <!-- ── Dashboard Filter Panel ──
+                     Moved higher to ensure it's outside any role-based container hiding -->
+                <div class="filter-panel dash-section" style="display: block !important;">
                     <div class="filter-panel-head" id="filter-panel-toggle">
                         <div class="filter-panel-head-left">
                             <i class="bi bi-sliders2"></i>
@@ -1588,52 +1630,48 @@
                         <div class="period-picker-group" onclick="event.stopPropagation()">
                             <button class="period-btn" data-period="today">Today</button>
                             <button class="period-btn" data-period="week">This Week</button>
-                            <button class="period-btn" data-period="month">This Month</button>
+                            <button class="period-btn active" data-period="this_month">This Month</button>
                             <button class="period-btn" data-period="last_3_months">Last 3M</button>
                             <button class="period-btn" data-period="last_6_months">Last 6M</button>
                             <button class="period-btn" data-period="this_year">This Year</button>
                             <button class="period-btn" data-period="last_year">Last Year</button>
-                            <button class="period-btn" data-period="all">All Time</button>
+                            <button class="period-btn" data-period="all">All</button>
                         </div>
                         <span class="period-context-badge" id="period-context-badge">All Records</span>
-                        <button class="filter-toggle-btn" id="filter-toggle-btn" type="button">
-                            <span id="filter-toggle-label">Show</span>
-                            <i class="bi bi-chevron-down"></i>
-                        </button>
+                        <div class="filter-panel-head-meta">
+                            <div class="filter-toggle-btn" id="filter-toggle-btn">
+                                <i class="bi bi-chevron-down"></i>
+                            </div>
+                        </div>
                     </div>
                     <div class="filter-panel-body" id="filter-panel-body">
                         <div class="filter-grid">
                             <div class="filter-field">
                                 <label>Area</label>
-                                <select id="filter-area" class="form-select">
-                                    <option value="">All Areas</option>
-                                </select>
+                                <select id="filter-area" class="form-select"><option value="">All Areas</option></select>
                             </div>
                             <div class="filter-field">
                                 <label>User</label>
-                                <select id="filter-user" class="form-select">
-                                    <option value="">All Users</option>
-                                </select>
+                                <select id="filter-user" class="form-select"><option value="">All Users</option></select>
                             </div>
                             <div class="filter-field" style="grid-column: span 2;">
                                 <label>Date Range</label>
                                 <div class="filter-date-range">
-                                    <input type="date" id="filter-start" class="form-control" placeholder="Start date">
+                                    <input type="date" id="filter-start" class="form-control">
                                     <span><i class="bi bi-arrow-right"></i></span>
-                                    <input type="date" id="filter-end" class="form-control" placeholder="End date">
+                                    <input type="date" id="filter-end" class="form-control">
                                 </div>
                             </div>
                         </div>
                         <div class="filter-actions">
-                            <button class="btn-filter-reset" id="reset-filters"><i class="bi bi-x-circle"></i>
-                                Clear</button>
+                            <button class="btn-filter-reset" id="reset-filters"><i class="bi bi-x-circle"></i> Clear</button>
                         </div>
                     </div>
                 </div>
 
                 <!-- KPI Cards -->
                 <div class="row g-2 g-md-3 dash-section" id="admin-kpis">
-                    <div class="col-6 col-sm-6 col-xl-3">
+                    <div class="col-6 col-sm-6 col-xl-3" data-widget-id="kpi-visits">
                         <a href="visits.html" class="text-decoration-none d-block h-100">
                             <div class="kpi-card kpi-visits h-100">
                                 <div class="d-flex align-items-center gap-3 w-100 kpi-inner-mobile">
@@ -1641,7 +1679,7 @@
                                         <i class="bi bi-calendar-check"></i>
                                     </div>
                                     <div class="flex-grow-1 kpi-text-container">
-                                        <div class="kpi-label">Total Visits</div>
+                                        <div class="kpi-label" id="kpi-visits-label">Total Visits</div>
                                         <div class="kpi-value" id="kpi-leads">
                                             <span class="spinner-border spinner-border-sm text-secondary"></span>
                                         </div>
@@ -1651,7 +1689,7 @@
                             </div>
                         </a>
                     </div>
-                    <div class="col-6 col-sm-6 col-xl-3">
+                    <div class="col-6 col-sm-6 col-xl-3" data-widget-id="kpi-clients">
                         <a href="clients.html" class="text-decoration-none d-block h-100">
                             <div class="kpi-card kpi-clients h-100">
                                 <div class="d-flex align-items-center gap-3 w-100 kpi-inner-mobile">
@@ -1659,7 +1697,7 @@
                                         <i class="bi bi-people"></i>
                                     </div>
                                     <div class="flex-grow-1 kpi-text-container">
-                                        <div class="kpi-label">Active Clients</div>
+                                        <div class="kpi-label" id="kpi-clients-label">Active Clients</div>
                                         <div class="kpi-value" id="kpi-clients">
                                             <span class="spinner-border spinner-border-sm text-secondary"></span>
                                         </div>
@@ -1669,7 +1707,7 @@
                             </div>
                         </a>
                     </div>
-                    <div class="col-6 col-sm-6 col-xl-3">
+                    <div class="col-6 col-sm-6 col-xl-3" data-widget-id="kpi-employees">
                         <a href="employees.html" class="text-decoration-none d-block h-100">
                             <div class="kpi-card kpi-employees h-100">
                                 <div class="d-flex align-items-center gap-3 w-100 kpi-inner-mobile">
@@ -1677,7 +1715,7 @@
                                         <i class="bi bi-person-check-fill"></i>
                                     </div>
                                     <div class="flex-grow-1 kpi-text-container">
-                                        <div class="kpi-label">Active Users</div>
+                                        <div class="kpi-label" id="kpi-employees-label">Active Users</div>
                                         <div class="kpi-value" id="kpi-employees">
                                             <span class="spinner-border spinner-border-sm text-secondary"></span>
                                         </div>
@@ -1687,7 +1725,7 @@
                             </div>
                         </a>
                     </div>
-                    <div class="col-6 col-sm-6 col-xl-3">
+                    <div class="col-6 col-sm-6 col-xl-3" data-widget-id="kpi-revenue">
                         <a href="billing.html" class="text-decoration-none d-block h-100">
                             <div class="kpi-card kpi-revenue h-100">
                                 <div class="d-flex align-items-center gap-3 w-100 kpi-inner-mobile">
@@ -1948,16 +1986,17 @@
             // Hide ALL punch block contents for a clean Admin view
             const punchContainer = document.getElementById('punch-card-container');
             if (punchContainer) {
-                // Hide children that are NOT the admin-status-zone
-                Array.from(punchContainer.children).forEach(child => {
-                    if (child.id !== 'admin-status-zone') {
-                        child.classList.add('d-none');
-                    }
-                });
-                // Remove background/border from the container for admins to make it transparent
+                // IMPORTANT: Only hide employee-specific rows within the punch card, 
+                // NOT the entire container or its shared siblings like the filter panel.
+                const employeeRows = punchContainer.querySelectorAll('.punch-user-row, .punch-bottom-row');
+                employeeRows.forEach(row => row.classList.add('d-none'));
+
+                // Make the container transparent for admins but keep it as a structure if needed
                 punchContainer.style.background = 'none';
                 punchContainer.style.border = 'none';
                 punchContainer.style.boxShadow = 'none';
+                punchContainer.style.padding = '0';
+                punchContainer.style.margin = '0';
             }
         } else {
             // Ensure employee status is shown
@@ -1995,9 +2034,12 @@
                 document.getElementById('kpi-revenue-label').textContent = 'Pending Tasks';
 
                 // Update Icons & Colors
-                document.querySelector('[data-widget-id="kpi-employees"] .kpi-icon-wrapper').innerHTML = '<i class="bi bi-award"></i>';
-                document.querySelector('[data-widget-id="kpi-employees"] .kpi-icon-wrapper').style.background = '#fef3c7';
-                document.querySelector('[data-widget-id="kpi-employees"] .kpi-icon-wrapper').style.color = '#d97706';
+                const empIcon = document.querySelector('[data-widget-id="kpi-employees"] .kpi-icon-wrapper');
+                empIcon.innerHTML = '<i class="bi bi-currency-rupee"></i>';
+                empIcon.style.background = '#fef3c7';
+                empIcon.style.color = '#d97706';
+                empIcon.classList.remove('kpi-icon-bg-3');
+                empIcon.classList.add('icon-orange');
 
                 document.querySelector('[data-widget-id="kpi-revenue"] .kpi-icon-wrapper').innerHTML = '<i class="bi bi-check2-square"></i>';
 
@@ -2016,13 +2058,19 @@
 
                 // Update Icons
                 document.querySelector('[data-widget-id="kpi-visits"] .kpi-icon-wrapper').innerHTML = '<i class="bi bi-kanban"></i>';
-                document.querySelector('[data-widget-id="kpi-employees"] .kpi-icon-wrapper').innerHTML = '<i class="bi bi-calendar-event"></i>';
-                document.querySelector('[data-widget-id="kpi-employees"] .kpi-icon-wrapper').style.background = '#f0f9ff';
-                document.querySelector('[data-widget-id="kpi-employees"] .kpi-icon-wrapper').style.color = '#0369a1';
+                const empIcon = document.querySelector('[data-widget-id="kpi-employees"] .kpi-icon-wrapper');
+                empIcon.innerHTML = '<i class="bi bi-calendar-event"></i>';
+                empIcon.style.background = '#f0f9ff';
+                empIcon.style.color = '#0369a1';
+                empIcon.classList.remove('kpi-icon-bg-3');
+                empIcon.classList.add('icon-blue');
 
-                document.querySelector('[data-widget-id="kpi-revenue"] .kpi-icon-wrapper').innerHTML = '<i class="bi bi-exclamation-triangle"></i>';
-                document.querySelector('[data-widget-id="kpi-revenue"] .kpi-icon-wrapper').style.background = '#fef2f2';
-                document.querySelector('[data-widget-id="kpi-revenue"] .kpi-icon-wrapper').style.color = '#dc2626';
+                const revIcon = document.querySelector('[data-widget-id="kpi-revenue"] .kpi-icon-wrapper');
+                revIcon.innerHTML = '<i class="bi bi-exclamation-triangle"></i>';
+                revIcon.style.background = '#fef2f2';
+                revIcon.style.color = '#dc2626';
+                revIcon.classList.remove('kpi-icon-bg-4');
+                revIcon.classList.add('icon-red');
 
                 // Update Links
                 document.querySelector('[data-widget-id="kpi-visits"] a').href = 'projects.html';
@@ -3001,10 +3049,14 @@
             var parts = [];
             var area = document.getElementById('filter-area');
             var user = document.getElementById('filter-user');
-            var start = document.getElementById('filter-start').value;
-            var end = document.getElementById('filter-end').value;
-            if (area.value) parts.push({ key: 'area', label: area.options[area.selectedIndex].text, inputId: 'filter-area' });
-            if (user.value) parts.push({ key: 'user', label: user.options[user.selectedIndex].text, inputId: 'filter-user' });
+            var startEl = document.getElementById('filter-start');
+            var endEl = document.getElementById('filter-end');
+            
+            var start = startEl ? startEl.value : '';
+            var end = endEl ? endEl.value : '';
+            
+            if (area && area.value) parts.push({ key: 'area', label: area.options[area.selectedIndex].text, inputId: 'filter-area' });
+            if (user && user.value) parts.push({ key: 'user', label: user.options[user.selectedIndex].text, inputId: 'filter-user' });
             if (start) parts.push({ key: 'start', label: 'From: ' + start, inputId: 'filter-start' });
             if (end) parts.push({ key: 'end', label: 'To: ' + end, inputId: 'filter-end' });
             pills.innerHTML = parts.map(function (p) {
@@ -3084,10 +3136,16 @@
                 SALES: ['Shops Visited', 'Deals Closed', 'My Incentive', 'Pending Tasks'],
                 TELESALES: ['Shops Visited', 'Deals Closed', 'My Incentive', 'Pending Tasks'],
                 PROJECT_MANAGER: ['Active Projects', 'My Clients', 'Today\'s Meetings', 'Open Issues'],
+                PROJECT_MANAGER_AND_SALES: ['Shops Visited', 'Deals Closed', 'My Incentive', 'Pending Tasks'],
                 ADMIN: ['Total Visits', 'Active Clients', 'Present Employees', 'Total Revenue']
             };
-            const role = currentUser?.role || 'ADMIN';
-            const prefixes = rolePrefixes[role] || rolePrefixes.ADMIN;
+            const roleFlags = getRoleFlags(currentUser?.role);
+            let prefixes = rolePrefixes.ADMIN;
+            if (roleFlags.isSales || roleFlags.isTelesales) {
+                prefixes = rolePrefixes.SALES;
+            } else if (roleFlags.isPM) {
+                prefixes = rolePrefixes.PROJECT_MANAGER;
+            }
 
             const suffixes = {
                 today: ' (Today)', week: ' (This Week)', month: ' (MTD)',

@@ -260,10 +260,15 @@
         /* Detail Panel */
         .detail-overlay {
             position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.3);
+            top: 0;
+            left: 0;
+            /* Only cover the area to the LEFT of the panel so Kanban cards stay clickable */
+            right: 400px;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.25);
             z-index: 1050;
             display: none;
+            cursor: pointer;
         }
 
         .detail-panel {
@@ -274,7 +279,7 @@
             height: 100vh;
             background: var(--surface);
             z-index: 1051;
-            box-shadow: -10px 0 40px rgba(0, 0, 0, 0.1);
+            box-shadow: -10px 0 40px rgba(0, 0, 0, 0.12);
             transform: translateX(100%);
             transition: transform 0.3s ease;
             overflow-y: auto;
@@ -282,6 +287,13 @@
 
         .detail-panel.show {
             transform: translateX(0);
+        }
+
+        /* Kanban cards stay fully clickable even when the panel is open */
+        .lead-card {
+            cursor: pointer;
+            position: relative;
+            z-index: 1;
         }
 
         /* Mobile Responsiveness Improvements */
@@ -310,6 +322,11 @@
 
             .detail-panel {
                 width: 100%;
+            }
+
+            /* On mobile the panel is full-width so the overlay needs to cover everything too */
+            .detail-overlay {
+                right: 0;
             }
         }
     </style>
@@ -681,7 +698,7 @@
                                 return vsLabels[es] || es;
                             })()}"
                                 data-created="${l.created_at || ''}"
-                                onclick="openDetail(${l.id})">
+                                onclick="openDetail('${l.id}')">
                                 <div class="lead-name text-truncate">${l.contact_person || 'Unnamed Contact'}</div>
                                 <div class="lead-company text-truncate">${l.name}</div>
                                 <div class="lead-info-row">
@@ -726,10 +743,10 @@
                                     return `<span class="badge ms-1" style="${vstyle}font-size:0.65rem;">${vlabel}</span>`;
                                 })()}
                                 </div>` : ''}
-                                ${l.project_manager_name ? `
+                                ${(l.project_manager_id || (l.project_manager_name && l.project_manager_name !== 'null')) ? `
                                 <div class="mt-1">
                                     <span class="badge" style="background:#dbeafe;color:#1d4ed8;font-size:0.65rem;">
-                                        <i class="bi bi-person-gear me-1"></i>PM: ${l.project_manager_name}
+                                        <i class="bi bi-person-gear me-1"></i>PM: ${(l.project_manager_name && l.project_manager_name !== 'null') ? l.project_manager_name : 'Assigned (PM)'}
                                     </span>
                                 </div>` : ''}
                                 ${status === 'NEGOTIATION' ? `
@@ -848,8 +865,9 @@
                 const shopName = l.name || '—';
                 const phone = l.phone || '—';
                 const assigneeName = (l.assigned_to_user?.name) || l.assigned_to_name || l.owner_name || ((l.assigned_users && l.assigned_users.length > 0) ? l.assigned_users.map(u => u.name).join(', ') : null) || 'Unassigned';
-                const initials = getInitials(assigneeName);
-                const pmName = l.project_manager_name || null;
+                const initials     = getInitials(assigneeName);
+                const pmName       = (l.project_manager_name && l.project_manager_name !== 'null') ? l.project_manager_name : 'Assigned (PM)';
+                const hasPm        = l.project_manager_id || (l.project_manager_name && l.project_manager_name !== 'null');
 
                 let sentimentBit = '';
                 if (l.last_visit_status) {
@@ -867,12 +885,12 @@
                     const vlabel = vsLabels[es] || es.replace(/_/g, ' ');
                     sentimentBit = `<span class="badge me-1" style="${vstyle}font-size:0.62rem;">${vlabel}</span>`;
                 }
-                const pmBit = pmName
+                const pmBit = hasPm
                     ? `<span class="badge" style="background:#dbeafe;color:#1d4ed8;font-size:0.62rem;"><i class="bi bi-person-gear me-1"></i>PM: ${pmName}</span>`
                     : '';
 
                 const actionLabel = (l.pipeline_stage === 'PITCHING' && l.project_manager_id)
-                    ? 'Re-assign PM'
+                    ? 'Re-schedule / Re-assign PM'
                     : getNextActionText(l.pipeline_stage);
 
                 html += `
@@ -907,7 +925,7 @@
                         </div>
                         <div class="mt-3">
                             <button class="btn btn-outline-secondary btn-sm w-100 rounded-pill fw-medium"
-                                    onclick="event.stopPropagation(); window.openDetail(${l.id});">
+                                    onclick="event.stopPropagation(); window.openDetail('${l.id}');">
                                 ${actionLabel} <i class="bi bi-arrow-right-short ms-1"></i>
                             </button>
                         </div>
@@ -932,58 +950,50 @@
                 { label: 'Project Started', index: 3 }
             ];
 
-            let timelineHtml = `<div class="mt-4 pt-3 border-top">
-                <h6 class="fw-bold mb-3" style="font-size:0.78rem;color:#64748b;text-transform:uppercase;letter-spacing:0.07em;">
-                    <i class="bi bi-diagram-3 me-2 text-primary"></i>Pipeline Progress
-                </h6>
-                <div class="pipeline-progress-track">`;
+            let timelineHtml = `<div class="mt-4 pt-3 border-top"><h6 class="fw-bold mb-3" style="font-size:0.85rem;color:#64748b;"><i class="bi bi-diagram-3 me-2 text-primary"></i>PIPELINE PROGRESS</h6><div class="px-2">`;
 
             steps.forEach((step, i) => {
                 const isCompleted = currentStatusIndex >= step.index;
                 const isLast = i === steps.length - 1;
+
+                // Step 2 (index 2 = "Schedule the Demo") gets special "In Progress" treatment
+                // when a PM is assigned but demo_stage < 3
                 const isStep3InProgress = (step.index === 2) && !isCompleted && l.project_manager_id && (l.demo_stage || 0) < 3;
 
-                let pillState = 'pp-pending';
-                let iconHtml = `<span class="pp-icon"><i class="bi bi-circle" style="font-size:0.5rem;"></i></span>`;
-
-                if (isCompleted) {
-                    pillState = 'pp-done';
-                    iconHtml = `<span class="pp-icon"><i class="bi bi-check-lg" style="font-size:0.55rem;"></i></span>`;
-                } else if (isStep3InProgress) {
-                    pillState = 'pp-active';
-                    iconHtml = `<span class="pp-icon"><i class="bi bi-arrow-repeat" style="font-size:0.6rem;"></i></span>`;
-                } else if (currentStatusIndex + 1 === step.index) {
-                    pillState = 'pp-active';
-                    iconHtml = `<span class="pp-icon"><i class="bi bi-chevron-right" style="font-size:0.55rem;"></i></span>`;
-                }
-
+                // Colors: Green if done, Blue spinner if in-progress, Gray if pending
+                const dotColor = isCompleted ? '#10b981' : (isStep3InProgress ? '#2563eb' : '#e2e8f0');
+                const iconHtml = isCompleted
+                    ? `<i class="bi bi-check text-white" style="font-size: 0.75rem;"></i>`
+                    : (isStep3InProgress ? `<i class="bi bi-arrow-repeat text-white" style="font-size: 0.6rem;"></i>` : '');
+                const textColor = isCompleted ? '#0f172a' : (isStep3InProgress ? '#2563eb' : '#94a3b8');
+                const weightClass = (isCompleted || isStep3InProgress) ? 'fw-bold' : 'fw-medium';
+                const subText = isStep3InProgress
+                    ? `<div class="mt-1" style="font-size:0.72rem;color:#2563eb;"><i class="bi bi-person-gear me-1"></i>Assigned to PM: ${(l.project_manager_name && l.project_manager_name !== 'null') ? l.project_manager_name : 'Assigned'}</div>`
+                    : '';
                 timelineHtml += `
-                    <div class="pipeline-step-pill">
-                        <div class="pipeline-pill-inner ${pillState}">${iconHtml}${step.label}</div>
-                    </div>`;
-
-                if (!isLast) {
-                    const connDone = isCompleted ? 'conn-done' : '';
-                    timelineHtml += `<div class="pipeline-connector ${connDone}"></div>`;
-                }
+                    <div class="d-flex position-relative z-1" style="margin-bottom: ${isLast ? '0' : '1.5rem'};">
+                        ${isCompleted && !isLast ? `<div class="position-absolute" style="left: 7px; top: 16px; bottom: -24px; width: 2px; background: #10b981; z-index: -1;"></div>` : ''}
+                        
+                        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" 
+                             style="width: 16px; height: 16px; margin-top: 2px; background: ${dotColor}; transition: background 0.3s;">
+                            ${iconHtml}
+                        </div>
+                        <div class="ms-3">
+                            <div class="${weightClass}" style="font-size: 0.8rem; color: ${textColor};">${step.label}</div>
+                            ${subText}
+                        </div>
+                    </div>
+                `;
             });
 
-            timelineHtml += `</div>`;
+            timelineHtml += `</div></div>`;
 
-            // PM sub-note if in progress
-            if (l.project_manager_id && currentStatusIndex < 3) {
-                timelineHtml += `<div class="d-flex align-items-center gap-2 mt-2" style="font-size:0.75rem;color:#2563eb;">
-                    <i class="bi bi-person-gear"></i> Assigned PM: ${l.project_manager_name}
-                </div>`;
-            }
-
-            timelineHtml += `</div>`;
-
-            const pmBtnLabel = l.project_manager_id ? 'Re-assign PM' : 'Assign PM &amp; Schedule Demo';
-            const pmAssignBtnHtml = (l.pipeline_stage === 'PITCHING') ? `
+            const pmBtnLabel = l.project_manager_id ? 'Re-schedule Demo / Re-assign PM' : 'Assign PM & Schedule Demo';
+            // Allow PM assignment/rescheduling in both PITCHING and NEGOTIATION stages
+            const pmAssignBtnHtml = (l.pipeline_stage === 'PITCHING' || l.pipeline_stage === 'NEGOTIATION') ? `
                 <button class="btn btn-warning w-100 mb-2 d-flex align-items-center gap-2 justify-content-center"
-                    onclick="openAssignPmModal(${l.id})">
-                    <i class="bi bi-person-badge"></i> ${pmBtnLabel}
+                    onclick="openAssignPmModal('${l.id}')">
+                    <i class="bi bi-calendar2-check"></i> ${pmBtnLabel}
                 </button>` : '';
 
             const closeDealBtnHtml = (l.pipeline_stage === 'NEGOTIATION') ? `
@@ -1016,15 +1026,20 @@
 
                 <div class="mt-4 pt-4 border-top">
                     <!-- Changed redirect to open Edit modal -->
-                    <button class="btn btn-outline-primary w-100 mb-2" onclick="openEditShopModal(${l.id})">Edit Details</button>
+                    <button class="btn btn-outline-primary w-100 mb-2" onclick="openEditShopModal('${l.id}')">Edit Details</button>
                     ${closeDealBtnHtml}
                     ${pmAssignBtnHtml}
                 </div>
                 ${timelineHtml}
             `;
             document.getElementById('detail-content').innerHTML = content;
-            document.getElementById('detail-overlay').style.display = 'block';
-            document.getElementById('detail-panel').classList.add('show');
+            // Always show the panel — works for first open AND switching between cards
+            const overlay = document.getElementById('detail-overlay');
+            const panel = document.getElementById('detail-panel');
+            overlay.style.display = 'block';
+            panel.classList.add('show');
+            // Scroll panel back to top when switching leads
+            panel.scrollTop = 0;
         };
 
         window.openEditShopModal = async (shopId) => {
@@ -1263,6 +1278,11 @@
                 const pms = Array.isArray(usersRes) ? usersRes : (usersRes.items || []);
                 pmSelect.innerHTML = '<option value="" disabled selected>— Select PM —</option>' +
                     pms.map(u => `<option value="${u.id}">${u.name || u.email} (${u.role.replace(/_/g, ' ')})</option>`).join('');
+                // Auto-load today's slots if only one PM exists
+                if (pms.length === 1) {
+                    pmSelect.value = pms[0].id;
+                    fetchTimeSlots();
+                }
             } catch (e) {
                 pmSelect.innerHTML = '<option value="">— Failed to load —</option>';
                 console.error('Failed to load users', e);
@@ -1382,20 +1402,26 @@
         };
 
         window.submitAssignPm = async () => {
+            // Validate PM and Date via standard form validation
             const rules = {
                 'pm-select': 'Please select a PM',
-                'demo-date-select': 'Please select a date',
-                'selected-time-slot': 'Please select a time slot'
+                'demo-date-select': 'Please select a date'
             };
-
             if (!window.validateForm(document.querySelector('#assignPmModal .modal-body'), rules)) {
+                return;
+            }
+
+            // Time slot is a hidden input — validate independently
+            const time = document.getElementById('selected-time-slot').value;
+            if (!time) {
+                showToast('Please select a time slot', 'warning');
                 return;
             }
 
             const shopId = document.getElementById('assign-pm-shop-id').value;
             const pmId = document.getElementById('pm-select').value;
             const date = document.getElementById('demo-date-select').value;
-            const time = document.getElementById('selected-time-slot').value;
+            // time already validated above
             const btn = document.getElementById('submit-assign-pm-btn');
 
             btn.disabled = true;

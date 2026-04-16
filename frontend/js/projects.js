@@ -276,21 +276,146 @@ function renderActionCenter(project) {
                     </div>`;
         // 👆 END NEW BLOCK 👆
     } else if (project.pipeline_stage === "DELIVERY") {
+        // Show loading placeholder, then fill with async bill tracker
         actionContainer.innerHTML = `
-                    <div class="text-center py-5">
-                        <div class="mb-3"><i class="bi bi-receipt-cutoff text-success" style="font-size: 3rem;"></i></div>
-                        <h4 class="fw-bold text-success">Ready for Billing</h4>
-                        <p class="text-muted mb-4">This deal is won. Click below to generate an invoice and collect payment.</p>
-                        <a href="billing.html?close_shop_id=${project.id}" class="btn btn-success px-5 fw-bold"><i class="bi bi-currency-rupee me-2"></i>Generate Invoice</a>
+                    <div id="bill-tracker-container" class="text-center py-4">
+                        <div class="spinner-border spinner-border-sm text-success mb-2" role="status"></div>
+                        <p class="text-muted small mb-0">Loading Bill Tracker...</p>
                     </div>`;
+        loadBillTracker(project);
+
     } else if (project.pipeline_stage === "MAINTENANCE") {
+        // Client is onboarded — show onboarding summary card
+        const clientId = project.client_id || null;
         actionContainer.innerHTML = `
-                    <div class="text-center py-5">
-                        <div class="spinner-border text-success mb-3" role="status"></div>
-                        <h5 class="fw-bold text-muted">Loading Live Billing Tracker...</h5>
+                    <div class="text-center py-4">
+                        <div class="mb-3"><i class="bi bi-person-check-fill text-success" style="font-size: 3rem;"></i></div>
+                        <h4 class="fw-bold text-success">Client Onboarded!</h4>
+                        <p class="text-muted mb-4 px-3">The invoice has been verified and sent. This lead is now an active client in the Maintenance pipeline.</p>
+                        <div class="d-flex justify-content-center gap-3 flex-wrap">
+                            ${clientId
+                                ? `<a href="clients.html?id=${clientId}" class="btn btn-success px-4 fw-semibold"><i class="bi bi-person-lines-fill me-2"></i>View Client Profile</a>`
+                                : `<a href="clients.html" class="btn btn-outline-success px-4 fw-semibold"><i class="bi bi-people me-2"></i>Go to Clients</a>`
+                            }
+                            <a href="billing.html?close_shop_id=${project.id}" class="btn btn-outline-primary px-4 fw-semibold"><i class="bi bi-receipt me-2"></i>View Invoices</a>
+                        </div>
                     </div>`;
     } else {
         actionContainer.innerHTML = `<div class="text-center py-4"><h4 class="fw-bold">${project.pipeline_stage} Stage</h4></div>`;
+    }
+}
+
+// ── Async 3-Step Bill Tracker for DELIVERY stage ─────────────────────────
+async function loadBillTracker(project) {
+    const container = document.getElementById('bill-tracker-container');
+    if (!container) return;
+
+    try {
+        const invoices = await window.ApiClient.request(`/billing/?shop_id=${project.id}&archived=ALL`);
+        const invoice = Array.isArray(invoices) && invoices.length > 0 ? invoices[0] : null;
+
+        if (!invoice) {
+            // No invoice generated yet
+            container.innerHTML = `
+                <div class="text-center py-4">
+                    <div class="mb-3"><i class="bi bi-receipt-cutoff text-success" style="font-size: 3rem;"></i></div>
+                    <h4 class="fw-bold text-success">Ready for Billing</h4>
+                    <p class="text-muted mb-3">This deal is won. Generate an invoice to begin the billing process.</p>
+                    <a href="billing.html?close_shop_id=${project.id}" class="btn btn-success px-5 fw-bold">
+                        <i class="bi bi-currency-rupee me-2"></i>Generate Invoice
+                    </a>
+                </div>`;
+            return;
+        }
+
+        // Determine step completion
+        const step1Done = true; // Invoice exists
+        const step2Done = invoice.invoice_status === 'VERIFIED' || invoice.invoice_status === 'SENT';
+        const step3Done = invoice.whatsapp_sent === true || invoice.invoice_status === 'SENT';
+
+        const stepHtml = (done, num, label, sublabel) => `
+            <div class="d-flex align-items-start gap-3 mb-3">
+                <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle"
+                     style="width:38px;height:38px;background:${done ? '#dcfce7' : '#f1f5f9'};">
+                    ${done
+                        ? `<i class="bi bi-check-lg" style="color:#16a34a;font-size:1.1rem;"></i>`
+                        : `<span style="color:#94a3b8;font-weight:700;font-size:0.9rem;">${num}</span>`
+                    }
+                </div>
+                <div class="text-start">
+                    <div class="fw-semibold" style="color:${done ? '#16a34a' : '#64748b'};font-size:0.9rem;">${label}</div>
+                    <div class="text-muted" style="font-size:0.78rem;">${sublabel}</div>
+                </div>
+            </div>`;
+
+        // Action button logic
+        let actionHtml = '';
+        if (!step2Done) {
+            actionHtml = `
+                <div class="alert alert-warning py-2 px-3 mb-0 mt-2 text-center" style="font-size:0.83rem;border-radius:10px;">
+                    <i class="bi bi-hourglass-split me-1"></i>
+                    Waiting for Admin to verify <strong>${invoice.invoice_number}</strong>
+                </div>`;
+        } else if (!step3Done) {
+            actionHtml = `
+                <button class="btn btn-success px-4 fw-bold mt-2 w-100" onclick="sendInvoiceWhatsApp('${invoice.id}', '${project.id}')">
+                    <i class="bi bi-whatsapp me-2"></i>Send Invoice to WhatsApp
+                </button>`;
+        } else {
+            actionHtml = `
+                <div class="alert alert-success py-2 px-3 mb-0 mt-2 text-center" style="font-size:0.83rem;border-radius:10px;">
+                    <i class="bi bi-check-circle-fill me-1"></i>
+                    Invoice sent! Lead advancing to Maintenance...
+                </div>`;
+            // Trigger data refresh after a short delay
+            setTimeout(() => loadHubData(), 1500);
+        }
+
+        container.innerHTML = `
+            <div class="px-3 py-3">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <i class="bi bi-receipt text-success fs-5"></i>
+                    <span class="fw-bold text-dark">Bill Tracker — ${invoice.invoice_number}</span>
+                    <span class="badge ms-auto" style="background:${step3Done?'#dcfce7':step2Done?'#fef9c3':'#fee2e2'};color:${step3Done?'#16a34a':step2Done?'#a16207':'#b91c1c'};font-size:0.72rem;">
+                        ${step3Done ? '✅ Complete' : step2Done ? '⏳ Pending Send' : '⏳ Pending Verification'}
+                    </span>
+                </div>
+                <div class="p-3 rounded-3" style="background:#f8fafc;border:1px solid #e2e8f0;">
+                    ${stepHtml(step1Done, 1, 'Invoice Generated', `${invoice.invoice_number} · ₹${invoice.amount?.toLocaleString('en-IN') || '—'}`)}
+                    ${stepHtml(step2Done, 2, 'Verified by Admin', step2Done ? `Verified ✓` : 'Awaiting admin approval')}
+                    ${stepHtml(step3Done, 3, 'Sent to WhatsApp', step3Done ? 'Delivered to client' : 'Send after verification')}
+                </div>
+                ${actionHtml}
+                <div class="text-center mt-2">
+                    <a href="billing.html?close_shop_id=${project.id}" class="text-muted" style="font-size:0.78rem;text-decoration:none;">
+                        <i class="bi bi-box-arrow-up-right me-1"></i>Open Full Invoice Page
+                    </a>
+                </div>
+            </div>`;
+
+    } catch (e) {
+        console.error('Bill tracker load failed:', e);
+        if (container) container.innerHTML = `
+            <div class="text-center py-4">
+                <i class="bi bi-exclamation-circle text-warning" style="font-size:2rem;"></i>
+                <p class="text-muted mt-2 small">Could not load tracker. <a href="billing.html?close_shop_id=${project.id}">Open billing page</a></p>
+            </div>`;
+    }
+}
+
+// ── Send Invoice via WhatsApp (Step 3) ────────────────────────────────────
+async function sendInvoiceWhatsApp(billId, shopId) {
+    const btn = document.querySelector(`[onclick="sendInvoiceWhatsApp('${billId}', '${shopId}')"]`);
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Sending...'; }
+    try {
+        await window.ApiClient.request(`/billing/${billId}/send-whatsapp`, { method: 'POST' });
+        showToast('Invoice sent to WhatsApp! Lead advancing to Maintenance.', 'success');
+        // Reload the lead data so the stage refreshes
+        setTimeout(() => loadHubData(), 800);
+    } catch (e) {
+        console.error('WhatsApp send failed:', e);
+        showToast('Failed to send invoice. Please try again.', 'error');
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-whatsapp me-2"></i>Send Invoice to WhatsApp'; }
     }
 }
 
@@ -330,6 +455,15 @@ async function loadVisitHistory(shopId) {
             invoices = invoicesRes.items || invoicesRes.data || invoicesRes.invoices || [];
         }
 
+        // 🚀 NEW: Intelligent fallback - if the shop lost its client_id linkage, try to recover it from the invoice!
+        if (currentProject && !currentProject.client_id && invoices.length > 0) {
+            const firstInvoice = invoices.find(inv => inv.client_id);
+            if (firstInvoice && firstInvoice.client_id) {
+                currentProject.client_id = firstInvoice.client_id;
+                console.log(`[Timeline] Recovered missing client_id from invoice for shop ${shopId}: ${currentProject.client_id}`);
+            }
+        }
+
         // 🚀 NEW: Fetch Meetings using client_id
         let meetingsRes = [];
         if (currentProject && currentProject.client_id) {
@@ -342,6 +476,9 @@ async function loadVisitHistory(shopId) {
             }
         }
         const meetings = Array.isArray(meetingsRes) ? meetingsRes : (meetingsRes?.items || meetingsRes?.data || meetingsRes?.meetings || []);
+        
+        // Sync meetings to the global project object so that modals (like submitTrainingSchedule) can read existing meetings and increment titles properly
+        if (currentProject) currentProject.meetings = meetings;
 
         // 🚀 OVERRIDE THE UI: If an invoice exists, morph the Action Center into the Live Tracker!
         // FIX: We now check for DELIVERY *OR* MAINTENANCE
@@ -412,7 +549,7 @@ async function loadVisitHistory(shopId) {
         };
 
         // Statuses that are system-generated logs, NOT real visits — must NOT increment the visit counter
-        const systemLogs = ['DEMO_RESCHEDULED', 'MEETING_RESCHEDULED', 'DEMO_CANCELLED', 'MEETING_CANCELLED'];
+        const systemLogs = ['DEMO_RESCHEDULED', 'MEETING_RESCHEDULED', 'DEMO_CANCELLED', 'MEETING_CANCELLED', 'SCHEDULED'];
 
         const chronologicalVisits = [...visits].sort((a, b) => new Date(a.visit_date) - new Date(b.visit_date));
         let demoCount = 1;
@@ -601,6 +738,25 @@ async function loadVisitHistory(shopId) {
                                 </div>
                                 <div class="mt-3 p-3 bg-white rounded shadow-sm text-dark border" style="font-size: 0.9rem;">
                                     <strong><i class="bi bi-info-circle text-warning me-1"></i>Change Details:</strong> ${v.remarks || '<span class="text-muted fst-italic">No details provided.</span>'}
+                                </div>
+                            </div>
+                        </div>`;
+                }
+                // Demo First Scheduled
+                else if (v.status === 'SCHEDULED') {
+                    html += `
+                        <div class="card mb-3 border-0 shadow-sm" style="border-radius: 12px; overflow: hidden; background: linear-gradient(to right, #f5f3ff, #ede9fe); border-left: 4px solid #6366f1 !important;">
+                            <div class="card-body p-4">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h6 class="fw-bold mb-1" style="color: #4f46e5;"><i class="bi bi-calendar-plus me-1"></i> Demo Scheduled</h6>
+                                        <div class="text-muted small mb-1"><i class="bi bi-clock me-1"></i>${dateStr}</div>
+                                        <div class="text-muted mt-2" style="font-size: 0.8rem;"><i class="bi bi-person-badge text-secondary me-1"></i>Scheduled by: <span class="fw-bold text-dark">${repName}</span></div>
+                                    </div>
+                                    <span class="badge shadow-sm" style="background:#6366f1; color:#fff;"><i class="bi bi-calendar-check me-1"></i>Scheduled</span>
+                                </div>
+                                <div class="mt-3 p-3 bg-white rounded shadow-sm text-dark border" style="font-size: 0.9rem;">
+                                    <strong><i class="bi bi-info-circle me-1" style="color:#6366f1;"></i>Details:</strong> ${v.remarks || '<span class="text-muted fst-italic">No details provided.</span>'}
                                 </div>
                             </div>
                         </div>`;
@@ -1127,10 +1283,13 @@ function renderTrainingTracker(project, meetings = []) {
 
     // Build timeline nodes based on actual meetings
     sortedMeetings.forEach((m, idx) => {
-        if (m.status === 'RESOLVED') {
+        const isResolved = m.status === 'RESOLVED' || m.status === 'COMPLETED' || m.status === 'DONE';
+        const isCancelled = m.status === 'CANCELLED' || m.status === 'CANCEL';
+
+        if (isResolved) {
             nodes.push({ num: idx + 1, label: 'Successful', color: '#10b981', icon: 'bi-check-lg', bg: '#ecfdf5', border: '#10b981' });
             successCount++;
-        } else if (m.status === 'CANCELLED' || m.status === 'CANCEL') {
+        } else if (isCancelled) {
             nodes.push({ num: idx + 1, label: 'Cancelled', color: '#ef4444', icon: 'bi-x-lg', bg: '#fef2f2', border: '#ef4444' });
         } else {
             nodes.push({ num: idx + 1, label: 'Scheduled', color: '#eab308', icon: 'bi-clock', bg: '#fefce8', border: '#eab308' });
@@ -1210,10 +1369,13 @@ function renderTrainingTracker(project, meetings = []) {
         let icon = 'bi-calendar-event';
         let statusBadge = `<span class="badge bg-warning bg-opacity-10 text-warning border border-warning"><i class="bi bi-clock me-1"></i>Scheduled</span>`;
 
-        if (m.status === 'RESOLVED') {
+        const isResolved = m.status === 'RESOLVED' || m.status === 'COMPLETED' || m.status === 'DONE';
+        const isCancelled = m.status === 'CANCELLED' || m.status === 'CANCEL';
+
+        if (isResolved) {
             statusClass = 'completed'; icon = 'bi-check-lg';
             statusBadge = `<span class="badge bg-success text-white"><i class="bi bi-check2-all me-1"></i>Completed</span>`;
-        } else if (m.status === 'CANCELLED' || m.status === 'CANCEL') {
+        } else if (isCancelled) {
             statusClass = 'cancelled'; icon = 'bi-x-lg';
             statusBadge = `<span class="badge bg-danger text-white"><i class="bi bi-x-circle me-1"></i>Cancelled</span>`;
         } else {
@@ -1250,7 +1412,7 @@ function renderTrainingTracker(project, meetings = []) {
                         <div class="small text-muted">Awaiting PM Availability</div>
                     </div>
                 </div>
-                <button class="btn btn-primary fw-bold shadow-sm" onclick="openTrainingScheduleModal('${project.id}', '${project.client_id || 'null'}')">
+                <button class="btn btn-primary fw-bold shadow-sm" onclick="openTrainingScheduleModal('${project.id}', '${project.client_id || ''}')">
                     <i class="bi bi-calendar-plus me-2"></i>Schedule Session
                 </button>
             </div>
@@ -1262,7 +1424,7 @@ function renderTrainingTracker(project, meetings = []) {
         html += `
             <div class="text-center mt-4 pt-3 border-top">
                 <p class="text-muted small mb-2"><i class="bi bi-info-circle me-1"></i>Client has completed the mandatory 3 sessions.</p>
-                <button class="btn btn-outline-secondary btn-sm fw-bold rounded-pill px-4" onclick="openTrainingScheduleModal('${project.id}', '${project.client_id || 'null'}')">
+                <button class="btn btn-outline-secondary btn-sm fw-bold rounded-pill px-4" onclick="openTrainingScheduleModal('${project.id}', '${project.client_id || ''}')">
                     <i class="bi bi-plus-lg me-1"></i>Schedule Optional Session ${sessionCounter}
                 </button>
             </div>

@@ -20,6 +20,7 @@ from app.modules.billing.models import Bill
 from app.modules.salary.models import SalarySlip
 from app.modules.incentives.models import IncentiveSlip
 from app.modules.attendance.models import Attendance
+from app.modules.attendance.service import AttendanceService
 from app.modules.todos.models import Todo, TodoStatus
 from app.modules.meetings.models import MeetingSummary
 from app.modules.reports.models import PerformanceNote
@@ -44,6 +45,10 @@ class ReportService:
             user_id = requesting_user.id
 
         now = datetime.now(UTC)
+        today_ist = AttendanceService.get_ist_today()
+        # Ensure today_start matches the BSON Date storage (UTC 00:00:00)
+        today_start = datetime.combine(today_ist, datetime.min.time()).replace(tzinfo=UTC)
+        
         curr_month = now.month
         curr_year = now.year
         current_period = now.strftime('%Y-%m')
@@ -149,6 +154,15 @@ class ReportService:
             if end_dt: date_filter["$lte"] = end_dt
             p_match["created_at"] = date_filter
 
+        shop_match = {"is_deleted": False, "pipeline_stage": {"$in": ["PITCHING", "NEGOTIATION", "DELIVERY"]}}
+        if user_id:
+            shop_match["$or"] = [
+                {"assigned_user_ids": user_id},
+                {"assigned_owner_ids": user_id},
+                {"owner_id": user_id},
+                {"project_manager_id": user_id}
+            ]
+
         # Revenue filter: only count confirmed SUCCESSful payments
         b_match = {"status": "SUCCESS", "is_deleted": False}
         if user_id: b_match["created_by_id"] = user_id
@@ -162,7 +176,7 @@ class ReportService:
             {"$match": b_match},
             {"$group": {"_id": None, "total": {"$sum": "$amount"}}}
         ]
-        today_start = datetime.combine(now.date(), datetime.min.time())
+        # today_start already defined above
         status_pipeline = [
             {"$match": v_match},
             {"$group": {"_id": "$status", "count": {"$sum": 1}}}
@@ -207,9 +221,9 @@ class ReportService:
             Visit.get_pymongo_collection().aggregate(v_prev_pipe).to_list(length=1),
             Client.find(c_match).count(), 
             Client.find(c_match, {"$expr": curr_m_expr}).count(), Client.find(c_match, {"$expr": prev_m_expr}).count(),
-            Shop.find({"is_deleted": False, "pipeline_stage": {"$in": ["PITCHING", "NEGOTIATION", "DELIVERY"]}}).count(), 
-            Shop.find({"is_deleted": False, "pipeline_stage": {"$in": ["PITCHING", "NEGOTIATION", "DELIVERY"]}, "$expr": curr_m_expr}).count(), 
-            Shop.find({"is_deleted": False, "pipeline_stage": {"$in": ["PITCHING", "NEGOTIATION", "DELIVERY"]}, "$expr": prev_m_expr}).count(),
+            Shop.find({**shop_match}).count(), 
+            Shop.find({"$expr": curr_m_expr, **shop_match}).count(), 
+            Shop.find({"$expr": prev_m_expr, **shop_match}).count(),
             Bill.get_pymongo_collection().aggregate(rev_pipeline).to_list(length=None),
             Attendance.get_pymongo_collection().distinct("user_id", {"date": today_start, "is_deleted": False}),
             Issue.find(Issue.status == GlobalTaskStatus.OPEN, Issue.is_deleted == False).count(),

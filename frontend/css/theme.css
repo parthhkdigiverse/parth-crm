@@ -18,6 +18,7 @@
     --title-color: #1e40af;
     --border: #e0e7ff;
     --primary: #2563eb;
+    --primary-rgb: 79, 70, 229;
     --primary-soft: rgba(37, 99, 235, 0.1);
     --primary-light: rgba(37, 99, 235, 0.1);
     --primary-ring: rgba(37, 99, 235, 0.2);
@@ -143,7 +144,6 @@ body {
     height: 100% !important;
     margin: 0;
     padding: 0;
-    overflow: hidden !important; /* Lock the global window scroll */
 }
 
 body {
@@ -157,21 +157,12 @@ body {
 }
 
 /* Root layout container */
-body > .d-flex {
-    height: 100vh;
+body>.d-flex {
     width: 100%;
-    overflow: hidden;
+    min-height: 100vh;
 }
 
-.main-wrapper {
-    height: 100%;
-    overflow-y: auto;
-    overflow-x: hidden;
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    min-width: 0;
-}
+
 
 h1,
 h2,
@@ -1063,8 +1054,38 @@ body.dark-theme .brand-text {
         overflow-x: auto;
         white-space: nowrap;
         -webkit-overflow-scrolling: touch;
+        width: 100%;
         max-width: 100%;
         border-radius: 8px;
+        flex-wrap: nowrap;
+        -ms-overflow-style: none; /* IE and Edge */
+        scrollbar-width: none; /* Firefox */
+        margin-top: 4px;
+    }
+    .period-picker-group::-webkit-scrollbar {
+        display: none; /* Chrome, Safari and Opera */
+    }
+
+    .filter-panel-head {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        padding-right: 40px; /* Room for toggle button */
+    }
+
+    .filter-panel-head-left {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .filter-panel-head-meta { 
+        position: absolute;
+        top: 10px;
+        right: 16px;
+    }
+
+    .period-context-badge {
+        display: none; /* Hide on mobile to save space */
     }
 
     .period-btn {
@@ -1449,12 +1470,10 @@ body.dark-theme .brand-text {
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 36px;
-    /* Common unified padding for all pages */
+    padding: 48px 32px 32px 32px;
+    /* Increased top padding from 24px to 48px for better breathing room below sticky header */
     margin: 0 auto;
-    /* Removed top/bottom artificial margin gaps */
     width: 100%;
-    /* Full component width */
     max-width: var(--page-max-width, 1440px);
     transition: padding 0.3s ease;
     min-height: 0;
@@ -1465,7 +1484,8 @@ body.dark-theme .brand-text {
     .page-content,
     .page-content-standard,
     .page-container {
-        padding: 24px;
+        padding: 32px 24px 24px 24px;
+        /* Increased top padding for mobile */
     }
 }
 
@@ -1474,7 +1494,8 @@ body.dark-theme .brand-text {
     .page-content,
     .page-content-standard,
     .page-container {
-        padding: 16px !important;
+        padding: 24px 16px 16px 16px !important;
+        /* Increased top padding for mobile */
     }
 }
 
@@ -1544,7 +1565,7 @@ h6 {
     padding: 32px 40px;
     /* Slightly adjusted padding */
     margin-bottom: 40px !important;
-    /* Gap above filter: 1.5rem + filter margin-top 2rem = 3.5rem total (matches gap below) */
+    /* Restored generous 40px margin for premium spacing between header and content cards */
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(255, 255, 255, 0.1);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
@@ -2381,14 +2402,18 @@ label {
 }
 
 [data-theme="dark"] .sb-link.active {
-    background: rgba(99, 102, 241, 0.22); /* Deep indigo glow — visible on dark bg */
-    color: #ffffff !important;            /* Pure white for maximum readability */
+    background: rgba(99, 102, 241, 0.22);
+    /* Deep indigo glow — visible on dark bg */
+    color: #ffffff !important;
+    /* Pure white for maximum readability */
     font-weight: 700;
-    box-shadow: inset 3px 0 0 #6366f1;   /* Left accent line in indigo */
+    box-shadow: inset 3px 0 0 #6366f1;
+    /* Left accent line in indigo */
 }
 
 [data-theme="dark"] .sb-link.active i {
-    color: #818cf8 !important;            /* Indigo-400 — bright & clear on dark */
+    color: #818cf8 !important;
+    /* Indigo-400 — bright & clear on dark */
 }
 
 [data-theme="dark"] .card,
@@ -2688,6 +2713,7 @@ label {
     cursor: pointer;
     user-select: none;
     flex-wrap: wrap;
+    position: relative;
 }
 
 .filter-panel-head-left {
@@ -3018,7 +3044,7 @@ label {
     background: transparent;
 }
 
-[data-theme="dark"] .breadcrumb-item + .breadcrumb-item::before {
+[data-theme="dark"] .breadcrumb-item+.breadcrumb-item::before {
     color: var(--text-muted);
 }
 
@@ -3071,5 +3097,10 @@ label {
     background: var(--surface);
     color: var(--primary);
     border-color: var(--border);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-}
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}
+
+/* Base dark variables */
+[data-theme="dark"] {
+    --primary-rgb: 79, 70, 229;
+}

@@ -37,3 +37,6 @@ class TodoRead(TodoBase):
     user_id: PydanticObjectId
     created_at: datetime.datetime
     updated_at: datetime.datetime
+
+class TodoBulkDelete(MongoBaseSchema):
+    ids: list[PydanticObjectId]

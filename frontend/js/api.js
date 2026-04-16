@@ -737,6 +737,10 @@ class ApiClient {
         return this.request(`/todos/${todoId}`, { method: 'DELETE' });
     }
 
+    static async deleteTodosBulk(ids) {
+        return this.request('/todos/bulk-delete', { method: 'POST', body: { ids } });
+    }
+
     // ─── Notifications ───────────────────────────────────────
     static async getNotifications(params = '') {
         return this.request(`/notifications/${params}`);

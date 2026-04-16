@@ -11,7 +11,7 @@ from app.modules.visits.service import VisitService
 router = APIRouter()
 
 # Role Access
-create_access = RoleChecker([UserRole.ADMIN, UserRole.SALES, UserRole.TELESALES])
+create_access = RoleChecker([UserRole.ADMIN, UserRole.SALES, UserRole.TELESALES, UserRole.PROJECT_MANAGER_AND_SALES])
 read_access = RoleChecker([
     UserRole.ADMIN, 
     UserRole.SALES, 

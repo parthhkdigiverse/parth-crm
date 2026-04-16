@@ -9,11 +9,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Meetings | SRM AI SETU</title>
     <!-- Combined Stylesheets -->
-    <link rel="stylesheet" href="/static/css/bootstrap.min.css">
-    <link rel="stylesheet" href="/static/css/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="/frontend/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/frontend/css/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/theme.css?v=20260408">
-    <link rel="stylesheet" href="/static/css/components.css?v=20260408">
+    <link rel="stylesheet" href="/frontend/css/theme.css?v=20260406">
+    <link rel="stylesheet" href="/frontend/css/components.css?v=20260406">
     <style>
         body {
             background: var(--bg-app);
@@ -941,7 +941,7 @@
                 title: title || 'Meeting',
                 date: `${date}T${time || '09:00'}:00`,
                 meeting_type: document.getElementById('m-type').value,
-                status: document.getElementById('m-status').value,
+                status: document.getElementById('m-status')?.value || 'OPEN',
                 content: document.getElementById('m-notes').value || '',
                 target_type: currentTargetType,
                 attendee_ids: selectedAttendeeIds
@@ -1408,10 +1408,14 @@
         }
 
         // ────────── INITIALIZE ──────────
-        Promise.all([loadClients(), loadProjects(), loadAllUsers()]).then(() => {
+        Promise.allSettled([loadClients(), loadProjects(), loadAllUsers()]).then(() => {
             initFilters();
             loadMeetings();
             initDatePicker();
+        }).catch(err => {
+            console.error("Initialization failed partially, attempting to load dashboard anyway:", err);
+            initFilters();
+            loadMeetings();
         });
     </script>
 </body>

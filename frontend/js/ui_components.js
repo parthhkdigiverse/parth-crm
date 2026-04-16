@@ -971,7 +971,7 @@ window.checkHighPriorityIssues = async function () {
             // ── Top banner: show only once per session (until user dismisses or logs out) ──
             if (!alertEl && sessionStorage.getItem('high_issue_alert_dismissed') !== '1') {
                 const html = `
-                <div id="${alertContainerId}" class="d-flex align-items-center justify-content-between py-2 px-4 mb-0" style="background-color: #B91C1C; color: white; z-index: 1050; font-size: 0.85rem; font-weight: 600; flex-shrink: 0;">
+                <div id="${alertContainerId}" class="d-flex align-items-center justify-content-between py-2 px-4 mb-0" style="background-color: #B91C1C; color: white; z-index: 1050; font-size: 0.85rem; font-weight: 600; flex-shrink: 0; flex-grow: 0; height: auto; min-height: unset; max-height: 44px; overflow: hidden; width: 100%;">
                     <div class="d-flex align-items-center gap-2">
                         <i class="bi bi-exclamation-triangle-fill"></i>
                         <span>System Alert: ${unreadHigh.length} Unresolved High Priority Issue(s) detected.</span>
@@ -1674,6 +1674,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // ─── ACCESS CONTROL OVERLAY ──────────────────────────────────────────
 window.checkPageAccess = function () {
+    return; // DEPRECATED: Defer to auth.js window.enforceRoleAccess()
     const u = getUser();
     if (!u) return; // Not logged in yet
 
