@@ -17,32 +17,14 @@
     <link rel="stylesheet" href="/frontend/css/theme.css?v=20260406">
     <link rel="stylesheet" href="/frontend/css/components.css?v=20260406">
     <style>
-        /* CRITICAL: Force native browser scrolling by overriding theme-level locks */
-        html,
-        body {
-            overflow: auto !important;
-            height: auto !important;
-            scrollbar-width: thin;
-        }
-
         body {
             background-color: var(--bg-app);
             font-family: 'Inter', sans-serif;
-            min-height: 100vh;
         }
 
         .main-wrapper {
-            height: auto !important;
-            overflow: visible !important;
-            min-height: 100vh;
             display: flex;
             flex-direction: column;
-        }
-
-        body>.d-flex {
-            height: auto !important;
-            overflow: visible !important;
-            min-height: 100vh;
         }
 
         .page-content-standard {
@@ -518,7 +500,6 @@
             renderFilterPanel({
                 containerId: 'feedback-filter-container',
                 title: 'Filters',
-                headerContent: `<input type="text" class="form-control" placeholder="Search..." id="fb-search" style="border-radius:10px; max-width:240px; height:40px;">`,
                 filters: [
                     { id: 'fb-filter-client', label: 'Select Client', type: 'select', options: [] },
                     { id: 'fb-filter-product', label: 'Product', type: 'select', options: [] },
@@ -545,7 +526,7 @@
                     renderFeedbackTable();
                 },
                 onReset: () => {
-                    const search = document.getElementById('fb-search');
+                    const search = document.getElementById('global-search-input');
                     if (search) search.value = '';
                     const customBox = document.getElementById('fb-custom-date-box');
                     if (customBox) customBox.style.display = 'none';
@@ -553,6 +534,14 @@
                 }
             });
 
+            // Global search listener
+            setTimeout(() => {
+                const searchInput = document.getElementById('global-search-input');
+                if (searchInput) {
+                    searchInput.removeAttribute('readonly');
+                    searchInput.addEventListener('input', () => renderFeedbackTable());
+                }
+            }, 500);
             // Inject Custom Date Inputs
             const grid = document.querySelector('#feedback-filter-container .filter-grid');
             if (grid) {
@@ -572,6 +561,12 @@
                 grid.insertAdjacentHTML('afterend', html);
             }
         };
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', () => {
+            initFilterPanel();
+            loadFeedback();
+        });
 
         let baseData = [];
         const loadFeedback = async () => {
@@ -614,7 +609,7 @@
         };
 
         const renderFeedbackTable = () => {
-            const term = (document.getElementById('fb-search')?.value || '').toLowerCase().trim();
+            const term = (document.getElementById('global-search-input')?.value || '').toLowerCase().trim();
             const client = (document.getElementById('fb-filter-client')?.value || '').trim();
             const product = (document.getElementById('fb-filter-product')?.value || '').trim();
             const agent = (document.getElementById('fb-filter-agent')?.value || '').trim();

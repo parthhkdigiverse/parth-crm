@@ -241,51 +241,56 @@
                     <!-- Metrics Summary -->
                     <div class="row g-3 mb-4 text-center">
                         <div class="col-4">
-                            <div class="p-2 border rounded-3">
-                                <div class="text-muted x-small fw-bold text-uppercase">Conversion</div>
-                                <div class="fw-bold text-primary" id="modal-conversion">0%</div>
+                            <div class="p-3 border border-primary-subtle rounded-4 bg-white shadow-sm h-100">
+                                <div class="text-muted x-small fw-bold text-uppercase mb-1">Conversion</div>
+                                <div class="fw-bold text-primary fs-5" id="modal-conversion">0%</div>
                             </div>
                         </div>
                         <div class="col-4">
-                            <div class="p-2 border rounded-3">
-                                <div class="text-muted x-small fw-bold text-uppercase">Target</div>
-                                <div class="fw-bold text-main" id="modal-target">₹0</div>
+                            <div class="p-3 border border-primary-subtle rounded-4 bg-white shadow-sm h-100">
+                                <div class="text-muted x-small fw-bold text-uppercase mb-1">Target</div>
+                                <div class="fw-bold text-main fs-5" id="modal-target">₹0</div>
                             </div>
                         </div>
                         <div class="col-4">
-                            <div class="p-2 border rounded-3">
-                                <div class="text-muted x-small fw-bold text-uppercase">Rank</div>
-                                <div class="fw-bold text-warning" id="modal-rank">#—</div>
+                            <div class="p-3 border border-primary-subtle rounded-4 bg-white shadow-sm h-100">
+                                <div class="text-muted x-small fw-bold text-uppercase mb-1">Rank</div>
+                                <div class="fw-bold text-warning fs-5" id="modal-rank">#—</div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Activity Table -->
-                    <h6 class="fw-bold mb-3 d-flex align-items-center">
-                        <i class="bi bi-clock-history me-2 text-primary"></i> Monthly Activity Details
-                    </h6>
-                    <div class="table-responsive mb-4" style="max-height: 250px; overflow-y: auto;">
-                        <table class="table modal-activity-table table-sm align-middle">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Client</th>
-                                    <th>Activity Type</th>
-                                    <th class="text-end">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="modal-activity-tbody">
-                                <!-- Populated via JS -->
-                            </tbody>
-                        </table>
+                    <!-- Activity Table Section -->
+                    <div class="p-4 border border-primary-subtle rounded-4 bg-white shadow-sm mb-4">
+                        <h6 class="fw-bold mb-3 d-flex align-items-center">
+                            <i class="bi bi-clock-history me-2 text-primary"></i> Monthly Activity Details
+                        </h6>
+                        <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                            <table class="table modal-activity-table table-sm align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Client</th>
+                                        <th>Activity Type</th>
+                                        <th class="text-end">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="modal-activity-tbody">
+                                    <!-- Populated via JS -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
 
                     <!-- Admin Notes Section -->
-                    <div id="admin-note-input-section" class="p-3 border rounded-4 bg-app bg-opacity-50 mb-4">
+                    <div id="admin-note-input-section"
+                        class="py-2 px-4 border border-primary-subtle rounded-4 bg-white shadow-sm mb-4">
                         <h6 class="fw-bold mb-3 d-flex align-items-center">
                             <i class="bi bi-pencil-square me-2 text-primary"></i> Add Performance Note
                         </h6>
-                        <textarea id="admin-note" class="form-control border-0 bg-surface shadow-none" rows="3"
+                        <textarea id="admin-note"
+                            class="form-control border bg-light bg-opacity-10 shadow-none p-3 mb-0"
+                            style="border-radius: 12px; border-color: #e2e8f0 !important; height: 70px; min-height: 70px; overflow-y: auto; resize: none;"
                             placeholder="Add a private note regarding this employee's performance..."></textarea>
                         <div class="text-end mt-2">
                             <button class="btn btn-primary btn-sm px-4 rounded-pill shadow-sm" id="save-note-btn"
@@ -324,13 +329,7 @@
         const initReportFilters = () => {
             renderFilterPanel({
                 containerId: 'report-filter-container',
-                title: 'Report Filters',
-                headerContent: `
-                    <div class="filter-header-search">
-                        <i class="bi bi-search search-icon"></i>
-                        <input type="text" class="form-control" placeholder="Search employee..." id="emp-search">
-                    </div>
-                `,
+                title: 'Filters',
                 filters: [
                     { id: 'employee-dropdown', label: 'Employee', type: 'select', options: [{ value: 'all', label: 'All Employees' }] },
                     {
@@ -841,7 +840,7 @@
             // Update title for employees
             if (sectionTitle) {
                 sectionTitle.innerHTML = isAdmin
-                    ? '<i class="bi bi-chat-left-dots-fill me-2 text-primary"></i> Admin Performance Notes'
+                    ? '<i class="bi bi-chat-left-dots me-2 text-primary"></i> Admin Performance Notes'
                     : '<i class="bi bi-journal-check me-2 text-success"></i> Performance Feedback from Management';
             }
 
