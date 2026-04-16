@@ -49,19 +49,39 @@ async def read_all_meetings(
     end_date: Optional[dt_date] = None,
     current_user: User = Depends(staff_checker)
 ) -> Any:
-    """Get all meetings. PMs only see meetings for their assigned clients."""
+    """Get all meetings based on visibility permissions."""
     find_query = {}
 
-    if current_user.role in PM_SCOPED_ROLES:
-        clients = await Client.find(Client.pm_id == current_user.id).to_list()
-        assigned_client_ids = [c.id for c in clients]
-        find_query["client_id"] = {"$in": assigned_client_ids}
+    visibility_conditions = []
+    
+    if current_user.role != UserRole.ADMIN:
+        # Fallbacks: you can see it if you host it, or you're an attendee
+        visibility_conditions.append({"host_id": current_user.id})
+        visibility_conditions.append({"attendee_ids": current_user.id})
+        
+        # If user is a PM, they also see all meetings for their clients
+        if current_user.role in PM_SCOPED_ROLES:
+            clients = await Client.find(Client.pm_id == current_user.id).to_list()
+            assigned_client_ids = [c.id for c in clients]
+            if assigned_client_ids:
+                visibility_conditions.append({"client_id": {"$in": assigned_client_ids}})
+                
+        # If user is Sales, they see all meetings for clients they own
+        if current_user.role in [UserRole.SALES, UserRole.TELESALES]:
+            clients = await Client.find(Client.owner_id == current_user.id).to_list()
+            owned_client_ids = [c.id for c in clients]
+            if owned_client_ids:
+                visibility_conditions.append({"client_id": {"$in": owned_client_ids}})
+                
+        if visibility_conditions:
+            find_query["$or"] = visibility_conditions
 
     if client_id and client_id not in {"ALL", "all"}:
         try:
             find_query["client_id"] = PydanticObjectId(client_id)
         except Exception:
             raise HTTPException(status_code=400, detail="Invalid client_id format")
+            
     if meeting_type and meeting_type not in {"ALL", "all"}:
         find_query["meeting_type"] = meeting_type
     if status and status not in {"ALL", "all"}:

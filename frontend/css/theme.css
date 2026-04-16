@@ -1054,8 +1054,38 @@ body.dark-theme .brand-text {
         overflow-x: auto;
         white-space: nowrap;
         -webkit-overflow-scrolling: touch;
+        width: 100%;
         max-width: 100%;
         border-radius: 8px;
+        flex-wrap: nowrap;
+        -ms-overflow-style: none; /* IE and Edge */
+        scrollbar-width: none; /* Firefox */
+        margin-top: 4px;
+    }
+    .period-picker-group::-webkit-scrollbar {
+        display: none; /* Chrome, Safari and Opera */
+    }
+
+    .filter-panel-head {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+        padding-right: 40px; /* Room for toggle button */
+    }
+
+    .filter-panel-head-left {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .filter-panel-head-meta { 
+        position: absolute;
+        top: 10px;
+        right: 16px;
+    }
+
+    .period-context-badge {
+        display: none; /* Hide on mobile to save space */
     }
 
     .period-btn {
@@ -2683,6 +2713,7 @@ label {
     cursor: pointer;
     user-select: none;
     flex-wrap: wrap;
+    position: relative;
 }
 
 .filter-panel-head-left {

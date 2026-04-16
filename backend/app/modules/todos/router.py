@@ -3,12 +3,12 @@ from typing import List, Any, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, Response
 from datetime import datetime, UTC
 from beanie import PydanticObjectId
-from beanie.operators import Or
+from beanie.operators import Or, In
 
 from app.core.dependencies import get_current_user
 from app.modules.users.models import User, UserRole
 from app.modules.todos.models import Todo, TodoStatus
-from app.modules.todos.schemas import TodoCreate, TodoRead, TodoUpdate
+from app.modules.todos.schemas import TodoCreate, TodoRead, TodoUpdate, TodoBulkDelete
 from app.modules.notifications.models import Notification
 
 router = APIRouter()
@@ -215,4 +215,47 @@ async def delete_todo(
         todo.is_deleted = True
         await todo.save()
         
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+@router.post("/bulk-delete", status_code=status.HTTP_204_NO_CONTENT)
+async def bulk_delete_todos(
+    bulk_in: TodoBulkDelete,
+    current_user: User = Depends(get_current_user)
+) -> None:
+    from app.modules.settings.models import SystemSettings
+    settings = await SystemSettings.find_one()
+    is_hard = settings and settings.delete_policy == "HARD"
+    from app.modules.meetings.models import MeetingSummary
+
+    # Filter todos based on permissions
+    query = Todo.find(In(Todo.id, bulk_in.ids), Todo.is_deleted == False)
+    if not _is_admin(current_user):
+        query = query.find(Todo.user_id == current_user.id)
+    
+    todos = await query.to_list()
+    if not todos:
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    todo_ids = [t.id for t in todos]
+
+    # --- Synchronization: Handle linked Meetings ---
+    meetings = await MeetingSummary.find(In(MeetingSummary.todo_id, todo_ids)).to_list()
+    if meetings:
+        if is_hard:
+            for m in meetings:
+                await m.delete()
+        else:
+            for m in meetings:
+                m.is_deleted = True
+                await m.save()
+    # ----------------------------------------------
+
+    if is_hard:
+        for t in todos:
+            await t.delete()
+    else:
+        for t in todos:
+            t.is_deleted = True
+            await t.save()
+            
     return Response(status_code=status.HTTP_204_NO_CONTENT)

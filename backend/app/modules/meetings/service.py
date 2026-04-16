@@ -71,7 +71,8 @@ class MeetingService:
                 print(f"[GoogleMeet] Generation failed (non-fatal): {e}")
 
         db_meeting = MeetingSummary(**meeting_dict)
-        db_meeting.host_id = current_user.id
+        if not db_meeting.host_id:
+            db_meeting.host_id = current_user.id
         await db_meeting.insert()
 
         # -- Synchronization: Create linked Todo --
@@ -96,27 +97,18 @@ class MeetingService:
         db_meeting.todo_id = db_todo.id
         await db_meeting.save()
 
-        # -- Synchronization: Create linked TimetableEvent --
-        from app.modules.timetable.models import TimetableEvent
-        try:
-            await TimetableEvent(
-                user_id=host_id,
-                title=db_meeting.title,
-                assignee_name=host_user.name if host_user else "Staff",
-                date=db_meeting.date.date() if db_meeting.date else datetime.now(UTC).date(),
-                start_time=db_meeting.date.strftime("%H:%M:%S") if db_meeting.date else None,
-                end_time=(db_meeting.date + timedelta(hours=1)).strftime("%H:%M:%S") if db_meeting.date else None,
-                location=str(db_meeting.meeting_type),
-                priority=db_meeting.priority
-            ).insert()
-        except Exception as tt_err:
-             print(f"[TimetableSync] Failed: {tt_err}")
-
         # -- In-App Notifications --
         try:
+            # Notify host if they are NOT the creator
+            if db_meeting.host_id and db_meeting.host_id != current_user.id:
+                notif_msg = f"A meeting has been scheduled with you as the host: '{db_meeting.title}'"
+                if db_meeting.meet_link:
+                    notif_msg += f"\nJOIN_MEET:{db_meeting.meet_link}"
+                await create_notification(db_meeting.host_id, "Meeting Assignment", notif_msg, actor_id=current_user.id)
+
             # Notify attendees via sequential loop
             for aid in db_meeting.attendee_ids:
-                if aid != current_user.id:
+                if aid != current_user.id and aid != db_meeting.host_id: # Don't re-notify host if they are an attendee
                     notif_msg = f"You are invited to a meeting: '{db_meeting.title}'"
                     if db_meeting.meet_link:
                         notif_msg += f"\nJOIN_MEET:{db_meeting.meet_link}"

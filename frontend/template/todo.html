@@ -991,7 +991,7 @@
                 data: filteredTasks,
                 tbodyId: 'todo-tbody',
                 paginationId: 'todo-pagination',
-                emptyMsg: `<tr><td colspan="6" class="text-center text-muted py-5"><i class="bi bi-search fs-1 opacity-25"></i><br>No matching objectives found</td></tr>`,
+                emptyMsg: `<tr><td colspan="7" class="text-center text-muted py-5"><i class="bi bi-search fs-1 opacity-25"></i><br>No matching objectives found</td></tr>`,
                 renderRow: (t) => {
                     const assignee = t.assigned_to || 'Unassigned';
                     const initials = (assignee.split(' ').map(n => n[0]).join('') || '?').toUpperCase().slice(0, 2);
@@ -1001,8 +1001,11 @@
                     const isCompleted = t.status === 'COMPLETED';
 
                     return `
-                    <tr class="todo-row ${isCompleted ? 'completed' : ''}">
+                    <tr class="todo-row ${isCompleted ? 'completed' : ''}" data-id="${t.id}">
                         <td class="ps-4">
+                            <input type="checkbox" class="form-check-input shadow-none task-checkbox" value="${t.id}" onclick="updateBulkDeleteState()">
+                        </td>
+                        <td>
                             <div class="fw-bold text-slate-900" style="font-size:0.95rem;">${t.title}</div>
                             <div class="text-muted smaller mt-1 d-flex align-items-center gap-2">
                                 <span class="badge rounded-pill bg-light text-dark border p-1 px-2" style="font-size:10px; font-weight:700;">${(t.event_type || 'TASK').toUpperCase()}</span>
@@ -1148,6 +1151,9 @@
                                 Tasks & Activities
                             </div>
                             <div class="d-flex align-items-center gap-2">
+                                <button id="bulk-delete-btn" class="btn btn-outline-danger btn-sm" style="display: none; border-radius: 20px; font-weight: 700; font-size: 0.75rem;" onclick="deleteSelectedTasks()">
+                                    <i class="bi bi-trash3 me-1"></i>Delete Selected
+                                </button>
                                 <span class="badge" style="background: var(--primary-light); color: var(--primary); font-size: 0.7rem; padding: 4px 10px; border-radius: 20px; font-weight: 700;">
                                     <i class="bi bi-check2-circle me-1" style="font-size: 0.55rem;"></i>Active Board
                                 </span>
@@ -1157,7 +1163,10 @@
                             <table class="table table-premium mb-0">
                                 <thead class="bg-light">
                                     <tr>
-                                        <th class="ps-4">Task</th>
+                                        <th class="ps-4" style="width: 40px;">
+                                            <input type="checkbox" class="form-check-input shadow-none" id="select-all-tasks" onclick="toggleSelectAll(this)">
+                                        </th>
+                                        <th>Task</th>
                                         <th>Priority</th>
                                         <th>Status</th>
                                         <th>Operator</th>
@@ -1529,6 +1538,71 @@
                 if (bsModal) bsModal.hide();
             } catch (err) {
                 showToast("Purge failed: " + (err?.data?.detail || "Unknown error"), "error");
+            }
+        }
+
+        // --- Bulk Actions ---
+        function toggleSelectAll(master) {
+            const checkboxes = document.querySelectorAll('.task-checkbox');
+            checkboxes.forEach(cb => cb.checked = master.checked);
+            updateBulkDeleteState();
+        }
+
+        function updateBulkDeleteState() {
+            const checkboxes = document.querySelectorAll('.task-checkbox:checked');
+            const bulkBtn = document.getElementById('bulk-delete-btn');
+            const selectAll = document.getElementById('select-all-tasks');
+            const total = document.querySelectorAll('.task-checkbox').length;
+
+            if (bulkBtn) {
+                bulkBtn.style.display = checkboxes.length > 0 ? 'inline-block' : 'none';
+                bulkBtn.innerHTML = `<i class="bi bi-trash3 me-1"></i>Delete Selected (${checkboxes.length})`;
+            }
+
+            if (selectAll) {
+                selectAll.checked = total > 0 && checkboxes.length === total;
+                selectAll.indeterminate = checkboxes.length > 0 && checkboxes.length < total;
+            }
+        }
+
+        async function deleteSelectedTasks() {
+            const selected = Array.from(document.querySelectorAll('.task-checkbox:checked')).map(cb => cb.value);
+            if (selected.length === 0) return;
+
+            // Important: Only 'TODO' types can be bulk deleted via the new endpoint for now 
+            // to ensure linked meetings and permissions are handled by the specific logic we added.
+            // Other types (MEETING, VISIT) usually have different logic.
+            const todoIdsToBulkDelete = [];
+            const otherTasksToSingleDelete = [];
+
+            selected.forEach(sid => {
+                const t = tasks.find(item => item.id === sid);
+                if (t && t.event_type === 'TODO') {
+                    todoIdsToBulkDelete.push(t.original_id);
+                } else if (t) {
+                    otherTasksToSingleDelete.push(t);
+                }
+            });
+
+            if (!confirm(`Are you sure you want to delete ${selected.length} selected activities?`)) return;
+
+            try {
+                // Handle TODOs in bulk
+                if (todoIdsToBulkDelete.length > 0) {
+                    await ApiClient.deleteTodosBulk(todoIdsToBulkDelete);
+                }
+
+                // Handle others individually if any (meetings, etc.)
+                for (const t of otherTasksToSingleDelete) {
+                    if (t.event_type === 'MEETING') await ApiClient.deleteMeeting(t.original_id);
+                    else if (t.event_type === 'TIMETABLE') await ApiClient.deleteTimetableEvent(t.original_id);
+                }
+
+                showToast(`Success: Deleted ${selected.length} items.`);
+                loadTasks();
+            } catch (err) {
+                showToast("Bulk delete partial failure: " + (err?.data?.detail || "Check console"), "error");
+                loadTasks();
             }
         }
 

@@ -1,8 +1,0 @@
-D:\Office Work\CRM SETU Feature Upgrade\CRM_AI_SETU\app.py:18: DeprecationWarning: 'asyncio.WindowsSelectorEventLoopPolicy' is deprecated and slated for removal in Python 3.16
-  asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-D:\Office Work\CRM SETU Feature Upgrade\CRM_AI_SETU\app.py:18: DeprecationWarning: 'asyncio.set_event_loop_policy' is deprecated and slated for removal in Python 3.16
-  asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-INFO:     Started server process [4756]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)

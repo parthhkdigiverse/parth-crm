@@ -52,34 +52,40 @@ async def create_timetable_event(
                 
         return created_events[0] if created_events else None
 
-    event = TimetableEvent(**event_in.model_dump(), user_id=user_id)
+    # --- Resolve User ID from Assignee Name if possible ---
+    target_user_id = user_id
+    assignee_name = event_in.assignee_name
+    target_user = None
+
+    if assignee_name and assignee_name not in ("All Employees", ""):
+        import re
+        clean_name = re.sub(r'\s*\([^)]*\)$', '', assignee_name.strip())
+        pattern = re.compile(f"^{re.escape(clean_name)}$", re.IGNORECASE)
+        target_user = await User.find_one(
+            User.is_deleted == False,
+            Or({"name": pattern}, {"email": pattern})
+        )
+        if target_user:
+            target_user_id = target_user.id
+
+    event = TimetableEvent(**event_in.model_dump(), user_id=target_user_id)
     await event.insert()
 
     # --- Notify assignee if different from creator ---
-    try:
-        assignee_name = event.assignee_name
-        if assignee_name and assignee_name not in ("All Employees", ""):
-            import re
-            clean_name = re.sub(r'\s*\([^)]*\)$', '', assignee_name.strip())
-            pattern = re.compile(f"^{re.escape(clean_name)}$", re.IGNORECASE)
-            target = await User.find_one(
-                User.is_deleted == False,
-                Or({"name": pattern}, {"email": pattern})
+    if target_user and target_user.id != user_id:
+        try:
+            from app.utils.notify_helpers import create_notification
+            await create_notification(
+                user_id=target_user.id,
+                title="📅 New Activity Scheduled",
+                message=(
+                    f"{current_user.name or 'Admin'} scheduled "
+                    f"'{event.title}' for you on {event.date}."
+                ),
+                actor_id=current_user.id
             )
-            
-            if target and target.id != user_id:
-                notif = Notification(
-                    user_id=target.id,
-                    title="New Activity Scheduled",
-                    message=(
-                        f"{current_user.name or 'Admin'} scheduled "
-                        f"'{event.title}' for you on {event.date}."
-                    ),
-                    is_read=False
-                )
-                await notif.insert()
-    except Exception as _ne:
-        print(f"[Timetable] Notification error: {_ne}")
+        except Exception as _ne:
+            print(f"[Timetable] Notification error: {_ne}")
 
     return event
 
@@ -267,19 +273,36 @@ async def get_timetable(
     # --- Process Meetings ---
     for m in meetings:
         client = client_map.get(m.client_id)
-        if not client: continue
         
-        if not is_admin:
-            role_val = current_user.role.value
-            if role_val in ["PROJECT_MANAGER", "PROJECT_MANAGER_AND_SALES"] and client.pm_id != user_id: continue
-            if role_val not in ["PROJECT_MANAGER", "PROJECT_MANAGER_AND_SALES"] and client.owner_id != user_id: continue
-
+        is_visible = is_admin
+        if not is_visible:
+            # Check user role overrides or explicit inclusion
+            if m.host_id == user_id or (m.attendee_ids and user_id in m.attendee_ids):
+                is_visible = True
+            elif client:
+                role_val = current_user.role.value
+                if role_val in ["PROJECT_MANAGER", "PROJECT_MANAGER_AND_SALES"] and client.pm_id == user_id:
+                    is_visible = True
+                elif role_val not in ["PROJECT_MANAGER", "PROJECT_MANAGER_AND_SALES"] and client.owner_id == user_id:
+                    is_visible = True
+                    
+        if not is_visible:
+            continue
+            
         h = m.date.hour if m.date.hour >= 7 else 14
-        real_user = user_name_map.get(client.owner_id, username)
+        
+        # Display name for user column 
+        real_user = user_name_map.get(m.host_id, username)
+        if client and client.owner_id and m.host_id != client.owner_id:
+            real_user = f"{real_user} / {user_name_map.get(client.owner_id, 'Rep')}"
+
+        title = f"Meeting: {client.name}" if client else f"Meeting: {m.title}"
+        if m.project_id and not client:
+            title = f"Project Sync: {m.title}"
 
         events.append({
             "id": str(m.id),
-            "title": f"Meeting: {client.name}",
+            "title": title,
             "date": date_str(m.date),
             "user": real_user,
             "sh": h, "sm": 0, "eh": h+1, "em": 30,
