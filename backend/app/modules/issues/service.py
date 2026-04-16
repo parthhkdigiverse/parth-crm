@@ -20,6 +20,43 @@ class IssueService:
     async def get_issue(self, issue_id: PydanticObjectId) -> Optional[Issue]:
         return await Issue.find_one(Issue.id == issue_id, Issue.is_deleted == False)
 
+    async def can_access_issue(self, issue: Issue, user: User) -> bool:
+        """Centralized RBAC check for Issue access."""
+        if user.role == UserRole.ADMIN:
+            return True
+        
+        # 1. Directly involved (Reporter or Assignee)
+        if issue.reporter_id == user.id or issue.assigned_to_id == user.id:
+            return True
+            
+        # 2. Group access
+        if issue.assigned_group:
+            role_val = user.role.value if hasattr(user.role, "value") else str(user.role)
+            allowed_groups = ["GROUP_ALL"]
+            if role_val in ["SALES", "TELESALES"]: 
+                allowed_groups.extend(["GROUP_SALES", "GROUP_PM_SALES"])
+            elif role_val == "PROJECT_MANAGER": 
+                allowed_groups.extend(["GROUP_PM", "GROUP_PM_SALES"])
+            elif role_val == "PROJECT_MANAGER_AND_SALES": 
+                allowed_groups.extend(["GROUP_SALES", "GROUP_PM", "GROUP_PM_SALES"])
+            
+            if issue.assigned_group in allowed_groups:
+                return True
+                
+        # 3. Client ownership/management context
+        if issue.client_id:
+            # We use ClientService.get_client which now has full RBAC 
+            # including Owner, Current PM, Demo PM, and Invoice Bridge
+            from app.modules.clients.service import ClientService
+            try:
+                client = await ClientService().get_client(issue.client_id, user)
+                if client:
+                    return True
+            except HTTPException:
+                pass
+        
+        return False
+
     async def get_all_issues(
         self,
         skip: int = 0,
@@ -52,11 +89,25 @@ class IssueService:
                     allowed_groups.extend(["GROUP_SALES", "GROUP_PM", "GROUP_PM_SALES"])
                 
                 # Fetch clients related to user for ownership cross-reference
+                from app.modules.shops.models import Shop
+                from app.modules.billing.models import Bill
+                
+                # 1. Invoice Bridge
+                billed_phones = await Bill.get_pymongo_collection().distinct(
+                    "invoice_client_phone", {"created_by_id": current_user.id}
+                )
+                # 2. Demo PM Bridge
+                demo_shop_client_ids = await Shop.get_pymongo_collection().distinct(
+                    "client_id", {"project_manager_id": current_user.id, "is_deleted": False}
+                )
+                
                 raw_user_client_ids = await Client.get_pymongo_collection().distinct("_id", {
                     "$or": [
                         {"owner_id": current_user.id},
                         {"pm_id": current_user.id},
-                        {"referred_by_id": current_user.id}
+                        {"referred_by_id": current_user.id},
+                        {"phone": {"$in": billed_phones}},
+                        {"_id": {"$in": [PydanticObjectId(cid) for cid in demo_shop_client_ids if cid]}}
                     ],
                     "is_deleted": False
                 })
@@ -193,6 +244,9 @@ class IssueService:
         db_issue = await self.get_issue(issue_id)
         if not db_issue: 
             raise HTTPException(status_code=404, detail="Issue not found")
+            
+        if not await self.can_access_issue(db_issue, current_user):
+            raise HTTPException(status_code=403, detail="Access denied to this issue")
 
         update_data = issue_update.model_dump(exclude_unset=True)
         # Remarks mandatory for status change

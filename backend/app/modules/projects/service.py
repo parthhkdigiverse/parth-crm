@@ -48,11 +48,17 @@ class ProjectService:
         
         return project
 
-    async def get_projects(self, skip: int = 0, limit: Optional[int] = None, pm_id: Optional[PydanticObjectId] = None) -> List[Project]:
+    async def get_projects(self, skip: int = 0, limit: Optional[int] = None, pm_id: Optional[PydanticObjectId] = None, client_ids: Optional[List[PydanticObjectId]] = None) -> List[Project]:
         """Fetches a list of projects with enrichment."""
         q = Project.find(Project.is_deleted == False)
-        if pm_id:
+        
+        if pm_id and client_ids:
+            # Combined roles (PM + Sales): see projects WHERE (is PM) OR (is Owner of client)
+            q = q.find(Or(Project.pm_id == pm_id, In(Project.client_id, client_ids)))
+        elif pm_id:
             q = q.find(Project.pm_id == pm_id)
+        elif client_ids:
+            q = q.find(In(Project.client_id, client_ids))
         
         # Build query — only apply limit when explicitly provided
         query = q.sort("-created_at").skip(skip)

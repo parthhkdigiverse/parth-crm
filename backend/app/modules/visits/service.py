@@ -91,8 +91,42 @@ class VisitService:
         return result[0]
 
 
+    async def get_visit_with_rbac(self, visit_id: PydanticObjectId, current_user: User) -> Optional[Visit]:
+        """Fetches a single visit with strict RBAC enforcement."""
+        visit = await Visit.find_one(Visit.id == visit_id, Visit.is_deleted == False)
+        if not visit:
+            return None
+            
+        # Admin bypass
+        if current_user.role == UserRole.ADMIN:
+            await self._populate_visit_metadata(visit)
+            return visit
+
+        # 1. Check if user is the visitor
+        if visit.user_id == current_user.id:
+            await self._populate_visit_metadata(visit)
+            return visit
+            
+        # 2. Check if user manages the associated shop
+        shop = await Shop.get(visit.shop_id)
+        if not shop:
+            raise HTTPException(status_code=403, detail="Access denied: Associated shop not found.")
+            
+        is_manager = (
+            shop.owner_id == current_user.id or
+            shop.project_manager_id == current_user.id or
+            current_user.id in getattr(shop, 'assigned_user_ids', []) or
+            current_user.id in getattr(shop, 'assigned_owner_ids', [])
+        )
+        
+        if not is_manager:
+            raise HTTPException(status_code=403, detail="Access denied to this visit.")
+
+        await self._populate_visit_metadata(visit)
+        return visit
+
     async def get_visit(self, visit_id: PydanticObjectId) -> Optional[Visit]:
-        """Fetches a single visit with enriched metadata."""
+        """Internal fetcher for a single visit with enriched metadata (no RBAC)."""
         visit = await Visit.find_one(Visit.id == visit_id, Visit.is_deleted == False)
         if visit:
             await self._populate_visit_metadata(visit)
@@ -137,19 +171,23 @@ class VisitService:
 
         # --- SECURITY ENFORCEMENT (RBAC) ---
         if current_user and current_user.role != UserRole.ADMIN and not shop_id:
-            raw_owned_ids = await Shop.get_pymongo_collection().distinct("_id", {
+            # Identify shops where the user has management/ownership rights
+            raw_managed_ids = await Shop.get_pymongo_collection().distinct("_id", {
                 "$or": [
                     {"owner_id": current_user.id},
-                    {"assigned_owner_ids": {"$in": [current_user.id]}}
+                    {"assigned_owner_ids": {"$in": [current_user.id]}},
+                    {"project_manager_id": current_user.id}
                 ]
             })
-            owned_shop_ids = [PydanticObjectId(rid) for rid in raw_owned_ids if rid]
+            managed_shop_ids = [PydanticObjectId(rid) for rid in raw_managed_ids if rid]
             
+            # Non-admins see: 
+            # 1. Visits they personally conducted (user_id)
+            # 2. Visits to shops they manage (owner/PM/assigned)
             q = q.find(
                 Or(
                     Visit.user_id == current_user.id,
-                    In(Visit.shop_id, owned_shop_ids)
-
+                    In(Visit.shop_id, managed_shop_ids)
                 )
             )
 
@@ -240,10 +278,11 @@ class VisitService:
         return await self._populate_visit_metadata(visit)
 
     async def update_visit(self, visit_id: PydanticObjectId, visit_in: VisitUpdate, current_user: User, request: Request):
-        """Updates visit notes/status and logs the change."""
-        visit = await Visit.get(visit_id)
+        """Updates visit notes/status and logs the change with RBAC check."""
+        # Use the RBAC-enabled fetcher
+        visit = await self.get_visit_with_rbac(visit_id, current_user)
         if not visit:
-            raise HTTPException(status_code=404, detail="Visit not found")
+            raise HTTPException(status_code=404, detail="Visit not found or access denied")
 
         old_data = {"status": str(visit.status), "remarks": visit.remarks}
         

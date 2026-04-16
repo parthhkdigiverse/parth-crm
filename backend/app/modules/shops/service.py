@@ -67,10 +67,23 @@ class ShopService:
         return db_shop
 
     @staticmethod
-    async def get_shop(shop_id: PydanticObjectId):
+    async def get_shop(shop_id: PydanticObjectId, current_user: Optional[User] = None):
         shop = await Shop.find_one(Shop.id == shop_id, Shop.is_deleted != True)
         if not shop:
             raise HTTPException(status_code=404, detail="Shop not found")
+            
+        # ─── Strict RBAC Check ───
+        if current_user and current_user.role != "ADMIN":
+            is_authorized = (
+                shop.owner_id == current_user.id or
+                shop.project_manager_id == current_user.id or
+                shop.created_by_id == current_user.id or
+                current_user.id in getattr(shop, 'assigned_user_ids', []) or
+                current_user.id in getattr(shop, 'assigned_owner_ids', [])
+            )
+            if not is_authorized:
+                raise HTTPException(status_code=403, detail="Access denied to this lead/shop")
+                
         return shop
 
     @staticmethod
@@ -183,12 +196,13 @@ class ShopService:
         query = Shop.find(Shop.is_deleted != True)
         
         if owner_id:
-            from beanie.operators import Or
+            from beanie.operators import Or, In
             query = query.find(Or(
                 Shop.owner_id == owner_id,
                 Shop.project_manager_id == owner_id,
                 Shop.created_by_id == owner_id,
-                Shop.assigned_user_ids == owner_id
+                In(Shop.assigned_user_ids, [owner_id]),
+                In(Shop.assigned_owner_ids, [owner_id])
             ))
             
         if source and source not in {"ALL", "all"}:
@@ -296,8 +310,8 @@ class ShopService:
 
 
     @staticmethod
-    async def update_shop(shop_id: PydanticObjectId, shop_in: ShopUpdate):
-        db_shop = await ShopService.get_shop(shop_id)
+    async def update_shop(shop_id: PydanticObjectId, shop_in: ShopUpdate, current_user: Optional[User] = None):
+        db_shop = await ShopService.get_shop(shop_id, current_user=current_user)
         update_data = shop_in.model_dump(exclude_unset=True)
         
         # Auto-cancel pending demos if moving to DELIVERY (but not yet in DELIVERY)
@@ -317,8 +331,8 @@ class ShopService:
 
     # ── Pipeline Entry (Lead -> Delivery) ──
     @staticmethod
-    async def approve_pipeline_entry(shop_id: PydanticObjectId):
-        db_shop = await ShopService.get_shop(shop_id)
+    async def approve_pipeline_entry(shop_id: PydanticObjectId, current_user: Optional[User] = None):
+        db_shop = await ShopService.get_shop(shop_id, current_user=current_user)
         
         if db_shop.pipeline_stage == MasterPipelineStage.DELIVERY:
             raise HTTPException(status_code=400, detail="Entry already approved and converted to project")
@@ -446,12 +460,15 @@ class ShopService:
     # ── Accept Shop (Staff claims the shop) ──
     @staticmethod
     async def accept_shop(shop_id: PydanticObjectId, current_user: User):
-        shop = await Shop.get(shop_id)
+        shop = await Shop.find_one(Shop.id == shop_id, Shop.is_deleted != True)
         if not shop:
             raise HTTPException(status_code=404, detail="Shop not found")
             
-        if current_user.id not in getattr(shop, 'assigned_user_ids', []):
-            raise HTTPException(status_code=403, detail="You are not assigned to this shop.")
+        # Permission check: usually shops are unassigned when pushed to queue, 
+        # but we check if they are already assigned to someone else.
+        if shop.assignment_status == "ACCEPTED" and current_user.id not in getattr(shop, 'assigned_user_ids', []):
+            if current_user.role != "ADMIN":
+                raise HTTPException(status_code=403, detail="This lead has already been accepted by another user.")
             
         from datetime import datetime, UTC
         shop.assignment_status = "ACCEPTED"

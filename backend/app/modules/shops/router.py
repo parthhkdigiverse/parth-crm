@@ -50,7 +50,7 @@ async def read_kanban_shops(
     source: Optional[str] = Query(None),
     current_user: User = Depends(staff_checker)
 ) -> Any:
-    employee_roles = {UserRole.SALES, UserRole.TELESALES, UserRole.PROJECT_MANAGER_AND_SALES}
+    employee_roles = {UserRole.SALES, UserRole.TELESALES, UserRole.PROJECT_MANAGER, UserRole.PROJECT_MANAGER_AND_SALES}
     effective_owner_id = owner_id
     if (current_user and current_user.role in employee_roles) or my_view:
         effective_owner_id = current_user.id if current_user else None
@@ -98,7 +98,7 @@ async def read_shop(
     current_user: User = Depends(staff_checker)
 ) -> Any:
     service = ShopService()
-    shop = await service.get_shop(shop_id)
+    shop = await service.get_shop(shop_id, current_user=current_user)
     if not shop:
         raise HTTPException(status_code=404, detail="Shop not found")
     
@@ -120,7 +120,7 @@ async def update_shop(
     shop_in: ShopUpdate,
     current_user: User = Depends(staff_checker)
 ) -> Any:
-    return await ShopService().update_shop(shop_id, shop_in)
+    return await ShopService().update_shop(shop_id, shop_in, current_user=current_user)
 
 @router.post("/{shop_id}/accept", response_model=ShopRead)
 async def accept_shop(
@@ -171,7 +171,7 @@ async def approve_pipeline(
     shop_id: PydanticObjectId,
     current_user: User = Depends(staff_checker)
 ) -> Any:
-    return await ShopService().approve_pipeline_entry(shop_id)
+    return await ShopService().approve_pipeline_entry(shop_id, current_user=current_user)
 
 @router.delete("/{shop_id}", status_code=status.HTTP_200_OK)
 async def archive_shop(

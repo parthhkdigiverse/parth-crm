@@ -91,16 +91,11 @@ async def read_visits(
     current_user: User = Depends(read_access)
 ) -> Any:
     """Get visits with optional filtering. Scoped by user role."""
-    # If the user is Sales or Telesales, they can only view their own visits.
-    effective_user_id = user_id
-    if current_user and current_user.role in [UserRole.SALES, UserRole.TELESALES]:
-        effective_user_id = current_user.id
-        
     service = VisitService()
     return await service.get_visits(
         skip, limit, 
         current_user=current_user, 
-        user_id=effective_user_id, 
+        user_id=user_id, 
         shop_id=shop_id,
         area_id=area_id,
         status=status,

@@ -17,11 +17,90 @@ class MeetingService:
         # No db session needed in Beanie!
         pass
 
-    async def get_meeting(self, meeting_id: PydanticObjectId) -> Optional[MeetingSummary]:
-        return await MeetingSummary.find_one(MeetingSummary.id == meeting_id, MeetingSummary.is_deleted == False)
+    async def get_meeting(self, meeting_id: PydanticObjectId, current_user: Optional[User] = None) -> Optional[MeetingSummary]:
+        meeting = await MeetingSummary.find_one(MeetingSummary.id == meeting_id, MeetingSummary.is_deleted == False)
+        if not meeting:
+            return None
+            
+        if current_user and current_user.role != UserRole.ADMIN:
+            # Check host/attendee
+            is_authorized = (
+                meeting.host_id == current_user.id or
+                current_user.id in (meeting.attendee_ids or [])
+            )
+            
+            # Check client scope for PMs/Sales/Demo PMs
+            if not is_authorized:
+                if meeting.client_id:
+                    from app.modules.clients.service import ClientService
+                    try:
+                        # Full RBAC check including Owner, Current PM, Demo PM, and Invoice Bridge
+                        client = await ClientService().get_client(meeting.client_id, current_user)
+                        if client:
+                            is_authorized = True
+                    except HTTPException:
+                        pass
+                
+                # Direct check if user is the PM for the specific project linked to this meeting
+                if not is_authorized and meeting.project_id:
+                    from app.modules.shops.models import Shop
+                    shop = await Shop.get(meeting.project_id)
+                    if shop and shop.project_manager_id == current_user.id:
+                        is_authorized = True
+            
+            if not is_authorized:
+                raise HTTPException(status_code=403, detail="Access denied to this meeting")
+                
+        return meeting
 
-    async def get_meetings(self, skip: int = 0, limit: Optional[int] = None) -> List[MeetingSummary]:
-        query = MeetingSummary.find(MeetingSummary.is_deleted == False).skip(skip)
+    async def get_meetings(self, current_user: User, skip: int = 0, limit: Optional[int] = None) -> List[MeetingSummary]:
+        find_query = MeetingSummary.find(MeetingSummary.is_deleted == False)
+        
+        if current_user.role != UserRole.ADMIN:
+            visibility_conditions = [
+                {"host_id": current_user.id},
+                {"attendee_ids": current_user.id}
+            ]
+            
+            # Sub-query for clients this user manages/owns/demoed or billed
+            from app.modules.clients.models import Client
+            from app.modules.shops.models import Shop
+            from app.modules.billing.models import Bill
+            
+            # 1. Invoice Bridge
+            billed_phones = await Bill.get_pymongo_collection().distinct(
+                "invoice_client_phone", {"created_by_id": current_user.id}
+            )
+            # 2. Demo PM Bridge
+            demo_shop_client_ids = await Shop.get_pymongo_collection().distinct(
+                "client_id", {"project_manager_id": current_user.id, "is_deleted": False}
+            )
+            
+            # 3. Direct Shop access (meetings linked to shops/projects directly)
+            demo_shop_ids = await Shop.get_pymongo_collection().distinct(
+                "_id", {"project_manager_id": current_user.id, "is_deleted": False}
+            )
+            
+            managed_client_ids = await Client.get_pymongo_collection().distinct("_id", {
+                "$or": [
+                    {"owner_id": current_user.id},
+                    {"pm_id": current_user.id},
+                    {"referred_by_id": current_user.id},
+                    {"phone": {"$in": billed_phones}},
+                    {"_id": {"$in": [PydanticObjectId(cid) for cid in demo_shop_client_ids if cid]}}
+                ],
+                "is_deleted": False
+            })
+            
+            if managed_client_ids:
+                visibility_conditions.append({"client_id": {"$in": [PydanticObjectId(cid) for cid in managed_client_ids if cid]}})
+            
+            if demo_shop_ids:
+                visibility_conditions.append({"project_id": {"$in": [PydanticObjectId(sid) for sid in demo_shop_ids if sid]}})
+                
+            find_query = find_query.find(Or(*visibility_conditions))
+
+        query = find_query.skip(skip)
         if limit is not None:
             query = query.limit(limit)
         return await query.to_list()
@@ -159,9 +238,9 @@ class MeetingService:
         
         return db_meeting
 
-    async def import_meeting_summary(self, meeting_id: PydanticObjectId):
+    async def import_meeting_summary(self, meeting_id: PydanticObjectId, current_user: User):
         """Fetches Google Meet transcript via AI summarizer utility and updates MeetingSummary state."""
-        db_meeting = await self.get_meeting(meeting_id)
+        db_meeting = await self.get_meeting(meeting_id, current_user=current_user)
         if not db_meeting: 
             raise HTTPException(status_code=404, detail="Meeting not found")
         
@@ -215,9 +294,9 @@ class MeetingService:
 
         return db_meeting
 
-    async def initialize_google_meet(self, meeting_id: PydanticObjectId):
+    async def initialize_google_meet(self, meeting_id: PydanticObjectId, current_user: User):
         """Generate and persist a Google Meet link for an existing meeting."""
-        db_meeting = await self.get_meeting(meeting_id)
+        db_meeting = await self.get_meeting(meeting_id, current_user=current_user)
         if not db_meeting:
             raise HTTPException(status_code=404, detail="Meeting not found")
 
@@ -238,13 +317,13 @@ class MeetingService:
 
         return db_meeting
 
-    async def get_ai_analysis(self, meeting_id: PydanticObjectId):
+    async def get_ai_analysis(self, meeting_id: PydanticObjectId, current_user: User):
         """
         Returns the stored ai_summary if available (cached), otherwise
         generates one from the transcript or manual notes via Gemini.
         Mirrors the old SQL service logic.
         """
-        db_meeting = await self.get_meeting(meeting_id)
+        db_meeting = await self.get_meeting(meeting_id, current_user=current_user)
         if not db_meeting:
             return {"error": "Meeting not found"}
 

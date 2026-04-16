@@ -16,8 +16,37 @@ class ClientService:
         # No db session needed in Beanie!
         pass
 
-    async def get_client(self, client_id: PydanticObjectId) -> Optional[Client]:
-        return await Client.find_one(Client.id == client_id, Client.is_deleted == False)
+    async def get_client(self, client_id: PydanticObjectId, current_user: User = None) -> Optional[Client]:
+        """Fetch a single client with RBAC checks."""
+        client = await Client.find_one(Client.id == client_id, Client.is_deleted == False)
+        if not client:
+            return None
+            
+        if current_user and current_user.role != UserRole.ADMIN:
+            # 1. Direct Owner or PM
+            if client.owner_id == current_user.id or client.pm_id == current_user.id or client.referred_by_id == current_user.id:
+                return client
+                
+            # 2. Invoice Bridge (Phone Match)
+            billed_phones = await Bill.get_pymongo_collection().distinct(
+                "invoice_client_phone", {"created_by_id": current_user.id}
+            )
+            if client.phone in billed_phones:
+                return client
+                
+            # 3. Demo PM Bridge (via Shop)
+            from app.modules.shops.models import Shop
+            is_demo_pm = await Shop.find_one(
+                Shop.client_id == client.id, 
+                Shop.project_manager_id == current_user.id,
+                Shop.is_deleted == False
+            )
+            if is_demo_pm:
+                return client
+                
+            raise HTTPException(status_code=403, detail="Access denied to this client.")
+            
+        return client
 
     async def get_clients(
         self,
@@ -66,17 +95,25 @@ class ClientService:
                     q = q.find({"archived_by_ids": {"$ne": current_user.id}})
 
             if current_user and current_user.role != UserRole.ADMIN:
-                # Scoped view: Owner, PM, or via Billing link
-                # bridge view: find clients associated with invoices created by current user
+                from app.modules.shops.models import Shop
+                # 1. Invoice Bridge: find phones the user has billed
                 billed_phones = await Bill.get_pymongo_collection().distinct(
                     "invoice_client_phone", 
                     {"created_by_id": current_user.id}
                 )
                 
+                # 2. Demo PM Bridge: find clients from shops the user manages
+                demo_shop_client_ids = await Shop.get_pymongo_collection().distinct(
+                    "client_id", 
+                    {"project_manager_id": current_user.id, "is_deleted": False}
+                )
+                managed_client_ids = [PydanticObjectId(cid) for cid in demo_shop_client_ids if cid]
+                
                 q = q.find(Or(
                     Client.owner_id == current_user.id,
                     Client.pm_id == current_user.id,
-                    In(Client.phone, billed_phones)
+                    In(Client.phone, billed_phones),
+                    In(Client.id, managed_client_ids)
                 ))
 
             if search:
