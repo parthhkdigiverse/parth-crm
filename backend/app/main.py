@@ -122,6 +122,73 @@ async def lifespan(app: FastAPI):
             document_models=DOCUMENT_MODELS,
         )
         print("[Lifespan] Database initialized successfully.")
+
+        # --- Data Correction (One-time fix for 1.5h meetings) ---
+        try:
+            from app.modules.todos.models import Todo
+            from datetime import datetime as dt, timedelta
+            print("[Lifespan] Checking for meetings with time shift issue...")
+            meeting_todos = await Todo.find({"title": {"$regex": "^Meeting:"}, "is_deleted": False}).to_list()
+            fixed_count = 0
+            for t in meeting_todos:
+                # 1. Fix double-prefix "Meeting: Meeting:"
+                if "Meeting: Meeting:" in t.title:
+                    old_t = t.title
+                    t.title = t.title.replace("Meeting: Meeting:", "Meeting:").strip()
+                    print(f"  [Correction] Fixed Title: '{old_t}' -> '{t.title}'")
+                    await t.save()
+
+                if t.start_time and t.end_time:
+                    try:
+                        fmt = "%H:%M:%S"
+                        s_dt = dt.strptime(t.start_time, fmt)
+                        e_dt = dt.strptime(t.end_time, fmt)
+                        duration = (e_dt - s_dt).total_seconds()
+                        
+                        # Fix only if it's exactly 1.5 hours (5400s)
+                        if duration == 5400:
+                            new_end = (s_dt + timedelta(hours=1)).strftime(fmt)
+                            print(f"  [Correction] Fixing Duration '{t.title}': {t.start_time}-{t.end_time} -> {t.start_time}-{new_end}")
+                            t.end_time = new_end
+                            await t.save()
+                            
+                            # Also sync the parent meeting if it exists
+                            if t.related_entity and "MEETING:" in t.related_entity:
+                                m_id = t.related_entity.split(":")[1]
+                                from app.modules.meetings.models import MeetingSummary
+                                from beanie import PydanticObjectId
+                                try:
+                                    meeting = await MeetingSummary.get(PydanticObjectId(m_id))
+                                    if meeting:
+                                        # Fix MeetingSummary title and times
+                                        if meeting.title and meeting.title.startswith("Meeting: "):
+                                            meeting.title = meeting.title.replace("Meeting: ", "", 1).strip()
+                                        meeting.start_time = t.start_time
+                                        meeting.end_time = t.end_time
+                                        await meeting.save()
+                                except Exception: pass
+                            fixed_count += 1
+                        else:
+                            # Still check parent meeting title even if duration is fine
+                            if t.related_entity and "MEETING:" in t.related_entity:
+                                m_id = t.related_entity.split(":")[1]
+                                from app.modules.meetings.models import MeetingSummary
+                                from beanie import PydanticObjectId
+                                try:
+                                    meeting = await MeetingSummary.get(PydanticObjectId(m_id))
+                                    if meeting and meeting.title and meeting.title.startswith("Meeting: "):
+                                        meeting.title = meeting.title.replace("Meeting: ", "", 1).strip()
+                                        await meeting.save()
+                                except Exception: pass
+
+                    except Exception: continue
+            if fixed_count > 0:
+                print(f"[Lifespan] Successfully corrected records.")
+            else:
+                print("[Lifespan] No buggy records found.")
+        except Exception as e:
+            print(f"[Lifespan] Correction task failed (non-fatal): {e}")
+        # --------------------------------------------------------
         
         print("[Lifespan] Starting scheduler...")
         start_scheduler()

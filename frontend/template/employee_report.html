@@ -249,7 +249,7 @@
                         <div class="col-4">
                             <div class="p-3 border border-primary-subtle rounded-4 bg-white shadow-sm h-100">
                                 <div class="text-muted x-small fw-bold text-uppercase mb-1">Target</div>
-                                <div class="fw-bold text-main fs-5" id="modal-target">₹0</div>
+                                <div class="fw-bold text-main fs-5" id="modal-target">0</div>
                             </div>
                         </div>
                         <div class="col-4">
@@ -775,7 +775,7 @@
             document.getElementById('modal-conversion').textContent = `${conversion}%`;
 
             const t = parseFloat(target) || 0;
-            document.getElementById('modal-target').textContent = '₹' + t.toLocaleString('en-IN');
+            document.getElementById('modal-target').textContent = t.toLocaleString('en-IN');
 
             // Calculate Rank dynamically based on sales, then visits, then leads (tie-breakers)
             const sorted = [...currentReportMetrics]

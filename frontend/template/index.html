@@ -275,7 +275,8 @@
         }
 
         .input-field::placeholder {
-            color: var(--text-placeholder);
+            color: #94a3b8; /* Lighter gray to not look like pre-filled data */
+            opacity: 0.7;
         }
 
         .input-field[type="password"],
@@ -589,7 +590,7 @@
                         <label class="form-label" for="fp-email">Email Address</label>
                         <div class="input-wrapper">
                             <i class="bi bi-envelope input-icon"></i>
-                            <input type="email" id="fp-email" class="input-field" placeholder="name@example.com" required>
+                            <input type="email" id="fp-email" class="input-field" placeholder="Enter your registered email" required>
                         </div>
                     </div>
                     <button type="submit" class="btn-login" id="fp-submit-btn">
@@ -614,7 +615,7 @@
                         <label class="form-label" for="fp-email">Email Address</label>
                         <div class="input-wrapper">
                             <i class="bi bi-envelope input-icon"></i>
-                            <input type="email" id="fp-email" class="input-field" placeholder="name@example.com" required>
+                            <input type="email" id="fp-email" class="input-field" placeholder="Enter your registered email" required>
                         </div>
                     </div>
                     <button type="submit" class="btn-login" id="fp-submit-btn">
@@ -635,7 +636,7 @@
                     <label class="form-label" for="email">Email Address</label>
                     <div class="input-wrapper">
                         <i class="bi bi-envelope input-icon"></i>
-                        <input type="text" id="email" class="input-field" placeholder="admin@example.com" required
+                        <input type="text" id="email" class="input-field" placeholder="Enter your email address" required
                             autocomplete="email" inputmode="email">
                     </div>
                     <p class="field-hint" id="email-hint"></p>
@@ -648,7 +649,7 @@
                     </div>
                     <div class="input-wrapper">
                         <i class="bi bi-lock input-icon"></i>
-                        <input type="password" id="password" class="input-field" placeholder="••••••••" required
+                        <input type="password" id="password" class="input-field" placeholder="Enter your password" required
                             autocomplete="current-password">
                         <button type="button" class="password-toggle"
                             onclick="togglePasswordVisibility('password', 'pass-eye')" id="toggle-pass-btn">

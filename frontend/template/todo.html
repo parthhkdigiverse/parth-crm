@@ -517,7 +517,7 @@
                         </div>
                         <div>
                             <h5 class="modal-header-title mb-0" id="modal-title-text"
-                                style="color:#fff; font-weight:700; font-size: 1rem;">Schedule Activity</h5>
+                                style="color:#fff; font-weight:700; font-size: 1rem;">Add New Task</h5>
                             <p class="modal-header-sub mb-0 text-white-50" style="font-size: 0.75rem;">Plan meetings or
                                 assign tasks</p>
                         </div>
@@ -579,8 +579,8 @@
                             </select>
                         </div>
 
-                        <!-- Time Selection -->
-                        <div class="col-md-6 mb-2 event-fields" style="display:none;">
+                        <!-- Time Selection (Shared) -->
+                        <div class="col-md-6 mb-2">
                             <div class="row g-2">
                                 <div class="col-6">
                                     <label class="form-premium-label small text-uppercase fw-bold text-secondary"
@@ -664,11 +664,11 @@
     </div>
 
     <!-- ─── Scripts ───────────────────────────────────────── -->
-    <script src="/frontend/js/utils.js?v=20260403"></script>
-    <script src="/frontend/js/api.js?v=20260403"></script>
-    <script src="/frontend/js/auth.js?v=20260403"></script>
-    <script src="/frontend/js/ui_components.js?v=20260403"></script>
-    <script src="/frontend/js/app.js?v=20260403"></script>
+    <script src="/frontend/js/utils.js?v=20260416v3"></script>
+    <script src="/frontend/js/api.js?v=20260416v3"></script>
+    <script src="/frontend/js/auth.js?v=20260416v3"></script>
+    <script src="/frontend/js/ui_components.js?v=20260416v3"></script>
+    <script src="/frontend/js/app.js?v=20260416v3"></script>
     <script src="/frontend/js/bootstrap.bundle.min.js"></script>
 
     <script>
@@ -698,9 +698,11 @@
         const todayStr = new Date().toISOString().split('T')[0];
 
         const STATUS_DETAILS = {
+            'OPEN': { label: 'Open', cls: 'badge-purple-light', icon: 'bi-hourglass' },
             'PENDING': { label: 'Pending', cls: 'badge-purple-light', icon: 'bi-hourglass' },
             'IN_PROGRESS': { label: 'In Progress', cls: 'badge-blue-light', icon: 'bi-gear-fill' },
             'COMPLETED': { label: 'Completed', cls: 'badge-green-light', icon: 'bi-check-circle-fill' },
+            'RESOLVED': { label: 'Completed', cls: 'badge-green-light', icon: 'bi-check-circle-fill' },
             'CANCELLED': { label: 'Cancelled', cls: 'badge-red-light', icon: 'bi-x-circle' }
         };
 
@@ -751,6 +753,16 @@
             return `<span class="status-pill ${cls}"><span class="priority-dot ${dot}"></span>${label}</span>`;
         }
 
+        function formatTime12h(t) {
+            if (!t) return '';
+            try {
+                let [h, m] = t.split(':').map(Number);
+                const ampm = h >= 12 ? 'PM' : 'AM';
+                h = h % 12 || 12;
+                return `${h}:${m.toString().padStart(2, '0')} ${ampm}`;
+            } catch (e) { return t; }
+        }
+
         function applyFilters() {
             filteredTasks = tasks.filter(t => {
                 const matchesSearch = t.title.toLowerCase().includes(filters.search.toLowerCase()) ||
@@ -758,7 +770,13 @@
                     (t.assigned_to && t.assigned_to.toLowerCase().includes(filters.search.toLowerCase()));
 
                 // [START] - Case-insensitive filter matching
-                const matchesStatus = filters.status === 'ALL' || t.status.toUpperCase() === filters.status.toUpperCase();
+                const tStatus = t.status.toUpperCase();
+                const fStatus = filters.status.toUpperCase();
+                let matchesStatus = filters.status === 'ALL' || tStatus === fStatus;
+
+                // Special mapping: RESOLVED (Meetings) == COMPLETED (Tasks)
+                if (fStatus === 'COMPLETED' && tStatus === 'RESOLVED') matchesStatus = true;
+
                 const matchesPriority = filters.priority === 'ALL' || t.priority.toUpperCase() === filters.priority.toUpperCase();
                 const matchesAssignee = !isAdmin || filters.assignee === 'ALL' || t.assigned_to === filters.assignee;
 
@@ -995,10 +1013,13 @@
                 renderRow: (t) => {
                     const assignee = t.assigned_to || 'Unassigned';
                     const initials = (assignee.split(' ').map(n => n[0]).join('') || '?').toUpperCase().slice(0, 2);
-                    let timeStr = t.start_time ? `${t.start_time.slice(0, 5)}` : '';
-                    if (t.end_time) timeStr += ` - ${t.end_time.slice(0, 5)}`;
+                    let timeStr = t.start_time ? formatTime12h(t.start_time) : '';
+                    if (t.end_time) {
+                        const endFormatted = formatTime12h(t.end_time);
+                        timeStr = timeStr ? `${timeStr} – ${endFormatted}` : endFormatted;
+                    }
                     const displayDate = t.due_date ? new Date(t.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'No date';
-                    const isCompleted = t.status === 'COMPLETED';
+                    const isCompleted = t.status === 'COMPLETED' || t.status === 'RESOLVED';
 
                     return `
                     <tr class="todo-row ${isCompleted ? 'completed' : ''}" data-id="${t.id}">
@@ -1044,7 +1065,7 @@
         function renderTodo() {
             const total = tasks.length;
             const highPri = tasks.filter(t => t.priority === 'HIGH').length;
-            const completed = tasks.filter(t => t.status === 'COMPLETED').length;
+            const completed = tasks.filter(t => t.status === 'COMPLETED' || t.status === 'RESOLVED').length;
             const pending = tasks.filter(t => t.status === 'PENDING').length;
 
             const container = document.getElementById('main-content');
@@ -1287,7 +1308,7 @@
             document.getElementById('td-priority').value = 'MEDIUM';
             document.getElementById('td-due').value = todayStr;
 
-            document.getElementById('modal-title-text').textContent = 'New Workspace Task';
+            document.getElementById('modal-title-text').textContent = 'Add New Task';
             document.getElementById('btn-delete-event').style.display = 'none';
             document.getElementById('save-task-btn').innerHTML = '<i class="bi bi-send-check me-1"></i>Publish Task';
             document.getElementById('mode-switcher-container').style.display = 'block';
@@ -1319,7 +1340,11 @@
             editingTaskId = taskId;
             if (!bsModal) bsModal = new bootstrap.Modal(document.getElementById('taskModal'));
 
-            document.getElementById('ev-title').value = task.title || '';
+            let displayTitle = task.title || '';
+            if (task.event_type === 'MEETING' && displayTitle.startsWith('Meeting: ')) {
+                displayTitle = displayTitle.replace(/^Meeting: /, '');
+            }
+            document.getElementById('ev-title').value = displayTitle;
             const userSel = document.getElementById('ev-user');
             if (userSel) {
                 userSel.selectedIndex = -1;
@@ -1409,6 +1434,8 @@
                 const startTime = document.getElementById('ev-start').value || null;
                 const endTime = document.getElementById('ev-end').value || null;
 
+                console.log("SRM_DEBUG: saveActivity triggered. editingTaskId:", editingTaskId);
+
                 // [START] Prevent scheduling in the past for new tasks
                 if (!editingTaskId) {
                     const now = new Date();
@@ -1425,6 +1452,7 @@
                 // API Payload mapping
                 if (currentMode === 'EVENT' && !editingTaskId) {
                     const user = getUser();
+                    // ... (rest of creation logic remains the same for new events)
                     const attendeeIds = selectedOptions.map(name => {
                         const found = (employeesList || []).find(u => (u.name || u.email) === name);
                         return found ? found.id : null;
@@ -1439,38 +1467,66 @@
                         attendee_ids: attendeeIds,
                         priority: priority,
                         client_id: clientId || null,
-                        target_type: attendeeIds.length > 0 ? 'MANUAL' : (clientId ? 'CLIENT' : 'ROLE_BASED')
+                        target_type: attendeeIds.length > 0 ? 'MANUAL' : (clientId ? 'CLIENT' : 'ROLE_BASED'),
+                        start_time: startTime ? startTime + ":00" : null,
+                        end_time: endTime ? endTime + ":00" : null
                     };
                     await ApiClient.createUnifiedMeeting(meetingPayload);
+                } else if (editingTaskId) {
+                    // CRITICAL FIX: Identify the type of item being edited
+                    const originalTask = tasks.find(t => String(t.id) === String(editingTaskId));
+                    // Safety Fallback: If not found in memory, parse type from the ID string prefix
+                    const type = originalTask ? originalTask.event_type : String(editingTaskId).split('_')[0];
+                    const originalId = String(editingTaskId).split('_')[1];
+
+                    console.log(`SRM_DEBUG: Detected Type: ${type}, Original ID: ${originalId}`);
+
+                    if (type === 'MEETING') {
+                        const meetingUpdate = {
+                            title,
+                            content: description,
+                            date: date.includes('T') ? date : `${date}T${startTime || '10:00'}:00`,
+                            priority,
+                            start_time: startTime ? startTime + ":00" : null,
+                            end_time: endTime ? endTime + ":00" : null
+                        };
+                        await ApiClient.updateMeeting(originalId, meetingUpdate);
+                    } else if (type === 'TIMETABLE') {
+                        const ttPayload = {
+                            title, date,
+                            start_time: startTime || "10:00",
+                            end_time: endTime || "11:00",
+                            assignee_name: assignees[0],
+                            location: related,
+                            priority
+                        };
+                        await ApiClient.updateTimetableEvent(originalId, ttPayload);
+                    } else {
+                        // Standard TODO
+                        const payload = {
+                            title,
+                            due_date: date.includes('T') ? date : `${date}T${startTime || '10:00'}:00`,
+                            assigned_to: assignees[0],
+                            description, priority, related_entity: related,
+                            start_time: startTime ? startTime + ":00" : null,
+                            end_time: endTime ? endTime + ":00" : null,
+                            client_id: clientId || null
+                        };
+                        await ApiClient.updateTodo(originalId, payload);
+                    }
                 } else {
+                    // Multi-creation for new Tasks
                     const promises = assignees.map(async (assignedTo) => {
-                        if (currentMode === 'TASK') {
-                            const payload = {
-                                title,
-                                due_date: date.includes('T') ? date : `${date}T${startTime || '10:00'}:00`,
-                                assigned_to: assignedTo,
-                                description, priority, related_entity: related,
-                                start_time: startTime, end_time: endTime,
-                                client_id: clientId || null
-                            };
-                            if (editingTaskId) {
-                                const originalId = editingTaskId.split('_')[1];
-                                return ApiClient.updateTodo(originalId, payload);
-                            } else {
-                                return ApiClient.createTodo(payload);
-                            }
-                        } else {
-                            // Edit existing event
-                            const ttPayload = {
-                                title, date,
-                                start_time: startTime || "10:00",
-                                end_time: endTime || "11:00",
-                                assignee_name: assignedTo,
-                                location: related
-                            };
-                            const originalId = editingTaskId.split('_')[1];
-                            return ApiClient.updateTimetableEvent(originalId, ttPayload);
-                        }
+                        const payload = {
+                            title,
+                            due_date: date.includes('T') ? date : `${date}T${startTime || '10:00'}:00`,
+                            assigned_to: assignedTo,
+                            description, priority, related_entity: related,
+                            start_time: startTime ? startTime + ":00" : null,
+                            end_time: endTime ? endTime + ":00" : null,
+                            client_id: clientId || null
+                        };
+                        return ApiClient.createTodo(payload);
                     });
                     await Promise.all(promises);
                 }
@@ -1502,7 +1558,9 @@
                 if (type === 'TODO') {
                     await ApiClient.updateTodo(originalId, { status: newStatus });
                 } else if (type === 'MEETING') {
-                    await ApiClient.updateMeeting(originalId, { status: newStatus });
+                    // Map COMPLETED to RESOLVED for GlobalTaskStatus (Meetings)
+                    const targetStatus = newStatus === 'COMPLETED' ? 'RESOLVED' : newStatus;
+                    await ApiClient.updateMeeting(originalId, { status: targetStatus });
                 } else if (type === 'VISIT') {
                     await ApiClient.updateVisit(originalId, { status: newStatus });
                 } else if (type === 'TIMETABLE') {

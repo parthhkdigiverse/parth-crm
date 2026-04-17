@@ -444,13 +444,13 @@ class ApiClient {
         return this.request('/meetings/', { method: 'POST', body: data });
     }
     static async updateMeeting(meetingId, data) {
-        return this.request(`/clients/meetings/${meetingId}`, { method: 'PATCH', body: data });
+        return this.request(`/meetings/${meetingId}`, { method: 'PATCH', body: data });
     }
     static async cancelMeeting(meetingId, reason) {
         return this.request(`/clients/meetings/${meetingId}/cancel`, { method: 'POST', body: { reason } });
     }
     static async deleteMeeting(meetingId) {
-        return this.request(`/clients/meetings/${meetingId}`, { method: 'DELETE' });
+        return this.request(`/meetings/${meetingId}`, { method: 'DELETE' });
     }
     static async importMeetingSummary(meetingId) {
         return this.request(`/clients/meetings/${meetingId}/import-summary`, { method: 'POST' });

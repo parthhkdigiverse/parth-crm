@@ -32,6 +32,8 @@ class MeetingSummaryCreate(BaseModel):
     target_type: typing.Optional[str] = "CLIENT"   # CLIENT | PROJECT | INTERNAL | ALL_STAFF | ROLE_BASED
     target_role: typing.Optional[str] = None
     priority: typing.Optional[str] = "MEDIUM"
+    start_time: typing.Optional[str] = None
+    end_time: typing.Optional[str] = None
 
     @model_validator(mode="before")
     @classmethod
@@ -53,6 +55,8 @@ class MeetingSummaryUpdateBase(BaseModel):
     meeting_type: typing.Optional[str] = None
     meet_link: typing.Optional[str] = None
     priority: typing.Optional[str] = None
+    start_time: typing.Optional[str] = None
+    end_time: typing.Optional[str] = None
 
     model_config = {"from_attributes": True, "populate_by_name": True}
 
