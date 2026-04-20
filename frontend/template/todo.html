@@ -398,6 +398,58 @@
             color: #1e293b;
         }
 
+        /* KPI Cards Premium (from Feedback Page) */
+        .stat-card-premium {
+            background: #ffffff;
+            border-radius: 18px;
+            padding: 24px;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+            border: 1px solid rgba(0, 0, 0, 0.03);
+            transition: transform 0.2s;
+        }
+
+        .stat-icon-circle {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            flex-shrink: 0;
+            color: #ffffff;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+        }
+
+        .stat-label-p {
+            font-size: 0.68rem;
+            font-weight: 800;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+            margin-bottom: 1px;
+        }
+
+        .stat-value-p {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #111827;
+            line-height: 1;
+        }
+
+        .theme-purple-solid { background-color: #6366f1; }
+        .theme-red-solid { background-color: #ef4444; }
+        .theme-blue-solid { background-color: #3b82f6; }
+        .theme-green-solid { background-color: #10b981; }
+
+        .label-purple { color: #6366f1; }
+        .label-red { color: #dc2626; }
+        .label-blue { color: #2563eb; }
+        .label-green { color: #059669; }
+    </style>
 
 
         /* ── Priority pill buttons ── */
@@ -1241,39 +1293,47 @@
             if (statsRow) {
                 statsRow.innerHTML = `
                 <div class="col-6 col-md-3">
-                    <div class="stat-card card-purple">
-                        <div class="stat-content-left">
-                            <div class="stat-label">All Tasks</div>
-                            <div class="stat-value">${total}</div>
+                    <div class="stat-card-premium">
+                        <div class="stat-icon-circle theme-purple-solid">
+                            <i class="bi bi-layers-fill"></i>
                         </div>
-                        <div class="stat-icon-wrapper icon-purple shadow-sm"><i class="bi bi-layers-fill"></i></div>
+                        <div>
+                            <div class="stat-label-p label-purple">All Tasks</div>
+                            <div class="stat-value-p">${total}</div>
+                        </div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
-                    <div class="stat-card card-danger">
-                        <div class="stat-content-left">
-                            <div class="stat-label">High Priority</div>
-                            <div class="stat-value text-danger">${highPri}</div>
+                    <div class="stat-card-premium">
+                        <div class="stat-icon-circle theme-red-solid">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
                         </div>
-                        <div class="stat-icon-wrapper icon-red shadow-sm"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                        <div>
+                            <div class="stat-label-p label-red">High Priority</div>
+                            <div class="stat-value-p" style="color:#dc2626 !important;">${highPri}</div>
+                        </div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
-                    <div class="stat-card card-primary">
-                        <div class="stat-content-left">
-                            <div class="stat-label">Pending</div>
-                            <div class="stat-value text-primary">${pending}</div>
+                    <div class="stat-card-premium">
+                        <div class="stat-icon-circle theme-blue-solid">
+                            <i class="bi bi-hourglass-split"></i>
                         </div>
-                        <div class="stat-icon-wrapper icon-blue shadow-sm"><i class="bi bi-hourglass-split"></i></div>
+                        <div>
+                            <div class="stat-label-p label-blue">Pending</div>
+                            <div class="stat-value-p" style="color:#2563eb !important;">${pending}</div>
+                        </div>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
-                    <div class="stat-card card-success">
-                        <div class="stat-content-left">
-                            <div class="stat-label">Completed</div>
-                            <div class="stat-value" style="color:var(--success) !important;">${completed}</div>
+                    <div class="stat-card-premium">
+                        <div class="stat-icon-circle theme-green-solid">
+                            <i class="bi bi-check-circle-fill"></i>
                         </div>
-                        <div class="stat-icon-wrapper shadow-sm" style="background:#ecfdf5; color:var(--success);"><i class="bi bi-check-circle-fill"></i></div>
+                        <div>
+                            <div class="stat-label-p label-green">Completed</div>
+                            <div class="stat-value-p" style="color:#059669 !important;">${completed}</div>
+                        </div>
                     </div>
                 </div>`;
             }
