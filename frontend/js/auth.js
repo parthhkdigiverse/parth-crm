@@ -131,7 +131,9 @@ window.requireAuth = function() {
             CLIENT: 'Client User (Dev)'
         };
         // Always overwrite dev user to match the requested role (allows role-switching mid-session)
+        // Write to BOTH storages: sessionStorage for legacy, localStorage so getToken() doesn't return null
         sessionStorage.setItem('access_token', 'dev-token');
+        localStorage.setItem('access_token', 'dev-token');
         const devUserJson = JSON.stringify({
             id: 1,
             name: roleNameMap[effectiveDevRole] || 'Dev User',
@@ -292,7 +294,9 @@ window.requireAuth = function() {
     }
 
     // Background Verification using ApiClient for robust token handling (auto-refresh)
-    if (window.ApiClient && typeof window.ApiClient.request === 'function') {
+    // Skip in dev mode — the fake 'dev-token' would get a 401 and redirect to index.html
+    const _isDevMode = new URLSearchParams(window.location.search).get('dev') === 'true';
+    if (!_isDevMode && window.ApiClient && typeof window.ApiClient.request === 'function') {
         window.ApiClient.request('/auth/profile')
             .then(async profile => {
                 if (!profile) return;
@@ -334,7 +338,7 @@ window.requireAuth = function() {
                     document.body.style.opacity = '1';
                 }
             });
-    } else {
+    } else if (!_isDevMode) {
         // Fallback for when ApiClient is not available (raw fetch)
         fetch(`${API}/auth/profile`, {
             headers: { 'Authorization': `Bearer ${token}` }
@@ -513,7 +517,7 @@ window.checkCriticalIssues = async function() {
     if (isLoginPage) return;
 
     try {
-        const issues = await apiGet('/issues/?limit=100');
+        const issues = await apiGet('/issues/');
         const criticalIssues = issues.filter(i => i.severity === 'HIGH' && i.status === 'PENDING');
 
         if (criticalIssues.length > 0) {

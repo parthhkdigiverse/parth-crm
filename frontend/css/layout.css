@@ -46,16 +46,7 @@
 
 /* Sidebar handled by Premium Sidebar system in theme.css */
 
-/* Main Content Wrapper */
-.main-wrapper {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-    position: relative;
-}
 
-/* Sidebar handled by Premium Sidebar system in theme.css */
 
 /* Top Navigation Bar (Header) - Handled by .top-header in theme.css */
 

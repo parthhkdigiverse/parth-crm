@@ -548,6 +548,9 @@ class ApiClient {
     static async confirmSalarySlip(slipId) {
         return this.request(`/hrm/salary/confirm/${slipId}`, { method: 'PATCH' });
     }
+    static async revertSalaryToDraft(slipId) {
+        return this.request(`/hrm/salary/revert-draft/${slipId}`, { method: 'PATCH' });
+    }
     static async updateSalarySlipRemarks(slipId, data) {
         return this.request(`/hrm/salary/slip/${slipId}/remarks`, { method: 'PATCH', body: data });
     }
@@ -581,6 +584,9 @@ class ApiClient {
         const body = { status };
         if (remarks) body.remarks = remarks;
         return this.request(`/hrm/leave/${leaveId}/approve`, { method: 'PATCH', body });
+    }
+    static async deleteLeavesBulk(ids) {
+        return this.request('/hrm/leave/bulk-delete', { method: 'POST', body: { ids } });
     }
     static async getLeaveSummary(userId, month) {
         return this.request(`/hrm/leave/summary/${userId}?month=${encodeURIComponent(month)}`);

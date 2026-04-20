@@ -47,10 +47,10 @@
         </div>
     </div>
     <script src="/frontend/js/utils.js?v=20260403"></script>
+    <script src="/frontend/js/api.js?v=20260403"></script>
     <script src="/frontend/js/auth.js?v=20260403"></script>
     <script src="/frontend/js/ui_components.js?v=20260403"></script>
     <script src="/frontend/js/app.js?v=20260403"></script>
-    <script src="/frontend/js/api.js?v=20260403"></script>
     <script src="/frontend/js/bootstrap.bundle.min.js"></script>
     <script>
         requireAuth();
@@ -77,33 +77,17 @@
                 return; 
             }
 
-            const token = sessionStorage.getItem('access_token');
+            const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
             if (!token || token === 'null' || token === 'undefined' || token === '') {
                 window.location.href = 'index.html';
                 return;
             }
 
-            // Allow api.js config fetch to resolve before reading API_BASE_URL
-            await new Promise(r => setTimeout(r, 200));
-
             try {
-                const base = (typeof ApiClient !== 'undefined' && ApiClient.API_BASE_URL)
-                    ? ApiClient.API_BASE_URL
-                    : (typeof API_BASE_URL !== 'undefined' ? API_BASE_URL : window.location.origin + '/api');
-
-                const response = await fetch(
-                    `${base}/hrm/salary/slip/${slipId}/invoice`,
-                    { headers: { 'Authorization': `Bearer ${token}` } }
-                );
-
-                if (!response.ok) {
-                    const txt = await response.text().catch(() => '');
-                    let detail = `HTTP ${response.status}`;
-                    try { detail += ': ' + (JSON.parse(txt).detail || txt); } catch { if (txt) detail += ': ' + txt; }
-                    throw new Error(detail);
-                }
-
-                const html = await response.text();
+                // ApiClient.request automatically awaits initConfig() and handles token injection
+                const html = await ApiClient.request(`/hrm/salary/slip/${slipId}/invoice`, {
+                    method: 'GET'
+                });
 
                 // Use page title from the slip HTML
                 const titleMatch = html.match(/<title>(.*?)<\/title>/i);

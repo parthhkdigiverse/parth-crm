@@ -137,29 +137,39 @@
 
                 <!-- Leaves Table -->
                 <div class="grid-card">
-                    <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
-                        <h6 class="fw-bold mb-0" style="color:var(--text-main);"><i
-                                class="bi bi-list-check me-2 text-primary"></i>Leave Applications</h6>
+                    <div class="d-flex justify-content-between align-items-center p-3 border-bottom position-relative">
+                        <div class="d-flex align-items-center gap-3">
+                            <h6 class="fw-bold mb-0" style="color:var(--text-main);"><i class="bi bi-list-check me-2 text-primary"></i>Leave Applications</h6>
+                            <!-- Bulk Actions Bar (Admin Only) -->
+                            <div id="bulk-actions-bar" class="d-none animate__animated animate__fadeIn d-flex align-items-center gap-2 px-3 py-1 bg-primary-soft border border-primary rounded-pill shadow-sm" style="transition: all 0.3s ease;">
+                                <span class="small fw-bold text-primary" id="selected-count">0 Selected</span>
+                                <div class="vr mx-1" style="height: 15px; opacity: 0.15;"></div>
+                                <button class="btn btn-sm btn-link text-danger p-0 fw-bold text-decoration-none" onclick="deleteSelectedLeaves()" style="font-size: 0.75rem;">
+                                    <i class="bi bi-trash3 me-1"></i>Delete All
+                                </button>
+                                <button class="btn btn-sm btn-link text-muted p-0 ms-2" onclick="clearSelection()" title="Clear Selection">
+                                    <i class="bi bi-x-circle fs-6"></i>
+                                </button>
+                            </div>
+                        </div>
                         <span id="leave-count-non-admin" class="text-muted small"></span>
                     </div>
-                    <div class="table-responsive p-3">
-                        <table class="table table-sm mb-0" style="font-size:0.8rem;">
+                    <div class="table-responsive" style="overflow-x: auto;">
+                        <table class="table table-sm mb-0" style="font-size:0.8rem; min-width: 900px;">
                             <thead style="background:var(--bg-app); border-bottom: 1px solid var(--border);">
                                 <tr>
-                                    <th class="ps-4 text-uppercase small fw-bold text-muted" style="min-width: 150px;">
-                                        Employee</th>
-                                    <th class="text-uppercase small fw-bold text-muted" style="min-width: 100px;">Type
+                                    <th class="ps-3" style="width: 36px;" id="th-bulk-select">
+                                        <div class="form-check m-0">
+                                            <input class="form-check-input cursor-pointer" type="checkbox" id="master-checkbox" onchange="toggleSelectAll(this.checked)">
+                                        </div>
                                     </th>
-                                    <th class="text-uppercase small fw-bold text-muted" style="min-width: 180px;">Period
-                                    </th>
-                                    <th class="text-uppercase small fw-bold text-muted" style="min-width: 80px;">Days
-                                    </th>
-                                    <th class="text-uppercase small fw-bold text-muted" style="min-width: 250px;">Reason
-                                        & Remarks</th>
-                                    <th class="text-uppercase small fw-bold text-muted" style="min-width: 150px;">Status
-                                    </th>
-                                    <th class="pe-4 text-end text-uppercase small fw-bold text-muted"
-                                        style="min-width: 100px;">Actions</th>
+                                    <th class="ps-2 text-uppercase small fw-bold text-muted" style="min-width: 120px;">Employee</th>
+                                    <th class="text-uppercase small fw-bold text-muted" style="min-width: 80px;">Type</th>
+                                    <th class="text-uppercase small fw-bold text-muted" style="min-width: 140px;">Period</th>
+                                    <th class="text-uppercase small fw-bold text-muted" style="min-width: 55px;">Days</th>
+                                    <th class="text-uppercase small fw-bold text-muted">Reason & Remarks</th>
+                                    <th class="text-uppercase small fw-bold text-muted" style="min-width: 110px;">Status</th>
+                                    <th class="pe-4 text-end text-uppercase small fw-bold text-muted" style="min-width: 130px;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="leaves-tbody">
@@ -172,6 +182,7 @@
                         </table>
                     </div>
                     <div id="leaves-pagination"></div>
+
                 </div>
             </div>
         </div>
@@ -179,62 +190,76 @@
 
     <!-- Apply Leave Modal -->
     <div class="srm-overlay" id="leaveModal">
-        <div class="srm-box" style="max-width:560px;">
-            <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
-                <h5 class="fw-bold mb-0"><i class="bi bi-calendar-minus text-primary me-2"></i>Apply for Leave</h5>
-                <button class="btn-close" onclick="closeLeaveModal()"></button>
-            </div>
-            <div class="row g-3 mb-3">
-                <div class="col-6">
-                    <label class="form-label fw-semibold small">From Date <span class="text-danger">*</span></label>
-                    <input type="date" id="l-start" class="form-control">
-                </div>
-                <div class="col-6">
-                    <label class="form-label fw-semibold small">To Date <span class="text-danger">*</span></label>
-                    <input type="date" id="l-end" class="form-control">
-                </div>
-                <div class="col-12">
-                    <label class="form-label fw-semibold small">Leave Type <span class="text-danger">*</span></label>
-                    <select id="l-type" class="form-select">
-                        <option value="ANNUAL">Annual Leave</option>
-                        <option value="SICK">Sick Leave</option>
-                        <option value="CASUAL" selected>Casual Leave</option>
-                        <option value="UNPAID">Unpaid Leave</option>
-                        <option value="OTHER">Other</option>
-                    </select>
-                </div>
-                <div class="col-12">
-                    <label class="form-label fw-semibold small">Day Type <span class="text-danger">*</span></label>
-                    <div class="d-flex gap-2">
-                        <label class="d-flex align-items-center gap-2 cursor-pointer px-3 py-2 rounded border"
-                            id="dt-full-lbl" style="flex:1; cursor:pointer; border-color:var(--primary); background:var(--primary-soft);">
-                            <input type="radio" name="day-type" id="dt-full" value="FULL" class="form-check-input m-0" checked>
-                            <span class="fw-semibold small" style="color:var(--primary);">Full Day</span>
-                        </label>
-                        <label class="d-flex align-items-center gap-2 cursor-pointer px-3 py-2 rounded border"
-                            id="dt-half-lbl" style="flex:1; cursor:pointer; border-color:var(--border);">
-                            <input type="radio" name="day-type" id="dt-half" value="HALF" class="form-check-input m-0">
-                            <span class="fw-semibold small">Half Day</span>
-                        </label>
+        <div class="srm-box d-flex flex-column" style="max-width:560px; max-height:90vh; box-shadow: 0 30px 60px -12px rgba(0,0,0,0.3);">
+            <div class="px-4 py-3 border-bottom d-flex justify-content-between align-items-center" style="flex-shrink:0;">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-primary-soft text-primary" style="width:40px; height:40px;">
+                        <i class="bi bi-calendar-plus fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0">Apply for Leave</h5>
+                        <div class="text-muted small">Submit a new leave request</div>
                     </div>
                 </div>
-                <div class="col-12">
-                    <label class="form-label fw-semibold small">Reason <span class="text-danger">*</span></label>
-                    <textarea id="l-reason" class="form-control" rows="3"
-                        placeholder="Please describe your reason for leave..." required></textarea>
-                    <div class="form-text text-muted" style="font-size:0.78rem;">Reason is mandatory. Provide a clear
-                        justification.</div>
-                </div>
+                <button class="btn-close" onclick="closeLeaveModal()"></button>
             </div>
+            
+            <div class="px-4 py-3" style="overflow-y:auto;">
+                <div class="row g-3 mb-3">
+                    <div class="col-sm-6">
+                        <label class="form-label fw-semibold small text-muted text-uppercase mb-1" style="letter-spacing: 0.5px;">From Date <span class="text-danger">*</span></label>
+                        <input type="date" id="l-start" class="form-control" style="border-radius: 8px; padding: 10px; border-color: var(--border);">
+                    </div>
+                    <div class="col-sm-6">
+                        <label class="form-label fw-semibold small text-muted text-uppercase mb-1" style="letter-spacing: 0.5px;">To Date <span class="text-danger">*</span></label>
+                        <input type="date" id="l-end" class="form-control" style="border-radius: 8px; padding: 10px; border-color: var(--border);">
+                    </div>
+                    <div class="col-12 mt-3">
+                        <label class="form-label fw-semibold small text-muted text-uppercase mb-1" style="letter-spacing: 0.5px;">Leave Type <span class="text-danger">*</span></label>
+                        <select id="l-type" class="form-select" style="border-radius: 8px; padding: 10px; border-color: var(--border);">
+                            <option value="ANNUAL">Annual Leave</option>
+                            <option value="SICK">Sick Leave</option>
+                            <option value="CASUAL" selected>Casual Leave</option>
+                            <option value="UNPAID">Unpaid Leave</option>
+                            <option value="OTHER">Other</option>
+                        </select>
+                    </div>
+                    <div class="col-12 mt-3">
+                        <label class="form-label fw-semibold small text-muted text-uppercase mb-1" style="letter-spacing: 0.5px;">Day Type <span class="text-danger">*</span></label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="d-flex align-items-center gap-2 cursor-pointer p-2 rounded"
+                                    id="dt-full-lbl" style="border: 1px solid var(--primary); background:var(--primary-soft); transition: all 0.2s ease;">
+                                    <input type="radio" name="day-type" id="dt-full" value="FULL" class="form-check-input m-0" checked>
+                                    <span class="fw-semibold small" style="color:var(--primary);" id="dt-full-text">Full Day</span>
+                                </label>
+                            </div>
+                            <div class="col-6">
+                                <label class="d-flex align-items-center gap-2 cursor-pointer p-2 rounded"
+                                    id="dt-half-lbl" style="border: 1px solid var(--border); background:transparent; transition: all 0.2s ease;">
+                                    <input type="radio" name="day-type" id="dt-half" value="HALF" class="form-check-input m-0">
+                                    <span class="fw-semibold small text-muted" id="dt-half-text">Half Day</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-12 mt-3">
+                        <label class="form-label fw-semibold small text-muted text-uppercase mb-1" style="letter-spacing: 0.5px;">Reason <span class="text-danger">*</span></label>
+                        <textarea id="l-reason" class="form-control" rows="2"
+                            placeholder="Please describe your reason for leave..." required style="border-radius: 8px; padding: 12px; border-color: var(--border); resize: none;"></textarea>
+                        <div class="form-text text-muted mt-1" style="font-size:0.7rem;">Reason is mandatory. Provide a clear justification.</div>
+                    </div>
+                </div>
 
-            <!-- Day count preview -->
-            <div id="leave-day-preview" class="mb-3 p-2 rounded border small text-center fw-semibold"
-                style="display:none; background:var(--primary-soft); color:var(--primary);"></div>
+                <!-- Day count preview -->
+                <div id="leave-day-preview" class="mb-3 p-2 rounded text-center fw-semibold text-sm"
+                    style="display:none; background:var(--primary-soft); color:var(--primary); border: 1px dashed var(--primary); border-radius: 8px; font-size: 0.85rem;"></div>
 
-            <div class="d-flex justify-content-end gap-2 pt-3 border-top">
-                <button class="btn btn-light border" onclick="closeLeaveModal()">Cancel</button>
-                <button class="btn btn-primary px-4 fw-semibold" id="leave-submit-btn" onclick="submitLeave()">Submit
-                    Request</button>
+                <div class="d-flex justify-content-end gap-2 pt-3 border-top pb-1">
+                    <button class="btn btn-light px-4 border fw-semibold" style="border-radius: 10px;" onclick="closeLeaveModal()">Cancel</button>
+                    <button class="btn btn-primary px-4 fw-bold border-0" id="leave-submit-btn" style="border-radius: 10px; box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);" onclick="submitLeave()">Submit
+                        Request</button>
+                </div>
             </div>
         </div>
     </div>
@@ -359,6 +384,7 @@
                             { value: 'SICK', label: 'Sick' },
                             { value: 'CASUAL', label: 'Casual' },
                             { value: 'UNPAID', label: 'Unpaid' },
+                            { value: 'AUTO', label: 'Auto leave' },
                             { value: 'OTHER', label: 'Other' }
                         ]
                     },
@@ -402,8 +428,15 @@
             document.getElementById('leave-submit-btn').textContent = 'Submit Request';
             document.getElementById('dt-full').checked = true;
             document.getElementById('dt-full-lbl').style.borderColor = 'var(--primary)';
+            document.getElementById('dt-full-lbl').style.background = 'var(--primary-soft)';
             document.getElementById('dt-half-lbl').style.borderColor = 'var(--border)';
             document.getElementById('dt-half-lbl').style.background = 'transparent';
+            if (document.getElementById('dt-full-text')) {
+                document.getElementById('dt-full-text').style.color = 'var(--primary)';
+                document.getElementById('dt-full-text').classList.remove('text-muted');
+                document.getElementById('dt-half-text').style.color = '';
+                document.getElementById('dt-half-text').classList.add('text-muted');
+            }
 
             // Clear validation state
             const modalBody = document.querySelector('#leaveModal .srm-box');
@@ -430,12 +463,24 @@
                 document.getElementById('dt-half-lbl').style.background = 'var(--primary-soft)';
                 document.getElementById('dt-full-lbl').style.borderColor = 'var(--border)';
                 document.getElementById('dt-full-lbl').style.background = 'transparent';
+                if (document.getElementById('dt-half-text')) {
+                    document.getElementById('dt-half-text').style.color = 'var(--primary)';
+                    document.getElementById('dt-half-text').classList.remove('text-muted');
+                    document.getElementById('dt-full-text').style.color = '';
+                    document.getElementById('dt-full-text').classList.add('text-muted');
+                }
             } else {
                 document.getElementById('dt-full').checked = true;
                 document.getElementById('dt-full-lbl').style.borderColor = 'var(--primary)';
                 document.getElementById('dt-full-lbl').style.background = 'var(--primary-soft)';
                 document.getElementById('dt-half-lbl').style.borderColor = 'var(--border)';
                 document.getElementById('dt-half-lbl').style.background = 'transparent';
+                if (document.getElementById('dt-full-text')) {
+                    document.getElementById('dt-full-text').style.color = 'var(--primary)';
+                    document.getElementById('dt-full-text').classList.remove('text-muted');
+                    document.getElementById('dt-half-text').style.color = '';
+                    document.getElementById('dt-half-text').classList.add('text-muted');
+                }
             }
             document.getElementById('leave-submit-btn').textContent = 'Update Request';
             updateDayPreview();
@@ -496,9 +541,18 @@
             const inactive = this.id === 'dt-full' ? 'dt-half-lbl' : 'dt-full-lbl';
             document.getElementById(inactive).style.borderColor = 'var(--border)';
             document.getElementById(inactive).style.background = 'transparent';
+            
+            // Text color updates
+            const activeText = this.id === 'dt-full' ? 'dt-full-text' : 'dt-half-text';
+            const inactiveText = this.id === 'dt-full' ? 'dt-half-text' : 'dt-full-text';
+            if (document.getElementById(activeText)) {
+                document.getElementById(activeText).style.color = 'var(--primary)';
+                document.getElementById(activeText).classList.remove('text-muted');
+                document.getElementById(inactiveText).style.color = '';
+                document.getElementById(inactiveText).classList.add('text-muted');
+            }
         }));
 
-        // Leave status styling
         const leaveStatusMap = {
             PENDING: { cls: 'badge-yellow-light', label: 'Pending', icon: 'bi-hourglass-split' },
             APPROVED: { cls: 'badge-green-light', label: 'Approved', icon: 'bi-check-circle' },
@@ -510,17 +564,13 @@
             SICK: 'Sick',
             CASUAL: 'Casual',
             UNPAID: 'Unpaid',
+            AUTO: 'Auto leave',
             OTHER: 'Other',
         };
 
-
-
         async function loadLeaves(filters = {}) {
             const tbody = document.getElementById('leaves-tbody');
-            
-            // Standardize pagination params
-            const skip = filters.skip || 0;
-            const limit = filters.limit || 200;
+            if (!tbody) return;
 
             try {
                 let allLeaves = null;
@@ -535,21 +585,27 @@
 
                 // Apply filters (admin only)
                 if (canManageLeave) {
-                    const userF = currentFilters['filter-user'];
-                    const statusF = currentFilters['filter-status'];
-                    const typeF = currentFilters['filter-type'];
-                    const fromF = currentFilters['filter-from'];
-                    const toF = currentFilters['filter-to'];
+                    const userF = currentFilters['user'];
+                    const statusF = currentFilters['status'];
+                    const typeF = currentFilters['type'];
+                    const fromF = currentFilters['from'];
+                    const toF = currentFilters['to'];
 
                     if (userF && userF !== 'ALL') leaves = leaves.filter(l => String(l.user_id) === String(userF));
                     if (statusF && statusF !== 'ALL') leaves = leaves.filter(l => l.status === statusF);
-                    if (typeF && typeF !== 'ALL') leaves = leaves.filter(l => (l.leave_type || 'CASUAL') === typeF);
+                    if (typeF && typeF !== 'ALL') {
+                        if (typeF === 'AUTO') {
+                            leaves = leaves.filter(l => (l.reason || '').includes('Auto leave'));
+                        } else {
+                            leaves = leaves.filter(l => (l.leave_type || 'CASUAL') === typeF && !((l.reason || '').includes('Auto leave')));
+                        }
+                    }
                     if (fromF) leaves = leaves.filter(l => (l.start_date || "").slice(0, 10) >= fromF);
                     if (toF) leaves = leaves.filter(l => (l.end_date || "").slice(0, 10) <= toF);
                 }
 
-                // Summary counts (admin) — uses unfiltered allLeaves saved before filter was applied
-                if (canManageLeave) {
+                // Summary counts (admin)
+                if (canManageLeave && allLeaves) {
                     let pending = 0, approved = 0, rejected = 0, totalDays = 0;
                     allLeaves.forEach(l => {
                         const d = Math.ceil((new Date(l.end_date) - new Date(l.start_date)) / 86400000) + 1;
@@ -564,18 +620,24 @@
                     document.getElementById('sum-total').textContent = totalDays;
                 }
 
-                const countStr = leaves.length + ' record(s)';
-                const countNonAdmin = document.getElementById('leave-count-non-admin');
-                if (countNonAdmin) countNonAdmin.textContent = canManageLeave ? '' : countStr;
-
                 renderPagination({
                     data: leaves,
                     tbodyId: 'leaves-tbody',
                     paginationId: 'leaves-pagination',
-                    emptyMsg: '<tr><td colspan="8" class="text-center py-5 text-muted">No leave requests found.</td></tr>',
+                    emptyMsg: '<tr><td colspan="9" class="text-center py-5 text-muted">No leave requests found.</td></tr>',
                     renderRow: (l) => {
                         try {
                             if (!l) return "";
+                            
+                            // Checkbox for bulk select (Admin only)
+                            const bulkCheckHtml = canManageLeave ? `
+                                <td class="ps-3 align-middle" onclick="event.stopPropagation()">
+                                    <div class="form-check m-0">
+                                        <input class="form-check-input cursor-pointer leave-row-check" type="checkbox" value="${l.id}" onchange="onSelectionChange()">
+                                    </div>
+                                </td>
+                            ` : '<td class="ps-3"></td>';
+
                             const st = leaveStatusMap[l.status] || leaveStatusMap.PENDING;
                             const startStr = l.start_date || "";
                             const endStr = l.end_date || "";
@@ -594,24 +656,24 @@
                                 }
                             }
 
-                            const typeLabel = leaveTypeLabels[l.leave_type] || l.leave_type || 'Casual';
-                            const typeCls = l.leave_type === 'UNPAID' ? 'bg-danger-subtle text-danger border' : 'bg-surface text-main border';
+                            const isAutoLeave = (l.reason || '').includes('Auto leave');
+                            const typeLabel = isAutoLeave ? 'AUTO LEAVE' : (leaveTypeLabels[l.leave_type] || l.leave_type || 'Casual').toUpperCase();
+                            const typeCls = l.leave_type === 'UNPAID' || isAutoLeave ? 'bg-danger-subtle text-danger border' : 'bg-primary-soft text-primary border';
 
                             let lastCol;
-                            const isAutoLeave = (l.reason || '').includes('Auto leave');
 
                             if (canManageLeave && l.status === 'PENDING') {
                                 lastCol = `<div class="d-flex gap-2 flex-wrap justify-content-end">
-                                   <button class="btn btn-sm btn-outline-success" title="Approve" onclick="approveLeaveWithRemarks('${l.id}', 'APPROVED')"><i class="bi bi-check-lg"></i></button>
-                                   <button class="btn btn-sm btn-outline-danger" title="Reject" onclick="approveLeaveWithRemarks('${l.id}', 'REJECTED')"><i class="bi bi-x-lg"></i></button>
+                                   <button class="btn btn-sm btn-outline-success fw-semibold" title="Approve" onclick="approveLeaveWithRemarks('${l.id}', 'APPROVED')"><i class="bi bi-check-lg me-1"></i>Approve</button>
+                                   <button class="btn btn-sm btn-outline-danger fw-semibold" title="Reject" onclick="approveLeaveWithRemarks('${l.id}', 'REJECTED')"><i class="bi bi-x-lg me-1"></i>Reject</button>
                                  </div>`;
                             } else if (!canManageLeave && canEditOwnLeave && l.status === 'PENDING' && String(l.user_id) === String(user?.id)) {
                                 if (isAutoLeave) {
                                     lastCol = `<span class="text-muted small italic"><i class="bi bi-lock-fill me-1"></i>Auto leave restricted</span>`;
                                 } else {
                                     lastCol = `<div class="d-flex gap-2 flex-wrap justify-content-end">
-                                        <button class="btn btn-sm btn-outline-primary" title="Edit" onclick="openEditLeave('${l.id}')"><i class="bi bi-pencil"></i></button>
-                                        <button class="btn btn-sm btn-outline-danger" title="Cancel" onclick="cancelLeave('${l.id}')"><i class="bi bi-x-circle"></i></button>
+                                        <button class="btn btn-sm btn-outline-primary fw-semibold" title="Edit" onclick="openEditLeave('${l.id}')"><i class="bi bi-pencil me-1"></i>Edit</button>
+                                        <button class="btn btn-sm btn-outline-danger fw-semibold" title="Cancel" onclick="cancelLeave('${l.id}')"><i class="bi bi-x-circle me-1"></i>Cancel</button>
                                     </div>`;
                                 }
                             } else if (canManageLeave && (l.status === 'APPROVED' || l.status === 'REJECTED')) {
@@ -639,33 +701,36 @@
                             const remarksTheme = l.status === 'REJECTED' ? 'background:var(--danger-soft); border:1px solid var(--danger-ring); color:var(--danger-text);' : 'background:var(--bg-app); color:var(--text-main);';
                             const remarksHtml = l.remarks ? `<div class="p-2 rounded mt-1" style="${remarksTheme} font-size:0.75rem;"><strong>Admin Remark:</strong> ${l.remarks}</div>` : '';
 
-                            return `<tr>
-                                <td class="ps-4 fw-semibold text-dark" style="white-space:nowrap; max-width:150px; overflow:hidden; text-overflow:ellipsis;" title="${l.user_name || ''}">${l.user_name || 'User #' + String(l.user_id).slice(-4)}</td>
-                                <td><span class="badge ${typeCls}" style="font-weight:500;white-space:nowrap; font-size:0.75rem;">${typeLabel}</span></td>
-                                <td class="text-muted" style="white-space:nowrap; font-size:0.75rem;">${start} — ${end}</td>
-                                <td class="fw-semibold" style="white-space:nowrap; font-size:0.75rem;">${displayDays}${dayTypeLabel}</td>
-                                <td>
-                                    <div style="font-size:0.75rem; line-height:1.3; min-width:200px;">
-                                        ${reasonHtml}
-                                        ${remarksHtml}
-                                    </div>
-                                </td>
-                                <td>
-                                    <span class="status-pill ${st.cls}" style="white-space:nowrap; font-size:0.7rem;"><i class="bi ${st.icon} me-1"></i>${st.label}</span>
-                                    ${timeInfo}
-                                </td>
-                                <td class="pe-4 text-end">
-                                    ${lastCol}
-                                </td>
-                            </tr>`;
+                            return `
+                                <tr class="align-middle">
+                                    ${bulkCheckHtml}
+                                    <td class="ps-2 fw-semibold text-dark" style="white-space:nowrap; max-width:150px; overflow:hidden; text-overflow:ellipsis;" title="${l.user_name || ''}">${l.user_name || 'User #' + String(l.user_id).slice(-4)}</td>
+                                    <td><span class="badge ${typeCls}" style="font-weight:500;white-space:nowrap; font-size:0.75rem;">${typeLabel}</span></td>
+                                    <td class="text-muted" style="white-space:nowrap; font-size:0.75rem;">${start} — ${end}</td>
+                                    <td class="fw-semibold" style="white-space:nowrap; font-size:0.75rem;">${displayDays}${dayTypeLabel}</td>
+                                    <td>
+                                        <div style="font-size:0.75rem; line-height:1.3; min-width:200px;">
+                                            ${reasonHtml}
+                                            ${remarksHtml}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="status-pill ${st.cls}" style="white-space:nowrap; font-size:0.7rem;"><i class="bi ${st.icon} me-1"></i>${st.label}</span>
+                                        ${timeInfo}
+                                    </td>
+                                    <td class="pe-4 text-end">
+                                        ${lastCol}
+                                    </td>
+                                </tr>`;
                         } catch (err) {
                             console.error("Error rendering leave row:", err, l);
-                            return `<tr><td colspan="8" class="text-center py-2 bg-light text-danger small">Error rendering record ${l?.id || 'unknown'}</td></tr>`;
+                            return `<tr><td colspan="9" class="text-center py-2 bg-light text-danger small">Error rendering record ${l?.id || 'unknown'}</td></tr>`;
                         }
                     }
                 });
             } catch (e) {
-                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-5 text-danger"><i class="bi bi-exclamation-triangle me-2"></i>${e.message || 'Error'}</td></tr>`;
+                console.error("loadLeaves failed", e);
+                tbody.innerHTML = `<tr><td colspan="9" class="text-center py-5 text-danger"><i class="bi bi-exclamation-triangle me-2"></i>${e.message || 'Error loading records'}</td></tr>`;
             }
         }
 
@@ -810,6 +875,66 @@
             }).finally(loadLeaves);
         }
         // end script
+
+        // ═══════════════════════════════════════════════════════
+        // BULK ACTIONS LOGIC
+        // ═══════════════════════════════════════════════════════
+        function toggleSelectAll(checked) {
+            const checks = document.querySelectorAll('.leave-row-check');
+            checks.forEach(c => c.checked = checked);
+            onSelectionChange();
+        }
+
+        function onSelectionChange() {
+            const checked = document.querySelectorAll('.leave-row-check:checked');
+            const total = document.querySelectorAll('.leave-row-check').length;
+            const bar = document.getElementById('bulk-actions-bar');
+            const countEl = document.getElementById('selected-count');
+            const master = document.getElementById('master-checkbox');
+
+            if (master) {
+                master.checked = checked.length === total && total > 0;
+                master.indeterminate = checked.length > 0 && checked.length < total;
+            }
+
+            if (checked.length > 0) {
+                bar.classList.remove('d-none');
+                countEl.textContent = checked.length + ' Selected';
+            } else {
+                bar.classList.add('d-none');
+            }
+        }
+
+        function clearSelection() {
+            const master = document.getElementById('master-checkbox');
+            if (master) master.checked = false;
+            toggleSelectAll(false);
+        }
+
+        async function deleteSelectedLeaves() {
+            const checked = document.querySelectorAll('.leave-row-check:checked');
+            const ids = Array.from(checked).map(c => c.value);
+            if (ids.length === 0) return;
+
+            if (!confirm(`Are you sure you want to delete ${ids.length} selected leave records?`)) return;
+
+            const btn = document.querySelector('#bulk-actions-bar button');
+            const originalContent = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Deleting...';
+
+            try {
+                await ApiClient.deleteLeavesBulk(ids);
+                showToast(`Successfully deleted ${ids.length} records.`, 'success');
+                clearSelection();
+                loadLeaves();
+            } catch (e) {
+                showToast(e.data?.detail || e.message || 'Bulk delete failed', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalContent;
+            }
+        }
     </script>
 </body>
 

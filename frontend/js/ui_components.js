@@ -1082,19 +1082,15 @@ window.renderFilterPanel = function (config) {
     const html = `
         <div class="filter-panel">
             <div class="filter-panel-head" onclick="this.nextElementSibling.classList.toggle('open'); this.querySelector('.filter-toggle-btn').classList.toggle('open')">
-                <div class="filter-panel-head-main">
-                    <div class="filter-panel-head-left">
-                        <i class="bi bi-filter"></i>
-                        <span>${title}</span>
-                    </div>
-                    <div class="filter-active-pills" id="${containerId}-pills">
-                        <!-- Active pills will be injected here -->
-                    </div>
+                <div class="filter-panel-head-left">
+                    <i class="bi bi-filter"></i>
+                    <span>${title}</span>
                 </div>
+                <div class="filter-active-pills" id="${containerId}-pills"></div>
                 ${headerContent}
-                <div class="filter-panel-head-meta">
+                <div class="filter-panel-head-right">
                     <span class="filter-summary-text" id="${containerId}-summary">No filters active</span>
-                    <button class="filter-toggle-btn">
+                    <button class="filter-toggle-btn" type="button" onclick="event.stopPropagation(); this.closest('.filter-panel-head').nextElementSibling.classList.toggle('open'); this.classList.toggle('open')">
                         <i class="bi bi-chevron-down"></i>
                     </button>
                 </div>

@@ -2,7 +2,7 @@
 import enum
 from typing import Optional
 from datetime import datetime, date, UTC
-from pydantic import Field
+from pydantic import Field, field_validator
 from beanie import Document, Indexed, PydanticObjectId
 
 class LeaveType(str, enum.Enum):
@@ -66,6 +66,13 @@ class SalarySlip(Document):
 
     file_url: Optional[str] = None
     is_deleted: bool = False
+
+    @field_validator("confirmed_at", "generated_at", mode="before")
+    @classmethod
+    def _coerce_datetime_to_date(cls, v):
+        if isinstance(v, datetime):
+            return v.date()
+        return v
 
     class Settings:
         name = "srm_salary_slips"

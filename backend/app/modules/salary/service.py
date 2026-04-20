@@ -85,10 +85,10 @@ class SalaryService:
         return round(total_incentive_only, 2), round(total_slab_bonus, 2)
 
     def _compute_salary(self, base: float, unpaid_leaves: float, incentive_amount: float,
-                        slab_bonus: float, extra_deduction: float):
-        """Standard Compute Engine for Salary Figures."""
-        daily_wage = base / 30
-        gross_salary = daily_wage * max(0, 30 - unpaid_leaves)
+                        slab_bonus: float, extra_deduction: float, days_in_month: int = 30):
+        """Standard Compute Engine for Salary Figures using actual days in month."""
+        daily_wage = base / days_in_month
+        gross_salary = daily_wage * max(0, days_in_month - unpaid_leaves)
         leave_deduction = round(daily_wage * unpaid_leaves, 2)
         total_earnings = round(gross_salary + incentive_amount + slab_bonus, 2)
         final_salary = round(total_earnings - extra_deduction, 2)
@@ -98,6 +98,7 @@ class SalaryService:
             'leave_deduction': leave_deduction,
             'total_earnings': total_earnings,
             'final_salary': final_salary,
+            'days_in_month': days_in_month
         }
 
     # TODO: Implement MongoDB transactions for financial safety
@@ -113,11 +114,13 @@ class SalaryService:
             raise HTTPException(status_code=400, detail="Salary slip already exists")
 
         year, month_num = map(int, salary_in.month.split('-'))
+        _, days_in_month = calendar.monthrange(year, month_num)
+        
         _, _, paid_leaves, unpaid_leaves = await self._get_leave_data(salary_in.user_id, year, month_num)
         inc_amt, slab_bonus = await self._get_incentive_data(salary_in.user_id, salary_in.month)
         
         base = salary_in.base_salary if salary_in.base_salary is not None else (user.base_salary or 0.0)
-        calc = self._compute_salary(base, unpaid_leaves, inc_amt, slab_bonus, salary_in.extra_deduction)
+        calc = self._compute_salary(base, unpaid_leaves, inc_amt, slab_bonus, salary_in.extra_deduction, days_in_month)
 
         slip = SalarySlip(
             user_id=salary_in.user_id,
@@ -144,12 +147,13 @@ class SalaryService:
         slip.status = "CONFIRMED"
         slip.is_visible_to_employee = True
         slip.confirmed_by = confirmed_by_id
-        slip.confirmed_at = datetime.now(UTC)
+        slip.confirmed_at = datetime.now(UTC).date()
         await slip.save()
         return slip.model_dump()
 
-    async def get_all_salary_slips(self) -> List[SalarySlip]:
-        return await SalarySlip.find(SalarySlip.is_deleted == False).sort("-month").to_list()
+    async def get_all_salary_slips(self) -> List[dict]:
+        slips = await SalarySlip.find(SalarySlip.is_deleted == False).sort("-month").to_list()
+        return [await self._format_slip(s) for s in slips]
 
     async def get_user_salary_slips(self, user_id: PydanticObjectId, month: str = None, **kwargs):
         filters: dict = {"user_id": user_id, "is_deleted": False}
@@ -164,7 +168,8 @@ class SalaryService:
         if only_visible:
             filters["is_visible_to_employee"] = True
 
-        return await SalarySlip.find(filters).sort("-month").to_list()
+        slips = await SalarySlip.find(filters).sort("-month").to_list()
+        return [await self._format_slip(s) for s in slips]
 
     async def preview_salary(self, user_id: PydanticObjectId, month: str, extra_deduction: float = 0.0, base_salary: float = None):
         """Calculate figures for preview without saving."""
@@ -173,11 +178,13 @@ class SalaryService:
             raise HTTPException(status_code=404, detail="User not found")
 
         year, month_num = map(int, month.split('-'))
+        _, days_in_month = calendar.monthrange(year, month_num)
+        
         approved_leaves_raw, total_leave_days, paid_leaves, unpaid_leaves = await self._get_leave_data(user_id, year, month_num)
         inc_amt, slab_bonus = await self._get_incentive_data(user_id, month)
         
         base = base_salary if base_salary is not None else (user.base_salary or 0.0)
-        calc = self._compute_salary(base, unpaid_leaves, inc_amt, slab_bonus, extra_deduction)
+        calc = self._compute_salary(base, unpaid_leaves, inc_amt, slab_bonus, extra_deduction, days_in_month)
         
         # Check for existing slip
         existing = await SalarySlip.find_one(SalarySlip.user_id == user_id, SalarySlip.month == month)
@@ -187,8 +194,9 @@ class SalaryService:
             "user_name": user.name or user.email,
             "month": month,
             "base_salary": base,
-            "working_days": max(0, 30 - int(total_leave_days)),
+            "working_days": max(0, days_in_month - int(total_leave_days)),
             "total_leave_days": int(total_leave_days),
+            "days_in_month": days_in_month,
             "paid_leaves": paid_leaves,
             "unpaid_leaves": unpaid_leaves,
             "incentive_amount": inc_amt,
@@ -210,11 +218,13 @@ class SalaryService:
 
         user = await User.get(salary_in.user_id)
         year, month_num = map(int, salary_in.month.split('-'))
+        _, days_in_month = calendar.monthrange(year, month_num)
+        
         _, _, paid_leaves, unpaid_leaves = await self._get_leave_data(salary_in.user_id, year, month_num)
         inc_amt, slab_bonus = await self._get_incentive_data(salary_in.user_id, salary_in.month)
         
         base = salary_in.base_salary if salary_in.base_salary is not None else (user.base_salary or 0.0)
-        calc = self._compute_salary(base, unpaid_leaves, inc_amt, slab_bonus, salary_in.extra_deduction)
+        calc = self._compute_salary(base, unpaid_leaves, inc_amt, slab_bonus, salary_in.extra_deduction, days_in_month)
 
         slip.base_salary = base
         slip.paid_leaves = paid_leaves
@@ -236,7 +246,10 @@ class SalaryService:
         if slip.status != "DRAFT":
             raise HTTPException(status_code=400, detail="Only DRAFT slips can be manually updated here")
 
-        calc = self._compute_salary(salary_in.base_salary, slip.unpaid_leaves, salary_in.incentive_amount, salary_in.slab_bonus, salary_in.extra_deduction)
+        year, month_num = map(int, slip.month.split('-'))
+        _, days_in_month = calendar.monthrange(year, month_num)
+
+        calc = self._compute_salary(salary_in.base_salary, slip.unpaid_leaves, salary_in.incentive_amount, salary_in.slab_bonus, salary_in.extra_deduction, days_in_month)
         
         slip.base_salary = salary_in.base_salary
         slip.deduction_amount = salary_in.extra_deduction
@@ -257,11 +270,26 @@ class SalaryService:
         elif "id" in data:
             data["id"] = str(data["id"])
             
-        user = await User.get(slip.user_id)
+        from bson import ObjectId as BsonObjectId
+        user = await User.find_one({"_id": BsonObjectId(str(slip.user_id))})
         if user:
             data["user_name"] = user.name or user.email
             data["employee_name"] = user.name or user.email
         return data
+
+    async def revert_to_draft(self, slip_id: PydanticObjectId):
+        """Reverts a confirmed slip back to DRAFT state."""
+        slip = await SalarySlip.get(slip_id)
+        if not slip:
+            raise HTTPException(status_code=404, detail="Slip not found")
+        
+        slip.status = "DRAFT"
+        slip.confirmed_by = None
+        slip.confirmed_at = None
+        # Optionally hide it from employee again when reverted to draft
+        slip.is_visible_to_employee = False
+        await slip.save()
+        return await self._format_slip(slip)
 
     async def generate_invoice_html(self, slip_id: PydanticObjectId) -> str:
         """Generates a professional printable HTML salary slip (payslip)."""
@@ -269,9 +297,20 @@ class SalaryService:
         if not slip:
             raise HTTPException(status_code=404, detail="Salary slip not found")
 
-        user = await User.get(slip.user_id)
+        from bson import ObjectId as BsonObjectId
+        user = await User.find_one({"_id": BsonObjectId(str(slip.user_id))})
+        # Graceful fallback: if user was deleted, use placeholder so the slip is still readable
         if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+            class _FallbackUser:
+                id = slip.user_id
+                name = f"Employee #{str(slip.user_id)[-6:]}"
+                email = ""
+                role = "N/A"
+                department = None
+                phone = None
+                employee_code = None
+                joining_date = None
+            user = _FallbackUser()
 
         # Embed company logo as base64 so it works in print/new-window context
         logo_data_uri = ""
@@ -288,17 +327,24 @@ class SalaryService:
         except Exception:
             pass
 
-        # Calculations
+        # Correctly determine days in month for the specific period
+        year, month_num = map(int, slip.month.split('-'))
+        _, days_in_month = calendar.monthrange(year, month_num)
+
         slab_bonus = slip.slab_bonus or 0.0
         incentive_amount = slip.incentive_amount or 0.0
-        daily_wage = round(slip.base_salary / 30, 2)
+        daily_wage = round(slip.base_salary / days_in_month, 2)
         extra_deduction = slip.deduction_amount or 0.0
         # Gross Earnings = full base + all bonuses BEFORE any deductions
         gross_earnings = round(slip.base_salary + incentive_amount + slab_bonus, 2)
         # Derive totals from stored DB values to guarantee displayed math always matches net pay
         total_deductions = round(gross_earnings - slip.final_salary, 2)
         leave_deduction = round(total_deductions - extra_deduction, 2)
-        working_days = max(0, 30 - int(slip.unpaid_leaves))
+        
+        # Correctly determine days in month for the specific period
+        year, month_num = map(int, slip.month.split('-'))
+        _, days_in_month = calendar.monthrange(year, month_num)
+        working_days = max(0, days_in_month - int(slip.unpaid_leaves))
 
         # Date formatting
         year, month_num = map(int, slip.month.split('-'))
@@ -610,7 +656,7 @@ class SalaryService:
 
     <div class="att-strip">
         <div class="att-cell">
-            <div class="att-num">30</div>
+            <div class="att-num">{days_in_month}</div>
             <div class="att-lbl">Total Days</div>
         </div>
         <div class="att-cell">

@@ -311,6 +311,30 @@ async def delete_leave(
     await leave.save()
     return Response(status_code=204)
 
+@router.post("/leave/bulk-delete", status_code=204)
+async def delete_leaves_bulk(
+    payload: dict,
+    current_user: User = Depends(staff_checker)
+) -> Response:
+    """Bulk delete leave records based on IDs."""
+    await _require_feature_access(current_user, "leave_manage_roles", "You do not have permission to delete leaves")
+    ids = payload.get("ids", [])
+    if not ids:
+        return Response(status_code=204)
+    
+    # Convert string IDs to PydanticObjectIds
+    object_ids = [PydanticObjectId(oid) for oid in ids]
+    
+    settings = await SystemSettings.find_one()
+    delete_policy = settings.delete_policy if settings else "SOFT"
+    
+    if delete_policy == "HARD":
+        await LeaveRecord.find(In(LeaveRecord.id, object_ids)).delete()
+    else:
+        await LeaveRecord.find(In(LeaveRecord.id, object_ids)).update({"$set": {"is_deleted": True}})
+        
+    return Response(status_code=204)
+
 # ═══════════════════════════════════════════════════════
 # SALARY ENDPOINTS
 # ═══════════════════════════════════════════════════════
@@ -366,6 +390,14 @@ async def confirm_salary_slip(
 ) -> Any:
     await _require_feature_access(current_user, "salary_manage_roles", "You do not have permission to confirm salary")
     return await SalaryService().confirm_salary_slip(slip_id, current_user.id)
+
+@router.patch("/salary/revert-draft/{slip_id}", response_model=SalarySlipRead)
+async def revert_salary_to_draft(
+    slip_id: PydanticObjectId,
+    current_user: User = Depends(staff_checker)
+) -> Any:
+    await _require_feature_access(current_user, "salary_manage_roles", "You do not have permission to revert salary to draft")
+    return await SalaryService().revert_to_draft(slip_id)
 
 @router.get("/salary/all", response_model=List[SalarySlipRead])
 async def get_all_salary_slips(

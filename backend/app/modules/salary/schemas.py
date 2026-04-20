@@ -1,8 +1,7 @@
 import typing
 import datetime
 from pydantic import field_validator, Field
-from beanie import PydanticObjectId
-from app.core.base_schema import MongoBaseSchema
+from app.core.base_schema import MongoBaseSchema, PydanticObjectId
 from app.modules.salary.models import LeaveStatus, LeaveType, DayType
 
 class LeaveApplicationCreate(MongoBaseSchema):

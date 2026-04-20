@@ -449,32 +449,25 @@
     margin-bottom: 24px;
 }
 
+/* Flat 3-zone head: [left-label] [pills-middle] [right-summary+chevron] */
 .filter-panel-head {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 12px;
+    gap: 10px;
     padding: 11px 16px;
     border-bottom: 1px solid var(--border-subtle);
     background: var(--bg-app);
     cursor: pointer;
     user-select: none;
     transition: background 0.15s;
+    min-width: 0;
 }
 
 .filter-panel-head:hover {
     background: rgba(var(--primary-rgb), 0.05);
 }
 
-.filter-panel-head-main {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    min-width: 0;
-    flex: 1 1 280px;
-    flex-wrap: wrap;
-}
-
+/* Zone 1: Icon + label — never shrinks */
 .filter-panel-head-left {
     display: inline-flex;
     align-items: center;
@@ -483,6 +476,7 @@
     font-weight: 700;
     color: var(--text-body);
     white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .filter-panel-head-left i {
@@ -490,32 +484,31 @@
     font-size: 0.88rem;
 }
 
-.filter-panel-head-meta {
+/* Zone 2: Active pills — fills middle, clips overflow */
+.filter-active-pills {
     display: flex;
     align-items: center;
-    justify-content: flex-end;
-    gap: 12px;
+    gap: 6px;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    flex-wrap: nowrap;
+}
+
+/* Zone 3: Summary + chevron — pinned right, never wraps */
+.filter-panel-head-right {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
     margin-left: auto;
-    /* Push to the right */
-    flex-wrap: wrap;
 }
 
 .filter-summary-text {
     font-size: 0.78rem;
     color: var(--text-muted);
     font-weight: 600;
-    line-height: normal;
-    /* Avoid collapsing issues */
-    display: inline-flex;
-    align-items: center;
-    margin: 0;
-}
-
-.filter-active-pills {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-wrap: wrap;
+    white-space: nowrap;
 }
 
 .filter-pill {
@@ -529,6 +522,7 @@
     font-size: 0.72rem;
     font-weight: 600;
     line-height: 1;
+    flex-shrink: 0;
 }
 
 .filter-pill-remove {
@@ -548,21 +542,22 @@
 .filter-toggle-btn {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    background: none;
-    border: none;
-    border-radius: 6px;
-    padding: 4px 8px;
-    font-size: 0.78rem;
-    font-weight: 600;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
     color: var(--text-muted);
     cursor: pointer;
-    transition: background 0.15s, color 0.15s;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    flex-shrink: 0;
 }
 
 .filter-toggle-btn:hover {
     background: var(--border-subtle);
     color: var(--text-body);
+    border-color: var(--primary);
 }
 
 .filter-toggle-btn i {
@@ -576,7 +571,7 @@
 
 .filter-panel-body {
     display: none;
-    padding: 24px;
+    padding: 20px;
 }
 
 .filter-panel-body.open {
@@ -593,7 +588,6 @@
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
-    /* Align inputs to the bottom */
 }
 
 .filter-label {
@@ -605,7 +599,6 @@
     letter-spacing: 0.05em;
     color: var(--text-muted);
     min-height: 14px;
-    /* Ensure labels don't collapse if empty */
     line-height: 1;
 }
 
@@ -616,7 +609,6 @@
 .filter-field .form-control,
 .filter-field .form-select {
     height: 42px;
-    /* Increased slightly for better look */
     padding: 0 12px;
     display: flex;
     align-items: center;
@@ -626,16 +618,15 @@
     font-size: 0.86rem;
     width: 100%;
     line-height: 42px;
-    /* Ensures vertical centering for text */
 }
 
-/* Specific fix for selects and date inputs which handle line-height differently */
 .filter-field .form-select {
     padding-top: 0;
     padding-bottom: 0;
 }
 
-.filter-field input[type="date"] {
+.filter-field input[type="date"],
+.filter-field input[type="month"] {
     line-height: 1;
     display: inline-flex;
     align-items: center;
@@ -697,18 +688,24 @@
     background: var(--danger-light);
 }
 
+/* ── Mobile: trim padding, 1-col grid, hide summary text ── */
 @media (max-width: 767.98px) {
     .filter-panel-head {
-        align-items: flex-start;
+        padding: 10px 12px;
+        gap: 8px;
     }
 
-    .filter-panel-head-meta {
-        width: 100%;
-        justify-content: space-between;
+    .filter-summary-text {
+        display: none;
     }
 
-    .filter-actions {
-        justify-content: stretch;
+    .filter-panel-body {
+        padding: 14px;
+    }
+
+    .filter-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
     }
 
     .btn-filter-apply,
@@ -1672,6 +1669,15 @@ input[type="password"]::-ms-clear {
     font-size: 1rem;
     font-weight: 800;
     color: var(--text-main);
+    transition: all 0.2s ease;
+}
+
+.peek-value-accent {
+    color: var(--primary);
+    background: var(--primary-soft);
+    padding: 2px 8px;
+    border-radius: 6px;
+    display: inline-block;
 }
 
 /* --- Professional Modal & Mode Selector --- */
@@ -1866,6 +1872,35 @@ input[type="password"]::-ms-clear {
 .srm-data-card .srm-table-wrap::-webkit-scrollbar-thumb {
     background: var(--border);
     border-radius: 10px;
+}
+
+/* --- Salary Table Specific Responsive Tweaks --- */
+@media (max-width: 991.98px) {
+    .srm-table-salary thead th:nth-child(4),
+    .srm-table-salary thead th:nth-child(5),
+    .srm-table-salary thead th:nth-child(6),
+    .srm-table-salary tbody td:nth-child(4),
+    .srm-table-salary tbody td:nth-child(5),
+    .srm-table-salary tbody td:nth-child(6) {
+        display: none; /* Hide secondary columns on tablets and smaller */
+    }
+}
+
+@media (max-width: 575.98px) {
+    .srm-table-salary thead th:nth-child(3),
+    .srm-table-salary tbody td:nth-child(3) {
+        display: none; /* Hide base salary on tiny screens */
+    }
+}
+
+/* Ensure the table is clearly scrollable if columns are still wide */
+.srm-table-salary {
+    min-width: 600px;
+}
+@media (max-width: 767.98px) {
+    .srm-table-salary {
+        min-width: 450px;
+    }
 }
 
 /* ── Dark mode ── */
