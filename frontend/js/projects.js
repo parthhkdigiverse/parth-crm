@@ -18,7 +18,7 @@ let storefrontBlob = null;
 let selfieBlob = null;
 
 // Smart PM Fatching from active Leads for sorting
-function populatePmFilterDropdown() {
+async function populatePmFilterDropdown() {
     const select = document.getElementById('pm-filter-select');
     if (!select) return;
 
@@ -31,6 +31,19 @@ function populatePmFilterDropdown() {
         const pmName = p.project_manager_name || p.pm_name || (p.project_manager && (p.project_manager.name || p.project_manager.full_name || p.project_manager.email));
         if (pmName) pmSet.add(pmName);
     });
+
+    // Extract PMs from the users list as well
+    try {
+            const users = await window.ApiClient.request('/users/project-managers');
+            if (users && Array.isArray(users)) {
+                users.forEach(u => {
+                    const name = u.name || u.full_name || u.email;
+                    if (name) pmSet.add(name);
+                });
+            }
+    } catch (e) {
+        console.warn("Could not fetch users to populate PM dropdown", e);
+    }
 
     const uniquePMs = Array.from(pmSet).sort();
 
@@ -67,7 +80,7 @@ async function loadHubData() {
             };
         });
 
-        populatePmFilterDropdown();
+        await populatePmFilterDropdown();
         filterQueue();
 
         // Don't auto-switch if we are already viewing a specific project
@@ -243,12 +256,15 @@ function renderActionCenter(project) {
                             <button class="btn btn-success px-5 fw-bold" onclick="acceptLead('${project.id}')">Accept Lead</button>
                         </div>`;
         } else {
+            const isTelesales = window.getUser() && window.getUser().role === 'TELESALES';
             actionContainer.innerHTML = `
                         <div class="text-center py-4">
-                            <div class="mb-3"><i class="bi bi-play-circle text-primary" style="font-size: 3rem;"></i></div>
-                            <h4 class="fw-bold">Ready for Visit</h4>
+                            <div class="mb-3"><i class="bi bi-${isTelesales ? 'telephone-fill' : 'play-circle'} text-primary" style="font-size: 3rem;"></i></div>
+                            <h4 class="fw-bold">Ready for ${isTelesales ? 'Call' : 'Visit'}</h4>
                             <div class="d-flex justify-content-center mt-4">
-                                <button class="btn btn-primary px-4 fw-semibold" onclick="openCameraView('environment')"><i class="bi bi-camera me-2"></i>Start Visit (Take Photo)</button>
+                                ${isTelesales 
+                                    ? `<button class="btn btn-primary px-4 fw-bold shadow-sm" style="border-radius:10px;" onclick="startVirtualCall()"><i class="bi bi-headset me-2"></i>Initiate Virtual Call</button>`
+                                    : `<button class="btn btn-primary px-4 fw-semibold" onclick="openCameraView('environment')"><i class="bi bi-camera me-2"></i>Start Visit (Take Photo)</button>`}
                             </div>
                         </div>`;
         }
@@ -927,13 +943,75 @@ async function snapStorefrontAndStart() {
 }
 
 function showActiveTimerUI() {
+    const isVirtual = window._isVirtualCall === true;
     document.querySelector('.action-center').innerHTML = `
         <div class="text-center py-4">
-            <div class="mb-2"><span class="live-indicator"></span><span class="text-danger fw-bold text-uppercase" style="letter-spacing: 1px; font-size: 0.8rem;">Meeting In Progress</span></div>
+            <div class="mb-2"><span class="live-indicator"></span><span class="text-danger fw-bold text-uppercase" style="letter-spacing: 1px; font-size: 0.8rem;">${isVirtual ? 'Call In Progress' : 'Meeting In Progress'}</span></div>
             <div class="timer-display" id="visit-timer">${formatTime(visitSeconds)}</div>
             <p class="text-muted mb-4"><i class="bi bi-check-circle-fill text-success me-1"></i> Timer is running in background.</p>
-            <button class="btn btn-danger fw-bold px-4 py-2" onclick="openCameraView('user')"><i class="bi bi-stop-circle me-2"></i>End Visit (Take Selfie)</button>
+            ${isVirtual 
+                ? `<button class="btn btn-danger fw-bold px-4 py-2 shadow" style="border-radius:10px;" onclick="endVirtualCall()"><i class="bi bi-telephone-x-fill me-2"></i>Hang Up & Log Outcome</button>`
+                : `<button class="btn btn-danger fw-bold px-4 py-2" onclick="openCameraView('user')"><i class="bi bi-stop-circle me-2"></i>End Visit (Take Selfie)</button>`}
         </div>`;
+}
+
+function startVirtualCall() {
+    window._isFollowUp = false; 
+    window._isVirtualCall = true;
+    storefrontBlob = null;
+    selfieBlob = null;
+    stopCamera();
+    startTimer();
+    showActiveTimerUI();
+}
+
+function endVirtualCall() {
+    stopTimer();
+
+    document.querySelector('.action-center').innerHTML = `
+        <div class="text-center py-4">
+            <h5 class="fw-bold mb-2">Virtual Call Completed!</h5>
+            <p class="text-muted mb-4">Duration: <span class="fw-bold text-dark">${formatTime(visitSeconds)}</span></p>
+            
+            <div class="mx-auto text-start mt-4" style="max-width: 400px;">
+                <label class="form-label fw-bold text-dark mb-2">Interaction Outcome <span class="text-danger">*</span></label>
+                <input type="hidden" id="visit-outcome" value="">
+
+                <div class="outcome-grid" id="outcome-grid-container">
+                    <div class="outcome-card" onclick="selectOutcome('SATISFIED', this, 'active-satisfied')"><i class="bi bi-calendar-check text-primary"></i><span>Schedule Demo</span></div>
+                    <div class="outcome-card" onclick="selectOutcome('ACCEPT', this, 'active-accept')"><i class="bi bi-check-circle text-success"></i><span>Accepted</span></div>
+                    <div class="outcome-card" onclick="selectOutcome('TAKE_TIME_TO_THINK', this, 'active-thinking')"><i class="bi bi-hourglass-split text-warning"></i><span>Needs Time</span></div>
+                    <div class="outcome-card" onclick="selectOutcome('DECLINE', this, 'active-decline')"><i class="bi bi-x-circle text-danger"></i><span>Declined</span></div>
+                    <div class="outcome-card outcome-full-width" onclick="selectOutcome('OTHER', this, 'active-other')"><i class="bi bi-three-dots text-secondary"></i><span>Other Reason</span></div>
+                </div>
+
+                <div id="decline-reason-container" class="d-none mb-3 p-3 rounded" style="background: #fef2f2; border: 1px dashed #fca5a5;">
+                    <label class="form-label fw-bold text-danger mb-2" style="font-size: 0.8rem;">Why did they decline? <span class="text-danger">*</span></label>
+                    <select class="form-select border-danger text-danger shadow-sm" id="decline-reason" style="font-weight: 500;">
+                        <option value="" disabled selected>— Select Reason —</option>
+                        <option value="Not interested">Not interested</option>
+                        <option value="Price is too high">Price is too high</option>
+                        <option value="Already using a competitor">Already using a competitor</option>
+                        <option value="Need more time to decide">Need more time to decide</option>
+                        <option value="Other reason">Other reason</option>
+                    </select>
+                </div>
+
+                <div id="accept-message-container" class="d-none mb-3 p-3 rounded text-center shadow-sm" style="background: #ecfdf5; border: 1px dashed #34d399;">
+                    <div class="fw-bold mb-1" style="color: #047857;"><i class="bi bi-patch-check-fill me-1"></i> Lead Accepted!</div>
+                    <div style="color: #065f46; font-size: 0.8rem;">The system will now start the billing flow.</div>
+                </div>
+
+                <label class="form-label fw-bold text-dark mb-2">Remarks / Notes</label>
+                <textarea class="form-control mb-4 shadow-sm" id="visit-remarks" rows="3" placeholder="Key concerns raised?" style="border-radius: 12px; resize: none;"></textarea>
+
+                <div class="d-flex gap-2">
+                    <button class="btn btn-dark fw-bold flex-grow-1 py-3 rounded-pill shadow" onclick="submitFinalVisit(event)"><i class="bi bi-cloud-arrow-up me-2"></i>Save Call Record</button>
+                    <button class="btn btn-light fw-bold py-3 px-4 rounded-pill flex-shrink-0" onclick="renderActionCenter(currentProject)">Cancel</button>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 function startFollowUpVisit() {
@@ -1064,7 +1142,9 @@ function toggleDynamicUI() {
 // 6. Submit API
 async function submitFinalVisit(event) {
     const isFollowUp = window._isFollowUp === true;
+    const isVirtualCallValue = window._isVirtualCall === true;
     window._isFollowUp = false; // reset immediately
+    window._isVirtualCall = false; // reset immediately
 
     const outEl = document.getElementById('visit-outcome');
     const remEl = document.getElementById('visit-remarks');
@@ -1084,7 +1164,8 @@ async function submitFinalVisit(event) {
     const sFiePhoto = typeof selfieBlob !== 'undefined' ? selfieBlob : null;
 
     // 3. UI Safety Check — photos required only for standard field visits (not follow-ups or ACCEPT)
-    const photoRequired = !isFollowUp && outcome !== 'ACCEPT';
+    const isVirtualSession = isVirtualCallValue || (window.getUser() && window.getUser().role === 'TELESALES');
+    const photoRequired = !isFollowUp && outcome !== 'ACCEPT' && !isVirtualSession;
     if (photoRequired && !sFrontPhoto && !sFiePhoto) {
         alert("Wait! You must snap at least one photo (Storefront or Selfie) before saving.");
         return;

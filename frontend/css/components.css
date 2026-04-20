@@ -84,19 +84,29 @@
 
 
 
+.stat-card {
+    padding: 24px !important; /* USER REQUEST: More internal margin/padding */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 120px;
+}
+
 .stat-value {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     font-weight: 800;
     color: var(--text-main);
     line-height: 1;
+    margin-top: 4px;
 }
 
 .stat-label {
-    font-size: 0.68rem;
+    font-size: 0.72rem;
     font-weight: 700;
-    color: var(--text-muted);
+    color: var(--text-secondary);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.06em;
+    margin-bottom: 12px; /* Add margin below label */
 }
 
 /* ── Table Section Header ── */

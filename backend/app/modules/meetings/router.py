@@ -180,10 +180,40 @@ async def delete_meeting_global(
 @global_router.post("/batch-delete")
 async def batch_delete_meetings(
     payload: dict,
-    current_user: User = Depends(admin_checker)
+    current_user: User = Depends(staff_checker)
 ):
     ids = [PydanticObjectId(i) for i in payload.get("ids", []) if i]
-    res = await MeetingSummary.find(In(MeetingSummary.id, ids)).delete()
+    if not ids:
+        return {"message": "No IDs provided"}
+
+    # Fetch meetings to check permissions
+    meetings = await MeetingSummary.find(In(MeetingSummary.id, ids)).to_list()
+    if not meetings:
+        return {"message": "No meetings found"}
+
+    ids_to_delete = []
+    
+    for meeting in meetings:
+        can_delete = False
+        if current_user.role == UserRole.ADMIN:
+            can_delete = True
+        else:
+            # Check if host
+            if meeting.host_id == current_user.id:
+                can_delete = True
+            # Check if PM of the client
+            elif meeting.client_id:
+                client = await Client.get(meeting.client_id)
+                if client and current_user.role in PM_SCOPED_ROLES and client.pm_id == current_user.id:
+                    can_delete = True
+        
+        if can_delete:
+            ids_to_delete.append(meeting.id)
+
+    if not ids_to_delete:
+        raise HTTPException(status_code=403, detail="Access denied to all selected meetings")
+
+    res = await MeetingSummary.find(In(MeetingSummary.id, ids_to_delete)).delete()
     return {"message": f"Successfully deleted {res.deleted_count} meetings"}
 
 
@@ -204,9 +234,10 @@ async def reschedule_meeting(
 
 @global_router.post("/{meeting_id}/generate-ai-summary")
 async def trigger_ai_summary(
-    meeting_id: PydanticObjectId
+    meeting_id: PydanticObjectId,
+    current_user: User = Depends(staff_checker)
 ) -> Any:
-    return await MeetingService().get_ai_analysis(meeting_id)
+    return await MeetingService().get_ai_analysis(meeting_id, current_user=current_user)
 
 
 @global_router.post("/{meeting_id}/import-summary", response_model=MeetingSummaryRead)
@@ -214,7 +245,7 @@ async def import_meeting_summary(
     meeting_id: PydanticObjectId,
     current_user: User = Depends(pm_checker)
 ) -> Any:
-    return await MeetingService().import_meeting_summary(meeting_id)
+    return await MeetingService().import_meeting_summary(meeting_id, current_user=current_user)
 
 
 @global_router.post("/{meeting_id}/initialize-meet", response_model=MeetingSummaryRead)
@@ -222,7 +253,50 @@ async def init_meeting_link(
     meeting_id: PydanticObjectId,
     current_user: User = Depends(pm_checker)
 ) -> Any:
-    return await MeetingService().initialize_google_meet(meeting_id)
+    return await MeetingService().initialize_google_meet(meeting_id, current_user=current_user)
+
+
+@global_router.post("/{meeting_id}/cancel", response_model=MeetingSummaryRead)
+async def cancel_meeting_global(
+    meeting_id: PydanticObjectId,
+    cancel_in: MeetingCancel,
+    current_user: User = Depends(pm_checker)
+) -> Any:
+    meeting = await MeetingSummary.get(meeting_id)
+    if not meeting:
+        raise HTTPException(status_code=404, detail="Meeting not found")
+
+    # Scope check
+    if current_user.role in PM_SCOPED_ROLES and meeting.client_id:
+        client = await Client.get(meeting.client_id)
+        if client and client.pm_id != current_user.id:
+            raise HTTPException(status_code=403, detail="Access denied")
+    elif meeting.host_id != current_user.id and current_user.role != UserRole.ADMIN:
+        # If not host and not admin, and no client scope...
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    if meeting.status == GlobalTaskStatus.RESOLVED:
+        raise HTTPException(status_code=400, detail="Cannot cancel a completed meeting.")
+
+    meeting.status = GlobalTaskStatus.CANCELLED
+    meeting.cancellation_reason = cancel_in.reason
+    await meeting.save()
+
+    try:
+        from app.utils.notify_helpers import notify_client_stakeholders
+        client = await Client.get(meeting.client_id) if meeting.client_id else None
+        if client:
+            reason_suffix = f" Reason: {cancel_in.reason}" if cancel_in.reason else ""
+            await notify_client_stakeholders(
+                client,
+                "❌ Meeting Cancelled",
+                f"Meeting '{meeting.title}' with {client.name} has been cancelled.{reason_suffix}",
+                actor_id=current_user.id,
+            )
+    except Exception as e:
+        print(f"Notification error: {e}")
+
+    return meeting
 
 
 # ─── CLIENT-SCOPED ENDPOINTS (/clients/{client_id}/meetings) ───────────────
@@ -257,13 +331,18 @@ async def read_client_meetings(
     if not client:
         raise HTTPException(status_code=404, detail="Client not found")
 
-    if current_user.role in PM_SCOPED_ROLES and client.pm_id != current_user.id:
-        from app.modules.shops.models import Shop
-        manages_shop = await Shop.find_one(Shop.client_id == client_id, Shop.project_manager_id == current_user.id)
-        if not manages_shop:
-            raise HTTPException(status_code=403, detail="Access denied")
+    # Scope check: admins see all; staff limited to PM assignment or Client ownership
+    if current_user.role != UserRole.ADMIN:
+        is_owner = client.owner_id == current_user.id or client.referred_by_id == current_user.id
+        is_pm = client.pm_id == current_user.id
+        
+        if not is_owner and not is_pm:
+            from app.modules.shops.models import Shop
+            manages_shop = await Shop.find_one(Shop.client_id == client_id, Shop.project_manager_id == current_user.id)
+            if not manages_shop:
+                raise HTTPException(status_code=403, detail="Access denied to this client's meetings")
 
-    return await MeetingSummary.find(MeetingSummary.client_id == client_id).to_list()
+    return await MeetingSummary.find(MeetingSummary.client_id == client_id, MeetingSummary.is_deleted == False).to_list()
 
 
 @router.post("/{client_id}/meetings/{meeting_id}/cancel", response_model=MeetingSummaryRead)

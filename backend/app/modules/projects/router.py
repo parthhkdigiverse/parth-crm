@@ -38,10 +38,39 @@ async def read_projects(
     limit: Optional[int] = None,
     current_user: User = Depends(staff_access)
 ) -> Any:
-    # PMs only see their own projects, Admins and Sales can see all
-    pm_id = current_user.id if (current_user and current_user.role in [UserRole.PROJECT_MANAGER, UserRole.PROJECT_MANAGER_AND_SALES]) else None
+    # ─── RBAC Logic ───
+    # Admin: sees all
+    # PM: sees projects where they are assigned as PM
+    # Sales: sees projects for clients they own/referred
+    # PM+Sales: combined visibility (Or condition)
+    
+    pm_id = None
+    client_ids = None
+    
+    if current_user.role != UserRole.ADMIN:
+        from app.modules.clients.models import Client
+        
+        # 1. Identify PM role context
+        if current_user.role in [UserRole.PROJECT_MANAGER, UserRole.PROJECT_MANAGER_AND_SALES]:
+            pm_id = current_user.id
+            
+        # 2. Identify Sales role context
+        if current_user.role in [UserRole.SALES, UserRole.TELESALES, UserRole.PROJECT_MANAGER_AND_SALES]:
+            owned_clients = await Client.get_pymongo_collection().distinct("_id", {
+                "$or": [
+                    {"owner_id": current_user.id},
+                    {"referred_by_id": current_user.id}
+                ],
+                "is_deleted": False
+            })
+            client_ids = [PydanticObjectId(cid) for cid in owned_clients]
+            
+            # If Sales has NO clients, and they are NOT a PM, they see nothing
+            if not client_ids and pm_id is None:
+                return []
+                
     service = ProjectService()
-    return await service.get_projects(skip=skip, limit=limit, pm_id=pm_id)
+    return await service.get_projects(skip=skip, limit=limit, pm_id=pm_id, client_ids=client_ids)
 
 @router.get("/{project_id}", response_model=ProjectRead)
 async def read_project(
@@ -52,6 +81,24 @@ async def read_project(
     project = await service.get_project(project_id)
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
+        
+    # ─── Strict Detail View RBAC ───
+    if current_user.role != UserRole.ADMIN:
+        from app.modules.clients.models import Client
+        is_pm = project.pm_id == current_user.id
+        
+        # Check client ownership
+        client = await Client.get(project.client_id)
+        is_owner = False
+        if client:
+            is_owner = (
+                client.owner_id == current_user.id or 
+                client.referred_by_id == current_user.id
+            )
+            
+        if not (is_pm or is_owner):
+             raise HTTPException(status_code=403, detail="Access denied to this project")
+             
     return project
 
 @router.patch("/{project_id}", response_model=ProjectRead)

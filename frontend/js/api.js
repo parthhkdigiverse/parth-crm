@@ -447,13 +447,16 @@ class ApiClient {
         return this.request(`/meetings/${meetingId}`, { method: 'PATCH', body: data });
     }
     static async cancelMeeting(meetingId, reason) {
-        return this.request(`/clients/meetings/${meetingId}/cancel`, { method: 'POST', body: { reason } });
+        return this.request(`/meetings/${meetingId}/cancel`, { method: 'POST', body: { reason } });
     }
     static async deleteMeeting(meetingId) {
         return this.request(`/meetings/${meetingId}`, { method: 'DELETE' });
     }
+    static async deleteMeetingsBulk(ids) {
+        return this.request('/meetings/batch-delete', { method: 'POST', body: { ids } });
+    }
     static async importMeetingSummary(meetingId) {
-        return this.request(`/clients/meetings/${meetingId}/import-summary`, { method: 'POST' });
+        return this.request(`/meetings/${meetingId}/import-summary`, { method: 'POST' });
     }
 
     // ─── Feedback ────────────────────────────────────────────

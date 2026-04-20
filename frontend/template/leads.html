@@ -13,26 +13,34 @@
     <link rel="stylesheet" href="/frontend/css/theme.css?v=20260406">
     <link rel="stylesheet" href="/frontend/css/components.css?v=20260406">
     <style>
+        body, html {
+            overflow-x: hidden !important;
+            max-width: 100%;
+        }
+
+        .main-wrapper {
+            overflow-x: hidden !important;
+        }
+
         .kanban-board {
             display: flex;
-            gap: 1rem;
-            overflow-x: auto;
-            padding-bottom: 2rem;
-            min-height: calc(100vh - 200px);
-            scrollbar-width: thin;
+            flex-wrap: nowrap;
+            gap: 1.25rem;
+            padding: 1rem 0;
+            overflow-x: hidden;
         }
 
         .kanban-column {
-            flex: 1;
-            min-width: 230px;
-            max-width: 280px;
+            flex: 1 1 0;
+            min-width: 0;
+            max-height: 75vh;
             display: flex;
             flex-direction: column;
             background: var(--bg-app);
-            border-radius: 12px;
-            padding: 12px;
-            max-height: calc(100vh - 240px);
+            border-radius: 16px;
+            padding: 16px;
             border: 1px solid var(--border);
+            box-shadow: var(--shadow-sm);
         }
 
         .kanban-header {
@@ -69,20 +77,11 @@
 
         .kanban-cards {
             flex-grow: 1;
+            overflow-y: auto;
+            padding-right: 8px;
             display: flex;
             flex-direction: column;
             gap: 1rem;
-            overflow-y: auto;
-            padding-right: 4px;
-        }
-
-        .kanban-cards::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        .kanban-cards::-webkit-scrollbar-thumb {
-            background: var(--border);
-            border-radius: 4px;
         }
 
         .lead-card {
@@ -298,27 +297,18 @@
 
         /* Mobile Responsiveness Improvements */
         @media (max-width: 768px) {
-
             .kanban-board {
-                scroll-snap-type: x mandatory;
                 padding: 0 1rem 1rem;
-                gap: 1rem;
-                height: auto;
-                min-height: auto;
+                gap: 1.5rem;
             }
 
             .kanban-column {
-                min-width: 85vw;
-                max-width: 85vw;
-                scroll-snap-align: center;
-                max-height: 70vh;
+                min-width: 100%;
             }
 
             .kanban-cards {
                 padding-bottom: 1rem;
             }
-
-            /* List View: mobile cards shown via d-block d-md-none, desktop table via d-none d-md-block */
 
             .detail-panel {
                 width: 100%;
@@ -865,9 +855,9 @@
                 const shopName = l.name || '—';
                 const phone = l.phone || '—';
                 const assigneeName = (l.assigned_to_user?.name) || l.assigned_to_name || l.owner_name || ((l.assigned_users && l.assigned_users.length > 0) ? l.assigned_users.map(u => u.name).join(', ') : null) || 'Unassigned';
-                const initials     = getInitials(assigneeName);
-                const pmName       = (l.project_manager_name && l.project_manager_name !== 'null') ? l.project_manager_name : 'Assigned (PM)';
-                const hasPm        = l.project_manager_id || (l.project_manager_name && l.project_manager_name !== 'null');
+                const initials = getInitials(assigneeName);
+                const pmName = (l.project_manager_name && l.project_manager_name !== 'null') ? l.project_manager_name : 'Assigned (PM)';
+                const hasPm = l.project_manager_id || (l.project_manager_name && l.project_manager_name !== 'null');
 
                 let sentimentBit = '';
                 if (l.last_visit_status) {

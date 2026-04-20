@@ -50,25 +50,39 @@ class SalaryService:
         return approved_leaves, (other_leaves + unpaid_forced), paid_leaves, unpaid_leaves
 
     async def _get_incentive_data(self, user_id: PydanticObjectId, month_str: str):
-        """Fetch progressive incentive and slab bonus from IncentiveService."""
+        """Fetch progressive incentive and slab bonus from IncentiveService.
+        Scans both current and previous months to handle 'Late Maturation' carry-over.
+        """
         from app.modules.incentives.service import IncentiveService
+        from app.modules.incentives.schemas import IncentiveCalculationRequest
         
         service = IncentiveService()
-        slips = await service.calculate_progressive_incentive(user_id, month_str)
         
-        if not slips:
-            return 0.0, 0.0
-
-        incentive_only = 0.0
-        slab_bonus = 0.0
+        # 1. Identify periods to check (Current month and Previous month)
+        year, month_num = map(int, month_str.split('-'))
+        prev_month_num = month_num - 1 if month_num > 1 else 12
+        prev_year = year if month_num > 1 else year - 1
+        prev_month_str = f"{prev_year}-{prev_month_num:02d}"
         
-        for slip in slips:
-            bonus = slip.slab_bonus_amount or 0.0
-            total = slip.total_incentive or 0.0
-            incentive_only += (total - bonus)
-            slab_bonus += bonus
+        periods_to_check = [prev_month_str, month_str]
+        
+        total_incentive_only = 0.0
+        total_slab_bonus = 0.0
+        
+        for p in periods_to_check:
+            # Trigger 'fresh' calculation to pick up any newly matured units since last run
+            await service.calculate_incentive(IncentiveCalculationRequest(user_id=user_id, period=p))
             
-        return round(incentive_only, 2), round(slab_bonus, 2)
+            # Fetch all generated slips for this period (could be multiple if units matured at different times)
+            slips = await service.calculate_progressive_incentive(user_id, p)
+            
+            for slip in slips:
+                bonus = slip.slab_bonus_amount or 0.0
+                total = slip.total_incentive or 0.0
+                total_incentive_only += (total - bonus)
+                total_slab_bonus += bonus
+            
+        return round(total_incentive_only, 2), round(total_slab_bonus, 2)
 
     def _compute_salary(self, base: float, unpaid_leaves: float, incentive_amount: float,
                         slab_bonus: float, extra_deduction: float):

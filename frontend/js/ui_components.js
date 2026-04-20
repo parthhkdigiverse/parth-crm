@@ -93,7 +93,7 @@ window.getQuickAddItems = function (roleValue) {
         items.push({ href: 'issues.html?add=true', icon: 'bi-exclamation-triangle', iconClass: 'text-warning', label: 'New Issue' });
         items.push({ href: 'feedback.html?add=true', icon: 'bi-chat-square-text', iconClass: 'text-info', label: 'New Feedback' });
     }
-    if (!flags.isClient) {
+    if (!flags.isClient && !flags.isAdmin) {
         items.push({ href: 'leaves.html?add=true', icon: 'bi-calendar3', iconClass: 'text-warning', label: 'New Leave Request' });
     }
     if (flags.isAdmin) {

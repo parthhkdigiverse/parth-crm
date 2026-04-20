@@ -52,84 +52,86 @@
         <div id="sidebar"></div>
         <div class="flex-grow-1 main-wrapper">
             <div class="page-content-standard">
-                <!-- Header -->
                 <!-- Header Section -->
-                <!-- Header Section -->
-                <div class="page-header-glass mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="page-header-glass d-flex justify-content-between align-items-center flex-wrap gap-2">
                     <div class="mb-3 mb-sm-0">
                         <h2 class="page-section-title fw-bold mb-1">Leave Management</h2>
-                        <p class="text-muted mb-0" style="font-size:0.93rem;">Apply for leaves and track approval
-                            status.</p>
+                        <p class="text-muted mb-0" style="font-size:0.93rem;">Apply for leaves and track approval status.</p>
                     </div>
                     <div class="d-flex align-items-center gap-3">
-                        <!-- Admin Tab Switcher -->
-                        <div id="admin-tabs" class="nav nav-pills p-1 bg-light rounded-3 shadow-sm border"
-                            style="display:none; font-size: 0.85rem;">
-                            <button class="nav-link active px-3 py-2 fw-semibold" id="tab-team"
-                                onclick="switchTab('team')">Team Leaves</button>
-                            <button class="nav-link px-3 py-2 fw-semibold" id="tab-my" onclick="switchTab('my')">My
-                                Leaves</button>
+                        <!-- Search / Quick Filter (Optional) -->
+                        <div id="admin-tabs" class="nav nav-pills p-1 bg-white rounded-3 shadow-sm border" style="display:none; font-size: 0.85rem;">
+                            <button class="nav-link active px-3 py-2 fw-semibold" id="tab-team" onclick="switchTab('team')">Team Leaves</button>
+                            <button class="nav-link px-3 py-2 fw-semibold" id="tab-my" onclick="switchTab('my')">My Leaves</button>
                         </div>
-                        <button id="apply-leave-btn" class="btn btn-primary fw-semibold shadow-sm"
-                            style="border-radius:10px;" onclick="openLeaveModal()">
+                        
+                        <button id="apply-leave-btn" class="btn btn-primary fw-semibold shadow-sm" style="border-radius:10px; display:none;" onclick="openLeaveModal()">
                             <i class="bi bi-calendar-plus me-2"></i>Apply Leave
                         </button>
                     </div>
                 </div>
 
                 <!-- Summary Cards (admin view) -->
-                <div id="leave-summary-bar" class="row g-3 mb-4 mx-0" style="display:none;">
+                <div id="leave-summary-bar" class="row g-3 mb-4" style="display:none;">
                     <div class="col-6 col-md-3">
-                        <div class="card stat-card card-warning h-100 p-3">
-                            <div class="stat-label mb-2">Pending</div>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="bg-warning-light text-warning rounded-3 d-flex align-items-center justify-content-center"
-                                    style="width:38px; height:38px;">
-                                    <i class="bi bi-hourglass-split fs-5"></i>
+                        <div class="grid-card p-3" style="border-left:4px solid var(--warning);">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                    style="width:40px;height:40px;background:var(--warning-light);">
+                                    <i class="bi bi-hourglass-split" style="color:var(--warning-text);"></i>
                                 </div>
-                                <div class="stat-value" id="sum-pending">0</div>
+                                <div>
+                                    <div class="text-muted small fw-semibold mb-0" style="font-size:0.78rem;letter-spacing:0.3px;">PENDING</div>
+                                    <div class="fw-bold" style="color:var(--warning-text);font-size:1.5rem;line-height:1;" id="sum-pending">0</div>
+                                </div>
                             </div>
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
-                        <div class="card stat-card card-success h-100 p-3">
-                            <div class="stat-label mb-2">Approved</div>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="bg-success-light text-success rounded-3 d-flex align-items-center justify-content-center"
-                                    style="width:38px; height:38px;">
-                                    <i class="bi bi-check-circle fs-5"></i>
+                        <div class="grid-card p-3" style="border-left:4px solid var(--success);">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                    style="width:40px;height:40px;background:var(--success-light);">
+                                    <i class="bi bi-check-circle" style="color:var(--success-text);"></i>
                                 </div>
-                                <div class="stat-value" id="sum-approved">0</div>
+                                <div>
+                                    <div class="text-muted small fw-semibold mb-0" style="font-size:0.78rem;letter-spacing:0.3px;">APPROVED</div>
+                                    <div class="fw-bold" style="color:var(--success-text);font-size:1.5rem;line-height:1;" id="sum-approved">0</div>
+                                </div>
                             </div>
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
-                        <div class="card stat-card card-danger h-100 p-3">
-                            <div class="stat-label mb-2">Rejected</div>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="bg-danger-light text-danger rounded-3 d-flex align-items-center justify-content-center"
-                                    style="width:38px; height:38px;">
-                                    <i class="bi bi-x-circle fs-5"></i>
+                        <div class="grid-card p-3" style="border-left:4px solid var(--danger);">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                    style="width:40px;height:40px;background:var(--danger-light);">
+                                    <i class="bi bi-x-circle" style="color:var(--danger-text);"></i>
                                 </div>
-                                <div class="stat-value" id="sum-rejected">0</div>
+                                <div>
+                                    <div class="text-muted small fw-semibold mb-0" style="font-size:0.78rem;letter-spacing:0.3px;">REJECTED</div>
+                                    <div class="fw-bold" style="color:var(--danger-text);font-size:1.5rem;line-height:1;" id="sum-rejected">0</div>
+                                </div>
                             </div>
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
-                        <div class="card stat-card card-primary h-100 p-3">
-                            <div class="stat-label mb-2">Total Days</div>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="bg-primary-soft text-primary rounded-3 d-flex align-items-center justify-content-center"
-                                    style="width:38px; height:38px;">
-                                    <i class="bi bi-calendar-check fs-5"></i>
+                        <div class="grid-card p-3" style="border-left:4px solid var(--primary);">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                    style="width:40px;height:40px;background:var(--primary-light);">
+                                    <i class="bi bi-calendar-check" style="color:var(--primary);"></i>
                                 </div>
-                                <div class="stat-value" id="sum-total">0</div>
+                                <div>
+                                    <div class="text-muted small fw-semibold mb-0" style="font-size:0.78rem;letter-spacing:0.3px;">TOTAL DAYS</div>
+                                    <div class="fw-bold" style="color:var(--primary);font-size:1.5rem;line-height:1;" id="sum-total">0</div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div id="filter-wrapper" style="display:none;" class="mb-4"></div>
+                <div id="filter-wrapper" style="display:none;" class="mb-2"></div>
 
                 <!-- My Attendance Table Removed -->
 
@@ -205,11 +207,9 @@
                     <label class="form-label fw-semibold small">Day Type <span class="text-danger">*</span></label>
                     <div class="d-flex gap-2">
                         <label class="d-flex align-items-center gap-2 cursor-pointer px-3 py-2 rounded border"
-                            id="dt-full-lbl"
-                            style="flex:1; cursor:pointer; background:var(--primary-soft); border-color:var(--primary);">
-                            <input type="radio" name="day-type" id="dt-full" value="FULL" checked
-                                class="form-check-input m-0">
-                            <span class="fw-semibold small">Full Day</span>
+                            id="dt-full-lbl" style="flex:1; cursor:pointer; border-color:var(--primary); background:var(--primary-soft);">
+                            <input type="radio" name="day-type" id="dt-full" value="FULL" class="form-check-input m-0" checked>
+                            <span class="fw-semibold small" style="color:var(--primary);">Full Day</span>
                         </label>
                         <label class="d-flex align-items-center gap-2 cursor-pointer px-3 py-2 rounded border"
                             id="dt-half-lbl" style="flex:1; cursor:pointer; border-color:var(--border);">
@@ -240,24 +240,32 @@
     </div>
 
     <!-- Remarks Modal (Admin: Approve/Reject with remarks) -->
-    <div class="srm-overlay" id="remarksModal">
-        <div class="srm-box" style="max-width:440px;">
-            <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
-                <h5 class="fw-bold mb-0" id="remarks-modal-title"><i
-                        class="bi bi-chat-left-text text-primary me-2"></i>Action</h5>
+    <div class="srm-overlay" id="remarksModal" style="z-index: 1200;">
+        <div class="srm-box" style="max-width:480px; box-shadow: 0 30px 60px -12px rgba(0,0,0,0.3);">
+            <div class="p-4 border-bottom d-flex justify-content-between align-items-center" id="remarks-modal-header">
+                <div class="d-flex align-items-center gap-3">
+                    <div id="remarks-icon-container" class="rounded-circle d-flex align-items-center justify-content-center" style="width:40px; height:40px;">
+                        <i id="remarks-icon" class="bi fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0" id="remarks-modal-title">Leave Action</h5>
+                        <div class="text-muted small" id="remarks-helper">Provide additional context for this leave request.</div>
+                    </div>
+                </div>
                 <button class="btn-close" onclick="closeRemarksModal()"></button>
             </div>
-            <div class="mb-3">
-                <label class="form-label fw-semibold small">Remarks <span
-                        class="text-muted fw-normal">(optional)</span></label>
-                <textarea id="remarks-input" class="form-control" rows="3"
-                    placeholder="Enter remarks for the employee..."></textarea>
-                <div class="form-text text-muted" id="remarks-helper" style="font-size:0.78rem;"></div>
-            </div>
-            <div class="d-flex justify-content-end gap-2 pt-3 border-top">
-                <button class="btn btn-light border" onclick="closeRemarksModal()">Cancel</button>
-                <button class="btn btn-danger px-4 fw-semibold" id="remarks-submit-btn"
-                    onclick="submitRemarksApproval()">Submit</button>
+            <div class="p-4">
+                <div class="mb-4">
+                    <label class="form-label fw-semibold text-muted small text-uppercase mb-2" style="letter-spacing: 0.5px;">Your Remarks</label>
+                    <textarea id="remarks-input" class="form-control" rows="4"
+                        placeholder="Enter remarks for the employee..." style="border-radius: 12px; padding: 15px; border-color: var(--border);"></textarea>
+                </div>
+                
+                <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                    <button class="btn btn-light px-4 border fw-semibold" style="border-radius: 10px;" onclick="closeRemarksModal()">Cancel</button>
+                    <button class="btn px-4 fw-bold" id="remarks-submit-btn" style="border-radius: 10px;"
+                        onclick="submitRemarksApproval()">Submit</button>
+                </div>
             </div>
         </div>
     </div>
@@ -265,8 +273,7 @@
     <script src="/frontend/js/utils.js?v=20260413" onload="window.__loadedScripts.push('utils.js')"></script>
     <script src="/frontend/js/api.js?v=20260413" onload="window.__loadedScripts.push('api.js')"></script>
     <script src="/frontend/js/auth.js?v=20260413" onload="window.__loadedScripts.push('auth.js')"></script>
-    <script src="/frontend/js/ui_components.js?v=20260413"
-        onload="window.__loadedScripts.push('ui_components.js')"></script>
+    <script src="/frontend/js/ui_components.js?v=20260421" onload="window.__loadedScripts.push('ui_components.js')"></script>
     <script src="/frontend/js/app.js?v=20260413" onload="window.__loadedScripts.push('app.js')"></script>
     <script src="/frontend/js/bootstrap.bundle.min.js" onload="window.__loadedScripts.push('bootstrap.js')"></script>
     <script>
@@ -277,21 +284,36 @@
 
         const user = window.getUser ? window.getUser() : null;
         const isAdmin = user?.role === 'ADMIN';
-        const canApplyLeave = true;
+
+        /**
+         * ROLE-BASED ACCESS CONTROL
+         * - Admin: Can manage all leaves, but cannot apply for themselves.
+         * - Employee: Can apply for leaves and edit/cancel their own pending requests.
+         */
+        const canApplyLeave = !isAdmin && (window.hasFeatureAccess ? window.hasFeatureAccess('leave_apply_roles') : true);
         const canEditOwnLeave = window.hasFeatureAccess ? window.hasFeatureAccess('leave_edit_own_roles') : !isAdmin;
         const canManageLeave = window.hasFeatureAccess ? window.hasFeatureAccess('leave_manage_roles') : isAdmin;
+
         let leaveEditMode = false;
         let editingLeaveId = null;
         let currentLeaveRows = [];
         let activeTab = canManageLeave ? 'team' : 'my';
 
-        window.switchTab = function (tab) {
+        /**
+         * Tab Switcher Logic
+         * - Admins see 'Team Leaves' by default.
+         * - Regular users only see 'My Leaves'.
+         * - UPDATE: Per requirements, Admin no longer needs 'My Leaves' tab.
+         */
+        window.switchTab = function(tab) {
             activeTab = tab;
-
-            // Update UI tabs
+            
+            // Update Tab UI visibility
             if (document.getElementById('admin-tabs')) {
-                document.getElementById('tab-team').classList.toggle('active', tab === 'team');
-                document.getElementById('tab-my').classList.toggle('active', tab === 'my');
+                const teamTab = document.getElementById('tab-team');
+                const myTab = document.getElementById('tab-my');
+                if(teamTab) teamTab.classList.toggle('active', tab === 'team');
+                if(myTab) myTab.classList.toggle('active', tab === 'my');
             }
 
             // Toggle filter and summary visibility
@@ -309,6 +331,11 @@
             loadLeaves();
         };
 
+        // Hide 'Apply Leave' button for Admin users
+        const applyBtn = document.getElementById('apply-leave-btn');
+        if (applyBtn) {
+            applyBtn.style.display = canApplyLeave ? 'inline-block' : 'none';
+        }
 
         let currentFilters = {};
 
@@ -350,9 +377,13 @@
         }
 
         if (canManageLeave) {
-            document.getElementById('admin-tabs').style.display = 'flex';
+            // ADMIN VIEW: Hide tabs as they only need 'Team Leaves', show summary and filters
+            const adminTabs = document.getElementById('admin-tabs');
+            if (adminTabs) adminTabs.style.display = 'none'; // USER REQUEST: Admin doesn't need 'My Leaves'
+
             document.getElementById('leave-summary-bar').style.display = 'flex';
             document.getElementById('filter-wrapper').style.display = 'block';
+            
             ApiClient.getEmployees().then(emps => {
                 initFilters(emps);
             }).catch(() => { });
@@ -570,17 +601,17 @@
                             const isAutoLeave = (l.reason || '').includes('Auto leave');
 
                             if (canManageLeave && l.status === 'PENDING') {
-                                lastCol = `<div class="d-flex gap-1 justify-content-center">
-                                   <button class="btn btn-sm btn-outline-success" title="Approve" onclick="approveLeaveWithRemarks('${l.id}', 'APPROVED')"><i class="bi bi-check-lg"></i> Approve</button>
-                                   <button class="btn btn-sm btn-outline-danger" title="Reject" onclick="approveLeaveWithRemarks('${l.id}', 'REJECTED')"><i class="bi bi-x-lg"></i> Reject</button>
+                                lastCol = `<div class="d-flex gap-2 flex-wrap justify-content-end">
+                                   <button class="btn btn-sm btn-outline-success" title="Approve" onclick="approveLeaveWithRemarks('${l.id}', 'APPROVED')"><i class="bi bi-check-lg"></i></button>
+                                   <button class="btn btn-sm btn-outline-danger" title="Reject" onclick="approveLeaveWithRemarks('${l.id}', 'REJECTED')"><i class="bi bi-x-lg"></i></button>
                                  </div>`;
                             } else if (!canManageLeave && canEditOwnLeave && l.status === 'PENDING' && String(l.user_id) === String(user?.id)) {
                                 if (isAutoLeave) {
                                     lastCol = `<span class="text-muted small italic"><i class="bi bi-lock-fill me-1"></i>Auto leave restricted</span>`;
                                 } else {
-                                    lastCol = `<div class="d-flex gap-1 justify-content-center">
-                                        <button class="btn btn-sm btn-outline-primary" title="Edit" onclick="openEditLeave('${l.id}')"><i class="bi bi-pencil"></i> Edit</button>
-                                        <button class="btn btn-sm btn-outline-danger" title="Cancel" onclick="cancelLeave('${l.id}')"><i class="bi bi-x-circle"></i> Cancel</button>
+                                    lastCol = `<div class="d-flex gap-2 flex-wrap justify-content-end">
+                                        <button class="btn btn-sm btn-outline-primary" title="Edit" onclick="openEditLeave('${l.id}')"><i class="bi bi-pencil"></i></button>
+                                        <button class="btn btn-sm btn-outline-danger" title="Cancel" onclick="cancelLeave('${l.id}')"><i class="bi bi-x-circle"></i></button>
                                     </div>`;
                                 }
                             } else if (canManageLeave && (l.status === 'APPROVED' || l.status === 'REJECTED')) {
@@ -689,22 +720,49 @@
         function approveLeaveWithRemarks(id, status) {
             _pendingApprovalId = id;
             _pendingApprovalStatus = status;
+            
             const modal = document.getElementById('remarksModal');
             const title = document.getElementById('remarks-modal-title');
+            const helper = document.getElementById('remarks-helper');
             const remarksInput = document.getElementById('remarks-input');
             const submitBtn = document.getElementById('remarks-submit-btn');
+            const iconContainer = document.getElementById('remarks-icon-container');
+            const icon = document.getElementById('remarks-icon');
+            const header = document.getElementById('remarks-modal-header');
+
             remarksInput.value = '';
+            
+            // Context-specific styling
             if (status === 'REJECTED') {
-                title.innerHTML = '<i class="bi bi-x-circle text-danger me-2"></i>Reject Leave';
-                submitBtn.className = 'btn btn-danger px-4 fw-semibold';
-                submitBtn.textContent = 'Reject';
-                document.getElementById('remarks-helper').textContent = 'Provide a reason for rejection (recommended).';
+                title.textContent = 'Reject Leave';
+                helper.textContent = 'Please provide a clear reason for rejecting this leave.';
+                submitBtn.className = 'btn btn-danger px-4 fw-bold';
+                submitBtn.textContent = 'Confirm Rejection';
+                icon.className = 'bi bi-x-circle';
+                header.style.background = 'rgba(239, 68, 68, 0.03)';
+                iconContainer.style.background = 'rgba(239, 68, 68, 0.1)';
+                iconContainer.style.color = '#ef4444';
+            } else if (status === 'APPROVED') {
+                title.textContent = 'Approve Leave';
+                helper.textContent = 'Leave will be marked as approved. Optional: add notes.';
+                submitBtn.className = 'btn btn-success px-4 fw-bold text-white';
+                submitBtn.textContent = 'Confirm Approval';
+                icon.className = 'bi bi-check-circle';
+                header.style.background = 'rgba(16, 185, 129, 0.03)';
+                iconContainer.style.background = 'rgba(16, 185, 129, 0.1)';
+                iconContainer.style.color = '#10b981';
             } else {
-                title.innerHTML = '<i class="bi bi-check-circle text-success me-2"></i>Approve Leave';
-                submitBtn.className = 'btn btn-success px-4 fw-semibold';
-                submitBtn.textContent = 'Approve';
-                document.getElementById('remarks-helper').textContent = 'Optional: Add a note for the employee.';
+                // For "Remark" only updates (status is either the current status or a default)
+                title.textContent = 'Add/Edit Remark';
+                helper.textContent = 'Update the notes for this leave application.';
+                submitBtn.className = 'btn btn-primary px-4 fw-bold';
+                submitBtn.textContent = 'Save Remark';
+                icon.className = 'bi bi-chat-dots';
+                header.style.background = 'rgba(37, 99, 235, 0.03)';
+                iconContainer.style.background = 'rgba(37, 99, 235, 0.1)';
+                iconContainer.style.color = 'var(--primary)';
             }
+
             modal.classList.add('show');
             remarksInput.focus();
         }
@@ -752,22 +810,6 @@
             }).finally(loadLeaves);
         }
         // end script
-    </script>
-    <script>
-        console.log('Final inline script running');
-        // Final fallback to ensure visibility
-        setTimeout(() => {
-            console.log('Final visibility check (instant)');
-            document.body.style.visibility = 'visible';
-            document.body.style.opacity = '1';
-            const mw = document.querySelector('.main-wrapper');
-            if (mw) {
-                mw.style.visibility = 'visible';
-                mw.style.display = 'block';
-                mw.style.opacity = '1';
-            }
-            console.log('Body visibility forced to visible');
-        }, 0);
     </script>
 </body>
 

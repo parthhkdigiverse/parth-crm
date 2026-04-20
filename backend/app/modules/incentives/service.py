@@ -84,75 +84,69 @@ class IncentiveService:
             "offset": offset
         }
 
-    async def calculate_incentive(self, calc_in: IncentiveCalculationRequest) -> IncentiveSlipRead:
+    async def _get_historical_offset(self, user_id: PydanticObjectId, period: str) -> int:
+        """Calculate total units already paid for this period across all slips."""
+        slips = await IncentiveSlip.find(
+            IncentiveSlip.user_id == user_id,
+            IncentiveSlip.period == period
+        ).to_list()
+        return sum(s.achieved for s in slips)
+
+    async def calculate_incentive(self, calc_in: IncentiveCalculationRequest) -> Optional[IncentiveSlipRead]:
         user = await User.get(calc_in.user_id)
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
         if not getattr(user, "incentive_enabled", True):
             raise HTTPException(status_code=400, detail="Incentive is disabled for this user")
 
-        force_recalculate = bool(getattr(calc_in, "force_recalculate", False))
+        # 1. Anchor logic: Only consider clients created in THIS period
+        period_start, next_month_start = self._get_period_bounds(calc_in.period)
+        
+        # 10-day maturation rule
+        ten_days_ago = datetime.now(UTC) - timedelta(days=10)
+        eligibility_end = ten_days_ago
 
-        existing_slip = await IncentiveSlip.find_one(
-            IncentiveSlip.user_id == calc_in.user_id,
-            IncentiveSlip.period == calc_in.period
+        # 2. Total matured units for this period
+        query = self._apply_role_scope_query(user).find(
+            Client.created_at >= period_start,
+            Client.created_at < next_month_start,
+            Client.created_at < eligibility_end,
+            Client.status == "ACTIVE"
         )
+        total_matured_in_period = await query.count()
 
-        if existing_slip and not force_recalculate:
-            raise HTTPException(status_code=400, detail="Incentive slip for this period already exists")
+        # 3. How many were already paid for this period?
+        offset = await self._get_historical_offset(user.id, calc_in.period)
+        
+        # 4. Impact check
+        newly_matured = total_matured_in_period - offset
+        
+        if newly_matured <= 0:
+            # Nothing new to pay
+            return None
 
-        achieved = 0
-        if calc_in.closed_units is not None:
-            achieved = calc_in.closed_units
-        else:
-            period_start, _ = self._get_period_bounds(calc_in.period)
-            
-            last_slip = await IncentiveSlip.find(
-                IncentiveSlip.user_id == user.id,
-                IncentiveSlip.period < calc_in.period
-            ).sort("-generated_at").first_or_none()
-
-            eligibility_start = (last_slip.generated_at - timedelta(days=10)) if last_slip and last_slip.generated_at else (period_start - timedelta(days=10))
-            eligibility_end = datetime.now(UTC) - timedelta(days=10)
-
-            query = self._apply_role_scope_query(user).find(
-                Client.created_at >= eligibility_start,
-                Client.created_at < eligibility_end,
-                Client.status == "ACTIVE"
-            )
-            achieved = await query.count()
-
-        calc_result = await self._calculate_stepped_incentive(achieved, offset=0)
+        # 5. Calculate stepped incentive for the NEW units using the OFFSET
+        calc_result = await self._calculate_stepped_incentive(newly_matured, offset=offset)
 
         user_target = getattr(user, "target", 0) or 0
-        percentage = (achieved / user_target * 100) if user_target > 0 else 0.0
+        # Percentage is based on total-period tally
+        percentage = (total_matured_in_period / user_target * 100) if user_target > 0 else 0.0
 
-        if existing_slip and force_recalculate:
-            db_slip = existing_slip
-            db_slip.achieved = achieved
-            db_slip.target = user_target
-            db_slip.percentage = percentage
-            db_slip.applied_slab = calc_result["applied_slab_label"]
-            db_slip.amount_per_unit = calc_result["incentive_per_unit"]
-            db_slip.slab_bonus_amount = calc_result["slab_bonus"]
-            db_slip.total_incentive = calc_result["total_incentive"]
-            db_slip.generated_at = datetime.now(UTC)
-            await db_slip.save()
-        else:
-            db_slip = IncentiveSlip(
-                user_id=calc_in.user_id,
-                period=calc_in.period,
-                target=user_target,
-                achieved=achieved,
-                percentage=percentage,
-                applied_slab=calc_result["applied_slab_label"],
-                amount_per_unit=calc_result["incentive_per_unit"],
-                slab_bonus_amount=calc_result["slab_bonus"],
-                is_visible_to_employee=True,
-                total_incentive=calc_result["total_incentive"],
-                generated_at=datetime.now(UTC)
-            )
-            await db_slip.insert()
+        # 6. Create the NEW slip (representing the incremental payment)
+        db_slip = IncentiveSlip(
+            user_id=calc_in.user_id,
+            period=calc_in.period,
+            target=user_target,
+            achieved=newly_matured,
+            percentage=percentage,
+            applied_slab=calc_result["applied_slab_label"],
+            amount_per_unit=calc_result["incentive_per_unit"],
+            slab_bonus_amount=calc_result["slab_bonus"],
+            is_visible_to_employee=True,
+            total_incentive=calc_result["total_incentive"],
+            generated_at=datetime.now(UTC)
+        )
+        await db_slip.insert()
 
         res = IncentiveSlipRead.model_validate(db_slip)
         res.user_name = user.name or f"Employee #{user.id}"

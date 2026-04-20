@@ -702,42 +702,55 @@
                                 </button>
                             </div>
 
-                            <div id="add-slab-form" class="px-4 py-4 slab-form-shell" style="display:none;">
-                                <div class="row g-3 mb-3">
+                            <div id="add-slab-form" class="px-4 py-4 slab-form-shell" style="display:none; border-top: 1px solid var(--border); background: var(--bg-app);">
+                                <div class="row g-3 mb-4">
                                     <div class="col-6">
-                                        <label class="form-label slab-input-label">Min Tasks</label>
-                                        <input type="number" id="slab-min" class="form-control form-control-sm"
-                                            placeholder="e.g. 1" min="0">
+                                        <label class="form-label slab-input-label d-flex align-items-center gap-1">
+                                            <i class="bi bi-chevron-bar-down text-primary"></i> Min Tasks
+                                        </label>
+                                        <input type="number" id="slab-min" class="form-control form-control-modern" placeholder="e.g. 1" min="0">
                                     </div>
                                     <div class="col-6">
-                                        <label class="form-label slab-input-label">Max Tasks</label>
-                                        <input type="number" id="slab-max" class="form-control form-control-sm"
-                                            placeholder="e.g. 10" min="1">
+                                        <label class="form-label slab-input-label d-flex align-items-center gap-1">
+                                            <i class="bi bi-chevron-bar-up text-primary"></i> Max Tasks
+                                        </label>
+                                        <input type="number" id="slab-max" class="form-control form-control-modern" placeholder="e.g. 10" min="1">
                                     </div>
                                     <div class="col-6">
-                                        <label class="form-label slab-input-label">Incentive Per Task</label>
-                                        <input type="number" id="slab-per-unit" class="form-control form-control-sm"
-                                            placeholder="1200" min="0" step="0.01">
+                                        <label class="form-label slab-input-label d-flex align-items-center gap-1">
+                                            <i class="bi bi-cash-stack text-success"></i> Reward / Task
+                                        </label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-transparent border-end-0 py-2"><small>₹</small></span>
+                                            <input type="number" id="slab-per-unit" class="form-control border-start-0 ps-0" placeholder="1200" min="0" step="0.01">
+                                        </div>
                                     </div>
                                     <div class="col-6">
-                                        <label class="form-label slab-input-label">Slab Bonus</label>
-                                        <input type="number" id="slab-bonus" class="form-control form-control-sm"
-                                            placeholder="0" min="0" step="0.01">
+                                        <label class="form-label slab-input-label d-flex align-items-center gap-1">
+                                            <i class="bi bi-stars text-warning"></i> Slab Bonus
+                                        </label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-transparent border-end-0 py-2"><small>₹</small></span>
+                                            <input type="number" id="slab-bonus" class="form-control border-start-0 ps-0" placeholder="0" min="0" step="0.01">
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="d-flex flex-wrap gap-2 mb-3">
-                                    <span class="slab-metric"><i class="bi bi-check2-square"></i> Task range
-                                        based</span>
+                                <div class="d-flex flex-wrap gap-2 mb-4">
+                                    <span class="slab-metric"><i class="bi bi-check2-square"></i> Task range based</span>
                                     <span class="slab-metric"><i class="bi bi-cash-stack"></i> Flat per-task rate</span>
                                     <span class="slab-metric"><i class="bi bi-stars"></i> Optional slab bonus</span>
                                 </div>
                                 <div class="d-flex gap-2">
-                                    <button class="btn btn-sm btn-primary flex-grow-1" onclick="addSlab()">Save
-                                        Slab</button>
-                                    <button class="btn btn-sm btn-secondary"
-                                        onclick="toggleAddSlabForm()">Cancel</button>
+                                    <button class="btn btn-primary flex-grow-1 fw-800" onclick="addSlab()" 
+                                        style="background: linear-gradient(135deg, #4f46e5, #4338ca); border: none; border-radius: 10px; padding: 10px;">
+                                        Save New Slab Definition
+                                    </button>
+                                    <button class="btn btn-secondary fw-800" onclick="toggleAddSlabForm()" 
+                                        style="border-radius: 10px; padding: 10px;">
+                                        Cancel
+                                    </button>
                                 </div>
-                                <span id="slab-msg" class="small d-none mt-2 d-block"></span>
+                                <span id="slab-msg" class="small d-none mt-3 fw-bold"></span>
                             </div>
 
                             <div class="srm-table-wrap">
@@ -999,39 +1012,59 @@
         </div>
     </div>
 
-    <!-- Edit Slab Modal -->
     <div class="srm-overlay" id="editSlabModal">
-        <div class="srm-box" style="max-width:460px;">
-            <div class="d-flex justify-content-between align-items-center mb-4 pb-3 border-bottom">
-                <h5 class="fw-bold mb-0"><i class="bi bi-pencil-square text-primary me-2"></i>Edit Slab</h5>
-                <button class="btn-close" onclick="closeEditSlabModal()"></button>
+        <div class="srm-box" style="max-width:480px; padding: 24px; border-radius: 20px;">
+            <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom">
+                <div class="calc-header-icon" style="background: linear-gradient(135deg, var(--primary), #6366f1);">
+                    <i class="bi bi-pencil-square"></i>
+                </div>
+                <div>
+                    <h5 class="fw-800 mb-0" style="letter-spacing: -0.02em;">Edit Incentive & Slab</h5>
+                    <p class="text-muted small mb-0">Modify reward rates and milestones</p>
+                </div>
+                <button class="btn-close ms-auto" onclick="closeEditSlabModal()"></button>
             </div>
             <input type="hidden" id="edit-slab-id">
-            <div class="slab-modal-grid mb-3">
+            <div class="slab-modal-grid mb-4" style="background: var(--bg-app); padding: 20px; border-radius: 16px; border: 1px solid var(--border);">
                 <div class="row g-3">
                     <div class="col-6">
-                        <label class="form-label slab-input-label">Min Tasks <span class="text-danger">*</span></label>
-                        <input type="number" id="edit-slab-min" class="form-control" min="0">
+                        <label class="form-label slab-input-label d-flex align-items-center gap-1">
+                            <i class="bi bi-chevron-bar-down text-primary"></i> Min Tasks
+                        </label>
+                        <input type="number" id="edit-slab-min" class="form-control form-control-modern" min="0" placeholder="0">
                     </div>
                     <div class="col-6">
-                        <label class="form-label slab-input-label">Max Tasks <span class="text-danger">*</span></label>
-                        <input type="number" id="edit-slab-max" class="form-control" min="1">
+                        <label class="form-label slab-input-label d-flex align-items-center gap-1">
+                            <i class="bi bi-chevron-bar-up text-primary"></i> Max Tasks
+                        </label>
+                        <input type="number" id="edit-slab-max" class="form-control form-control-modern" min="1" placeholder="10">
                     </div>
                     <div class="col-6">
-                        <label class="form-label slab-input-label">Per Task (Rs) <span
-                                class="text-danger">*</span></label>
-                        <input type="number" id="edit-slab-per-unit" class="form-control" min="0" step="0.01">
+                        <label class="form-label slab-input-label d-flex align-items-center gap-1">
+                            <i class="bi bi-cash-stack text-success"></i> Reward / Task
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-transparent border-end-0 py-2"><small>₹</small></span>
+                            <input type="number" id="edit-slab-per-unit" class="form-control border-start-0 ps-0" min="0" step="0.01" placeholder="1200">
+                        </div>
                     </div>
                     <div class="col-6">
-                        <label class="form-label slab-input-label">Slab Bonus (Rs)</label>
-                        <input type="number" id="edit-slab-bonus" class="form-control" min="0" step="0.01">
+                        <label class="form-label slab-input-label d-flex align-items-center gap-1">
+                            <i class="bi bi-stars text-warning"></i> Slab Bonus
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-transparent border-end-0 py-2"><small>₹</small></span>
+                            <input type="number" id="edit-slab-bonus" class="form-control border-start-0 ps-0" min="0" step="0.01" placeholder="5000">
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="d-flex justify-content-end gap-2 pt-3 border-top">
-                <button class="btn btn-light border" onclick="closeEditSlabModal()">Cancel</button>
-                <button class="btn btn-primary px-4 fw-semibold" id="edit-slab-submit-btn" onclick="saveEditSlab()">Save
-                    Changes</button>
+            <div class="d-flex justify-content-end gap-2">
+                <button class="btn py-2 px-4 fw-800 text-muted small" onclick="closeEditSlabModal()">Cancel</button>
+                <button class="btn btn-primary py-2 px-4 fw-800 rounded-3 shadow-sm" id="edit-slab-submit-btn" onclick="saveEditSlab()" 
+                    style="background: linear-gradient(135deg, #4f46e5, #4338ca); border: none;">
+                    Save Reward Settings
+                </button>
             </div>
         </div>
     </div>

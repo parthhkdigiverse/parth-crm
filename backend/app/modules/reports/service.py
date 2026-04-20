@@ -226,11 +226,27 @@ class ReportService:
             Shop.find({"$expr": prev_m_expr, **shop_match}).count(),
             Bill.get_pymongo_collection().aggregate(rev_pipeline).to_list(length=None),
             Attendance.get_pymongo_collection().distinct("user_id", {"date": today_start, "is_deleted": False}),
-            Issue.find(Issue.status == GlobalTaskStatus.OPEN, Issue.is_deleted == False).count(),
+            Issue.find(
+                Issue.status == GlobalTaskStatus.OPEN,
+                Issue.is_deleted == False,
+                Or(
+                    Issue.reporter_id == user_id,
+                    Issue.assigned_to_id == user_id
+                ) if user_id else {}
+            ).count(),
             Visit.get_pymongo_collection().aggregate(status_pipeline).to_list(length=None),
             IncentiveSlip.find_one(IncentiveSlip.user_id == user_id, IncentiveSlip.period == current_period, IncentiveSlip.is_visible_to_employee == True) if user_id else asyncio.sleep(0),
             Todo.find(Todo.user_id == user_id, Todo.status == TodoStatus.PENDING, Todo.is_deleted == False).count() if user_id else asyncio.sleep(0),
-            MeetingSummary.find(MeetingSummary.date >= today_local, MeetingSummary.date < tomorrow_local, MeetingSummary.is_deleted == False, MeetingSummary.status != GlobalTaskStatus.CANCELLED).count() if user_id else asyncio.sleep(0),
+            MeetingSummary.find(
+                MeetingSummary.date >= today_local, 
+                MeetingSummary.date < tomorrow_local, 
+                MeetingSummary.is_deleted == False, 
+                MeetingSummary.status != GlobalTaskStatus.CANCELLED,
+                Or(
+                    MeetingSummary.host_id == user_id,
+                    MeetingSummary.attendee_ids == user_id
+                ) if user_id else {}
+            ).count() if user_id else asyncio.sleep(0),
         )
 
         total_visits = v_all_res[0]["total"] if v_all_res else 0

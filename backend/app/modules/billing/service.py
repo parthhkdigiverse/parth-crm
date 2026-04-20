@@ -404,6 +404,37 @@ class BillingService:
     async def get_bill(self, bill_id: PydanticObjectId, current_user: User = None) -> Bill | None:
         bill = await Bill.get(bill_id)
         if not bill or bill.is_deleted: return None
+        
+        # ─── Strict RBAC Check ───
+        if current_user and current_user.role != UserRole.ADMIN:
+            # 1. Allow if they created the bill
+            if bill.created_by_id == current_user.id:
+                return bill
+                
+            # 2. Allow if they own/manage the client
+            if bill.client_id:
+                # Use Client model to check ownership context
+                from app.modules.clients.models import Client
+                client = await Client.get(bill.client_id)
+                if client and (client.owner_id == current_user.id or client.pm_id == current_user.id or client.referred_by_id == current_user.id):
+                    return bill
+            
+            # 3. Allow if they own/manage the shop
+            if bill.shop_id:
+                from app.modules.shops.models import Shop
+                shop = await Shop.get(bill.shop_id)
+                if shop:
+                    is_managed = (
+                        shop.owner_id == current_user.id or
+                        shop.project_manager_id == current_user.id or
+                        current_user.id in getattr(shop, 'assigned_user_ids', []) or
+                        current_user.id in getattr(shop, 'assigned_owner_ids', [])
+                    )
+                    if is_managed:
+                        return bill
+            
+            raise HTTPException(status_code=403, detail="Access denied to this invoice.")
+            
         return bill
 
     async def get_all_bills(self, current_user: User, skip: int = 0, limit: Optional[int] = None, search: str = None, **kwargs):
@@ -414,11 +445,38 @@ class BillingService:
         """
         filters: Dict[str, Any] = {"is_deleted": False}
         
-        # RBAC: Non-admins only see their own or non-archived bills
+        # RBAC: Non-admins only see their own or their managed client/shop bills
         if current_user.role != UserRole.ADMIN:
+            from app.modules.clients.models import Client
+            from app.modules.shops.models import Shop
+            
+            # Identify managed clients
+            raw_client_ids = await Client.get_pymongo_collection().distinct("_id", {
+                "$or": [
+                    {"owner_id": current_user.id},
+                    {"pm_id": current_user.id},
+                    {"referred_by_id": current_user.id}
+                ],
+                "is_deleted": False
+            })
+            managed_client_ids = [PydanticObjectId(rid) for rid in raw_client_ids if rid]
+
+            # Identify managed shops
+            raw_shop_ids = await Shop.get_pymongo_collection().distinct("_id", {
+                "$or": [
+                    {"owner_id": current_user.id},
+                    {"project_manager_id": current_user.id},
+                    {"assigned_user_ids": current_user.id},
+                    {"assigned_owner_ids": current_user.id}
+                ],
+                "is_deleted": False
+            })
+            managed_shop_ids = [PydanticObjectId(rid) for rid in raw_shop_ids if rid]
+
             filters["$or"] = [
                 {"created_by_id": current_user.id},
-                {"is_archived": False}
+                In("client_id", managed_client_ids),
+                In("shop_id", managed_shop_ids)
             ]
             
         if search:

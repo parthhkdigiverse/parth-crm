@@ -1650,14 +1650,32 @@
                     await ApiClient.deleteTodosBulk(todoIdsToBulkDelete);
                 }
 
-                // Handle others individually if any (meetings, etc.)
+                // Handle Meetings in bulk (Fixes the 405 error and optimizes performance)
+                const meetingIds = otherTasksToSingleDelete
+                    .filter(t => t.event_type === 'MEETING')
+                    .map(t => t.original_id);
+                
+                if (meetingIds.length > 0) {
+                    await ApiClient.deleteMeetingsBulk(meetingIds);
+                }
+
+                // Handle remaining types (TIMETABLE, etc.) individually
                 for (const t of otherTasksToSingleDelete) {
-                    if (t.event_type === 'MEETING') await ApiClient.deleteMeeting(t.original_id);
-                    else if (t.event_type === 'TIMETABLE') await ApiClient.deleteTimetableEvent(t.original_id);
+                    if (t.event_type === 'TIMETABLE') await ApiClient.deleteTimetableEvent(t.original_id);
                 }
 
                 showToast(`Success: Deleted ${selected.length} items.`);
-                loadTasks();
+                
+                // Reload tasks and wait for DOM update
+                await loadTasks();
+
+                // Reset "Select All" state after deletion
+                const selectAll = document.getElementById('select-all-tasks');
+                if (selectAll) {
+                    selectAll.checked = false;
+                    selectAll.indeterminate = false;
+                }
+                updateBulkDeleteState();
             } catch (err) {
                 showToast("Bulk delete partial failure: " + (err?.data?.detail || "Check console"), "error");
                 loadTasks();
