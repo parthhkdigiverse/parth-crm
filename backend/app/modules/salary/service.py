@@ -143,7 +143,29 @@ class SalaryService:
         """Confirms a draft slip, marking it for payment and making it visible."""
         slip = await SalarySlip.get(slip_id)
         if not slip: raise HTTPException(status_code=404, detail="Slip not found")
-        
+
+        # Assign sequential slip number if not already assigned
+        if not slip.slip_no:
+            counter_key = f"salary_slip_counter_{slip.month}"
+            # Atomic increment to prevent duplicates
+            from app.modules.settings.models import AppSetting
+            counter_doc = await AppSetting.find_one(AppSetting.key == counter_key)
+            if not counter_doc:
+                counter_doc = AppSetting(key=counter_key, value=0)
+                await counter_doc.insert()
+            
+            # Use find_one_and_update for atomic increment
+            res = await AppSetting.get_pymongo_collection().find_one_and_update(
+                {"key": counter_key},
+                {"$inc": {"value": 1}},
+                return_document=True
+            )
+            new_count = res["value"]
+            
+            # Format: PS-2026-04-001
+            year, month_num = slip.month.split('-')
+            slip.slip_no = f"PS-{year}-{month_num}-{new_count:03d}"
+
         slip.status = "CONFIRMED"
         slip.is_visible_to_employee = True
         slip.confirmed_by = confirmed_by_id
@@ -249,12 +271,17 @@ class SalaryService:
         year, month_num = map(int, slip.month.split('-'))
         _, days_in_month = calendar.monthrange(year, month_num)
 
-        calc = self._compute_salary(salary_in.base_salary, slip.unpaid_leaves, salary_in.incentive_amount, salary_in.slab_bonus, salary_in.extra_deduction, days_in_month)
+        # Handle overrides - use existing if not provided
+        base = salary_in.base_salary if salary_in.base_salary is not None else slip.base_salary
+        inc = salary_in.incentive_amount if salary_in.incentive_amount is not None else slip.incentive_amount
+        bonus = salary_in.slab_bonus if salary_in.slab_bonus is not None else slip.slab_bonus
         
-        slip.base_salary = salary_in.base_salary
+        calc = self._compute_salary(base, slip.unpaid_leaves, inc, bonus, salary_in.extra_deduction, days_in_month)
+        
+        slip.base_salary = base
         slip.deduction_amount = salary_in.extra_deduction
-        slip.incentive_amount = salary_in.incentive_amount
-        slip.slab_bonus = salary_in.slab_bonus
+        slip.incentive_amount = inc
+        slip.slab_bonus = bonus
         slip.total_earnings = calc['total_earnings']
         slip.final_salary = calc['final_salary']
         
@@ -395,7 +422,29 @@ class SalaryService:
 
         net_in_words = amount_in_words(slip.final_salary)
         status_str = slip.status if isinstance(slip.status, str) else slip.status.value
-        slip_no = f"PS-{year}-{month_num:02d}-{str(user.id)[-4:]}"
+
+        # Auto-assign sequential number for legacy slips that don't have one yet
+        if not slip.slip_no:
+            counter_key = f"salary_slip_counter_{slip.month}"
+            # Atomic increment to prevent duplicates
+            from app.modules.settings.models import AppSetting
+            counter_doc = await AppSetting.find_one(AppSetting.key == counter_key)
+            if not counter_doc:
+                counter_doc = AppSetting(key=counter_key, value=0)
+                await counter_doc.insert()
+            
+            # Use find_one_and_update for atomic increment
+            res = await AppSetting.get_pymongo_collection().find_one_and_update(
+                {"key": counter_key},
+                {"$inc": {"value": 1}},
+                return_document=True
+            )
+            new_count = res["value"]
+            
+            slip.slip_no = f"PS-{year}-{month_num:02d}-{new_count:03d}"
+            await slip.save()
+
+        slip_no = slip.slip_no
 
         # Settings
         from app.modules.settings.models import SystemSettings

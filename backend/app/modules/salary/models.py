@@ -65,6 +65,7 @@ class SalarySlip(Document):
     manager_remarks: Optional[str] = None
 
     file_url: Optional[str] = None
+    slip_no: Optional[str] = None  # e.g. PS-2026-04-001, set at confirmation
     is_deleted: bool = False
 
     @field_validator("confirmed_at", "generated_at", mode="before")

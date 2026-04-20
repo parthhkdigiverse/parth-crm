@@ -63,6 +63,8 @@ class SalarySlipGenerate(MongoBaseSchema):
     month: str  # YYYY-MM
     extra_deduction: float = 0.0  # Admin-applied manual deduction
     base_salary: float | None = None  # Override employee profile base salary for this slip
+    incentive_amount: float | None = None
+    slab_bonus: float | None = None
 
 
 class SalaryPreviewResponse(MongoBaseSchema):
@@ -106,6 +108,7 @@ class SalarySlipRead(MongoBaseSchema):
     user_name: str | None = None
     confirmer_name: str | None = None
     generated_at: datetime.date
+    slip_no: str | None = None
 
 
 class SalaryBulkGenerateRequest(MongoBaseSchema):
