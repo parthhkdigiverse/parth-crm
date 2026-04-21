@@ -463,8 +463,10 @@
                         const userId = document.getElementById('s-user').value;
                         if (!userId) { showToast('Select an employee', 'error'); return; }
 
-                        await fetchPreview();
-                        goToSalaryStep(2);
+                        const success = await fetchPreview();
+                        if (success) {
+                            goToSalaryStep(2);
+                        }
                     }
 
                     function openSalaryModal() {
@@ -520,7 +522,7 @@
                     async function fetchPreview() {
                         const userId = document.getElementById('s-user').value;
                         const month = document.getElementById('s-month').value;
-                        if (!userId || !month) return;
+                        if (!userId || !month) return false;
 
                         const extra = parseFloat(document.getElementById('s-deduction').value) || 0;
                         const baseSalaryOverride = document.getElementById('s-base-salary').value.trim();
@@ -563,8 +565,10 @@
                                 genBtn.classList.remove('d-none');
                             }
                             document.getElementById('salary-preview').style.display = 'block';
+                            return true;
                         } catch (e) {
                             showToast(e.data?.detail || e.message || 'Failed to load preview', 'error');
+                            return false;
                         }
                     }
 
@@ -676,7 +680,7 @@
                                  </div>
                                  <div class="mt-1 d-flex align-items-center gap-1" style="font-size: 0.6rem; color: ${s.is_visible_to_employee ? 'var(--success-text)' : 'var(--text-muted)'}; letter-spacing: 0.02em;">
                                      ${s.is_visible_to_employee ? 'RELEASED' : 'HIDDEN'}
-                                     ${isPaid ? `<button class="btn btn-link p-0 text-danger" style="font-size: 0.6rem; text-decoration:none;" onclick="revertToDraft('${sid}')" title="Revert to Draft"><i class="bi bi-arrow-counterclockwise"></i></button>` : ''}
+                                     ${isPaid ? `<button class="btn btn-link p-0 text-danger" style="font-size: 0.6rem; text-decoration:none;" onclick="revertToDraft('${sid}')" title="Revert to Draft"><i class="bi bi-arrow-counterclockwise"></i></button>` : `<button class="btn btn-link p-0 text-danger ms-1" style="font-size: 0.6rem; text-decoration:none;" onclick="deleteSalarySlip('${sid}')" title="Delete Draft"><i class="bi bi-trash"></i></button>`}
                                  </div>
                              </div>`
                                         : `<span class="status-pill ${statusCls} w-100 d-block text-center"><i class="bi ${statusIcon} me-1"></i>${statusLabel}</span>`;
@@ -847,6 +851,19 @@
                             showToast('Salary slip reverted to Draft.', 'info');
                             loadSlips();
                         } catch (e) { showToast(e.data?.detail || e.message || 'Failed', 'error'); }
+                    }
+
+                    async function deleteSalarySlip(slipId) {
+                        if (!canManageSalary) {
+                            showToast('You do not have permission to delete salary slips', 'error');
+                            return;
+                        }
+                        if (!confirm('Are you sure you want to delete this DRAFT salary slip? This cannot be undone.')) return;
+                        try {
+                            await ApiClient.deleteSalarySlip(slipId);
+                            showToast('Draft salary slip deleted successfully.', 'success');
+                            loadSlips();
+                        } catch (e) { showToast(e.data?.detail || e.message || 'Failed to delete', 'error'); }
                     }
 
                     async function toggleSalaryVisibility(slipId, isVisible) {

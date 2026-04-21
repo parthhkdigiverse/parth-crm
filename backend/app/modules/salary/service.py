@@ -70,9 +70,10 @@ class SalaryService:
         # Find slips that are either:
         # 1. Not linked to any salary slip (unpaid)
         # 2. Linked to the current slip (for regeneration/preview of a draft)
-        query = (IncSlip.user_id == uid) & Or(IncSlip.salary_slip_id == None, IncSlip.salary_slip_id == current_slip_id)
-        
-        slips = await IncSlip.find(query).to_list()
+        slips = await IncSlip.find(
+            IncSlip.user_id == uid,
+            Or(IncSlip.salary_slip_id == None, IncSlip.salary_slip_id == current_slip_id)
+        ).to_list()
 
         total_inc = 0.0
         total_bonus = 0.0
@@ -87,7 +88,7 @@ class SalaryService:
 
             # Group for the UI breakdown (period string like 2026-04)
             period = s.period
-            breakdown[period] = breakdown.get(period, 0.0) + amt + bonus
+            breakdown[period] = breakdown.get(period, 0.0) + amt
 
         return round(total_inc, 2), round(total_bonus, 2), breakdown
 
@@ -184,7 +185,7 @@ class SalaryService:
 
     async def get_all_salary_slips(self) -> List[dict]:
         slips = await SalarySlip.find(SalarySlip.is_deleted == False).sort("-month").to_list()
-        return [await self._format_slip(s) for s in slips]
+        return await self._filter_and_format_slips(slips)
 
     async def get_user_salary_slips(self, user_id: PydanticObjectId, month: str = None, **kwargs):
         filters: dict = {"user_id": user_id, "is_deleted": False}
@@ -200,7 +201,39 @@ class SalaryService:
             filters["is_visible_to_employee"] = True
 
         slips = await SalarySlip.find(filters).sort("-month").to_list()
-        return [await self._format_slip(s) for s in slips]
+        return await self._filter_and_format_slips(slips)
+
+    async def _filter_and_format_slips(self, slips: List[SalarySlip]) -> List[dict]:
+        from collections import defaultdict
+        groups = defaultdict(list)
+        for s in slips:
+            groups[(str(s.user_id), s.month)].append(s)
+
+        filtered = []
+        for key, group in groups.items():
+            # Deduplicate: prefer CONFIRMED, otherwise newest DRAFT
+            group.sort(key=lambda x: str(x.id), reverse=True)
+            confirmed = [s for s in group if s.status == "CONFIRMED"]
+            keeper = confirmed[0] if confirmed else group[0]
+            
+            user = await User.get(PydanticObjectId(str(keeper.user_id)))
+            if not user:
+                continue
+                
+            # Filter out non-employee and test records
+            role_val = getattr(user.role, 'value', str(user.role)).upper()
+            if role_val in ["ADMIN", "CLIENT"]:
+                continue
+            name_lower = str(user.name or "").lower()
+            email_lower = str(user.email or "").lower()
+            if "test" in name_lower or "test" in email_lower:
+                continue
+
+            filtered.append(await self._format_slip(keeper))
+
+        # Re-sort descending by month since dict grouping loses original sorting
+        filtered.sort(key=lambda x: x.get("month", ""), reverse=True)
+        return filtered
 
     async def preview_salary(self, user_id: PydanticObjectId, month: str, extra_deduction: float = 0.0, base_salary: float = None):
         """Calculate figures for preview without saving."""
@@ -303,17 +336,21 @@ class SalaryService:
         year, month_num = map(int, slip.month.split('-'))
         _, days_in_month = calendar.monthrange(year, month_num)
 
+        # Recalculate leaves and incentives completely so the preview figures match the updated draft!
+        month_leaves, total_leave_days = await self._get_leave_data(slip.user_id, year, month_num)
+        resolved_inc, resolved_bonus, breakdown = await self._get_incentive_data(slip.user_id, slip.month, current_slip_id=slip.id)
+
         # Handle overrides - use existing if not provided
         base = salary_in.base_salary if salary_in.base_salary is not None else (slip.base_salary or 0.0)
-        inc = salary_in.incentive_amount if salary_in.incentive_amount is not None else (slip.incentive_amount or 0.0)
-        bonus = salary_in.slab_bonus if salary_in.slab_bonus is not None else (slip.slab_bonus or 0.0)
         
-        calc = self._compute_salary(base, slip.unpaid_leaves, inc, bonus, salary_in.extra_deduction, days_in_month)
+        calc = self._compute_salary(base, total_leave_days, resolved_inc, resolved_bonus, salary_in.extra_deduction, days_in_month)
         
         slip.base_salary = base
+        slip.unpaid_leaves = total_leave_days
         slip.deduction_amount = salary_in.extra_deduction
-        slip.incentive_amount = inc
-        slip.slab_bonus = bonus
+        slip.incentive_amount = resolved_inc
+        slip.slab_bonus = resolved_bonus
+        slip.incentive_breakdown = breakdown
         slip.total_earnings = calc['total_earnings']
         slip.final_salary = calc['final_salary']
         
@@ -498,6 +535,13 @@ class SalaryService:
                 <div class="pay-row">
                     <div class="pay-desc">Incentive ({p_name})</div>
                     <div class="pay-amt earn">&#8377;&nbsp;{amt:,.2f}</div>
+                </div>"""
+            
+            if slab_bonus > 0:
+                incentive_rows_html += f"""
+                <div class="pay-row">
+                    <div class="pay-desc">Slab Bonus</div>
+                    <div class="pay-amt earn">&#8377;&nbsp;{slab_bonus:,.2f}</div>
                 </div>"""
         else:
             if incentive_amount > 0:

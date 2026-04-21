@@ -548,6 +548,9 @@ class ApiClient {
     static async confirmSalarySlip(slipId) {
         return this.request(`/hrm/salary/confirm/${slipId}`, { method: 'PATCH' });
     }
+    static async deleteSalarySlip(slipId) {
+        return this.request(`/hrm/salary/slip/${slipId}`, { method: 'DELETE' });
+    }
     static async revertSalaryToDraft(slipId) {
         return this.request(`/hrm/salary/revert-draft/${slipId}`, { method: 'PATCH' });
     }

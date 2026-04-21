@@ -39,6 +39,13 @@ class LeaveRecord(Document):
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     is_deleted: bool = False
 
+    @field_validator("start_date", "end_date", mode="before")
+    @classmethod
+    def _coerce_datetime_to_date(cls, v):
+        if hasattr(v, "date"):
+            return v.date()
+        return v
+
     class Settings:
         name = "srm_leave_records"
 
