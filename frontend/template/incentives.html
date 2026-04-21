@@ -26,13 +26,12 @@
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             background: var(--surface) !important;
             /* respects dark/light theme */
-            border-radius: 16px !important;
+            border-radius: 12px !important;
             border: 1px solid var(--border) !important;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06) !important;
             position: relative;
             overflow: hidden;
-            padding: 32px 20px 24px !important;
-            /* Moved content down by increasing top padding */
+            padding: 10px 16px !important;
         }
 
         .stat-card::before {
@@ -42,7 +41,7 @@
             left: 0;
             width: 100%;
             height: 4px;
-            border-radius: 16px 16px 0 0;
+            border-radius: 12px 12px 0 0;
         }
 
         .stat-card.card-primary::before {
@@ -107,7 +106,7 @@
         }
 
         .stat-value {
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             font-weight: 800;
             color: var(--text-main);
             line-height: 1;
@@ -572,59 +571,57 @@
 
                 <div class="row g-3">
                     <div class="col-6 col-md-3">
-                        <div class="card stat-card card-primary h-100 p-3">
-                            <div class="stat-label mb-2">Active Slabs</div>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="bg-primary-light text-primary rounded-3 d-flex align-items-center justify-content-center"
-                                    style="width:38px; height:38px;">
+                        <div class="card stat-card card-primary h-100">
+                            <div class="d-flex align-items-center justify-content-center gap-3 h-100">
+                                <div class="bg-primary-light text-primary d-flex align-items-center justify-content-center flex-shrink-0"
+                                    style="width:42px; height:42px; border-radius:12px;">
                                     <i class="bi bi-layers-half fs-5"></i>
                                 </div>
-                                <div class="stat-value" id="stat-slabs">-</div>
+                                <div class="d-flex flex-column justify-content-center">
+                                    <div class="stat-label" style="margin-bottom:2px; line-height:1;">ACTIVE SLABS</div>
+                                    <div class="stat-value" id="stat-slabs" style="line-height:1; font-size: 1.25rem;">-</div>
+                                </div>
                             </div>
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
-                        <div class="card stat-card card-success h-100 p-3">
-                            <div class="stat-label mb-2">Total Tasks</div>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="bg-success-light text-success rounded-3 d-flex align-items-center justify-content-center"
-                                    style="width:38px; height:38px;">
+                        <div class="card stat-card card-success h-100">
+                            <div class="d-flex align-items-center justify-content-center gap-3 h-100">
+                                <div class="bg-success-light text-success d-flex align-items-center justify-content-center flex-shrink-0"
+                                    style="width:42px; height:42px; border-radius:12px;">
                                     <i class="bi bi-check2-circle fs-5"></i>
                                 </div>
-                                <div class="stat-value" id="stat-tasks">-</div>
+                                <div class="d-flex flex-column justify-content-center">
+                                    <div class="stat-label" style="margin-bottom:2px; line-height:1;">TOTAL TASKS</div>
+                                    <div class="stat-value" id="stat-tasks" style="line-height:1; font-size: 1.25rem;">-</div>
+                                </div>
                             </div>
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
-                        <div class="card stat-card card-purple h-100 p-3">
-                            <div class="stat-label mb-2">Confirmed Incentive</div>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="bg-purple-light text-purple rounded-3 d-flex align-items-center justify-content-center"
-                                    style="width:38px; height:38px; background: rgba(139, 92, 246, 0.1); color: #8b5cf6;">
+                        <div class="card stat-card card-purple h-100">
+                            <div class="d-flex align-items-center justify-content-center gap-3 h-100">
+                                <div class="bg-purple-light text-purple d-flex align-items-center justify-content-center flex-shrink-0"
+                                    style="width:42px; height:42px; background: rgba(139, 92, 246, 0.1); color: #8b5cf6; border-radius:12px;">
                                     <i class="bi bi-cash-stack fs-5"></i>
                                 </div>
-                                <div>
-                                    <div class="stat-value" id="stat-confirmed" style="font-size:1.15rem;">-</div>
-                                    <div
-                                        style="font-size:0.6rem; color:var(--text-muted); font-weight:600; text-transform:uppercase;">
-                                        Confirmed</div>
+                                <div class="d-flex flex-column justify-content-center">
+                                    <div class="stat-label" style="margin-bottom:2px; line-height:1;">CONFIRMED INCENTIVE</div>
+                                    <div class="stat-value" id="stat-confirmed" style="line-height:1; font-size: 1.25rem;">-</div>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
-                        <div class="card stat-card card-warning h-100 p-3">
-                            <div class="stat-label mb-2">Pending Incentive</div>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="bg-warning-light text-warning rounded-3 d-flex align-items-center justify-content-center"
-                                    style="width:38px; height:38px;">
+                        <div class="card stat-card card-warning h-100">
+                            <div class="d-flex align-items-center justify-content-center gap-3 h-100">
+                                <div class="bg-warning-light text-warning d-flex align-items-center justify-content-center flex-shrink-0"
+                                    style="width:42px; height:42px; border-radius:12px;">
                                     <i class="bi bi-hourglass-split fs-5"></i>
                                 </div>
-                                <div>
-                                    <div class="stat-value" id="stat-pending" style="font-size:1.15rem;">-</div>
-                                    <div
-                                        style="font-size:0.6rem; color:var(--text-muted); font-weight:600; text-transform:uppercase;">
-                                        In Review</div>
+                                <div class="d-flex flex-column justify-content-center">
+                                    <div class="stat-label" style="margin-bottom:2px; line-height:1;">PENDING INCENTIVE</div>
+                                    <div class="stat-value" id="stat-pending" style="line-height:1; font-size: 1.25rem;">-</div>
                                 </div>
                             </div>
                         </div>
@@ -703,27 +700,33 @@
                                 </button>
                             </div>
 
-                            <div id="add-slab-form" class="px-4 py-4 slab-form-shell" style="display:none; border-top: 1px solid var(--border); background: var(--bg-app);">
+                            <div id="add-slab-form" class="px-4 py-4 slab-form-shell"
+                                style="display:none; border-top: 1px solid var(--border); background: var(--bg-app);">
                                 <div class="row g-3 mb-4">
                                     <div class="col-6">
                                         <label class="form-label slab-input-label d-flex align-items-center gap-1">
                                             <i class="bi bi-chevron-bar-down text-primary"></i> Min Tasks
                                         </label>
-                                        <input type="number" id="slab-min" class="form-control form-control-modern" placeholder="e.g. 1" min="0">
+                                        <input type="number" id="slab-min" class="form-control form-control-modern"
+                                            placeholder="e.g. 1" min="0">
                                     </div>
                                     <div class="col-6">
                                         <label class="form-label slab-input-label d-flex align-items-center gap-1">
                                             <i class="bi bi-chevron-bar-up text-primary"></i> Max Tasks
                                         </label>
-                                        <input type="number" id="slab-max" class="form-control form-control-modern" placeholder="e.g. 10" min="1">
+                                        <input type="number" id="slab-max" class="form-control form-control-modern"
+                                            placeholder="e.g. 10" min="1">
                                     </div>
                                     <div class="col-6">
                                         <label class="form-label slab-input-label d-flex align-items-center gap-1">
                                             <i class="bi bi-cash-stack text-success"></i> Reward / Task
                                         </label>
                                         <div class="input-group">
-                                            <span class="input-group-text bg-transparent border-end-0 py-2"><small>₹</small></span>
-                                            <input type="number" id="slab-per-unit" class="form-control border-start-0 ps-0" placeholder="1200" min="0" step="0.01">
+                                            <span
+                                                class="input-group-text bg-transparent border-end-0 py-2"><small>₹</small></span>
+                                            <input type="number" id="slab-per-unit"
+                                                class="form-control border-start-0 ps-0" placeholder="1200" min="0"
+                                                step="0.01">
                                         </div>
                                     </div>
                                     <div class="col-6">
@@ -731,22 +734,26 @@
                                             <i class="bi bi-stars text-warning"></i> Slab Bonus
                                         </label>
                                         <div class="input-group">
-                                            <span class="input-group-text bg-transparent border-end-0 py-2"><small>₹</small></span>
-                                            <input type="number" id="slab-bonus" class="form-control border-start-0 ps-0" placeholder="0" min="0" step="0.01">
+                                            <span
+                                                class="input-group-text bg-transparent border-end-0 py-2"><small>₹</small></span>
+                                            <input type="number" id="slab-bonus"
+                                                class="form-control border-start-0 ps-0" placeholder="0" min="0"
+                                                step="0.01">
                                         </div>
                                     </div>
                                 </div>
                                 <div class="d-flex flex-wrap gap-2 mb-4">
-                                    <span class="slab-metric"><i class="bi bi-check2-square"></i> Task range based</span>
+                                    <span class="slab-metric"><i class="bi bi-check2-square"></i> Task range
+                                        based</span>
                                     <span class="slab-metric"><i class="bi bi-cash-stack"></i> Flat per-task rate</span>
                                     <span class="slab-metric"><i class="bi bi-stars"></i> Optional slab bonus</span>
                                 </div>
                                 <div class="d-flex gap-2">
-                                    <button class="btn btn-primary flex-grow-1 fw-800" onclick="addSlab()" 
+                                    <button class="btn btn-primary flex-grow-1 fw-800" onclick="addSlab()"
                                         style="background: linear-gradient(135deg, #4f46e5, #4338ca); border: none; border-radius: 10px; padding: 10px;">
                                         Save New Slab Definition
                                     </button>
-                                    <button class="btn btn-secondary fw-800" onclick="toggleAddSlabForm()" 
+                                    <button class="btn btn-secondary fw-800" onclick="toggleAddSlabForm()"
                                         style="border-radius: 10px; padding: 10px;">
                                         Cancel
                                     </button>
@@ -1026,19 +1033,22 @@
                 <button class="btn-close ms-auto" onclick="closeEditSlabModal()"></button>
             </div>
             <input type="hidden" id="edit-slab-id">
-            <div class="slab-modal-grid mb-4" style="background: var(--bg-app); padding: 20px; border-radius: 16px; border: 1px solid var(--border);">
+            <div class="slab-modal-grid mb-4"
+                style="background: var(--bg-app); padding: 20px; border-radius: 16px; border: 1px solid var(--border);">
                 <div class="row g-3">
                     <div class="col-6">
                         <label class="form-label slab-input-label d-flex align-items-center gap-1">
                             <i class="bi bi-chevron-bar-down text-primary"></i> Min Tasks
                         </label>
-                        <input type="number" id="edit-slab-min" class="form-control form-control-modern" min="0" placeholder="0">
+                        <input type="number" id="edit-slab-min" class="form-control form-control-modern" min="0"
+                            placeholder="0">
                     </div>
                     <div class="col-6">
                         <label class="form-label slab-input-label d-flex align-items-center gap-1">
                             <i class="bi bi-chevron-bar-up text-primary"></i> Max Tasks
                         </label>
-                        <input type="number" id="edit-slab-max" class="form-control form-control-modern" min="1" placeholder="10">
+                        <input type="number" id="edit-slab-max" class="form-control form-control-modern" min="1"
+                            placeholder="10">
                     </div>
                     <div class="col-6">
                         <label class="form-label slab-input-label d-flex align-items-center gap-1">
@@ -1046,7 +1056,8 @@
                         </label>
                         <div class="input-group">
                             <span class="input-group-text bg-transparent border-end-0 py-2"><small>₹</small></span>
-                            <input type="number" id="edit-slab-per-unit" class="form-control border-start-0 ps-0" min="0" step="0.01" placeholder="1200">
+                            <input type="number" id="edit-slab-per-unit" class="form-control border-start-0 ps-0"
+                                min="0" step="0.01" placeholder="1200">
                         </div>
                     </div>
                     <div class="col-6">
@@ -1055,14 +1066,16 @@
                         </label>
                         <div class="input-group">
                             <span class="input-group-text bg-transparent border-end-0 py-2"><small>₹</small></span>
-                            <input type="number" id="edit-slab-bonus" class="form-control border-start-0 ps-0" min="0" step="0.01" placeholder="5000">
+                            <input type="number" id="edit-slab-bonus" class="form-control border-start-0 ps-0" min="0"
+                                step="0.01" placeholder="5000">
                         </div>
                     </div>
                 </div>
             </div>
             <div class="d-flex justify-content-end gap-2">
                 <button class="btn py-2 px-4 fw-800 text-muted small" onclick="closeEditSlabModal()">Cancel</button>
-                <button class="btn btn-primary py-2 px-4 fw-800 rounded-3 shadow-sm" id="edit-slab-submit-btn" onclick="saveEditSlab()" 
+                <button class="btn btn-primary py-2 px-4 fw-800 rounded-3 shadow-sm" id="edit-slab-submit-btn"
+                    onclick="saveEditSlab()"
                     style="background: linear-gradient(135deg, #4f46e5, #4338ca); border: none;">
                     Save Reward Settings
                 </button>

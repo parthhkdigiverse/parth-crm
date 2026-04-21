@@ -222,15 +222,15 @@
                 background: var(--surface);
                 border: 1px solid var(--border);
                 border-radius: 12px;
-                margin-bottom: 20px;
-                padding: 16px;
+                margin-bottom: 12px;
+                padding: 12px;
                 box-shadow: var(--shadow-sm);
             }
             .table-premium tbody td {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
-                padding: 10px 0 !important;
+                padding: 4px 0 !important;
                 border: none;
                 border-bottom: 1px solid var(--border-subtle);
                 width: 100% !important;
@@ -239,8 +239,8 @@
             .table-premium tbody td:last-child {
                 border-bottom: none;
                 justify-content: center;
-                margin-top: 10px;
-                padding-top: 16px !important;
+                margin-top: 6px;
+                padding-top: 10px !important;
                 background: var(--bg-app);
                 border-radius: 8px;
             }
@@ -285,6 +285,35 @@
             font-weight: 600;
             margin-top: 4px;
         }
+
+        /* ── Fix for Top Cards ── */
+        .stat-card {
+            padding: 16px 18px !important;
+            min-height: auto !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            justify-content: flex-start !important;
+            gap: 16px !important;
+            box-shadow: var(--shadow-sm) !important;
+            transition: transform 0.15s, box-shadow 0.15s !important;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: var(--shadow-md) !important;
+        }
+        .stat-content-left {
+            margin-left: 0 !important;
+            text-align: left !important;
+        }
+        .stat-label {
+            margin-bottom: 2px !important;
+            color: var(--text-muted) !important;
+            font-size: 0.72rem !important;
+        }
+        .stat-value {
+            margin-top: 0 !important;
+            font-size: 1.6rem !important;
+        }
     </style>
 </head>
 
@@ -310,38 +339,38 @@
                 <div class="row g-3 mb-2">
                     <div class="col-6 col-md-3">
                         <div class="stat-card card-purple">
+                            <div class="stat-icon-wrapper icon-purple"><i class="bi bi-file-earmark-text"></i></div>
                             <div class="stat-content-left">
                                 <div class="stat-label">Total</div>
                                 <div class="stat-value" id="stat-total">—</div>
                             </div>
-                            <div class="stat-icon-wrapper icon-purple"><i class="bi bi-file-earmark-text"></i></div>
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
                         <div class="stat-card card-warning">
+                            <div class="stat-icon-wrapper icon-orange"><i class="bi bi-hourglass-split"></i></div>
                             <div class="stat-content-left">
                                 <div class="stat-label">Pending</div>
                                 <div class="stat-value" id="stat-pending">—</div>
                             </div>
-                            <div class="stat-icon-wrapper icon-orange"><i class="bi bi-hourglass-split"></i></div>
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
                         <div class="stat-card card-success">
+                            <div class="stat-icon-wrapper icon-green"><i class="bi bi-whatsapp"></i></div>
                             <div class="stat-content-left">
                                 <div class="stat-label">Sent</div>
                                 <div class="stat-value" id="stat-sent">—</div>
                             </div>
-                            <div class="stat-icon-wrapper icon-green"><i class="bi bi-whatsapp"></i></div>
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
                         <div class="stat-card card-primary">
+                            <div class="stat-icon-wrapper icon-yellow"><i class="bi bi-currency-rupee"></i></div>
                             <div class="stat-content-left">
                                 <div class="stat-label">Revenue</div>
                                 <div class="stat-value" id="stat-revenue">—</div>
                             </div>
-                            <div class="stat-icon-wrapper icon-yellow"><i class="bi bi-currency-rupee"></i></div>
                         </div>
                     </div>
                 </div>
