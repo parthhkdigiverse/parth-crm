@@ -48,13 +48,14 @@ class SalarySlip(Document):
     generated_at: date = Field(default_factory=lambda: datetime.now(UTC).date())
 
     base_salary: float
-    paid_leaves: int = 0
-    unpaid_leaves: int = 0
+    paid_leaves: float = 0.0
+    unpaid_leaves: float = 0.0
     deduction_amount: float = 0.0
     incentive_amount: float = 0.0
     slab_bonus: float = 0.0
     total_earnings: float = 0.0
     final_salary: float
+    incentive_breakdown: Optional[dict] = None  # e.g. {"2026-04": 2000.0, "2026-05": 5000.0}
 
     # Workflow: DRAFT → CONFIRMED
     status: str = "CONFIRMED"

@@ -1679,7 +1679,11 @@
             }
         }
 
-        async function deleteEmployee(id) {
+        window.deleteEmployee = async function(id) {
+            if (window.__accessDenied) {
+                showToast('You do not have permission to delete employees', 'error');
+                return;
+            }
             if (!confirm('Are you sure you want to delete this employee? This action usually cannot be undone.')) return;
             try {
                 await ApiClient.deleteEmployee(id);
@@ -1689,7 +1693,7 @@
                 console.error("Delete failed", err);
                 showToast(err.data?.detail || err.message || 'Failed to delete employee', 'error');
             }
-        }
+        };
 
         function toggleAllEmployees(master) {
             document.querySelectorAll('.emp-checkbox').forEach(cb => cb.checked = master.checked);

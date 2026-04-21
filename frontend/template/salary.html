@@ -323,7 +323,7 @@
                                     </button>
                                     <button class="btn btn-danger py-2 px-4 fw-800 rounded-3 shadow-sm small d-none"
                                         id="salary-regen-btn" onclick="regenerateSlip()">
-                                        <i class="bi bi-arrow-repeat me-1"></i>Delete & Regenerate
+                                        <i class="bi bi-arrow-repeat me-1"></i>Regenerate & Revert to Draft
                                     </button>
                                 </div>
                             </div>
@@ -803,7 +803,7 @@
                         if (!window.validateForm(document.getElementById('salaryModal'), rules)) {
                             return;
                         }
-                        if (!confirm('This will DELETE the existing salary slip and create a new Draft. Continue?')) return;
+                        if (!confirm('This will REGENERATE the existing salary slip with balanced figures and revert it back to a DRAFT status. Continue?')) return;
 
                         btn.disabled = true;
                         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Regenerating...';

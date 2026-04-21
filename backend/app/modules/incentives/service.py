@@ -99,18 +99,19 @@ class IncentiveService:
         if not getattr(user, "incentive_enabled", True):
             raise HTTPException(status_code=400, detail="Incentive is disabled for this user")
 
-        # 1. Anchor logic: Only consider clients created in THIS period
+        # 1. Creation-date scoping: clients created in THIS period.
+        #    April 22 client (matures May 2) still belongs to April period.
+        #    It gets picked up incrementally when admin runs calculate again in May.
         period_start, next_month_start = self._get_period_bounds(calc_in.period)
-        
-        # 10-day maturation rule
+
+        # 10-day maturation: client must be at least 10 days old to count
         ten_days_ago = datetime.now(UTC) - timedelta(days=10)
-        eligibility_end = ten_days_ago
 
         # 2. Total matured units for this period
         query = self._apply_role_scope_query(user).find(
-            Client.created_at >= period_start,
-            Client.created_at < next_month_start,
-            Client.created_at < eligibility_end,
+            Client.created_at >= period_start,      # created in this period
+            Client.created_at < next_month_start,   # not a future-period client
+            Client.created_at <= ten_days_ago,      # must have actually matured
             Client.status == "ACTIVE"
         )
         total_matured_in_period = await query.count()
@@ -213,8 +214,10 @@ class IncentiveService:
 
     async def calculate_progressive_incentive(self, user_id: PydanticObjectId, period: str):
         """Fetch existing incentive slips for a user and period."""
+        from beanie import PydanticObjectId as BsonId
+        uid = BsonId(str(user_id)) if not isinstance(user_id, BsonId) else user_id
         return await IncentiveSlip.find(
-            IncentiveSlip.user_id == user_id,
+            IncentiveSlip.user_id == uid,
             IncentiveSlip.period == period
         ).to_list()
 

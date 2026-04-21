@@ -24,80 +24,77 @@ async def check_upcoming_meetings():
     """
     Fired every 60 s.
     Finds SCHEDULED meetings whose date falls 14-16 minutes from now
-    and creates a Notification for the assigned PM (or owner) if not already sent.
+    and creates a Notification for the PM, Owner, and Admins.
     """
     try:
         now = datetime.now(timezone.utc)
-        window_start = now
-        window_end   = now + timedelta(minutes=16)
+        start = now
+        end   = now + timedelta(minutes=16)
 
         upcoming = await MeetingSummary.find(
             MeetingSummary.status == GlobalTaskStatus.OPEN,
             MeetingSummary.reminder_sent == False,
-            MeetingSummary.date >= window_start,
-            MeetingSummary.date <= window_end,
+            MeetingSummary.date >= start,
+            MeetingSummary.date <= end,
         ).to_list()
 
+        if not upcoming:
+            return
+
+        # Bulk fetch all relevant clients to avoid N+1 queries
+        client_ids = [m.client_id for m in upcoming if m.client_id]
+        clients_list = await Client.find(Client.id.in_(client_ids)).to_list()
+        client_map = {c.id: c for c in clients_list}
+
+        # Bulk fetch admins
         admins = await User.find(User.role == UserRole.ADMIN).to_list()
+        admin_ids = {a.id for a in admins}
 
         for meeting in upcoming:
-            client = None
-            if meeting.client_id:
-                client = await Client.get(meeting.client_id)
-
-            manager_name = "Unknown"
-            if client and client.pm_id:
-                pm_user = await User.get(client.pm_id)
-                if pm_user:
-                    manager_name = pm_user.name
-
-            recipient_ids = set()
-            if client:
-                if client.pm_id:
-                    recipient_ids.add(client.pm_id)
-                if client.owner_id:
-                    recipient_ids.add(client.owner_id)
-
-            if not recipient_ids:
-                print(f"[Scheduler] Meeting {meeting.id} has no PM/owner — skipping notification.")
+            client = client_map.get(meeting.client_id)
+            if not client:
                 continue
 
-            for recipient_id in recipient_ids:
-                message_text = f"Heads up! Your session '{meeting.title}' with {client.name} starts in 15 minutes."
-                if meeting.meet_link:
-                    message_text += f"\nLINK:{meeting.meet_link}"
+            recipient_ids = set()
+            if client.pm_id: recipient_ids.add(client.pm_id)
+            if client.owner_id: recipient_ids.add(client.owner_id)
 
-                notif = Notification(
-                    user_id=recipient_id,
+            if not recipient_ids:
+                meeting.reminder_sent = True
+                await meeting.save() # Mark as "skipped" so we don't try again
+                continue
+
+            manager_name = "Assigned PM"
+            message_text = f"Heads up! Your session '{meeting.title}' with {client.name} starts in 15 minutes."
+            if meeting.meet_link:
+                message_text += f"\nLINK:{meeting.meet_link}"
+
+            # Dispatch Notifications
+            for rid in recipient_ids:
+                await Notification(
+                    user_id=rid,
                     title="⏰ Upcoming Meeting",
                     message=message_text,
-                    is_read=False,
-                )
-                await notif.insert()
-                print(f"[Scheduler] Dispatched 15-min reminder for meeting {meeting.id} → user ID {recipient_id}")
+                ).insert()
 
-            client_name = client.name if client else 'N/A'
-            admin_msg_text = f"Session '{meeting.title}' with {client_name} (Manager: {manager_name}) starts in 15 minutes."
-            if meeting.meet_link:
-                admin_msg_text += f"\nLINK:{meeting.meet_link}"
-
+            # Admin Notifications
+            admin_msg = f"Session '{meeting.title}' with {client.name} starts in 15 mins."
+            if meeting.meet_link: admin_msg += f"\nLINK:{meeting.meet_link}"
+            
             for admin in admins:
-                if admin.id in recipient_ids:
-                    continue
-                
-                admin_notif = Notification(
-                    user_id=admin.id,
-                    title=f"[Reminder] Upcoming Meeting: {meeting.title}",
-                    message=admin_msg_text,
-                    is_read=False,
-                )
-                await admin_notif.insert()
+                if admin.id not in recipient_ids:
+                    await Notification(
+                        user_id=admin.id,
+                        title="[Admin] Upcoming Meeting",
+                        message=admin_msg
+                    ).insert()
 
             meeting.reminder_sent = True
             await meeting.save()
+            print(f"[Scheduler] Reminders sent for meeting {meeting.id}")
 
     except Exception as exc:
-        print(f"[Scheduler] Error in check_upcoming_meetings: {exc}")
+        print(f"[Scheduler] Error: {exc}")
 
 
 async def close_finished_meetings():

@@ -72,17 +72,16 @@ class SalaryPreviewResponse(MongoBaseSchema):
     user_name: str
     month: str
     base_salary: float
-    working_days: int
-    total_leave_days: int
-    paid_leaves: float
-    unpaid_leaves: float
+    working_days: float
+    total_leave_days: float
     leave_deduction: float
     incentive_amount: float
     slab_bonus: float
+    incentive_breakdown: typing.Dict[str, float] = {}
     extra_deduction: float
     total_earnings: float
     final_salary: float
-    approved_leaves: typing.List[typing.Any]
+    approved_leaves: typing.List[typing.Any] = []
     has_existing_slip: bool = False
     existing_slip_id: str | None = None
     existing_slip_status: str | None = None
@@ -100,6 +99,7 @@ class SalarySlipRead(MongoBaseSchema):
     slab_bonus: float = 0.0
     total_earnings: float
     final_salary: float
+    incentive_breakdown: typing.Dict[str, float] = {}
     status: str = "CONFIRMED"
     confirmed_by: PydanticObjectId | None = None
     is_visible_to_employee: bool = True

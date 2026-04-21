@@ -1,4 +1,5 @@
 import asyncio
+import os
 from fastapi.testclient import TestClient
 import motor.motor_asyncio
 import dns.resolver
@@ -17,14 +18,14 @@ from app.main import DOCUMENT_MODELS
 # Override the auth dependency to mock a logged-in admin
 async def mock_get_current_active_user():
     # We will get a user from DB manually to pass validation
-    client = motor.motor_asyncio.AsyncIOMotorClient('mongodb+srv://HK_Digiverse:HK%40Digiverse%40123@cluster0.lcbyqbq.mongodb.net/aisetu_srm?retryWrites=true&w=majority&appName=Cluster0')
+    client = motor.motor_asyncio.AsyncIOMotorClient(os.environ.get("MONGODB_URI", ""))
     await init_beanie(database=client['aisetu_srm'], document_models=DOCUMENT_MODELS)
     user = await User.find_one(User.role == UserRole.ADMIN)
     return user
 
 async def run_tests():
     # Initialize DB for the script
-    client = motor.motor_asyncio.AsyncIOMotorClient('mongodb+srv://HK_Digiverse:HK%40Digiverse%40123@cluster0.lcbyqbq.mongodb.net/aisetu_srm?retryWrites=true&w=majority&appName=Cluster0')
+    client = motor.motor_asyncio.AsyncIOMotorClient(os.environ.get("MONGODB_URI", ""))
     await init_beanie(database=client['aisetu_srm'], document_models=DOCUMENT_MODELS)
     admin_user = await User.find_one(User.role == UserRole.ADMIN)
     

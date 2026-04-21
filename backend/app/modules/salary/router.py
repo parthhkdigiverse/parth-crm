@@ -236,36 +236,42 @@ async def get_leave_summary(
         raise HTTPException(status_code=403, detail="Access denied")
 
     year, month_num = map(int, month.split('-'))
-    
-    # MongoDB filter for year/month on start_date
     import calendar
+    from datetime import date
     _, last_day = calendar.monthrange(year, month_num)
-    start_dt = datetime(year, month_num, 1, tzinfo=timezone.utc)
-    end_dt = datetime(year, month_num, last_day, 23, 59, 59, tzinfo=timezone.utc)
+    month_start = date(year, month_num, 1)
+    month_end = date(year, month_num, last_day)
 
-    leaves = await LeaveRecord.find(
+    # Pull all leaves for the user
+    all_leaves = await LeaveRecord.find(
         LeaveRecord.user_id == user_id,
         LeaveRecord.is_deleted != True,
-        LeaveRecord.start_date >= start_dt,
-        LeaveRecord.start_date <= end_dt
     ).to_list()
 
-    total = 0
-    approved = 0
-    pending = 0
-    rejected = 0
-    for l in leaves:
-        days = (l.end_date - l.start_date).days + 1
-        total += days
-        if l.status == LeaveStatus.APPROVED:
-            approved += days
-        elif l.status == LeaveStatus.PENDING:
-            pending += days
-        else:
-            rejected += days
+    total = 0.0
+    approved = 0.0
+    pending = 0.0
+    rejected = 0.0
 
-    paid = min(approved, 1)
-    unpaid = max(0, approved - 1)
+    for lv in all_leaves:
+        # Check for overlap with the target month
+        if lv.start_date <= month_end and lv.end_date >= month_start:
+            # Clip to month boundaries
+            eff_start = max(lv.start_date, month_start)
+            eff_end = min(lv.end_date, month_end)
+            
+            overlap_days = (eff_end - eff_start).days + 1
+            multiplier = 0.5 if getattr(lv, 'day_type', 'FULL') == 'HALF' else 1.0
+            days = overlap_days * multiplier
+            
+            total += days
+            if lv.status == LeaveStatus.APPROVED:
+                approved += days
+            elif lv.status == LeaveStatus.PENDING:
+                pending += days
+            else:
+                rejected += days
+
     return {
         "user_id": str(user_id),
         "month": month,
@@ -273,9 +279,8 @@ async def get_leave_summary(
         "approved_days": approved,
         "pending_days": pending,
         "rejected_days": rejected,
-        "paid_leaves": paid,
-        "unpaid_leaves": unpaid,
     }
+
 
 @router.delete("/leave/{leave_id}", status_code=204)
 async def delete_leave(
@@ -471,8 +476,8 @@ async def update_salary_slip_visibility(
         try:
             notif = Notification(
                 user_id=slip.user_id,
-                title=f"[Salary] Salary Slip Available: {slip.period}",
-                message=f"Your salary slip for {slip.period} is now available for review."
+                title=f"[Salary] Salary Slip Available: {slip.month}",
+                message=f"Your salary slip for {slip.month} is now available for review."
             )
             await notif.insert()
         except Exception as e:
@@ -567,18 +572,5 @@ async def delete_salary_slip(
     slip_id: PydanticObjectId,
     current_user: User = Depends(staff_checker)
 ) -> Response:
-    await _require_feature_access(current_user, "salary_manage_roles", "You do not have permission to delete salary slips")
-
-    slip = await SalarySlip.find_one(SalarySlip.id == slip_id, SalarySlip.is_deleted != True)
-    if not slip:
-        raise HTTPException(status_code=404, detail="Slip not found")
-        
-    settings = await SystemSettings.find_one()
-    delete_policy = settings.delete_policy if settings else "SOFT"
-
-    if delete_policy == "HARD":
-        await slip.delete()
-    else:
-        slip.is_deleted = True
-        await slip.save()
+    await SalaryService().delete_salary_slip(slip_id)
     return Response(status_code=204)

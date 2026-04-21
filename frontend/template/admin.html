@@ -966,8 +966,11 @@
             };
 
             window.deleteUser = async (id) => {
-                if (window.__accessDenied) return;
-                if (!confirm(`Are you sure you want to delete user #${id}?`)) return;
+                if (window.__accessDenied) {
+                    showToast('Administrator access required to delete users.', 'error');
+                    return;
+                }
+                if (!confirm(`Are you sure you want to delete user #${id}? This will also mark their associated employee records as deleted.`)) return;
                 try {
                     await ApiClient.request(`/users/${id}`, { method: 'DELETE' });
                     showToast('User deleted successfully', 'success');

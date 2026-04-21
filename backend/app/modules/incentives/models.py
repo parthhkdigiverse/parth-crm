@@ -56,6 +56,7 @@ class IncentiveSlip(Document):
     is_visible_to_employee: bool = False
     employee_remarks: Optional[str] = None
     manager_remarks: Optional[str] = None
+    salary_slip_id: Optional[PydanticObjectId] = None  # Link to the salary slip that paid this incentive
     generated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
     class Settings:

@@ -1,5 +1,6 @@
-# backend/app/main.py
-import sys
+# Triggering reload for final fix verification: 2026-04-21 04:35:40
+# Triggering reload...
+import sys # Reloading...
 import os
 import traceback
 import logging
@@ -98,20 +99,20 @@ async def lifespan(app: FastAPI):
         mongo_client = motor.motor_asyncio.AsyncIOMotorClient(
             settings.MONGODB_URI,
             # ── Connection Pool ──────────────────────────────────
-            maxPoolSize=20,                  # Moderate pool size for Atlas free/shared tier
-            minPoolSize=0,                   # Don't maintain idle connections (Atlas drops them anyway)
-            maxIdleTimeMS=25000,             # Release connections before Atlas's 30s idle timeout
-            waitQueueTimeoutMS=10000,        # Don't wait forever for a pool connection
+            maxPoolSize=50,                  # Increased from 20 to handle background tasks + API load
+            minPoolSize=5,                   # Keep some connections warm
+            maxIdleTimeMS=60000,             # Slightly longer idle time
+            waitQueueTimeoutMS=5000,         # Wait up to 5s for a connection (fail fast rather than hang)
             # ── Timeout Tuning ───────────────────────────────────
-            serverSelectionTimeoutMS=45000,  # 45s for slow Atlas handshakes
-            connectTimeoutMS=45000,          # 45s for TCP connect
-            socketTimeoutMS=60000,           # 60s per-query timeout
+            serverSelectionTimeoutMS=30000,  
+            connectTimeoutMS=20000,          
+            socketTimeoutMS=30000,           
             # ── Reliability ──────────────────────────────────────
             retryWrites=True,
             retryReads=True,
-            heartbeatFrequencyMS=30000,      # 30s heartbeat — less churn, fewer timeout events
+            heartbeatFrequencyMS=10000,      # More frequent heartbeat to keep Atlas connections alive
             # ── SSL/TLS & DNS ────────────────────────────────────
-            tlsDisableOCSPEndpointCheck=True, # Skip slow OCSP checks
+            tlsDisableOCSPEndpointCheck=True, 
             appname="SRM_AI_SETU",
         )
         mongo_client.append_metadata = lambda *args, **kwargs: None
