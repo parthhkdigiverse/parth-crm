@@ -45,6 +45,29 @@
     <link rel="stylesheet" href="/frontend/css/bootstrap-icons.min.css">
     <link rel="stylesheet" href="/frontend/css/theme.css?v=20260406">
     <link rel="stylesheet" href="/frontend/css/components.css?v=20260406">
+    <style>
+        /* ── Gradient Top Borders for Leave Summary ── */
+        .grid-card {
+            position: relative;
+            overflow: hidden;
+            border-top: none !important;
+        }
+
+        .grid-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            z-index: 10;
+        }
+
+        .border-gradient-warning::before { background: linear-gradient(90deg, #f59e0b 0%, #fcd34d 100%); }
+        .border-gradient-success::before { background: linear-gradient(90deg, #10b981 0%, #6ee7b7 100%); }
+        .border-gradient-danger::before { background: linear-gradient(90deg, #ef4444 0%, #fca5a5 100%); }
+        .border-gradient-primary::before { background: linear-gradient(90deg, #3b82f6 0%, #93c5fd 100%); }
+    </style>
 </head>
 
 <body class="bg-app">
@@ -722,7 +745,7 @@
                                     </div>`;
                                 }
                             } else if (canManageLeave && (l.status === 'APPROVED' || l.status === 'REJECTED')) {
-                                lastCol = `<div class="d-flex gap-1 justify-content-end">
+                                lastCol = `<div class="d-flex gap-1 justify-content-center">
                                     <button class="btn btn-sm btn-outline-secondary" style="font-size:0.7rem;" title="Edit Remarks" onclick="approveLeaveWithRemarks('${l.id}', '${l.status}')">
                                         <i class="bi bi-chat-left-text me-1"></i>Remark
                                     </button>

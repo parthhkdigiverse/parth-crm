@@ -249,7 +249,7 @@
                         <div class="col-4">
                             <div class="p-3 border border-primary-subtle rounded-4 bg-white shadow-sm h-100">
                                 <div class="text-muted x-small fw-bold text-uppercase mb-1">Target</div>
-                                <div class="fw-bold text-main fs-5" id="modal-target">₹0</div>
+                                <div class="fw-bold text-main fs-5" id="modal-target">0</div>
                             </div>
                         </div>
                         <div class="col-4">
@@ -470,6 +470,7 @@
         const currentUser = getUser();
         let employeesList = [];
         let currentReportMetrics = []; // Store current filtered data for export
+        let currentFilteredMetrics = []; // Store current filtered and searched data for synced export
         let lastDrillDownUserId = null;
 
         function formatRole(role) {
@@ -568,6 +569,8 @@
 
                 return matchesSearch && matchesRole;
             });
+
+            currentFilteredMetrics = filteredData; // Capture filtered data for export sync
 
             document.getElementById('record-count').textContent = `${filteredData.length} Records`;
 
@@ -688,7 +691,7 @@
                 doc.setLineWidth(0.1);
                 doc.line(15, 51, 195, 51);
 
-                const tableData = currentReportMetrics.map(row => [
+                const tableData = currentFilteredMetrics.map(row => [
                     row.name,
                     formatRole(row.role),
                     row.visits,
@@ -699,8 +702,8 @@
                 ]);
 
                 // Calculate Totals
-                const totalSales = currentReportMetrics.reduce((s, r) => s + r.sales, 0);
-                const totalIncentive = currentReportMetrics.reduce((s, r) => s + r.incentive, 0);
+                const totalSales = currentFilteredMetrics.reduce((s, r) => s + r.sales, 0);
+                const totalIncentive = currentFilteredMetrics.reduce((s, r) => s + r.incentive, 0);
 
                 doc.autoTable({
                     startY: 55,
@@ -733,7 +736,7 @@
                 // Summary / Totals Section below table
                 const finalY = doc.lastAutoTable.finalY + 10;
                 doc.setFillColor(...primaryLight);
-                doc.rect(120, finalY, 75, 25, 'F');
+                doc.rect(120, finalY, 75, 32, 'F');
                 doc.setFont("helvetica", "bold");
                 doc.setFontSize(9);
                 doc.setTextColor(...primaryDark);
@@ -744,8 +747,12 @@
                 doc.text(`Total Target Achieved:`, 125, finalY + 15);
                 doc.text(`Rs. ${totalSales.toLocaleString('en-IN')}`, 190, finalY + 15, { align: 'right' });
 
-                doc.text(`Total Incentive:`, 125, finalY + 20);
-                doc.text(`Rs. ${totalIncentive.toLocaleString('en-IN')}`, 190, finalY + 20, { align: 'right' });
+                doc.text(`Total Incentive:`, 125, finalY + 21);
+                doc.text(`Rs. ${totalIncentive.toLocaleString('en-IN')}`, 190, finalY + 21, { align: 'right' });
+
+                doc.setFont("helvetica", "bold");
+                doc.text(`Net Total:`, 125, finalY + 27);
+                doc.text(`Rs. ${(totalSales + totalIncentive).toLocaleString('en-IN')}`, 190, finalY + 27, { align: 'right' });
 
                 doc.save(`Employee_Performance_${new Date().toISOString().split('T')[0]}.pdf`);
                 showToast("Premium PDF Exported successfully", "success");
@@ -775,7 +782,7 @@
             document.getElementById('modal-conversion').textContent = `${conversion}%`;
 
             const t = parseFloat(target) || 0;
-            document.getElementById('modal-target').textContent = '₹' + t.toLocaleString('en-IN');
+            document.getElementById('modal-target').textContent = t.toLocaleString('en-IN');
 
             // Calculate Rank dynamically based on sales, then visits, then leads (tie-breakers)
             const sorted = [...currentReportMetrics]

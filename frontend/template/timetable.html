@@ -978,19 +978,59 @@
         /* Pinned Capsules */
         .tt-pinned-capsule {
             display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 8px;
+            flex-direction: column;
+            align-items: flex-start;
+            /* Standard Left Align */
+            justify-content: flex-start;
+            gap: 1px;
+            padding: 4px 6px;
+            /* Standard internal padding */
             border-radius: 6px;
-            font-size: 0.75rem;
+            font-size: 0.65rem;
             font-weight: 600;
             cursor: pointer;
             box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-            transition: transform 0.15s, box-shadow 0.15s;
-            white-space: nowrap;
+            transition: all 0.15s;
+            white-space: normal;
             overflow: hidden;
-            text-overflow: ellipsis;
-            width: 100%;
+            flex: 1;
+            height: 100%;
+            position: relative;
+            min-width: 40px;
+            text-align: left;
+            /* Standard Left Align */
+        }
+
+        .tt-pinned-capsule .pin-icon {
+            display: inline-block;
+            font-size: 0.75rem;
+            margin-right: 4px;
+            vertical-align: middle;
+            line-height: 1;
+        }
+
+        .tt-pinned-capsule .pin-title {
+            font-weight: 700;
+            line-height: 1.2;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .tt-pinned-capsule .pin-time {
+            font-size: 0.58rem;
+            opacity: 0.8;
+            margin-top: 2px;
+        }
+
+        .tt-pinned-capsule .pin-initials {
+            position: absolute;
+            bottom: 4px;
+            right: 4px;
+            font-size: 0.55rem;
+            font-weight: 800;
+            opacity: 0.7;
         }
 
         .tt-pinned-capsule:hover {
@@ -1004,24 +1044,55 @@
             filter: grayscale(0.5);
         }
 
+        .tt-pinned-more {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            padding: 0 4px;
+            border-radius: 6px;
+            font-size: 0.6rem;
+            font-weight: 800;
+            cursor: pointer;
+            background: rgba(37, 99, 235, 0.08);
+            color: #2563eb;
+            border: 1px dashed rgba(37, 99, 235, 0.3);
+            transition: all 0.2s;
+            height: 100%;
+            width: 24px;
+            writing-mode: vertical-lr;
+            /* Vertical text for more to save space */
+            text-orientation: mixed;
+        }
+
+        .tt-pinned-more:hover {
+            background: rgba(37, 99, 235, 0.15);
+            border-color: #2563eb;
+        }
+
         .tt-pinned-row-week {
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
+            /* Horizontal side-by-side */
             gap: 4px;
             padding: 4px;
-            min-height: 42px;
+            height: 60px !important;
             background: var(--surface);
+            overflow: hidden;
+            align-items: stretch;
         }
 
         .tt-pinned-row-day {
-            min-height: 42px;
+            height: 42px !important;
+            /* Strict height for single row pinned */
             background: var(--bg-app);
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
-            padding: 8px 10px;
+            padding: 0 10px;
             gap: 8px;
-            flex-wrap: wrap;
+            flex-wrap: nowrap;
+            overflow: hidden;
         }
 
         /* ── Centering in content area ── */
@@ -1853,15 +1924,16 @@
 
                 const pinnedHtml = pinnedEvts.length > 0 ? `
                     <div class="tt-pinned-row-day">
-                        ${pinnedEvts.map(ev => {
+                        ${pinnedEvts.slice(0, 3).map(ev => {
                     const u = getEventStyles(ev);
                     const s = (ev.status || '').toUpperCase();
                     const isDone = (s === 'COMPLETED' || s === 'DONE' || s === 'CANCELLED' || s === 'CANCEL' || completedIds.has(ev._uid));
-                    const timeStr = ev.event_type === 'MEETING' ? `[${String(ev.sh).padStart(2, '0')}:${String(ev.sm).padStart(2, '0')}] ` : '';
+                    const timeStr = `[${String(ev.sh).padStart(2, '0')}:${String(ev.sm).padStart(2, '0')}] `;
                     return `<div class="tt-pinned-capsule ${isDone ? 'done' : ''}" style="background:${u.bg}; border-left:3px solid ${u.color}; color:${u.color}; width: auto; max-width: 200px;" onclick="openEditModal('${ev._uid}')" title="${timeStr}${ev.title}">
                                 ${ev.event_type === 'MEETING' ? '<i class="bi bi-camera-video-fill"></i>' : '<i class="bi bi-exclamation-circle-fill"></i>'} <span class="text-truncate">${timeStr}${ev.title}</span>
                             </div>`;
                 }).join('')}
+                        ${pinnedEvts.length > 3 ? `<div class="tt-pinned-more" onclick="showPinnedOverflowModal('${sdStr}')">+${pinnedEvts.length - 3} more</div>` : ''}
                     </div>` : '';
 
                 // ── DAY VIEW: Split events into first-time-slot cluster + later-time events ──
@@ -1876,12 +1948,12 @@
                     const isLast = (slot === MAX_VISIBLE - 1) && hasOvf;
                     const u = getEventStyles(ev);
                     const t = Math.max(topPx(ev.sh, ev.sm), 0);
-                    const h = Math.max(hPx(ev.sh, ev.sm, ev.eh, ev.em), 22);
-                    
+                    const h = Math.max(hPx(ev.sh, ev.sm, ev.eh, ev.em), 60);
+
                     const visibleCount = Math.min(slots, MAX_VISIBLE);
                     const wPct = 96 / visibleCount;
                     const lPct = 2 + slot * wPct;
-                    
+
                     const timeLbl = `${fmtH(ev.sh, ev.sm)} – ${fmtH(ev.eh, ev.em)}`;
                     const s = (ev.status || '').toUpperCase();
                     const isDone = (s === 'COMPLETED' || s === 'DONE' || s === 'CANCELLED' || s === 'CANCEL' || completedIds.has(ev._uid));
@@ -2007,7 +2079,7 @@
                         const evHtml = dayEvts.slice(0, 4).map(ev => {
                             const u = getEventStyles(ev);
                             const s = (ev.status || '').toUpperCase();
-                            const isDone = (s === 'COMPLETED' || s === 'DONE' || s === 'CANCELLED' || s === 'CANCEL' || completedIds.has(ev._uid));
+                            const isDone = (s === 'COMPLETED' || s === 'DONE' || s === 'RESOLVED' || s === 'CANCELLED' || s === 'CANCEL' || completedIds.has(ev._uid));
                             const icon = ev.event_type === 'MEETING' ? '<i class="bi bi-camera-video me-1"></i>' : '';
                             return `<div class="month-evt ${isDone ? 'evt-done' : ''}" style="background:${u.bg}; border-left:2px solid ${u.color}; color:${u.color};" onclick="event.stopPropagation();openEditModal('${ev._uid}')">${fmtH(ev.sh, ev.sm).replace(' AM', 'a').replace(' PM', 'p')} ${icon}${ev.title}</div>`;
                         }).join('');
@@ -2112,17 +2184,22 @@
                 const dayPinned = filteredEvents.filter(e => e.date === ds && (e.priority || '').toUpperCase() === 'HIGH');
 
                 return `
-                <div class="cal-dh" style="height: auto; min-height: 42px; border-bottom: none; background: #fff;">
+                <div class="cal-dh" style="height: 60px !important; border-bottom: none; background: #fff; overflow: hidden;">
                     <div class="tt-pinned-row-week">
-                        ${dayPinned.map(ev => {
+                        ${dayPinned.slice(0, 3).map(ev => {
                     const u = getEventStyles(ev);
                     const s = (ev.status || '').toUpperCase();
-                    const isDone = (s === 'COMPLETED' || s === 'DONE' || s === 'CANCELLED' || s === 'CANCEL' || completedIds.has(ev._uid));
-                    const timeStr = ev.event_type === 'MEETING' ? `[${String(ev.sh).padStart(2, '0')}:${String(ev.sm).padStart(2, '0')}] ` : '';
-                    return `<div class="tt-pinned-capsule ${isDone ? 'done' : ''}" style="background:${u.bg}; border-left:3px solid ${u.color}; color:${u.color};" onclick="openEditModal('${ev._uid}')" title="${ev.title}">
-                                ${ev.event_type === 'MEETING' ? '<i class="bi bi-camera-video-fill"></i>' : ''} <span class="text-truncate" style="flex:1; text-align:left;">${timeStr}${ev.title}</span>
+                    const isDone = (s === 'COMPLETED' || s === 'DONE' || s === 'RESOLVED' || s === 'CANCELLED' || s === 'CANCEL' || completedIds.has(ev._uid));
+                    const timeLbl = `${fmtH(ev.sh, ev.sm)} – ${fmtH(ev.eh, ev.em)}`;
+                    const tooltip = `${ev.title}${ev.user ? ' (' + ev.user + ')' : ''}\n${timeLbl}\n${ev.loc || ''}`;
+                    const iconAttr = ev.event_type === 'MEETING' ? '<i class="bi bi-camera-video-fill pin-icon"></i>' : '<i class="bi bi-exclamation-circle-fill pin-icon"></i>';
+                    return `<div class="tt-pinned-capsule ${isDone ? 'done' : ''}" style="background:${u.bg}; border-left:3px solid ${u.color}; color:${u.color};" onclick="openEditModal('${ev._uid}')" title="${tooltip}">
+                                <div class="pin-title">${iconAttr}${ev.title}</div>
+                                <div class="pin-time">${timeLbl}</div>
+                                <div class="pin-initials" style="color:${u.color};">${u.initials}</div>
                             </div>`;
-                }).join('') || '<div style="text-align:center;"><span style="opacity:0.2; font-size:0.6rem;">—</span></div>'}
+                }).join('') || '<div style="text-align:center; flex:1; display: flex; align-items: center; justify-content: center;"><span style="opacity:0.2; font-size:0.6rem;">—</span></div>'}
+                        ${dayPinned.length > 3 ? `<div class="tt-pinned-more" onclick="showPinnedOverflowModal('${ds}')">+${dayPinned.length - 3} more</div>` : ''}
                     </div>
                 </div>`;
             }).join('');
@@ -2147,15 +2224,15 @@
 
                 // ── PER-CLUSTER OVERFLOW LOGIC ──
                 const MAX_VISIBLE = 3;
-                
+
                 const evHtml = placed.map(({ ev, slot, slots, clusterId }, idx) => {
                     const hasOverflow = slots > MAX_VISIBLE;
                     if (slot >= MAX_VISIBLE) return ''; // Hide events beyond limit
 
                     const u = getEventStyles(ev);
                     const t = Math.max(topPx(ev.sh, ev.sm), 0);
-                    const h = Math.max(hPx(ev.sh, ev.sm, ev.eh, ev.em), 22);
-                    
+                    const h = Math.max(hPx(ev.sh, ev.sm, ev.eh, ev.em), 60);
+
                     // Width is shared across the VISIBLE count in this cluster
                     const visibleCount = Math.min(slots, MAX_VISIBLE);
                     const w = 96 / visibleCount;
@@ -2163,7 +2240,7 @@
 
                     const timeLbl = `${fmtH(ev.sh, ev.sm)} – ${fmtH(ev.eh, ev.em)}`;
                     const s = (ev.status || '').toUpperCase();
-                    const isDone = (s === 'COMPLETED' || s === 'DONE' || s === 'CANCELLED' || s === 'CANCEL' || completedIds.has(ev._uid));
+                    const isDone = (s === 'COMPLETED' || s === 'DONE' || s === 'RESOLVED' || s === 'CANCELLED' || s === 'CANCEL' || completedIds.has(ev._uid));
 
                     // If this is the last visible item AND there is an overflow in THIS cluster
                     const isLastVisible = (slot === MAX_VISIBLE - 1) && hasOverflow;
@@ -2363,7 +2440,7 @@
             // Reconfigure modal for Create
             const saveBtn = document.getElementById('btn-save-event');
             saveBtn.onclick = saveActivity;
-            saveBtn.innerHTML = preferredType === 'TASK' ? '<i class="bi bi-plus-lg me-1"></i>Create Task' : '<i class="bi bi-check-lg me-1"></i>Schedule';
+            saveBtn.innerHTML = preferredType === 'TASK' ? '<i class="bi bi-plus-lg me-1"></i>Add New Task' : '<i class="bi bi-check-lg me-1"></i>Schedule';
 
             // Default Assignee logic: "All Employees" for Admins on Tasks by default
             const userSel = document.getElementById('ev-user');
@@ -2424,7 +2501,7 @@
                 if (opt.value === ev.user) userSelect.value = ev.user;
             });
 
-            document.getElementById('modal-title-text').innerText = isTask ? 'Edit Task' : 'Edit Event';
+            document.getElementById('modal-title-text').innerText = isTask ? 'Edit Task' : 'Edit Activity';
             toggleModalType();
 
             // Reconfigure modal for Update
@@ -2468,14 +2545,22 @@
             }
 
             if (type === 'TODO') {
+                let finalStart = start ? start + ":00" : null;
+                let finalEnd = end ? end + ":00" : null;
+                if (start && !end) {
+                    const [hh, mm] = start.split(':').map(Number);
+                    const dt = new Date(); dt.setHours(hh + 1, mm);
+                    finalEnd = String(dt.getHours()).padStart(2, '0') + ":" + String(dt.getMinutes()).padStart(2, '0') + ":00";
+                }
+
                 const payload = {
                     title: title,
                     description: document.getElementById('td-desc').value.trim() || null,
                     priority: document.getElementById('td-priority').value,
                     assigned_to: user,
                     due_date: new Date(date).toISOString(),
-                    start_time: start ? start + ":00" : null,
-                    end_time: end ? end + ":00" : null,
+                    start_time: finalStart,
+                    end_time: finalEnd,
                     related_entity: document.getElementById('td-related').value.trim() || null,
                     client_id: document.getElementById('ev-client').value || null
                 };
@@ -2523,11 +2608,11 @@
             const isUpdate = document.getElementById('btn-save-event').innerHTML.includes('Update');
 
             if (isUpdate) {
-                document.getElementById('modal-title-text').innerText = isEvent ? 'Edit Event' : 'Edit Task';
+                document.getElementById('modal-title-text').innerText = isEvent ? 'Edit Activity' : 'Edit Task';
                 document.getElementById('btn-save-event').innerHTML = '<i class="bi bi-floppy me-1"></i>Update';
             } else {
-                document.getElementById('modal-title-text').innerText = isEvent ? 'Schedule Event' : 'Create Task';
-                document.getElementById('btn-save-event').innerHTML = isEvent ? '<i class="bi bi-check-lg me-1"></i>Schedule' : '<i class="bi bi-plus-lg me-1"></i>Create Task';
+                document.getElementById('modal-title-text').innerText = isEvent ? 'Schedule Activity' : 'Add New Task';
+                document.getElementById('btn-save-event').innerHTML = isEvent ? '<i class="bi bi-check-lg me-1"></i>Schedule' : '<i class="bi bi-plus-lg me-1"></i>Add New Task';
             }
 
             if (isEvent) {
@@ -2605,7 +2690,9 @@
                         attendee_ids: attendeeIds,
                         client_id: null,
                         priority: 'MEDIUM',
-                        target_type: attendeeIds.length > 0 ? 'MANUAL' : 'CLIENT'
+                        target_type: attendeeIds.length > 0 ? 'MANUAL' : 'CLIENT',
+                        start_time: start + ":00",
+                        end_time: end + ":00"
                     };
 
                     await ApiClient.createUnifiedMeeting(meetingPayload);
@@ -2661,14 +2748,22 @@
 
                 try {
                     const promises = usersToAssign.map(user => {
+                        let finalStart = (startStr && startStr.trim()) ? startStr.trim() + ":00" : null;
+                        let finalEnd = (endStr && endStr.trim()) ? endStr.trim() + ":00" : null;
+                        if (startStr && !endStr) {
+                            const [hh, mm] = startStr.split(':').map(Number);
+                            const dt = new Date(); dt.setHours(hh + 1, mm);
+                            finalEnd = String(dt.getHours()).padStart(2, '0') + ":" + String(dt.getMinutes()).padStart(2, '0') + ":00";
+                        }
+
                         const payload = {
                             title: title,
                             description: desc || null,
                             priority: priority,
-                            assigned_to: user,
+                            assigned_to: typeof user === 'string' ? user.trim() : user,
                             due_date: finalIsoStart,
-                            start_time: startStr ? startStr + ":00" : null,
-                            end_time: endStr ? endStr + ":00" : null,
+                            start_time: finalStart,
+                            end_time: finalEnd,
                             related_entity: related || null,
                             client_id: document.getElementById('ev-client').value || null
                         };
@@ -2685,17 +2780,22 @@
                     saveSelectedCalendars();
 
                     // Reset form
-                    ['td-related', 'td-desc'].forEach(id => {
+                    ['td-related', 'td-desc', 'td-start', 'td-end'].forEach(id => {
                         const el = document.getElementById(id); if (el) el.value = '';
                     });
-                    document.getElementById('ev-user').selectedIndex = -1;
+                    const uSel = document.getElementById('ev-user');
+                    if (uSel) {
+                        uSel.selectedIndex = -1;
+                        if (uSel.refresh) uSel.refresh(); // Sync custom multi-select if present
+                    }
 
                     bsModal.hide();
                     await renderCalendar();
                     showToastMsg(`To-Do Task created for ${usersToAssign.length} user(s)!`);
                 } catch (error) {
                     console.error("Failed to create bulk tasks", error);
-                    alert("Failed to create bulk tasks");
+                    const msg = error.data?.detail || error.message || "Unknown error";
+                    alert("Failed to create task(s): " + msg);
                 }
             }
         }
@@ -2815,6 +2915,46 @@
             setTimeout(() => t.remove(), 3000);
         }
 
+        // ── Pinned Overflow Modal ──────────────────────────────────
+        function showPinnedOverflowModal(dateStr) {
+            const dayPinned = events.filter(e => e.date === dateStr && (e.priority || '').toUpperCase() === 'HIGH');
+            dayPinned.sort((a, b) => (a.sh * 60 + a.sm) - (b.sh * 60 + b.sm));
+
+            const dateObj = new Date(dateStr);
+            const dateLabel = dateObj.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' });
+
+            const titleEl = document.getElementById('hiddenTasksModalTitle');
+            const listEl = document.getElementById('hiddenTasksList');
+            if (!titleEl || !listEl) return;
+
+            titleEl.textContent = `High Priority: ${dateLabel}`;
+            listEl.innerHTML = dayPinned.map(ev => {
+                const u = getEventStyles(ev);
+                const timeStr = ev.event_type === 'MEETING' ? `[${String(ev.sh).padStart(2, '0')}:${String(ev.sm).padStart(2, '0')}] ` : '';
+                const timeLbl = `${fmtH(ev.sh, ev.sm)} – ${fmtH(ev.eh, ev.em)}`;
+                const s = (ev.status || '').toUpperCase();
+                const isDone = (s === 'COMPLETED' || s === 'RESOLVED' || s === 'DONE' || s === 'CANCELLED' || completedIds.has(ev._uid));
+                const icon = ev.event_type === 'MEETING' ? '<i class="bi bi-camera-video me-2"></i>' : '<i class="bi bi-exclamation-circle me-2"></i>';
+                return `
+                <div style="
+                    display:flex; align-items:center; gap:12px;
+                    padding: 10px 12px; border-radius:10px;
+                    background: ${u.bg}; border-left: 3px solid ${u.color};
+                    margin-bottom: 8px; cursor:pointer;
+                    opacity: ${isDone ? '0.5' : '1'};
+                " onclick="openEditModal('${ev._uid}')">
+                    <div style="font-size: 1.2rem; color: ${u.color};">${icon}</div>
+                    <div style="flex:1;">
+                        <div style="font-weight:700; font-size:0.9rem; color:${u.color};">${ev.title}</div>
+                        <div style="font-size:0.75rem; color:${u.color}; opacity:0.8;">${timeLbl} • ${ev.user}</div>
+                    </div>
+                </div>`;
+            }).join('');
+
+            const modal = new bootstrap.Modal(document.getElementById('hiddenTasksModal'));
+            modal.show();
+        }
+
         // ── Day View Overflow Modal ────────────────────────────────
         // Shows ONLY the hidden overflow events from the 12AM cluster (not other-time events)
         function showDayOverflowModal(dateStr) {
@@ -2880,7 +3020,7 @@
                 // Fallback to day view if cache missing
                 dayEvts = events.filter(e => e.date === dateStr && (e.priority || '').toUpperCase() !== 'HIGH');
             }
-            
+
             dayEvts.sort((a, b) => (a.sh * 60 + a.sm) - (b.sh * 60 + b.sm));
 
             const dateObj = new Date(dateStr);

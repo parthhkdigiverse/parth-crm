@@ -98,6 +98,62 @@
         }
         .action-menu-btn:hover { background: var(--bg-app); border-color: var(--primary); color: var(--primary); }
 
+        /* ── Premium KPI Cards Refinement ── */
+        .stat-card {
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            justify-content: flex-start !important; /* Forces components to stay together */
+            gap: 1rem !important; /* Matches Feedback page spacing */
+            padding: 1.25rem 1.5rem !important;
+            min-height: 100px !important;
+            position: relative;
+            overflow: hidden;
+            border-top: none !important;
+        }
+
+        .stat-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            z-index: 10;
+        }
+
+        .border-gradient-purple::before { background: linear-gradient(90deg, #6366f1 0%, #a5b4fc 100%); }
+        .border-gradient-warning::before { background: linear-gradient(90deg, #f59e0b 0%, #fcd34d 100%); }
+        .border-gradient-success::before { background: linear-gradient(90deg, #10b981 0%, #6ee7b7 100%); }
+        .border-gradient-primary::before { background: linear-gradient(90deg, #3b82f6 0%, #93c5fd 100%); }
+
+        .stat-icon-wrapper {
+            margin-top: 0 !important;
+            width: 44px !important;
+            height: 44px !important;
+            font-size: 1.1rem !important;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50% !important; /* Circular like Feedback page */
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08); /* Matches Feedback page style */
+        }
+
+        .stat-content-left {
+            text-align: left !important;
+        }
+
+        .stat-label {
+            margin-bottom: 2px !important;
+            font-size: 0.68rem !important;
+        }
+
+        .stat-value {
+            font-size: 1.4rem !important;
+            margin-top: 0 !important;
+        }
+
         /* ── Create modal ─────────────────────────────────────── */
         .modal-overlay {
             position: fixed;
@@ -336,9 +392,9 @@
                 </div>
             </div>
 
-                <div class="row g-3 mb-2">
+                <div class="row g-3 mb-4">
                     <div class="col-6 col-md-3">
-                        <div class="stat-card card-purple">
+                        <div class="stat-card border-gradient-purple card-purple">
                             <div class="stat-icon-wrapper icon-purple"><i class="bi bi-file-earmark-text"></i></div>
                             <div class="stat-content-left">
                                 <div class="stat-label">Total</div>
@@ -347,8 +403,8 @@
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
-                        <div class="stat-card card-warning">
-                            <div class="stat-icon-wrapper icon-orange"><i class="bi bi-hourglass-split"></i></div>
+                        <div class="stat-card border-gradient-primary card-primary">
+                            <div class="stat-icon-wrapper icon-blue"><i class="bi bi-hourglass-split"></i></div>
                             <div class="stat-content-left">
                                 <div class="stat-label">Pending</div>
                                 <div class="stat-value" id="stat-pending">—</div>
@@ -356,7 +412,7 @@
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
-                        <div class="stat-card card-success">
+                        <div class="stat-card border-gradient-success card-success">
                             <div class="stat-icon-wrapper icon-green"><i class="bi bi-whatsapp"></i></div>
                             <div class="stat-content-left">
                                 <div class="stat-label">Sent</div>
@@ -365,7 +421,7 @@
                         </div>
                     </div>
                     <div class="col-6 col-md-3">
-                        <div class="stat-card card-primary">
+                        <div class="stat-card border-gradient-warning card-warning">
                             <div class="stat-icon-wrapper icon-yellow"><i class="bi bi-currency-rupee"></i></div>
                             <div class="stat-content-left">
                                 <div class="stat-label">Revenue</div>
@@ -406,17 +462,17 @@
                         <table class="table table-premium mb-0">
                             <thead>
                                 <tr>
-                                    <th class="px-4" style="width:50px;"><input type="checkbox" id="select-all-bills"
+                                    <th class="px-2" style="width:40px;"><input type="checkbox" id="select-all-bills"
                                             onchange="toggleSelectAllBills(this.checked)"></th>
-                                    <th class="px-4 text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:130px;">Invoice #</th>
-                                    <th class="px-4 text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:20%;">Client</th>
-                                    <th class="px-4 text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:160px;">Payment</th>
-                                    <th class="px-4 text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:90px;">GST</th>
-                                    <th class="px-4 text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:120px;">Amount</th>
-                                    <th class="px-4 text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:130px;">Status</th>
-                                    <th class="px-4 text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:150px;">Generated By</th>
-                                    <th class="px-4 text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:130px;">Created</th>
-                                    <th class="px-4 text-end text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:110px;">Actions</th>
+                                    <th class="px-2 text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:110px;">Invoice #</th>
+                                    <th class="px-2 text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:18%;">Client</th>
+                                    <th class="px-2 text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:120px;">Payment</th>
+                                    <th class="px-2 text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:80px;">GST</th>
+                                    <th class="px-2 text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:100px;">Amount</th>
+                                    <th class="px-2 text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:110px;">Status</th>
+                                    <th class="px-2 text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:130px;">Generated By</th>
+                                    <th class="px-2 text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:110px;">Created</th>
+                                    <th class="px-2 text-end text-uppercase" style="font-size:0.75rem;letter-spacing:0.5px; width:100px;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="inv-tbody">
@@ -911,13 +967,8 @@
                     skip: 0, 
                     limit: 200,
                 });
-                invoiceActionsById = {};
-                if (Array.isArray(allBills) && allBills.length) {
-                    await Promise.all(allBills.map(async (b) => {
-                        try { invoiceActionsById[b.id] = await ApiClient.getInvoiceActions(b.id) || {}; }
-                        catch { invoiceActionsById[b.id] = {}; }
-                    }));
-                }
+                
+                // Permission actions are now pre-fetched directly in the list from the backend!
                 const visibleIds = new Set(allBills.map(b => b.id));
                 selectedBillIds = new Set(Array.from(selectedBillIds).filter(id => visibleIds.has(id)));
                 updateStats(); renderTable();
@@ -1027,7 +1078,7 @@
                     const gstTypeLabel = b.gst_type === 'WITHOUT_GST' ? 'GST 0%' : 'GST 18%';
                     let actions = `<button class="action-menu-btn me-1" title="Preview Invoice" onclick="previewInvoice('${b.id}')"><i class="bi bi-eye"></i></button>`;
                     
-                    const rowActions = invoiceActionsById[b.id] || {};
+                    const rowActions = b.actions || {};
                     const canVerifyRow = Boolean(rowActions.can_verify);
                     const canSendRow = Boolean(rowActions.can_send_whatsapp);
                     if (canVerifyRow && (st === 'PENDING_VERIFICATION' || st === 'DRAFT')) {
@@ -1038,7 +1089,7 @@
                     }
                     if (rowActions.can_archive) actions += `<button class="action-menu-btn ms-1" title="Archive" onclick="archiveInvoice('${b.id}','${b.invoice_number || ''}')" style="color:#92400e;border-color:#fde68a;background:#fffbeb;"><i class="bi bi-archive"></i></button>`;
                     if (rowActions.can_unarchive) actions += `<button class="action-menu-btn ms-1" title="Restore" onclick="unarchiveInvoice('${b.id}','${b.invoice_number || ''}')" style="color:#0369a1;border-color:#bae6fd;background:#f0f9ff;"><i class="bi bi-box-arrow-up"></i></button>`;
-                    if (rowActions.can_delete_archived) {
+                    if (rowActions.can_delete) {
                         // Soft Delete (is_deleted=True)
                         actions += `<button class="action-menu-btn ms-1" title="Soft Delete (Hide)" onclick="deleteArchivedInvoice('${b.id}','${b.invoice_number || ''}')" style="color:#b91c1c;border-color:#fecaca;background:#fef2f2;"><i class="bi bi-trash"></i></button>`;
                         // Permanent Delete (DB removal)
@@ -1051,25 +1102,23 @@
                     }
                     
                     return `<tr style="transition:all 0.2s;">
-                        <td class="px-4 py-3" data-label="Select"><input type="checkbox" ${selectedBillIds.has(b.id) ? 'checked' : ''} onchange="toggleBillSelection('${b.id}', this.checked)"></td>
-                        <td class="px-4 py-3 fw-bold" data-label="Invoice #" style="color:var(--primary);font-size:0.85rem;">${b.invoice_number || '—'}</td>
-                        <td class="px-4 py-3" data-label="Client">
-                            <div class="fw-bold" style="color:var(--text-main);font-size:0.9rem;">${clientDisplay}</div>
-                            ${phone ? `<div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;"><i class="bi bi-telephone text-primary opacity-50 me-1"></i>${phone}</div>` : ''}
-                            ${b.invoice_client_org ? `<div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;"><i class="bi bi-building text-primary opacity-50 me-1"></i>${b.invoice_client_org}</div>` : ''}
+                        <td class="px-2 py-3" data-label="Select"><input type="checkbox" ${selectedBillIds.has(b.id) ? 'checked' : ''} onchange="toggleBillSelection('${b.id}', this.checked)"></td>
+                        <td class="px-2 py-3 fw-bold" data-label="Invoice #" style="color:var(--primary);font-size:0.8rem;">${b.invoice_number || '—'}</td>
+                        <td class="px-2 py-3" data-label="Client">
+                            <div class="fw-bold text-truncate" style="color:var(--text-main);font-size:0.85rem; max-width:140px;">${clientDisplay}</div>
+                            ${phone ? `<div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;"><i class="bi bi-telephone text-primary opacity-50 me-1"></i>${phone}</div>` : ''}
                         </td>
-                        <td class="px-4 py-3" data-label="Payment"><span class="badge" style="background:var(--bg-app);color:var(--text-muted);padding:4px 10px;border-radius:20px;font-weight:600;border:1px solid var(--border);">${paymentTypeLabel}</span></td>
-                        <td class="px-4 py-3" data-label="GST"><span class="badge" style="background:${b.gst_type === 'WITHOUT_GST' ? 'var(--bg-app)' : 'var(--success-light)'};color:${b.gst_type === 'WITHOUT_GST' ? 'var(--text-muted)' : 'var(--success-text)'};padding:4px 10px;border-radius:20px;font-weight:600;border:1px solid ${b.gst_type === 'WITHOUT_GST' ? 'var(--border)' : 'var(--success-ring)'};">${gstTypeLabel}</span></td>
-                        <td class="px-4 py-3 fw-bold" data-label="Amount" style="color:var(--text-main);font-size:0.95rem;">₹${Number(b.amount || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
-                        <td class="px-4 py-3" data-label="Status">
+                        <td class="px-2 py-3" data-label="Payment"><span class="badge" style="background:var(--bg-app);color:var(--text-muted);padding:3px 8px;border-radius:20px;font-weight:600;font-size:0.75rem;border:1px solid var(--border);">${paymentTypeLabel}</span></td>
+                        <td class="px-2 py-3" data-label="GST"><span class="badge" style="background:${b.gst_type === 'WITHOUT_GST' ? 'var(--bg-app)' : 'var(--success-light)'};color:${b.gst_type === 'WITHOUT_GST' ? 'var(--text-muted)' : 'var(--success-text)'};padding:3px 8px;border-radius:20px;font-weight:600;font-size:0.75rem;border:1px solid ${b.gst_type === 'WITHOUT_GST' ? 'var(--border)' : 'var(--success-ring)'};">${gstTypeLabel}</span></td>
+                        <td class="px-2 py-3 fw-bold" data-label="Amount" style="color:var(--text-main);font-size:0.85rem;">₹${Number(b.amount || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+                        <td class="px-2 py-3" data-label="Status">
                             <div class="d-flex align-items-center">${statusPill(b, st, phone)}</div>
-                            ${b.billing_month ? `<div class="small fw-medium" style="color:var(--text-muted);font-size:0.7rem;margin-top:4px;"><i class="bi bi-calendar3 opacity-50 me-1"></i>${b.billing_month}</div>` : ''}
                         </td>
-                        <td class="px-4 py-3" data-label="Generated By">
-                            <div class="fw-medium" style="color:var(--text-body);font-size:0.8rem;"><i class="bi bi-person-circle opacity-50 me-1"></i>${b.creator_name || 'Admin'}</div>
+                        <td class="px-2 py-3" data-label="Generated By">
+                            <div class="fw-medium text-truncate" style="color:var(--text-body);font-size:0.75rem;max-width:100px;"><i class="bi bi-person-circle opacity-50 me-1"></i>${b.creator_name || 'Admin'}</div>
                         </td>
-                        <td class="px-4 py-3 text-muted" data-label="Created Date" style="font-size:0.8rem;"><i class="bi bi-clock opacity-50 me-1"></i>${dt}</td>
-                        <td class="px-4 py-3 text-end" data-label="Actions" style="white-space:nowrap;">${actions}</td>
+                        <td class="px-2 py-3 text-muted" data-label="Created Date" style="font-size:0.75rem;"><i class="bi bi-clock opacity-50 me-1"></i>${dt}</td>
+                        <td class="px-2 py-3 text-end" data-label="Actions" style="white-space:nowrap;">${actions}</td>
                     </tr>`;
                 }
             });

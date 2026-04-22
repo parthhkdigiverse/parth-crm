@@ -52,7 +52,7 @@
                     </div>
                 </div>
 
-                <div class="row g-3 mb-1">
+                <div class="row g-3 mb-4">
                     <div class="col-md-4">
                         <div class="card border-0 shadow-sm bg-primary-subtle p-3 h-100 rounded-4">
                             <div class="d-flex align-items-center gap-3">
@@ -146,50 +146,83 @@
 
         async function compileReport() {
             try {
-                // Fetch raw entities to build a true CRM report
-                const [clients, issues, meetings] = await Promise.all([
-                    apiGet('/clients/'),
+                // Step 1: Immediate fetch for the main list
+                const clients = await apiGet('/clients/');
+                
+                // Initialize with basic data for "Direct" appearance
+                reportData = clients.map(client => ({
+                    ...client,
+                    openIssuesCount: '--',
+                    meetingsCount: '--',
+                    healthClass: 'text-muted',
+                    healthText: 'Analyzing...',
+                    isProcessing: true
+                }));
+
+                // Sort newest first
+                reportData.sort((a, b) => (b.id || 0) - (a.id || 0));
+                
+                filteredData = reportData;
+                renderTable(reportData);
+                document.getElementById('kpi-clients').textContent = reportData.length;
+                
+                // Initialize filters early so they are usable while enrichment happens
+                initFilters();
+
+                // Step 2: Background Enrichment (Parallel)
+                const [issues, meetings] = await Promise.all([
                     apiGet('/issues/?limit=1000'),
                     apiGet('/meetings/?limit=1000')
                 ]);
 
-                let totalOpenIssues = 0;
+                // O(N) Mapping for High Speed
+                const issuesMap = {};
+                issues.forEach(i => {
+                    if (i.status !== 'RESOLVED' && i.status !== 'CANCELLED') {
+                        if (!issuesMap[i.client_id]) issuesMap[i.client_id] = { count: 0, high: false };
+                        issuesMap[i.client_id].count++;
+                        if (i.severity === 'HIGH') issuesMap[i.client_id].high = true;
+                    }
+                });
 
-                reportData = clients.map(client => {
-                    const clientIssues = issues.filter(i => i.client_id === client.id && i.status !== 'RESOLVED' && i.status !== 'CANCELLED');
-                    const clientMeetings = meetings.filter(m => m.client_id === client.id);
+                const meetingsMap = {};
+                meetings.forEach(m => {
+                    if (!meetingsMap[m.client_id]) meetingsMap[m.client_id] = 0;
+                    meetingsMap[m.client_id]++;
+                });
+
+                let totalOpenIssues = 0;
+                
+                // Enrichment Phase
+                reportData = reportData.map(client => {
+                    const issueInfo = issuesMap[client.id] || { count: 0, high: false };
+                    const meetingCount = meetingsMap[client.id] || 0;
                     
-                    // Determine Health
+                    totalOpenIssues += issueInfo.count;
+
                     let healthClass = 'health-good';
                     let healthText = 'Healthy';
-                    if (clientIssues.length > 0) {
-                        const hasHighSev = clientIssues.some(i => i.severity === 'HIGH');
-                        healthClass = hasHighSev ? 'health-critical' : 'health-warning';
-                        healthText = hasHighSev ? 'Critical Issues' : 'Has Open Issues';
+                    if (issueInfo.count > 0) {
+                        healthClass = issueInfo.high ? 'health-critical' : 'health-warning';
+                        healthText = issueInfo.high ? 'Critical Issues' : 'Has Open Issues';
                     }
-                    
-                    totalOpenIssues += clientIssues.length;
 
                     return {
                         ...client,
-                        openIssuesCount: clientIssues.length,
-                        meetingsCount: clientMeetings.length,
+                        openIssuesCount: issueInfo.count,
+                        meetingsCount: meetingCount,
                         healthClass,
-                        healthText
+                        healthText,
+                        isProcessing: false
                     };
                 });
 
-                // Sort newest first
-                reportData.sort((a, b) => b.id - a.id);
-
-                document.getElementById('kpi-clients').textContent = reportData.length;
+                // Final UI Update
                 document.getElementById('kpi-issues').textContent = totalOpenIssues;
-                // Only count active/upcoming sessions for the KPI
-                const activeMeetings = meetings.filter(m => m.status === 'OPEN' || m.status === 'IN_PROGRESS');
-                document.getElementById('kpi-meetings').textContent = activeMeetings.length;
+                const activeMeetingsCount = meetings.filter(m => m.status === 'OPEN' || m.status === 'IN_PROGRESS').length;
+                document.getElementById('kpi-meetings').textContent = activeMeetingsCount;
 
-                initFilters();
-                filteredData = reportData; // start with full set
+                filteredData = reportData;
                 renderTable(reportData);
 
             } catch (err) {

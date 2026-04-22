@@ -137,11 +137,14 @@ class ClientService:
                 query = query.limit(limit)
             clients = await query.to_list()
             
-            # Enrich with PM Name sequentially
-            for c in clients:
-                if c.pm_id:
-                    pm = await User.get(c.pm_id)
-                    c.pm_name = pm.name if pm else f"PM #{c.pm_id}"
+            # Enrich with PM Name in bulk for efficiency (removes N+1 query problem)
+            pm_ids = {c.pm_id for c in clients if c.pm_id}
+            if pm_ids:
+                pms = await User.find(In(User.id, list(pm_ids))).to_list()
+                pm_map = {p.id: p.name for p in pms}
+                for c in clients:
+                    if c.pm_id:
+                        c.pm_name = pm_map.get(c.pm_id, f"PM #{c.pm_id}")
             return clients
         except Exception as e:
             print(f"Error fetching clients: {e}")
@@ -338,4 +341,10 @@ class ClientService:
             db_client.pm_id = pm_id
             db_client.pm_assigned_by_id = current_user.id
             await db_client.save()
+        
+        # Enrich with name for UI
+        pm = await User.get(pm_id)
+        if pm:
+            db_client.pm_name = pm.name
+            
         return db_client

@@ -230,9 +230,9 @@
 </head>
 
 <body>
-    <div class="d-flex" style="width: 100%; overflow-x: hidden;">
+    <div class="d-flex">
         <div id="sidebar"></div>
-        <div class="main-wrapper flex-grow-1" style="min-width: 0; overflow-x: hidden;">
+        <div class="main-wrapper flex-grow-1">
             <div class="page-content-standard">
                 <div class="page-header-glass d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
                     <div class="min-w-0">
@@ -560,34 +560,11 @@
                     
                     if (filters.status) params.append('status', filters.status);
                     if (filters.pm) params.append('pm_id', filters.pm);
+                    if (filters.search) params.append('search', filters.search);
 
                     clients = await apiGet(`/clients/?${params.toString()}`);
                 } catch (err) {
                     throw new Error("Failed to load clients: " + err.message);
-                }
-
-                // Create a lookup map for PM names
-                const pmMap = {};
-                try {
-                    const usersData = await apiGet('/users/');
-                    const users = Array.isArray(usersData) ? usersData : (usersData && Array.isArray(usersData.items) ? usersData.items : []);
-
-                    users.forEach(u => {
-                        if (u.id) pmMap[String(u.id)] = u.name || u.email || `User ${u.id}`;
-                    });
-                } catch (err) {
-                    console.warn("Could not fetch users for PM mapping. They will display as IDs.", err);
-                }
-
-                // Search filter logic
-                const searchQuery = filters.search;
-                if (searchQuery) {
-                    const q = searchQuery.toLowerCase();
-                    clients = clients.filter(c =>
-                        c.name.toLowerCase().includes(q) ||
-                        (c.email && c.email.toLowerCase().includes(q)) ||
-                        (c.organization && c.organization.toLowerCase().includes(q))
-                    );
                 }
 
                 const countEl = document.getElementById('client-count');
@@ -597,9 +574,9 @@
                     data: clients,
                     tbodyId: 'clients-table',
                     paginationId: 'clients-pagination',
-                    emptyMsg: `<tr><td colspan="6" class="text-center py-5 text-muted">No clients found matching "${searchQuery || 'your criteria'}".</td></tr>`,
+                    emptyMsg: `<tr><td colspan="6" class="text-center py-5 text-muted">No clients found matching "${filters.search || 'your criteria'}".</td></tr>`,
                     renderRow: (c) => {
-                        const pmName = c.pm_name || pmMap[String(c.pm_id)] || 'ID: ' + c.pm_id;
+                        const pmName = c.pm_name || 'Unassigned';
                         const assignerName = c.pm_assigned_by_name;
                         const pmTypeLabel = assignerName ? 'Manual' : 'Auto-Assign';
                         

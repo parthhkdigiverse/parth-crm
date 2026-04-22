@@ -704,6 +704,8 @@
                     const modal = document.getElementById('addMeetingModal');
                     if (modal) bootstrap.Modal.getOrCreateInstance(modal).show();
                 }
+                // Update table with names if already loaded
+                if (window.meetingsCount > 0) loadMeetings(); 
             } catch (e) {
                 console.error("Client Load Failed", e);
             }
@@ -716,6 +718,8 @@
                 if (!sel) return;
                 sel.innerHTML = '<option value="">-- Select Project --</option>' +
                     allProjects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+                // Update table with names if already loaded
+                if (window.meetingsCount > 0) loadMeetings(); 
             } catch (e) {
                 console.error("Projects Load Failed", e);
             }
@@ -1021,6 +1025,7 @@
 
                 meetings.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
                 const countEl = document.getElementById('meeting-count');
+                window.meetingsCount = meetings.length; // track globally for sync
                 if (countEl) countEl.textContent = `${meetings.length} active sessions found`;
 
                 const statusBadge = s => {
@@ -1408,14 +1413,16 @@
         }
 
         // ────────── INITIALIZE ──────────
+        // Start ALL fetches in parallel for "Instant" opening
+        loadMeetings(); 
+        
         Promise.allSettled([loadClients(), loadProjects(), loadAllUsers()]).then(() => {
             initFilters();
-            loadMeetings();
             initDatePicker();
         }).catch(err => {
-            console.error("Initialization failed partially, attempting to load dashboard anyway:", err);
+            console.error("Initialization failed partially:", err);
             initFilters();
-            loadMeetings();
+            initDatePicker();
         });
     </script>
 </body>

@@ -28,6 +28,8 @@ class MeetingSummary(Document):
     status: GlobalTaskStatus = GlobalTaskStatus.OPEN
     meeting_type: Optional[str] = "In-Person"
     meet_link: Optional[str] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
 
     # Google Calendar / AI pipeline
     calendar_event_id: Optional[str] = None

@@ -28,7 +28,7 @@ async def _resolve_target_user(assigned_to: Optional[str]) -> Optional[User]:
     if not normalized:
         return None
 
-    pattern = re.compile(f"^{re.escape(normalized)}$", re.IGNORECASE)
+    pattern = re.compile(rf"^\s*{re.escape(normalized)}\s*$", re.IGNORECASE)
     
     return await User.find_one(
         User.is_deleted == False,

@@ -531,13 +531,32 @@ class BillingService:
             query = query.limit(limit)
         bills = await query.to_list()
 
+        # Optimization: Pre-fetch roles and settings for actions calculation
+        is_admin = current_user.role == UserRole.ADMIN
+        can_verify_global = await self._can_verify(current_user)
+        can_send_global = await self._can_send(current_user)
+        
+        # Batch Fetch Creator Names
+        creator_ids = list({b.created_by_id for b in bills if b.created_by_id})
+        creators_map = {}
+        if creator_ids:
+            creators = await User.find(In(User.id, creator_ids)).to_list()
+            creators_map = {u.id: u.name for u in creators}
+
         res = []
         for b in bills:
             d = b.model_dump()
-            d["id"] = b.id
-            if b.created_by_id:
-                u = await User.get(b.created_by_id)
-                d["creator_name"] = u.name if u else "Admin"
+            d["id"] = str(b.id)
+            d["creator_name"] = creators_map.get(b.created_by_id, "Admin")
+            
+            # Embed Actions directly to eliminate frontend N+1 calls
+            d["actions"] = {
+                "can_verify": can_verify_global and b.invoice_status == "PENDING_VERIFICATION",
+                "can_send_whatsapp": can_send_global and b.invoice_status in {"VERIFIED", "SENT"},
+                "can_archive": (is_admin or b.created_by_id == current_user.id) and not b.is_archived,
+                "can_unarchive": (is_admin or b.created_by_id == current_user.id) and b.is_archived,
+                "can_delete": is_admin and b.is_archived
+            }
             res.append(d)
         return res
 

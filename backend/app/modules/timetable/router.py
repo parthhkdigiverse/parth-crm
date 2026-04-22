@@ -289,8 +289,13 @@ async def get_timetable(
         if not is_visible:
             continue
             
-        h = m.date.hour if m.date.hour >= 7 else 14
-        
+        # Determine start/end times precisely
+        sh, sm = get_hm(m.start_time, m.date.hour if m.date.hour >= 7 else 14)
+        eh, em = get_hm(m.end_time, sh + 1)
+        if not m.end_time:
+            # If no end_time stored, default to 1 hour (down from 1.5h bug)
+            eh, em = sh + 1, 0
+
         # Display name for user column 
         real_user = user_name_map.get(m.host_id, username)
         if client and client.owner_id and m.host_id != client.owner_id:
@@ -305,7 +310,7 @@ async def get_timetable(
             "title": title,
             "date": date_str(m.date),
             "user": real_user,
-            "sh": h, "sm": 0, "eh": h+1, "em": 30,
+            "sh": sh, "sm": sm, "eh": eh, "em": em,
             "loc": "Office/Online",
             "event_type": "MEETING",
             "status": m.status,

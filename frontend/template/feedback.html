@@ -186,6 +186,38 @@
             color: #047857;
         }
 
+        /* ── Gradient Top Borders ── */
+        .stat-card-premium {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card-premium::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            z-index: 10;
+        }
+
+        .border-gradient-indigo::before {
+            background: linear-gradient(90deg, #5850ec 0%, #a5b4fc 100%);
+        }
+
+        .border-gradient-amber::before {
+            background: linear-gradient(90deg, #f59e0b 0%, #fcd34d 100%);
+        }
+
+        .border-gradient-cyan::before {
+            background: linear-gradient(90deg, #06b6d4 0%, #67e8f9 100%);
+        }
+
+        .border-gradient-emerald::before {
+            background: linear-gradient(90deg, #059669 0%, #6ee7b7 100%);
+        }
+
         /* Modal Refinement - QR Position & Size */
         .modal-premium {
             border-radius: 20px;
@@ -313,7 +345,6 @@
             font-weight: 700;
             font-size: 0.75rem;
             color: #ffffff;
-            background-color: #ef4444;
         }
     </style>
 </head>
@@ -340,7 +371,7 @@
                 <!-- KPI Stats Section -->
                 <div class="row g-4 mb-4" id="stats-container">
                     <div class="col-md-3">
-                        <div class="stat-card-premium">
+                        <div class="stat-card-premium border-gradient-indigo">
                             <div class="stat-icon-circle theme-indigo-solid">
                                 <i class="bi bi-chat-left-quote-fill"></i>
                             </div>
@@ -351,7 +382,7 @@
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="stat-card-premium">
+                        <div class="stat-card-premium border-gradient-amber">
                             <div class="stat-icon-circle theme-amber-solid">
                                 <i class="bi bi-star-fill"></i>
                             </div>
@@ -362,7 +393,7 @@
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="stat-card-premium">
+                        <div class="stat-card-premium border-gradient-cyan">
                             <div class="stat-icon-circle theme-cyan-solid">
                                 <i class="bi bi-person-fill-check"></i>
                             </div>
@@ -373,7 +404,7 @@
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="stat-card-premium">
+                        <div class="stat-card-premium border-gradient-emerald">
                             <div class="stat-icon-circle theme-emerald-solid">
                                 <i class="bi bi-emoji-smile-fill"></i>
                             </div>
@@ -664,27 +695,25 @@
             }
 
             document.getElementById('record-count').textContent = filtered.length;
-            const container = document.getElementById('feedback-table');
-            if (!container) return;
 
-            if (filtered.length === 0) {
-                container.innerHTML = `<tr><td colspan="6" class="text-center py-5 text-muted">No feedback records found.</td></tr>`;
-                return;
-            }
-
-            // High-reliability fragmentation rendering with per-record error isolation
-            const fragment = document.createDocumentFragment();
-            filtered.forEach((f, index) => {
-                try {
-                    const tr = document.createElement('tr');
-                    tr.className = 'feedback-row';
-
+            renderPagination({
+                data: filtered,
+                tbodyId: 'feedback-table',
+                paginationId: 'feedback-pagination',
+                emptyMsg: '<tr><td colspan="6" class="text-center py-5 text-muted">No feedback records found.</td></tr>',
+                renderRow: (f) => {
                     // Data Normalization with fallbacks
                     const agentName = f.agent_name || 'System';
                     const initials = (agentName || '?').split(' ').filter(p => !!p).map(n => n[0]).join('').toUpperCase().substring(0, 2) || '?';
                     const ratingVal = parseFloat(f.product_rating || f.rating) || 0;
                     const pRating = Math.max(0, Math.min(5, Math.round(ratingVal)));
+
                     const score = (parseFloat(f.agent_score) || 0).toFixed(1);
+                    const scoreNum = parseFloat(score);
+                    let scoreColor = '#ef4444'; // default red
+                    if (scoreNum >= 9) scoreColor = '#22c55e'; // green
+                    else if (scoreNum >= 7) scoreColor = '#eab308'; // yellow
+                    else if (scoreNum >= 4) scoreColor = '#f97316'; // orange
 
                     let dateStr = '—';
                     if (f.created_at) {
@@ -693,49 +722,36 @@
                             if (!isNaN(d.getTime())) {
                                 dateStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
                             }
-                        } catch (dateErr) { console.warn("Date parse error for record:", index, dateErr); }
+                        } catch (dateErr) { console.warn("Date parse error", dateErr); }
                     }
 
-                    tr.innerHTML = `
-                        <td>
-                            <div class="fw-bold text-dark small mb-0">${f.client_name || 'Guest'}</div>
-                            <div class="text-muted x-small">${f.shop_name ? f.shop_name + ' • ' : ''}${f.product || 'General'}</div>
-                            <div class="text-muted x-small mt-1">${f.mobile || ''}</div>
-                        </td>
-                        <td>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="agent-initial-circle">${initials}</div>
-                                <div>
-                                    <div class="fw-bold text-dark x-small">${agentName}</div>
-                                    <div class="text-muted x-small">${f.agent_role || 'Agent'}</div>
+                    return `
+                        <tr class="feedback-row">
+                            <td>
+                                <div class="fw-bold text-dark small mb-0">${f.client_name || 'Guest'}</div>
+                                <div class="text-muted x-small">${f.shop_name ? f.shop_name + ' • ' : ''}${f.product || 'General'}</div>
+                                <div class="text-muted x-small mt-1">${f.mobile || ''}</div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="agent-initial-circle">${initials}</div>
+                                    <div>
+                                        <div class="fw-bold text-dark x-small">${agentName}</div>
+                                        <div class="text-muted x-small">${f.agent_role || 'Agent'}</div>
+                                    </div>
                                 </div>
-                            </div>
-                        </td>
-                        <td><div class="text-warning small">${'★'.repeat(pRating)}${'☆'.repeat(5 - pRating)}</div></td>
-                        <td><div class="score-badge-p">${score}</div></td>
-                        <td style="max-width: 250px;"><div class="text-muted x-small text-truncate" title="${f.comments || ''}">${f.comments || '—'}</div></td>
-                        <td class="text-end">
-                            <div class="fw-bold text-dark x-small mb-1">${dateStr}</div>
-                            <button class="btn btn-link btn-sm text-danger p-0" onclick="confirmDelete('${f.id}')"><i class="bi bi-trash3-fill"></i></button>
-                        </td>
+                            </td>
+                            <td><div class="text-warning small">${'★'.repeat(pRating)}${'☆'.repeat(5 - pRating)}</div></td>
+                            <td><div class="score-badge-p" style="background-color: ${scoreColor};">${score}</div></td>
+                            <td style="max-width: 250px;"><div class="text-muted x-small text-truncate" title="${f.comments || ''}">${f.comments || '—'}</div></td>
+                            <td class="text-end">
+                                <div class="fw-bold text-dark x-small mb-1">${dateStr}</div>
+                                <button class="btn btn-link btn-sm text-danger p-0" onclick="confirmDelete('${f.id}')"><i class="bi bi-trash3-fill"></i></button>
+                            </td>
+                        </tr>
                     `;
-                    fragment.appendChild(tr);
-                } catch (rowErr) {
-                    console.error("Critical error rendering row:", index, rowErr);
-                    // Add a placeholder row so the user knows something is there but broken
-                    const errorTr = document.createElement('tr');
-                    errorTr.innerHTML = `<td colspan="6" class="text-center py-2 table-danger x-small text-muted italic">Error displaying record #${index + 1}</td>`;
-                    fragment.appendChild(errorTr);
                 }
             });
-
-            container.innerHTML = '';
-            container.appendChild(fragment);
-
-            // Metadata Indicator removed (DATA-SAFE MODE cleanup)
-
-            const pg = document.getElementById('feedback-pagination');
-            if (pg) pg.innerHTML = '';
         };
 
         let deleteTargetId = null;
