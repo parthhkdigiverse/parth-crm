@@ -39,6 +39,13 @@ class LeaveRecord(Document):
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     is_deleted: bool = False
 
+    @field_validator("start_date", "end_date", mode="before")
+    @classmethod
+    def _coerce_datetime_to_date(cls, v):
+        if hasattr(v, "date"):
+            return v.date()
+        return v
+
     class Settings:
         name = "srm_leave_records"
 
@@ -48,13 +55,20 @@ class SalarySlip(Document):
     generated_at: date = Field(default_factory=lambda: datetime.now(UTC).date())
 
     base_salary: float
-    paid_leaves: int = 0
-    unpaid_leaves: int = 0
+    paid_leaves: float = 0.0
+    unpaid_leaves: float = 0.0
     deduction_amount: float = 0.0
-    incentive_amount: float = 0.0
-    slab_bonus: float = 0.0
+    
+    prev_month_incentive: float = 0.0
+    prev_month_slab: float = 0.0
+    curr_month_incentive: float = 0.0
+    curr_month_slab: float = 0.0
+    
+    incentive_amount: float = 0.0 # total
+    slab_bonus: float = 0.0 # total
     total_earnings: float = 0.0
     final_salary: float
+    incentive_breakdown: Optional[dict] = None  # e.g. {"2026-04": 2000.0, "2026-05": 5000.0}
 
     # Workflow: DRAFT → CONFIRMED
     status: str = "CONFIRMED"

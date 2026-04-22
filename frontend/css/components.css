@@ -1,11 +1,8 @@
 /* frontend/css/components.css */
-ï»¿
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   SRM AI SETU â€” Component Styles
-   Unique UI patterns not covered by Bootstrap or theme.css
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* SRM AI SETU â€” Component Styles
+   Unique UI patterns not covered by Bootstrap or theme.css */
 
-/* â”€â”€ Badge Color Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* Badge Color Helpers  */
 .badge-green-light {
     background-color: var(--success-light);
     color: var(--success-text);
@@ -108,6 +105,69 @@
     letter-spacing: 0.06em;
     margin-bottom: 12px; /* Add margin below label */
 }
+
+/* ── Premium Stat Cards (with Top Gradient) ── */
+.card-premium-stat {
+    position: relative !important;
+    padding-top: 1.5rem !important; /* Space for the top bar */
+    overflow: hidden !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.card-premium-stat::before {
+    content: "" !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    height: 4px !important;
+    z-index: 1 !important;
+}
+
+/* Gradient Variants */
+.card-premium-stat.variant-warning::before {
+    background: linear-gradient(90deg, #9a3412, #f97316) !important;
+}
+
+.card-premium-stat.variant-success::before {
+    background: linear-gradient(90deg, #065f46, #10b981) !important;
+}
+
+.card-premium-stat.variant-danger::before {
+    background: linear-gradient(90deg, #7f1d1d, #ef4444) !important;
+}
+
+.card-premium-stat.variant-primary::before {
+    background: linear-gradient(90deg, #1e3a8a, #2563eb) !important;
+}
+
+
+/* Mobile optimizations for stat cards */
+@media (max-width: 767.98px) {
+    .card-premium-stat {
+        padding: 1rem !important;
+        padding-top: 1.15rem !important;
+    }
+
+    .card-premium-stat .rounded-circle {
+        width: 32px !important;
+        height: 32px !important;
+    }
+
+    .card-premium-stat .bi {
+        font-size: 0.9rem !important;
+    }
+
+    .card-premium-stat .fw-bold {
+        font-size: 1.25rem !important;
+    }
+
+    .card-premium-stat .small {
+        font-size: 0.65rem !important;
+        letter-spacing: 0.2px !important;
+    }
+}
+
 
 /* ── Table Section Header ── */
 .table-section-header {
@@ -257,8 +317,14 @@
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.22s ease, visibility 0.22s ease;
-    padding-left: var(--current-sb-width, 0);
-    /* Offset centering to account for sidebar */
+    padding: 16px;
+    padding-left: calc(var(--current-sb-width, 0px) + 16px);
+}
+
+@media (max-width: 991.98px) {
+    .srm-overlay {
+        padding-left: 16px !important;
+    }
 }
 
 .srm-overlay.show {

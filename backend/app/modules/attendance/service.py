@@ -483,9 +483,16 @@ class AttendanceService:
             LeaveRecord.is_deleted == False
         ).to_list()
 
+        IST = timezone(timedelta(hours=5, minutes=30))
         att_map = {}
         for a in all_att:
-            d = AttendanceService._to_date(a.date)
+            # Use IST date so evening punches (>18:30 IST = next UTC day) don't
+            # create a duplicate key vs the same calendar day in IST.
+            raw = a.date
+            if isinstance(raw, datetime):
+                d = raw.astimezone(IST).date()
+            else:
+                d = raw
             # Normalize ID to string for reliable dict lookup
             uid = str(a.user_id)
             # Use model_dump for compute_daily_summary compatibility
@@ -543,6 +550,15 @@ class AttendanceService:
                 })
                 total_hours += summary["total_hours"]
             day += timedelta(days=1)
+
+        # Safety dedup: keep one row per (user_id, date) — last write wins
+        seen: dict = {}
+        for rec in records:
+            key = (str(rec["user_id"]), str(rec["date"]))
+            seen[key] = rec
+        records = list(seen.values())
+        # Re-compute total_hours from deduped records
+        total_hours = sum(r["total_hours"] for r in records)
 
         return {
             "start_date":  start_date,

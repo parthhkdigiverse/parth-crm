@@ -1432,7 +1432,7 @@
                 const countBadge = document.getElementById('self-attendance-count-badge');
                 if (countBadge) countBadge.textContent = `${records.length} Records`;
                 const hoursBadge = document.getElementById('self-attendance-total-hours');
-                if (hoursBadge) hoursBadge.textContent = `${(data.total_hours || 0).toFixed(2)} HRS`;
+                if (hoursBadge) hoursBadge.textContent = `${fmtHoursHMS(data.total_hours || 0)}`;
 
                 renderPagination({
                     data: records,
@@ -1450,7 +1450,7 @@
                                 <span class="px-2 py-1 rounded" style="background:var(--bg-app);font-size:0.75rem;"><i class="bi bi-box-arrow-right text-danger me-1"></i>${formatTimeCell(r.last_punch_out)}</span>
                             </td>
                             <td>
-                                <span class="fw-bold" style="font-family:'JetBrains Mono', monospace;color:var(--primary);">${(r.total_hours || 0).toFixed(2)}</span>
+                                <span class="fw-bold" style="font-family:'JetBrains Mono', monospace;color:var(--primary);">${fmtHoursHMS(r.total_hours)}</span>
                             </td>
                             <td>${statusBadge(r.day_status)}</td>
                             <td class="d-mobile-none">${leaveBadge(r.leave_status)}</td>
@@ -1477,6 +1477,15 @@
             const dt = new Date(value);
             if (Number.isNaN(dt.getTime())) return '--';
             return dt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // Converts decimal hours (e.g. 1.22) → "HH:MM:SS"
+        function fmtHoursHMS(decimalHours) {
+            const totalSec = Math.round((decimalHours || 0) * 3600);
+            const h = Math.floor(totalSec / 3600);
+            const m = Math.floor((totalSec % 3600) / 60);
+            const s = totalSec % 60;
+            return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
         }
 
         function statusBadge(status, isPunchedIn = false, isToday = false) {
@@ -1520,45 +1529,109 @@
         }
 
         function leaveBadge(status) {
-            if (!status || status === '--' || status === 'None') return '<span class="text-muted opacity-50"—</span>';
+            if (!status || status === '--' || status === 'None') return '<span class="text-muted opacity-50">—</span>';
             const colors = {
-                'APPROVED': 'background:rgba(16,185,129,0.1);color:#1b4332;border:1px solid rgba(16,185,129,0.2);',
-                'PENDING': 'background:rgba(245,158,11,0.1);color:#92400e;border:1px solid rgba(245,158,11,0.2);',
-                'REJECTED': 'background:rgba(239,68,68,0.1);color:#7f1d1d;border:1px solid rgba(239,68,68,0.2);'
+                'APPROVED': 'background:rgba(16,185,129,0.18);color:#10b981;border:1px solid rgba(16,185,129,0.45);',
+                'PENDING':  'background:rgba(245,158,11,0.18);color:#f59e0b;border:1px solid rgba(245,158,11,0.45);',
+                'REJECTED': 'background:rgba(239,68,68,0.18);color:#ef4444;border:1px solid rgba(239,68,68,0.45);'
             };
             const s = (status || '').toUpperCase();
-            const style = colors[s] || 'background:rgba(107,114,128,0.1);color:#374151;';
-            return `<span class="badge" style="font-size:0.65rem;font-weight:700;padding:2px 8px;border-radius:6px;${style}">${s}</span>`;
+            const style = colors[s] || 'background:rgba(107,114,128,0.18);color:#9ca3af;border:1px solid rgba(107,114,128,0.35);';
+            return `<span class="badge" style="font-size:0.65rem;font-weight:700;padding:3px 9px;border-radius:6px;letter-spacing:0.04em;${style}">${s}</span>`;
         }
 
         async function viewPunchLogs(dateStr, userId = null) {
             const modalEl = document.getElementById('punchDetailModal');
             if (!modalEl) return;
             const modal = new bootstrap.Modal(modalEl);
-            const tbody = document.getElementById('punch-detail-tbody');
+            const container = document.getElementById('punch-detail-body');
             const titleDate = document.getElementById('punch-detail-date');
 
-            titleDate.textContent = new Date(dateStr).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4"><span class="spinner-border spinner-border-sm me-2"></span>Loading logs...</td></tr>';
+            // Parse date string safely in IST (add T00:00:00 so it's treated as local, not UTC midnight shifted)
+            const dateObj = new Date(dateStr + 'T00:00:00');
+            titleDate.textContent = dateObj.toLocaleDateString('en-IN', {
+                weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+            });
+            container.innerHTML = `<div class="text-center py-4"><span class="spinner-border spinner-border-sm me-2"></span>Loading...</div>`;
             modal.show();
 
             try {
                 const logs = await ApiClient.getAttendanceLogs(userId, dateStr);
                 if (!logs || !logs.length) {
-                    tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-muted">No punch logs found for this day.</td></tr>';
+                    container.innerHTML = `<div class="text-center py-4 text-muted"><i class="bi bi-calendar-x me-2"></i>No punch logs found for this day.</div>`;
                     return;
                 }
-                tbody.innerHTML = logs.map((l, idx) => `
-                    <tr>
-                        <td class="ps-3 fw-medium">${idx + 1}</td>
-                        <td>${formatTimeCell(l.punch_in)}</td>
-                        <td>${formatTimeCell(l.punch_out)}</td>
-                        <td class="pe-3 text-end fw-semibold text-primary">${(l.total_hours || 0).toFixed(2)} hrs</td>
-                    </tr>
-                `).join('');
+
+                // Helpers
+                const fmtTime = (v) => v ? new Date(v).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '--';
+                const fmtMins = (m) => m > 0 ? `${Math.floor(m / 60)}H ${Math.round(m % 60)}Min` : '--';
+                const fmtHrs  = (m) => { const h = Math.floor(m / 60), mn = Math.round(m % 60); return `${h}H ${mn}Min`; };
+
+                // Compute summary from sessions
+                const sessions  = logs.filter(l => l.punch_in);
+                const firstIn   = sessions[0]?.punch_in;
+                const lastOut   = sessions.at(-1)?.punch_out;
+                const totalMins = sessions.reduce((s, l) => s + (l.total_hours || 0) * 60, 0);
+
+                // Break = gap between consecutive sessions
+                let breakMins = 0;
+                for (let i = 1; i < sessions.length; i++) {
+                    const prevOut = sessions[i - 1].punch_out;
+                    const currIn  = sessions[i].punch_in;
+                    if (prevOut && currIn) {
+                        breakMins += Math.max(0, (new Date(currIn) - new Date(prevOut)) / 60000);
+                    }
+                }
+                const netMins = Math.max(0, totalMins - breakMins);
+
+                // Session rows
+                const sessionRows = sessions.map((l, i) => {
+                    const dur = (l.total_hours || 0) * 60;
+                    const outCell = l.punch_out
+                        ? `<span style="color:#ef4444;font-weight:600;">${fmtTime(l.punch_out)}</span>`
+                        : `<span class="badge" style="background:rgba(245,158,11,0.15);color:#d97706;font-size:0.65rem;">Active</span>`;
+                    return `<tr style="font-size:0.82rem;">
+                        <td class="ps-3 text-muted">${i + 1}</td>
+                        <td><span style="color:#10b981;font-weight:600;">${fmtTime(l.punch_in)}</span></td>
+                        <td>${outCell}</td>
+                        <td class="pe-3 text-end fw-semibold" style="color:var(--primary);">${dur > 0 ? fmtHrs(dur) : '--'}</td>
+                    </tr>`;
+                }).join('');
+
+                // Summary stat cards
+                const statsData = [
+                    { label: 'Check In',    value: `<span style="color:#10b981;">${fmtTime(firstIn)}</span>` },
+                    { label: 'Check Out',   value: lastOut ? `<span style="color:#ef4444;">${fmtTime(lastOut)}</span>` : `<span style="color:#d97706;">Active</span>` },
+                    { label: 'Total Hours', value: `<span style="color:var(--primary);">${fmtHrs(totalMins)}</span>` },
+                    { label: 'Break',       value: `<span style="color:#6b7280;">${fmtMins(breakMins)}</span>` },
+                    { label: 'Sessions',    value: `<span style="color:var(--primary);">${sessions.length}</span>` },
+                    { label: 'Net Work',    value: `<span style="color:#10b981;">${fmtHrs(netMins)}</span>` },
+                ];
+                const statsHtml = statsData.map(s => `
+                    <div style="background:var(--bg-app);border-radius:10px;padding:10px 14px;border:1px solid var(--border);">
+                        <div style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);font-weight:700;margin-bottom:5px;">${s.label}</div>
+                        <div style="font-size:0.95rem;font-weight:800;">${s.value}</div>
+                    </div>`).join('');
+
+                container.innerHTML = `
+                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;">${statsHtml}</div>
+                    <div style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-muted);font-weight:700;margin-bottom:8px;">Individual Sessions</div>
+                    <div class="table-responsive rounded-3" style="border:1px solid var(--border);">
+                        <table class="table table-sm mb-0 align-middle">
+                            <thead style="background:var(--bg-app);">
+                                <tr>
+                                    <th class="ps-3 py-2" style="font-size:0.68rem;letter-spacing:0.05em;color:var(--text-muted);font-weight:700;">#</th>
+                                    <th class="py-2" style="font-size:0.68rem;letter-spacing:0.05em;color:var(--text-muted);font-weight:700;">PUNCH IN</th>
+                                    <th class="py-2" style="font-size:0.68rem;letter-spacing:0.05em;color:var(--text-muted);font-weight:700;">PUNCH OUT</th>
+                                    <th class="pe-3 py-2 text-end" style="font-size:0.68rem;letter-spacing:0.05em;color:var(--text-muted);font-weight:700;">DURATION</th>
+                                </tr>
+                            </thead>
+                            <tbody style="font-size:0.85rem;">${sessionRows}</tbody>
+                        </table>
+                    </div>`;
             } catch (err) {
                 console.error(err);
-                tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-danger">Failed to load detailed logs.</td></tr>';
+                container.innerHTML = `<div class="text-center py-4 text-danger"><i class="bi bi-exclamation-triangle me-2"></i>Failed to load punch logs.</div>`;
             }
         }
 
@@ -1593,7 +1666,7 @@
                 const countBadge = document.getElementById('attendance-count-badge');
                 if (countBadge) countBadge.textContent = `${records.length} Records`;
                 const hoursBadge = document.getElementById('attendance-total-hours');
-                if (hoursBadge) hoursBadge.textContent = `${filteredTotalHours.toFixed(2)} HRS`;
+                if (hoursBadge) hoursBadge.textContent = `${fmtHoursHMS(filteredTotalHours)}`;
 
                 renderPagination({
                     data: records,
@@ -1612,7 +1685,7 @@
                                 <span class="px-2 py-1 rounded" style="background:var(--bg-app);font-size:0.75rem;"><i class="bi bi-box-arrow-right text-danger me-1"></i>${formatTimeCell(r.last_punch_out)}</span>
                             </td>
                             <td>
-                                <span class="fw-bold" style="font-family:'JetBrains Mono', monospace;color:var(--primary);">${(r.total_hours || 0).toFixed(2)}</span>
+                                <span class="fw-bold" style="font-family:'JetBrains Mono', monospace;color:var(--primary);">${fmtHoursHMS(r.total_hours)}</span>
                             </td>
                             <td>${statusBadge(r.day_status, r.is_punched_in, new Date(r.date).toDateString() === new Date().toDateString())}</td>
                             <td class="d-mobile-none">${leaveBadge(r.leave_status)}</td>
@@ -1679,7 +1752,11 @@
             }
         }
 
-        async function deleteEmployee(id) {
+        window.deleteEmployee = async function(id) {
+            if (window.__accessDenied) {
+                showToast('You do not have permission to delete employees', 'error');
+                return;
+            }
             if (!confirm('Are you sure you want to delete this employee? This action usually cannot be undone.')) return;
             try {
                 await ApiClient.deleteEmployee(id);
@@ -1689,7 +1766,7 @@
                 console.error("Delete failed", err);
                 showToast(err.data?.detail || err.message || 'Failed to delete employee', 'error');
             }
-        }
+        };
 
         function toggleAllEmployees(master) {
             document.querySelectorAll('.emp-checkbox').forEach(cb => cb.checked = master.checked);
@@ -1746,7 +1823,7 @@
                         <td class="ps-3" style="white-space:nowrap;font-weight:600;"><i class="bi bi-calendar3 me-2 text-primary opacity-50"></i>${day}</td>
                         <td><span class="px-2 py-1 rounded" style="background:var(--bg-app);font-size:0.75rem;"><i class="bi bi-box-arrow-in-right text-success me-1"></i>${formatTimeCell(r.first_punch_in)}</span></td>
                         <td><span class="px-2 py-1 rounded" style="background:var(--bg-app);font-size:0.75rem;"><i class="bi bi-box-arrow-right text-danger me-1"></i>${formatTimeCell(r.last_punch_out)}</span></td>
-                        <td><span class="fw-bold" style="font-family:'JetBrains Mono', monospace;color:var(--primary);">${(r.total_hours || 0).toFixed(2)}</span></td>
+                        <td><span class="fw-bold" style="font-family:'JetBrains Mono', monospace;color:var(--primary);">${fmtHoursHMS(r.total_hours)}</span></td>
                         <td>${statusBadge(r.day_status)}</td>
                         <td class="pe-3 text-end">${leaveBadge(r.leave_status)}</td>
                     </tr>`;
@@ -1834,42 +1911,21 @@
     </script>
     <!-- Punch Detail Modal -->
     <div class="modal fade" id="punchDetailModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg" style="border-radius:16px;">
-                <div class="modal-header border-bottom-0 pb-0">
+                <div class="modal-header border-bottom-0 pb-2">
                     <div>
-                        <h5 class="modal-title fw-bold text-dark">Daily Punch Logs</h5>
+                        <h5 class="modal-title fw-bold">Daily Attendance</h5>
                         <p class="text-muted small mb-0" id="punch-detail-date">--</p>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body p-4">
-                    <div class="table-responsive rounded-3 border">
-                        <table class="table table-hover table-sm mb-0 align-middle">
-                            <thead class="bg-light">
-                                <tr style="border-bottom: 1.5px solid var(--border);">
-                                    <th class="ps-3 py-2 text-uppercase"
-                                        style="font-size:0.72rem;letter-spacing:0.04em;color:var(--text-3);">#</th>
-                                    <th class="py-2 text-uppercase"
-                                        style="font-size:0.72rem;letter-spacing:0.04em;color:var(--text-3);">PUNCH IN
-                                    </th>
-                                    <th class="py-2 text-uppercase"
-                                        style="font-size:0.72rem;letter-spacing:0.04em;color:var(--text-3);">PUNCH OUT
-                                    </th>
-                                    <th class="pe-3 py-2 text-end text-uppercase"
-                                        style="font-size:0.72rem;letter-spacing:0.04em;color:var(--text-3);">DURATION
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody id="punch-detail-tbody" style="font-size:0.85rem;">
-                                <!-- Populated via JS -->
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="modal-body px-4 pb-2" id="punch-detail-body">
+                    <!-- Filled dynamically by viewPunchLogs() -->
                 </div>
                 <div class="modal-footer border-top-0 pt-0">
-                    <button type="button" class="btn btn-primary fw-semibold w-100" data-bs-dismiss="modal"
-                        style="border-radius:10px;">Done</button>
+                    <button type="button" class="btn btn-primary fw-semibold w-100"
+                        data-bs-dismiss="modal" style="border-radius:10px;">Done</button>
                 </div>
             </div>
         </div>

@@ -100,75 +100,61 @@
                 </div>
 
                 <!-- Summary Cards (admin view) -->
-                <div id="leave-summary-bar" class="row g-3 mb-4" style="display:none;">
-                    <div class="col-6 col-md-3">
-                        <div class="grid-card p-3 border-gradient-warning">
-                            <div class="d-flex align-items-center gap-3">
-                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                                    style="width:40px;height:40px;background:var(--warning-light);">
-                                    <i class="bi bi-hourglass-split" style="color:var(--warning-text);"></i>
+                <div id="leave-summary-bar" class="row g-2 g-md-3 mb-4" style="display:none;">
+                    <div class="col-6 col-xl-3">
+                        <div class="kpi-card h-100">
+                            <div class="d-flex align-items-center gap-3 w-100 kpi-inner-mobile">
+                                <div class="kpi-icon-wrapper icon-yellow" style="flex-shrink:0;">
+                                    <i class="bi bi-hourglass-split"></i>
                                 </div>
-                                <div>
-                                    <div class="text-muted small fw-semibold mb-0"
-                                        style="font-size:0.78rem;letter-spacing:0.3px;">PENDING</div>
-                                    <div class="fw-bold"
-                                        style="color:var(--warning-text);font-size:1.5rem;line-height:1;"
-                                        id="sum-pending">0</div>
+                                <div class="flex-grow-1 kpi-text-container">
+                                    <div class="kpi-title">Pending</div>
+                                    <div class="kpi-value" id="sum-pending" style="color:var(--warning-text);">0</div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-6 col-md-3">
-                        <div class="grid-card p-3 border-gradient-success">
-                            <div class="d-flex align-items-center gap-3">
-                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                                    style="width:40px;height:40px;background:var(--success-light);">
-                                    <i class="bi bi-check-circle" style="color:var(--success-text);"></i>
+                    <div class="col-6 col-xl-3">
+                        <div class="kpi-card h-100">
+                            <div class="d-flex align-items-center gap-3 w-100 kpi-inner-mobile">
+                                <div class="kpi-icon-wrapper icon-green" style="flex-shrink:0;">
+                                    <i class="bi bi-check-circle"></i>
                                 </div>
-                                <div>
-                                    <div class="text-muted small fw-semibold mb-0"
-                                        style="font-size:0.78rem;letter-spacing:0.3px;">APPROVED</div>
-                                    <div class="fw-bold"
-                                        style="color:var(--success-text);font-size:1.5rem;line-height:1;"
-                                        id="sum-approved">0</div>
+                                <div class="flex-grow-1 kpi-text-container">
+                                    <div class="kpi-title">Approved</div>
+                                    <div class="kpi-value" id="sum-approved" style="color:var(--success-text);">0</div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-6 col-md-3">
-                        <div class="grid-card p-3 border-gradient-danger">
-                            <div class="d-flex align-items-center gap-3">
-                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                                    style="width:40px;height:40px;background:var(--danger-light);">
-                                    <i class="bi bi-x-circle" style="color:var(--danger-text);"></i>
+                    <div class="col-6 col-xl-3">
+                        <div class="kpi-card h-100">
+                            <div class="d-flex align-items-center gap-3 w-100 kpi-inner-mobile">
+                                <div class="kpi-icon-wrapper icon-red" style="flex-shrink:0;">
+                                    <i class="bi bi-x-circle"></i>
                                 </div>
-                                <div>
-                                    <div class="text-muted small fw-semibold mb-0"
-                                        style="font-size:0.78rem;letter-spacing:0.3px;">REJECTED</div>
-                                    <div class="fw-bold"
-                                        style="color:var(--danger-text);font-size:1.5rem;line-height:1;"
-                                        id="sum-rejected">0</div>
+                                <div class="flex-grow-1 kpi-text-container">
+                                    <div class="kpi-title">Rejected</div>
+                                    <div class="kpi-value" id="sum-rejected" style="color:var(--danger-text);">0</div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-6 col-md-3">
-                        <div class="grid-card p-3 border-gradient-primary">
-                            <div class="d-flex align-items-center gap-3">
-                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                                    style="width:40px;height:40px;background:var(--primary-light);">
-                                    <i class="bi bi-calendar-check" style="color:var(--primary);"></i>
+                    <div class="col-6 col-xl-3">
+                        <div class="kpi-card h-100">
+                            <div class="d-flex align-items-center gap-3 w-100 kpi-inner-mobile">
+                                <div class="kpi-icon-wrapper icon-blue" style="flex-shrink:0;">
+                                    <i class="bi bi-calendar-check"></i>
                                 </div>
-                                <div>
-                                    <div class="text-muted small fw-semibold mb-0"
-                                        style="font-size:0.78rem;letter-spacing:0.3px;">TOTAL DAYS</div>
-                                    <div class="fw-bold" style="color:var(--primary);font-size:1.5rem;line-height:1;"
-                                        id="sum-total">0</div>
+                                <div class="flex-grow-1 kpi-text-container">
+                                    <div class="kpi-title">Total Days</div>
+                                    <div class="kpi-value" id="sum-total" style="color:var(--primary);">0</div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+
 
                 <div id="filter-wrapper" style="display:none;" class="mb-2"></div>
 
@@ -176,17 +162,23 @@
 
                 <!-- Leaves Table -->
                 <div class="grid-card">
-                    <div class="d-flex justify-content-between align-items-center p-3 border-bottom position-relative">
-                        <div class="d-flex align-items-center gap-3">
-                            <h6 class="fw-bold mb-0" style="color:var(--text-main);"><i class="bi bi-list-check me-2 text-primary"></i>Leave Applications</h6>
+                    <div
+                        class="d-flex justify-content-between align-items-center flex-wrap gap-3 p-3 border-bottom position-relative">
+                        <div class="d-flex align-items-center flex-wrap gap-3">
+                            <h6 class="fw-bold mb-0" style="color:var(--text-main);"><i
+                                    class="bi bi-list-check me-2 text-primary"></i>Leave Applications</h6>
                             <!-- Bulk Actions Bar (Admin Only) -->
-                            <div id="bulk-actions-bar" class="d-none animate__animated animate__fadeIn d-flex align-items-center gap-2 px-3 py-1 bg-primary-soft border border-primary rounded-pill shadow-sm" style="transition: all 0.3s ease;">
+                            <div id="bulk-actions-bar"
+                                class="d-none animate__animated animate__fadeIn d-flex align-items-center flex-wrap gap-2 px-3 py-1 bg-primary-soft border border-primary rounded-pill shadow-sm"
+                                style="transition: all 0.3s ease;">
                                 <span class="small fw-bold text-primary" id="selected-count">0 Selected</span>
                                 <div class="vr mx-1" style="height: 15px; opacity: 0.15;"></div>
-                                <button class="btn btn-sm btn-link text-danger p-0 fw-bold text-decoration-none" onclick="deleteSelectedLeaves()" style="font-size: 0.75rem;">
+                                <button class="btn btn-sm btn-link text-danger p-0 fw-bold text-decoration-none"
+                                    onclick="deleteSelectedLeaves()" style="font-size: 0.75rem;">
                                     <i class="bi bi-trash3 me-1"></i>Delete All
                                 </button>
-                                <button class="btn btn-sm btn-link text-muted p-0 ms-2" onclick="clearSelection()" title="Clear Selection">
+                                <button class="btn btn-sm btn-link text-muted p-0 ms-2" onclick="clearSelection()"
+                                    title="Clear Selection">
                                     <i class="bi bi-x-circle fs-6"></i>
                                 </button>
                             </div>
@@ -199,16 +191,23 @@
                                 <tr>
                                     <th class="ps-3" style="width: 36px;" id="th-bulk-select">
                                         <div class="form-check m-0">
-                                            <input class="form-check-input cursor-pointer" type="checkbox" id="master-checkbox" onchange="toggleSelectAll(this.checked)">
+                                            <input class="form-check-input cursor-pointer" type="checkbox"
+                                                id="master-checkbox" onchange="toggleSelectAll(this.checked)">
                                         </div>
                                     </th>
-                                    <th class="ps-2 text-uppercase small fw-bold text-muted" style="min-width: 120px;">Employee</th>
-                                    <th class="text-uppercase small fw-bold text-muted" style="min-width: 80px;">Type</th>
-                                    <th class="text-uppercase small fw-bold text-muted" style="min-width: 140px;">Period</th>
-                                    <th class="text-uppercase small fw-bold text-muted" style="min-width: 55px;">Days</th>
+                                    <th class="ps-2 text-uppercase small fw-bold text-muted" style="min-width: 120px;">
+                                        Employee</th>
+                                    <th class="text-uppercase small fw-bold text-muted" style="min-width: 80px;">Type
+                                    </th>
+                                    <th class="text-uppercase small fw-bold text-muted" style="min-width: 140px;">Period
+                                    </th>
+                                    <th class="text-uppercase small fw-bold text-muted" style="min-width: 55px;">Days
+                                    </th>
                                     <th class="text-uppercase small fw-bold text-muted">Reason & Remarks</th>
-                                    <th class="text-uppercase small fw-bold text-muted" style="min-width: 110px;">Status</th>
-                                    <th class="pe-4 text-end text-uppercase small fw-bold text-muted" style="min-width: 130px;">Actions</th>
+                                    <th class="text-uppercase small fw-bold text-muted" style="min-width: 110px;">Status
+                                    </th>
+                                    <th class="pe-4 text-end text-uppercase small fw-bold text-muted"
+                                        style="min-width: 130px;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="leaves-tbody">
@@ -229,10 +228,13 @@
 
     <!-- Apply Leave Modal -->
     <div class="srm-overlay" id="leaveModal">
-        <div class="srm-box d-flex flex-column" style="max-width:560px; max-height:90vh; box-shadow: 0 30px 60px -12px rgba(0,0,0,0.3);">
-            <div class="px-4 py-3 border-bottom d-flex justify-content-between align-items-center" style="flex-shrink:0;">
+        <div class="srm-box d-flex flex-column mx-3"
+            style="max-width:560px; width:calc(100% - 2rem); max-height:90vh; box-shadow: 0 30px 60px -12px rgba(0,0,0,0.3);">
+            <div class="px-4 py-3 border-bottom d-flex justify-content-between align-items-center"
+                style="flex-shrink:0;">
                 <div class="d-flex align-items-center gap-3">
-                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-primary-soft text-primary" style="width:40px; height:40px;">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-primary-soft text-primary"
+                        style="width:40px; height:40px;">
                         <i class="bi bi-calendar-plus fs-5"></i>
                     </div>
                     <div>
@@ -242,20 +244,26 @@
                 </div>
                 <button class="btn-close" onclick="closeLeaveModal()"></button>
             </div>
-            
+
             <div class="px-4 py-3" style="overflow-y:auto;">
                 <div class="row g-3 mb-3">
                     <div class="col-sm-6">
-                        <label class="form-label fw-semibold small text-muted text-uppercase mb-1" style="letter-spacing: 0.5px;">From Date <span class="text-danger">*</span></label>
-                        <input type="date" id="l-start" class="form-control" style="border-radius: 8px; padding: 10px; border-color: var(--border);">
+                        <label class="form-label fw-semibold small text-muted text-uppercase mb-1"
+                            style="letter-spacing: 0.5px;">From Date <span class="text-danger">*</span></label>
+                        <input type="date" id="l-start" class="form-control"
+                            style="border-radius: 8px; padding: 10px; border-color: var(--border);">
                     </div>
                     <div class="col-sm-6">
-                        <label class="form-label fw-semibold small text-muted text-uppercase mb-1" style="letter-spacing: 0.5px;">To Date <span class="text-danger">*</span></label>
-                        <input type="date" id="l-end" class="form-control" style="border-radius: 8px; padding: 10px; border-color: var(--border);">
+                        <label class="form-label fw-semibold small text-muted text-uppercase mb-1"
+                            style="letter-spacing: 0.5px;">To Date <span class="text-danger">*</span></label>
+                        <input type="date" id="l-end" class="form-control"
+                            style="border-radius: 8px; padding: 10px; border-color: var(--border);">
                     </div>
                     <div class="col-12 mt-3">
-                        <label class="form-label fw-semibold small text-muted text-uppercase mb-1" style="letter-spacing: 0.5px;">Leave Type <span class="text-danger">*</span></label>
-                        <select id="l-type" class="form-select" style="border-radius: 8px; padding: 10px; border-color: var(--border);">
+                        <label class="form-label fw-semibold small text-muted text-uppercase mb-1"
+                            style="letter-spacing: 0.5px;">Leave Type <span class="text-danger">*</span></label>
+                        <select id="l-type" class="form-select"
+                            style="border-radius: 8px; padding: 10px; border-color: var(--border);">
                             <option value="ANNUAL">Annual Leave</option>
                             <option value="SICK">Sick Leave</option>
                             <option value="CASUAL" selected>Casual Leave</option>
@@ -264,39 +272,52 @@
                         </select>
                     </div>
                     <div class="col-12 mt-3">
-                        <label class="form-label fw-semibold small text-muted text-uppercase mb-1" style="letter-spacing: 0.5px;">Day Type <span class="text-danger">*</span></label>
+                        <label class="form-label fw-semibold small text-muted text-uppercase mb-1"
+                            style="letter-spacing: 0.5px;">Day Type <span class="text-danger">*</span></label>
                         <div class="row g-2">
                             <div class="col-6">
                                 <label class="d-flex align-items-center gap-2 cursor-pointer p-2 rounded"
-                                    id="dt-full-lbl" style="border: 1px solid var(--primary); background:var(--primary-soft); transition: all 0.2s ease;">
-                                    <input type="radio" name="day-type" id="dt-full" value="FULL" class="form-check-input m-0" checked>
-                                    <span class="fw-semibold small" style="color:var(--primary);" id="dt-full-text">Full Day</span>
+                                    id="dt-full-lbl"
+                                    style="border: 1px solid var(--primary); background:var(--primary-soft); transition: all 0.2s ease;">
+                                    <input type="radio" name="day-type" id="dt-full" value="FULL"
+                                        class="form-check-input m-0" checked>
+                                    <span class="fw-semibold small" style="color:var(--primary);" id="dt-full-text">Full
+                                        Day</span>
                                 </label>
                             </div>
                             <div class="col-6">
                                 <label class="d-flex align-items-center gap-2 cursor-pointer p-2 rounded"
-                                    id="dt-half-lbl" style="border: 1px solid var(--border); background:transparent; transition: all 0.2s ease;">
-                                    <input type="radio" name="day-type" id="dt-half" value="HALF" class="form-check-input m-0">
+                                    id="dt-half-lbl"
+                                    style="border: 1px solid var(--border); background:transparent; transition: all 0.2s ease;">
+                                    <input type="radio" name="day-type" id="dt-half" value="HALF"
+                                        class="form-check-input m-0">
                                     <span class="fw-semibold small text-muted" id="dt-half-text">Half Day</span>
                                 </label>
                             </div>
                         </div>
                     </div>
                     <div class="col-12 mt-3">
-                        <label class="form-label fw-semibold small text-muted text-uppercase mb-1" style="letter-spacing: 0.5px;">Reason <span class="text-danger">*</span></label>
+                        <label class="form-label fw-semibold small text-muted text-uppercase mb-1"
+                            style="letter-spacing: 0.5px;">Reason <span class="text-danger">*</span></label>
                         <textarea id="l-reason" class="form-control" rows="2"
-                            placeholder="Please describe your reason for leave..." required style="border-radius: 8px; padding: 12px; border-color: var(--border); resize: none;"></textarea>
-                        <div class="form-text text-muted mt-1" style="font-size:0.7rem;">Reason is mandatory. Provide a clear justification.</div>
+                            placeholder="Please describe your reason for leave..." required
+                            style="border-radius: 8px; padding: 12px; border-color: var(--border); resize: none;"></textarea>
+                        <div class="form-text text-muted mt-1" style="font-size:0.7rem;">Reason is mandatory. Provide a
+                            clear justification.</div>
                     </div>
                 </div>
 
                 <!-- Day count preview -->
                 <div id="leave-day-preview" class="mb-3 p-2 rounded text-center fw-semibold text-sm"
-                    style="display:none; background:var(--primary-soft); color:var(--primary); border: 1px dashed var(--primary); border-radius: 8px; font-size: 0.85rem;"></div>
+                    style="display:none; background:var(--primary-soft); color:var(--primary); border: 1px dashed var(--primary); border-radius: 8px; font-size: 0.85rem;">
+                </div>
 
                 <div class="d-flex justify-content-end gap-2 pt-3 border-top pb-1">
-                    <button class="btn btn-light px-4 border fw-semibold" style="border-radius: 10px;" onclick="closeLeaveModal()">Cancel</button>
-                    <button class="btn btn-primary px-4 fw-bold border-0" id="leave-submit-btn" style="border-radius: 10px; box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);" onclick="submitLeave()">Submit
+                    <button class="btn btn-light px-4 border fw-semibold" style="border-radius: 10px;"
+                        onclick="closeLeaveModal()">Cancel</button>
+                    <button class="btn btn-primary px-4 fw-bold border-0" id="leave-submit-btn"
+                        style="border-radius: 10px; box-shadow: 0 4px 12px rgba(var(--primary-rgb), 0.3);"
+                        onclick="submitLeave()">Submit
                         Request</button>
                 </div>
             </div>
@@ -305,7 +326,8 @@
 
     <!-- Remarks Modal (Admin: Approve/Reject with remarks) -->
     <div class="srm-overlay" id="remarksModal" style="z-index: 1200;">
-        <div class="srm-box" style="max-width:480px; box-shadow: 0 30px 60px -12px rgba(0,0,0,0.3);">
+        <div class="srm-box mx-3"
+            style="max-width:480px; width:calc(100% - 2rem); box-shadow: 0 30px 60px -12px rgba(0,0,0,0.3);">
             <div class="p-4 border-bottom d-flex justify-content-between align-items-center" id="remarks-modal-header">
                 <div class="d-flex align-items-center gap-3">
                     <div id="remarks-icon-container"
@@ -587,7 +609,7 @@
             const inactive = this.id === 'dt-full' ? 'dt-half-lbl' : 'dt-full-lbl';
             document.getElementById(inactive).style.borderColor = 'var(--border)';
             document.getElementById(inactive).style.background = 'transparent';
-            
+
             // Text color updates
             const activeText = this.id === 'dt-full' ? 'dt-full-text' : 'dt-half-text';
             const inactiveText = this.id === 'dt-full' ? 'dt-half-text' : 'dt-full-text';
@@ -674,7 +696,7 @@
                     renderRow: (l) => {
                         try {
                             if (!l) return "";
-                            
+
                             // Checkbox for bulk select (Admin only)
                             const bulkCheckHtml = canManageLeave ? `
                                 <td class="ps-3 align-middle" onclick="event.stopPropagation()">

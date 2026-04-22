@@ -28,7 +28,6 @@ from app.modules.employees import router as employees
 from app.modules.settings import router as settings
 from app.modules.attendance import router as attendance
 
-
 api_router = APIRouter()
 
 # Settings
@@ -89,7 +88,7 @@ def get_system_ip():
         return {"ip": "127.0.0.1"}
 
 @api_router.get("/")
-async def health_check():
+async def health_check_root():
     return {"status": "ok"}
 
 @api_router.get("/health")

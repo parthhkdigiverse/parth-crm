@@ -259,24 +259,36 @@
                                             </div>
                                             <div class="col-6 border-bottom">
                                                 <div class="p-3 text-center">
-                                                    <span class="peek-label">Incentives</span>
-                                                    <div class="peek-value text-info" id="pv-incentive">-</div>
-                                                </div>
-                                            </div>
-                                            <div class="col-6 border-end border-bottom">
-                                                <div class="p-3 text-center">
-                                                    <span class="peek-label">Slab Bonus</span>
-                                                    <div class="peek-value text-success" id="pv-slab">-</div>
-                                                </div>
-                                            </div>
-                                            <div class="col-6 border-bottom">
-                                                <div class="p-3 text-center">
                                                     <span class="peek-label">Leaves (P/U)</span>
                                                     <div class="peek-value d-flex justify-content-center gap-2">
                                                         <span class="text-success" id="pv-paid">-</span>
                                                         <span class="opacity-25">|</span>
                                                         <span class="text-danger" id="pv-unpaid">-</span>
                                                     </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6 border-end border-bottom">
+                                                <div class="p-3 text-center">
+                                                    <span class="peek-label">Prev Mo. Incentive</span>
+                                                    <div class="peek-value text-info" id="pv-prev-inc">-</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6 border-bottom">
+                                                <div class="p-3 text-center">
+                                                    <span class="peek-label">Prev Mo. Slab</span>
+                                                    <div class="peek-value text-success" id="pv-prev-slab">-</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6 border-end border-bottom">
+                                                <div class="p-3 text-center">
+                                                    <span class="peek-label">Curr Mo. Incentive</span>
+                                                    <div class="peek-value text-info" id="pv-curr-inc">-</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6 border-bottom">
+                                                <div class="p-3 text-center">
+                                                    <span class="peek-label">Curr Mo. Slab</span>
+                                                    <div class="peek-value text-success" id="pv-curr-slab">-</div>
                                                 </div>
                                             </div>
                                             <div class="col-6 border-end">
@@ -323,7 +335,7 @@
                                     </button>
                                     <button class="btn btn-danger py-2 px-4 fw-800 rounded-3 shadow-sm small d-none"
                                         id="salary-regen-btn" onclick="regenerateSlip()">
-                                        <i class="bi bi-arrow-repeat me-1"></i>Delete & Regenerate
+                                        <i class="bi bi-arrow-repeat me-1"></i>Regenerate & Revert to Draft
                                     </button>
                                 </div>
                             </div>
@@ -463,8 +475,10 @@
                         const userId = document.getElementById('s-user').value;
                         if (!userId) { showToast('Select an employee', 'error'); return; }
 
-                        await fetchPreview();
-                        goToSalaryStep(2);
+                        const success = await fetchPreview();
+                        if (success) {
+                            goToSalaryStep(2);
+                        }
                     }
 
                     function openSalaryModal() {
@@ -520,7 +534,7 @@
                     async function fetchPreview() {
                         const userId = document.getElementById('s-user').value;
                         const month = document.getElementById('s-month').value;
-                        if (!userId || !month) return;
+                        if (!userId || !month) return false;
 
                         const extra = parseFloat(document.getElementById('s-deduction').value) || 0;
                         const baseSalaryOverride = document.getElementById('s-base-salary').value.trim();
@@ -528,12 +542,14 @@
                         try {
                             const p = await ApiClient.previewSalary(userId, month, extra, baseSalary);
                             document.getElementById('pv-base').textContent = INR(p.base_salary);
-                            document.getElementById('pv-days').textContent = p.working_days + '/' + p.days_in_month;
+                            document.getElementById('pv-days').textContent = p.days_worked + '/' + p.total_working_days_in_month;
                             document.getElementById('pv-paid').textContent = p.paid_leaves;
                             document.getElementById('pv-unpaid').textContent = p.unpaid_leaves;
                             document.getElementById('pv-leave-ded').textContent = '-' + INR(p.leave_deduction);
-                            document.getElementById('pv-incentive').textContent = '+' + INR(p.incentive_amount);
-                            document.getElementById('pv-slab').textContent = '+' + INR(p.slab_bonus);
+                            document.getElementById('pv-prev-inc').textContent = '+' + INR(p.prev_month_incentive);
+                            document.getElementById('pv-prev-slab').textContent = '+' + INR(p.prev_month_slab);
+                            document.getElementById('pv-curr-inc').textContent = '+' + INR(p.curr_month_incentive);
+                            document.getElementById('pv-curr-slab').textContent = '+' + INR(p.curr_month_slab);
                             document.getElementById('pv-extra').textContent = '-' + INR(p.extra_deduction);
                             document.getElementById('pv-final').textContent = INR(p.final_salary);
 
@@ -563,8 +579,10 @@
                                 genBtn.classList.remove('d-none');
                             }
                             document.getElementById('salary-preview').style.display = 'block';
+                            return true;
                         } catch (e) {
                             showToast(e.data?.detail || e.message || 'Failed to load preview', 'error');
+                            return false;
                         }
                     }
 
@@ -632,8 +650,8 @@
                                         previewBtn = `<button class="btn btn-sm btn-outline-primary" title="Download Salary Slip" onclick="downloadInvoice('${sid}')"><i class="bi bi-file-earmark-pdf"></i></button>`;
 
                                         const visibilityTitle = s.is_visible_to_employee ? 'Hide from employee' : 'Release to employee';
-                                        const visibilityIcon = s.is_visible_to_employee ? 'bi-check-lg' : 'bi-send';
-                                        const visibilityBtnClass = s.is_visible_to_employee ? 'btn-success' : 'btn-outline-secondary';
+                                        const visibilityIcon = s.is_visible_to_employee ? 'bi-eye-slash' : 'bi-eye';
+                                        const visibilityBtnClass = s.is_visible_to_employee ? 'btn-outline-secondary' : 'btn-outline-success';
                                         visibilityBtn = `<button class="btn btn-sm ${visibilityBtnClass}" title="${visibilityTitle}" onclick="toggleSalaryVisibility('${sid}', ${!s.is_visible_to_employee})"><i class="bi ${visibilityIcon}"></i></button>`;
 
                                         const hasEmpRemark = !!(s.employee_remarks && s.employee_remarks.trim() && s.employee_remarks !== 'None');
@@ -654,29 +672,52 @@
                                         const mgrRemarksEnc = encodeURIComponent(s.manager_remarks || '');
                                         remarkBtn = `<button class="btn btn-sm btn-outline-info" title="Remarks" onclick="openSalaryRemarks('${sid}', '${empRemarksEnc}', '${mgrRemarksEnc}', false)"><i class="bi bi-chat-left-text"></i></button>`;
 
-                                        if (s.status === 'CONFIRMED' && s.is_visible_to_employee) {
+                                        if (s.is_visible_to_employee) {
                                             slipIconBtn = `<button class="btn btn-sm btn-outline-primary" title="Download Slip" onclick="downloadInvoice('${sid}')"><i class="bi bi-file-earmark-pdf"></i></button>`;
                                         }
-                                    }
-
-                                    const totalBonus = (parseFloat(s.incentive_amount) || 0) + (parseFloat(s.slab_bonus) || 0);
+                                    }                                    const prevBonus = (parseFloat(s.prev_month_incentive) || 0) + (parseFloat(s.prev_month_slab) || 0);
+                                    const currBonus = (parseFloat(s.curr_month_incentive) || 0) + (parseFloat(s.curr_month_slab) || 0);
+                                    const totalIncentive = prevBonus + currBonus;
+                                    const totalDeduction = (parseFloat(s.deduction_amount) || 0) + (parseFloat(s.leave_deduction || 0));
                                     const empName = (window.userNameMap && window.userNameMap[s.user_id]) || s.user_name || 'User #' + s.user_id;
-
                                     const sid = s.id || s._id;
                                     const isPaid = (s.status || '').toUpperCase() === 'CONFIRMED';
+
+                                    // Work days display
+                                    const workDays = s.total_working_days_in_month
+                                        ? `${(s.total_working_days_in_month - (s.unpaid_leaves || 0)).toFixed(1)} / ${s.total_working_days_in_month}`
+                                        : '-';
+
+                                    // Prev month label (e.g. "Mar")
+                                    let prevLabel = '', currLabel = '';
+                                    try {
+                                        const [y, m] = s.month.split('-').map(Number);
+                                        const cDate = new Date(y, m - 1, 1);
+                                        const pDate = new Date(y, m - 2, 1);
+                                        currLabel = cDate.toLocaleString('default', { month: 'short', year: '2-digit' });
+                                        prevLabel = pDate.toLocaleString('default', { month: 'short', year: '2-digit' });
+                                    } catch {}
+
+                                    const prevCell = prevBonus > 0
+                                        ? `<span class="text-info fw-600">+${INR(prevBonus)}</span><div class="text-muted" style="font-size:0.68rem;">${prevLabel}</div>`
+                                        : `<span class="text-muted" style="font-size:0.75rem;">—</span>`;
+                                    const currCell = currBonus > 0
+                                        ? `<span class="text-success fw-600">+${INR(currBonus)}</span><div class="text-muted" style="font-size:0.68rem;">${currLabel}</div>`
+                                        : `<span class="text-muted" style="font-size:0.75rem;">—</span>`;
+
                                     const statusToggle = canManageSalary
                                         ? `<div class="d-flex flex-column align-items-center">
                                <div class="form-check form-switch p-0 m-0 d-flex align-items-center bg-app rounded-pill px-2 py-0 border" style="min-width: 80px; height: 24px; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);">
                                      <input class="form-check-input ms-0 mt-0" type="checkbox" style="cursor:pointer; width: 28px; height: 14px;" 
                                              ${isPaid ? 'checked disabled' : ''} 
                                              onchange="if(this.checked) confirmSlip('${sid}')">
-                                 <span class="ms-1" style="font-size: 0.62rem; font-weight: 800; color: ${isPaid ? 'var(--success-text)' : 'var(--text-muted)'};">
+                                 <span class="ms-1" style="font-size: 0.62rem; font-weight: 800; color: ${isPaid ? 'var(--success-text)' : 'var(--text-muted)'};"> 
                                  ${isPaid ? 'PAID' : 'DRAFT'}
                                  </span>
                                  </div>
                                  <div class="mt-1 d-flex align-items-center gap-1" style="font-size: 0.6rem; color: ${s.is_visible_to_employee ? 'var(--success-text)' : 'var(--text-muted)'}; letter-spacing: 0.02em;">
                                      ${s.is_visible_to_employee ? 'RELEASED' : 'HIDDEN'}
-                                     ${isPaid ? `<button class="btn btn-link p-0 text-danger" style="font-size: 0.6rem; text-decoration:none;" onclick="revertToDraft('${sid}')" title="Revert to Draft"><i class="bi bi-arrow-counterclockwise"></i></button>` : ''}
+                                     ${isPaid ? `<button class="btn btn-link p-0 text-danger" style="font-size: 0.6rem; text-decoration:none;" onclick="revertToDraft('${sid}')" title="Revert to Draft"><i class="bi bi-arrow-counterclockwise"></i></button>` : `<button class="btn btn-link p-0 text-danger ms-1" style="font-size: 0.6rem; text-decoration:none;" onclick="deleteSalarySlip('${sid}')" title="Delete Draft"><i class="bi bi-trash"></i></button>`}
                                  </div>
                              </div>`
                                         : `<span class="status-pill ${statusCls} w-100 d-block text-center"><i class="bi ${statusIcon} me-1"></i>${statusLabel}</span>`;
@@ -690,12 +731,10 @@
                                 <span class="text-muted mx-1">/</span>
                                 <span style="color:var(--danger-text);">${s.unpaid_leaves}U</span>
                             </td>
-                            <td style="color:var(--success-text); font-weight:600;" class="small">+${INR(totalBonus)}</td>
-                            <td style="color:var(--danger-text); font-weight:600;" class="small">-${INR(s.deduction_amount)}</td>
+                            <td style="color:var(--success-text); font-weight:600;" class="small" title="Prev: ${INR(prevBonus)} | Curr: ${INR(currBonus)}">+${INR(totalIncentive)}</td>
+                            <td style="color:var(--danger-text); font-weight:600;" class="small" title="Leaves: ${INR(s.leave_deduction)} | Extra: ${INR(s.deduction_amount)}">-${INR(totalDeduction)}</td>
                             <td class="fw-bold small">${INR(s.final_salary)}</td>
-                            <td>
-                                ${statusToggle}
-                            </td>
+                            <td>${statusToggle}</td>
                             <td class="text-end">
                                 <div class="d-flex gap-1 justify-content-end align-items-center">
                                     ${previewBtn}${visibilityBtn}${remarkBtn}${slipIconBtn}
@@ -705,7 +744,7 @@
                                 }
                             });
                         } catch (e) {
-                            tbody.innerHTML = `<tr><td colspan="9" class="text-center py-5 text-danger">${e.message || 'Error'}</td></tr>`;
+                            tbody.innerHTML = `<tr><td colspan="11" class="text-center py-5 text-danger">${e.message || 'Error'}</td></tr>`;
                         }
                     }
 
@@ -803,7 +842,7 @@
                         if (!window.validateForm(document.getElementById('salaryModal'), rules)) {
                             return;
                         }
-                        if (!confirm('This will DELETE the existing salary slip and create a new Draft. Continue?')) return;
+                        if (!confirm('This will REGENERATE the existing salary slip with balanced figures and revert it back to a DRAFT status. Continue?')) return;
 
                         btn.disabled = true;
                         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Regenerating...';
@@ -847,6 +886,19 @@
                             showToast('Salary slip reverted to Draft.', 'info');
                             loadSlips();
                         } catch (e) { showToast(e.data?.detail || e.message || 'Failed', 'error'); }
+                    }
+
+                    async function deleteSalarySlip(slipId) {
+                        if (!canManageSalary) {
+                            showToast('You do not have permission to delete salary slips', 'error');
+                            return;
+                        }
+                        if (!confirm('Are you sure you want to delete this DRAFT salary slip? This cannot be undone.')) return;
+                        try {
+                            await ApiClient.deleteSalarySlip(slipId);
+                            showToast('Draft salary slip deleted successfully.', 'success');
+                            loadSlips();
+                        } catch (e) { showToast(e.data?.detail || e.message || 'Failed to delete', 'error'); }
                     }
 
                     async function toggleSalaryVisibility(slipId, isVisible) {

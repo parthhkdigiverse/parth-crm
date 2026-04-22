@@ -8,6 +8,7 @@ from datetime import date as dt_date
 from typing import Any, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status, Response
 from beanie import PydanticObjectId
+from app.core.cache import invalidate
 
 from app.core.dependencies import RoleChecker, get_current_active_user
 from app.modules.users.models import User, UserRole
@@ -33,7 +34,7 @@ async def list_employees(
     if current_user.role == UserRole.CLIENT:
         return []
 
-    query_obj = User.find(User.is_deleted == False)
+    query_obj = User.find(User.is_deleted != True)
     
     if department:
         import re
@@ -100,6 +101,9 @@ async def create_employee(
         department=employee_in.department,
     )
     await user.insert()
+    invalidate("all_users_list")
+    invalidate("pm_users_list")
+    invalidate("user_map:")
     return user
 
 
@@ -110,7 +114,7 @@ async def update_employee(
     current_user: User = Depends(admin_checker),
 ) -> Any:
     """Update a user/employee profile (Admin only)."""
-    user = await User.find_one(User.id == employee_id, User.is_deleted == False)
+    user = await User.find_one(User.id == employee_id, User.is_deleted != True)
     if not user:
         raise HTTPException(status_code=404, detail="Employee not found")
 
@@ -134,6 +138,9 @@ async def update_employee(
         setattr(user, field, value)
 
     await user.save()
+    invalidate("all_users_list")
+    invalidate("pm_users_list")
+    invalidate("user_map:")
     return user
 
 
@@ -143,10 +150,13 @@ async def delete_employee(
     current_user: User = Depends(admin_checker),
 ):
     """Soft-delete a user/employee (Admin only)."""
-    user = await User.find_one(User.id == employee_id, User.is_deleted == False)
+    user = await User.find_one(User.id == employee_id, User.is_deleted != True)
     if not user:
         raise HTTPException(status_code=404, detail="Employee not found")
 
     user.is_deleted = True
     await user.save()
+    invalidate("all_users_list")
+    invalidate("pm_users_list")
+    invalidate("user_map:")
     return Response(status_code=status.HTTP_204_NO_CONTENT)

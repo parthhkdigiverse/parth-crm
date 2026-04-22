@@ -10,6 +10,7 @@ class SystemSettings(Document):
     delete_policy: Optional[str] = "SOFT"
     payslip_email: Optional[str] = "hrmangukiya3494@gmail.com"
     payslip_phone: Optional[str] = "8866005029"
+    saturday_policy: Optional[str] = "FULL_WORKING"  # FULL_OFF, HALF_WORKING, FULL_WORKING, ALTERNATE, SECOND_AND_FOURTH_OFF
 
     class Settings:
         name = "srm_system_settings"

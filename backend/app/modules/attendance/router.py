@@ -75,6 +75,9 @@ async def get_attendance_summary(
         target_user = await User.get(user_id)
         if not target_user:
             raise HTTPException(status_code=404, detail="User not found")
+    elif current_user.role != UserRole.ADMIN:
+        # Non-admin with no user_id specified → restrict to their own records only
+        target_user = current_user
 
     # Use AttendanceService method to get defaulted end_date (IST)
     if not end_date:

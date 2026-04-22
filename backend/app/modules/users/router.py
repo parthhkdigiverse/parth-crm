@@ -259,6 +259,11 @@ async def update_role_incentive_eligibility(
         User.role == payload.role
     ).set({"incentive_enabled": payload.enabled})
     
+    # Invalidate caches
+    invalidate("all_users_list")
+    invalidate("pm_users_list")
+    invalidate("user_map:")
+    
     return {
         "updated": update_result.modified_count,
         "role": payload.role,
@@ -279,6 +284,9 @@ async def update_user_incentive_eligibility(
 
     user.incentive_enabled = payload.enabled
     await user.save()
+    invalidate("all_users_list")
+    invalidate("pm_users_list")
+    invalidate("user_map:")
     return user
 
 @router.patch("/{user_id}/role", response_model=UserRead)
@@ -408,6 +416,9 @@ async def admin_update_user_profile(
             )
 
     await user.save()
+    invalidate("all_users_list")
+    invalidate("pm_users_list")
+    invalidate("user_map:")
 
     activity_logger = ActivityLogger()
     await activity_logger.log_activity(
@@ -436,6 +447,9 @@ async def delete_user(
     old_deleted_status = user.is_deleted
     user.is_deleted = True
     await user.save()
+    invalidate("all_users_list")
+    invalidate("pm_users_list")
+    invalidate("user_map:")
 
     activity_logger = ActivityLogger()
     await activity_logger.log_activity(
@@ -459,6 +473,9 @@ async def batch_delete_users(
     from beanie.operators import In
     try:
         await User.find(In(User.id, ids)).set({"is_deleted": True})
+        invalidate("all_users_list")
+        invalidate("pm_users_list")
+        invalidate("user_map:")
         
         activity_logger = ActivityLogger()
         await activity_logger.log_activity(

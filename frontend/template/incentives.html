@@ -22,54 +22,6 @@
             padding-bottom: 28px;
         }
 
-        .stat-card {
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            background: var(--surface) !important;
-            /* respects dark/light theme */
-            border-radius: 16px !important;
-            border: 1px solid var(--border) !important;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06) !important;
-            position: relative;
-            overflow: hidden;
-            padding: 32px 20px 24px !important;
-            /* Moved content down by increasing top padding */
-        }
-
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 4px;
-            border-radius: 16px 16px 0 0;
-        }
-
-        .stat-card.card-primary::before {
-            background: var(--primary);
-        }
-
-        .stat-card.card-success::before {
-            background: var(--success);
-        }
-
-        .stat-card.card-warning::before {
-            background: var(--warning);
-        }
-
-        .stat-card.card-info::before {
-            background: var(--info);
-        }
-
-        .stat-card.card-purple::before {
-            background: #8b5cf6;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12) !important;
-            border-color: var(--border-subtle) !important;
-        }
 
 
         .premium-card {
@@ -107,7 +59,7 @@
         }
 
         .stat-value {
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             font-weight: 800;
             color: var(--text-main);
             line-height: 1;
@@ -221,12 +173,12 @@
 
         .preview-breakdown {
             background: var(--surface-raised);
-            border-radius: 16px;
-            padding: 24px;
+            border-radius: 14px;
+            padding: 12px 16px;
             border: 1px solid var(--border);
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
+            gap: 10px;
         }
 
         .preview-row {
@@ -253,17 +205,17 @@
 
         .preview-row.full-width {
             grid-column: span 2;
-            padding-top: 12px;
+            padding-top: 8px;
             border-top: 1px dashed var(--border);
-            margin-top: 4px;
+            margin-top: 2px;
         }
 
         .preview-total-card {
             background: linear-gradient(135deg, #4f46e5, #4338ca);
-            border-radius: 16px;
-            padding: 20px;
+            border-radius: 14px;
+            padding: 12px 16px;
             color: white;
-            margin-top: 16px;
+            margin-top: 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -324,7 +276,7 @@
             background: var(--bg-app);
             border: 1px solid var(--border);
             border-radius: 14px;
-            padding: 14px;
+            padding: 8px 14px;
         }
 
         .slab-input-label {
@@ -571,60 +523,54 @@
                 </div>
 
                 <div class="row g-3">
-                    <div class="col-6 col-md-3">
-                        <div class="card stat-card card-primary h-100 p-3">
-                            <div class="stat-label mb-2">Active Slabs</div>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="bg-primary-light text-primary rounded-3 d-flex align-items-center justify-content-center"
-                                    style="width:38px; height:38px;">
-                                    <i class="bi bi-layers-half fs-5"></i>
+                    <div class="col-6 col-xl-3">
+                        <div class="kpi-card h-100">
+                            <div class="d-flex align-items-center gap-3 w-100 kpi-inner-mobile">
+                                <div class="kpi-icon-wrapper icon-blue" style="flex-shrink:0;">
+                                    <i class="bi bi-layers-half"></i>
                                 </div>
-                                <div class="stat-value" id="stat-slabs">-</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="card stat-card card-success h-100 p-3">
-                            <div class="stat-label mb-2">Total Tasks</div>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="bg-success-light text-success rounded-3 d-flex align-items-center justify-content-center"
-                                    style="width:38px; height:38px;">
-                                    <i class="bi bi-check2-circle fs-5"></i>
-                                </div>
-                                <div class="stat-value" id="stat-tasks">-</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-md-3">
-                        <div class="card stat-card card-purple h-100 p-3">
-                            <div class="stat-label mb-2">Confirmed Incentive</div>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="bg-purple-light text-purple rounded-3 d-flex align-items-center justify-content-center"
-                                    style="width:38px; height:38px; background: rgba(139, 92, 246, 0.1); color: #8b5cf6;">
-                                    <i class="bi bi-cash-stack fs-5"></i>
-                                </div>
-                                <div>
-                                    <div class="stat-value" id="stat-confirmed" style="font-size:1.15rem;">-</div>
-                                    <div
-                                        style="font-size:0.6rem; color:var(--text-muted); font-weight:600; text-transform:uppercase;">
-                                        Confirmed</div>
+                                <div class="flex-grow-1 kpi-text-container" style="min-width: 0;">
+                                    <div class="kpi-title">Active Slabs</div>
+                                    <div class="kpi-value" id="stat-slabs" style="color:var(--primary); font-size: 1.45rem;">-</div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-6 col-md-3">
-                        <div class="card stat-card card-warning h-100 p-3">
-                            <div class="stat-label mb-2">Pending Incentive</div>
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="bg-warning-light text-warning rounded-3 d-flex align-items-center justify-content-center"
-                                    style="width:38px; height:38px;">
-                                    <i class="bi bi-hourglass-split fs-5"></i>
+                    <div class="col-6 col-xl-3">
+                        <div class="kpi-card h-100">
+                            <div class="d-flex align-items-center gap-3 w-100 kpi-inner-mobile">
+                                <div class="kpi-icon-wrapper icon-green" style="flex-shrink:0;">
+                                    <i class="bi bi-check2-circle"></i>
                                 </div>
-                                <div>
-                                    <div class="stat-value" id="stat-pending" style="font-size:1.15rem;">-</div>
-                                    <div
-                                        style="font-size:0.6rem; color:var(--text-muted); font-weight:600; text-transform:uppercase;">
-                                        In Review</div>
+                                <div class="flex-grow-1 kpi-text-container" style="min-width: 0;">
+                                    <div class="kpi-title">Total Tasks</div>
+                                    <div class="kpi-value" id="stat-tasks" style="color:var(--success-text); font-size: 1.45rem;">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-xl-3">
+                        <div class="kpi-card h-100">
+                            <div class="d-flex align-items-center gap-3 w-100 kpi-inner-mobile">
+                                <div class="kpi-icon-wrapper icon-purple" style="flex-shrink:0;">
+                                    <i class="bi bi-cash-stack"></i>
+                                </div>
+                                <div class="flex-grow-1 kpi-text-container" style="min-width: 0;">
+                                    <div class="kpi-title">Confirmed Incentive</div>
+                                    <div class="kpi-value" id="stat-confirmed" style="color:#8b5cf6; font-size: 1.45rem;">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-xl-3">
+                        <div class="kpi-card h-100">
+                            <div class="d-flex align-items-center gap-3 w-100 kpi-inner-mobile">
+                                <div class="kpi-icon-wrapper icon-yellow" style="flex-shrink:0;">
+                                    <i class="bi bi-hourglass-split"></i>
+                                </div>
+                                <div class="flex-grow-1 kpi-text-container" style="min-width: 0;">
+                                    <div class="kpi-title">Pending Incentive</div>
+                                    <div class="kpi-value" id="stat-pending" style="color:var(--warning-text); font-size: 1.45rem;">-</div>
                                 </div>
                             </div>
                         </div>
@@ -703,27 +649,33 @@
                                 </button>
                             </div>
 
-                            <div id="add-slab-form" class="px-4 py-4 slab-form-shell" style="display:none; border-top: 1px solid var(--border); background: var(--bg-app);">
+                            <div id="add-slab-form" class="px-4 py-4 slab-form-shell"
+                                style="display:none; border-top: 1px solid var(--border); background: var(--bg-app);">
                                 <div class="row g-3 mb-4">
                                     <div class="col-6">
                                         <label class="form-label slab-input-label d-flex align-items-center gap-1">
                                             <i class="bi bi-chevron-bar-down text-primary"></i> Min Tasks
                                         </label>
-                                        <input type="number" id="slab-min" class="form-control form-control-modern" placeholder="e.g. 1" min="0">
+                                        <input type="number" id="slab-min" class="form-control form-control-modern"
+                                            placeholder="e.g. 1" min="0">
                                     </div>
                                     <div class="col-6">
                                         <label class="form-label slab-input-label d-flex align-items-center gap-1">
                                             <i class="bi bi-chevron-bar-up text-primary"></i> Max Tasks
                                         </label>
-                                        <input type="number" id="slab-max" class="form-control form-control-modern" placeholder="e.g. 10" min="1">
+                                        <input type="number" id="slab-max" class="form-control form-control-modern"
+                                            placeholder="e.g. 10" min="1">
                                     </div>
                                     <div class="col-6">
                                         <label class="form-label slab-input-label d-flex align-items-center gap-1">
                                             <i class="bi bi-cash-stack text-success"></i> Reward / Task
                                         </label>
                                         <div class="input-group">
-                                            <span class="input-group-text bg-transparent border-end-0 py-2"><small>₹</small></span>
-                                            <input type="number" id="slab-per-unit" class="form-control border-start-0 ps-0" placeholder="1200" min="0" step="0.01">
+                                            <span
+                                                class="input-group-text bg-transparent border-end-0 py-2"><small>₹</small></span>
+                                            <input type="number" id="slab-per-unit"
+                                                class="form-control border-start-0 ps-0" placeholder="1200" min="0"
+                                                step="0.01">
                                         </div>
                                     </div>
                                     <div class="col-6">
@@ -731,22 +683,26 @@
                                             <i class="bi bi-stars text-warning"></i> Slab Bonus
                                         </label>
                                         <div class="input-group">
-                                            <span class="input-group-text bg-transparent border-end-0 py-2"><small>₹</small></span>
-                                            <input type="number" id="slab-bonus" class="form-control border-start-0 ps-0" placeholder="0" min="0" step="0.01">
+                                            <span
+                                                class="input-group-text bg-transparent border-end-0 py-2"><small>₹</small></span>
+                                            <input type="number" id="slab-bonus"
+                                                class="form-control border-start-0 ps-0" placeholder="0" min="0"
+                                                step="0.01">
                                         </div>
                                     </div>
                                 </div>
                                 <div class="d-flex flex-wrap gap-2 mb-4">
-                                    <span class="slab-metric"><i class="bi bi-check2-square"></i> Task range based</span>
+                                    <span class="slab-metric"><i class="bi bi-check2-square"></i> Task range
+                                        based</span>
                                     <span class="slab-metric"><i class="bi bi-cash-stack"></i> Flat per-task rate</span>
                                     <span class="slab-metric"><i class="bi bi-stars"></i> Optional slab bonus</span>
                                 </div>
                                 <div class="d-flex gap-2">
-                                    <button class="btn btn-primary flex-grow-1 fw-800" onclick="addSlab()" 
+                                    <button class="btn btn-primary flex-grow-1 fw-800" onclick="addSlab()"
                                         style="background: linear-gradient(135deg, #4f46e5, #4338ca); border: none; border-radius: 10px; padding: 10px;">
                                         Save New Slab Definition
                                     </button>
-                                    <button class="btn btn-secondary fw-800" onclick="toggleAddSlabForm()" 
+                                    <button class="btn btn-secondary fw-800" onclick="toggleAddSlabForm()"
                                         style="border-radius: 10px; padding: 10px;">
                                         Cancel
                                     </button>
@@ -1014,7 +970,7 @@
     </div>
 
     <div class="srm-overlay" id="editSlabModal">
-        <div class="srm-box" style="max-width:480px; padding: 24px; border-radius: 20px;">
+        <div class="srm-box" style="max-width:480px; padding: 24px; border-radius: 20px; max-height: 90vh; overflow-y: auto; scrollbar-width: thin;">
             <div class="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom">
                 <div class="calc-header-icon" style="background: linear-gradient(135deg, var(--primary), #6366f1);">
                     <i class="bi bi-pencil-square"></i>
@@ -1026,19 +982,22 @@
                 <button class="btn-close ms-auto" onclick="closeEditSlabModal()"></button>
             </div>
             <input type="hidden" id="edit-slab-id">
-            <div class="slab-modal-grid mb-4" style="background: var(--bg-app); padding: 20px; border-radius: 16px; border: 1px solid var(--border);">
+            <div class="slab-modal-grid mb-4"
+                style="background: var(--bg-app); padding: 20px; border-radius: 16px; border: 1px solid var(--border);">
                 <div class="row g-3">
                     <div class="col-6">
                         <label class="form-label slab-input-label d-flex align-items-center gap-1">
                             <i class="bi bi-chevron-bar-down text-primary"></i> Min Tasks
                         </label>
-                        <input type="number" id="edit-slab-min" class="form-control form-control-modern" min="0" placeholder="0">
+                        <input type="number" id="edit-slab-min" class="form-control form-control-modern" min="0"
+                            placeholder="0">
                     </div>
                     <div class="col-6">
                         <label class="form-label slab-input-label d-flex align-items-center gap-1">
                             <i class="bi bi-chevron-bar-up text-primary"></i> Max Tasks
                         </label>
-                        <input type="number" id="edit-slab-max" class="form-control form-control-modern" min="1" placeholder="10">
+                        <input type="number" id="edit-slab-max" class="form-control form-control-modern" min="1"
+                            placeholder="10">
                     </div>
                     <div class="col-6">
                         <label class="form-label slab-input-label d-flex align-items-center gap-1">
@@ -1046,7 +1005,8 @@
                         </label>
                         <div class="input-group">
                             <span class="input-group-text bg-transparent border-end-0 py-2"><small>₹</small></span>
-                            <input type="number" id="edit-slab-per-unit" class="form-control border-start-0 ps-0" min="0" step="0.01" placeholder="1200">
+                            <input type="number" id="edit-slab-per-unit" class="form-control border-start-0 ps-0"
+                                min="0" step="0.01" placeholder="1200">
                         </div>
                     </div>
                     <div class="col-6">
@@ -1055,14 +1015,16 @@
                         </label>
                         <div class="input-group">
                             <span class="input-group-text bg-transparent border-end-0 py-2"><small>₹</small></span>
-                            <input type="number" id="edit-slab-bonus" class="form-control border-start-0 ps-0" min="0" step="0.01" placeholder="5000">
+                            <input type="number" id="edit-slab-bonus" class="form-control border-start-0 ps-0" min="0"
+                                step="0.01" placeholder="5000">
                         </div>
                     </div>
                 </div>
             </div>
             <div class="d-flex justify-content-end gap-2">
                 <button class="btn py-2 px-4 fw-800 text-muted small" onclick="closeEditSlabModal()">Cancel</button>
-                <button class="btn btn-primary py-2 px-4 fw-800 rounded-3 shadow-sm" id="edit-slab-submit-btn" onclick="saveEditSlab()" 
+                <button class="btn btn-primary py-2 px-4 fw-800 rounded-3 shadow-sm" id="edit-slab-submit-btn"
+                    onclick="saveEditSlab()"
                     style="background: linear-gradient(135deg, #4f46e5, #4338ca); border: none;">
                     Save Reward Settings
                 </button>
@@ -1072,8 +1034,8 @@
 
     <!-- Breakdown Modal -->
     <div class="srm-overlay" id="breakdownModal">
-        <div class="srm-box" style="max-width: 600px; padding: 28px;">
-            <div class="d-flex align-items-center gap-3 mb-4">
+        <div class="srm-box" style="max-width: 500px; padding: 16px; border-radius: 16px; max-height: 90vh; overflow-y: auto; scrollbar-width: thin;">
+            <div class="d-flex align-items-center gap-2 mb-2">
                 <div class="calc-header-icon" style="background: var(--primary-light); color: var(--primary);">
                     <i class="bi bi-layers"></i>
                 </div>
@@ -1088,8 +1050,8 @@
                 <!-- Data injected via JS -->
             </div>
 
-            <div class="d-flex justify-content-end mt-4">
-                <button class="btn btn-light px-4 fw-bold" onclick="closeBreakdownModal()">Close</button>
+            <div class="d-flex justify-content-end mt-2">
+                <button class="btn btn-light px-4 py-1 fw-bold" onclick="closeBreakdownModal()">Close</button>
             </div>
         </div>
     </div>
@@ -1168,7 +1130,7 @@
             document.getElementById('breakdown-subtitle').innerText = `${slip.user_name} \u2022 ${slip.period}`;
 
             let html = `
-                <div class="preview-breakdown mb-4">
+                <div class="preview-breakdown mb-3">
                     <div class="preview-row">
                         <span class="label">Confirmed Tasks</span>
                         <span class="value">${slip.achieved}</span>
@@ -1191,13 +1153,13 @@
                     </div>
                 </div>
                 
-                <h6 class="fw-800 small text-muted text-uppercase mb-3" style="letter-spacing:0.05em;">Performance Audit</h6>
-                <div id="slip-breakdown-audit" class="slab-modal-grid">
-                    <div class="d-flex justify-content-between py-2 border-bottom border-light">
+                <h6 class="fw-800 small text-muted text-uppercase mb-1" style="letter-spacing:0.05em; font-size: 0.65rem;">Performance Audit</h6>
+                <div id="slip-breakdown-audit" class="slab-modal-grid mb-2">
+                    <div class="d-flex justify-content-between py-1 border-bottom border-light">
                         <span class="small fw-700 text-muted">BASE INCENTIVE</span>
                         <span class="fw-800 text-main">${fmt(slip.total_incentive - (slip.slab_bonus_amount || 0))}</span>
                     </div>
-                    <div class="d-flex justify-content-between py-2">
+                    <div class="d-flex justify-content-between py-1 mt-1">
                         <span class="small fw-700 text-muted">SLAB BONUS</span>
                         <span class="fw-800 text-success">+ ${fmt(slip.slab_bonus_amount || 0)}</span>
                     </div>
