@@ -13,7 +13,8 @@
     <link rel="stylesheet" href="/frontend/css/theme.css?v=20260406">
     <link rel="stylesheet" href="/frontend/css/components.css?v=20260406">
     <style>
-        body, html {
+        body,
+        html {
             overflow-x: hidden !important;
             max-width: 100%;
         }
@@ -454,8 +455,8 @@
 
                 <!-- List View -->
                 <div id="list-view" class="d-none">
-                    <div id="list-view-container">
-                    </div>
+                    <div id="list-view-container"></div>
+                    <div id="list-pagination" class="mt-4 px-3 pb-4"></div>
                 </div>
             </div><!-- /page-content-standard -->
         </div>
@@ -651,19 +652,23 @@
                 updateSelectedCount();
 
                 const kanbanData = await window.ApiClient.request(`/shops/kanban?${params.toString()}`);
-                let totalCount = 0;
+                const allLeads = Object.values(kanbanData).flat();
+                let totalCount = allLeads.length;
+
+                // Populate leadStore with ALL shops first to ensure "View Details" works for all stages (including MAINTENANCE)
+                allLeads.forEach(l => {
+                    leadStore[l.id] = l;
+                });
 
                 ['LEAD', 'PITCHING', 'NEGOTIATION', 'DELIVERY'].forEach(status => {
                     const container = document.getElementById(`cards-${status}`);
                     const countEl = document.getElementById(`count-${status}`);
                     const leads = kanbanData[status] || [];
 
-                    totalCount += leads.length;
                     if (countEl) countEl.textContent = leads.length;
 
                     if (!container) return;
                     container.innerHTML = leads.map(l => {
-                        leadStore[l.id] = l;
                         const sourceClass = (l.source || 'Other').toLowerCase().replace(' ', '-');
 
                         // Stale detection (3 days)
@@ -758,8 +763,7 @@
                 const totalEl = document.getElementById('total-leads-count');
                 if (totalEl) totalEl.textContent = totalCount;
 
-                // List View implementation
-                const allLeads = Object.values(kanbanData).flat();
+                // List View implementation using the allLeads array we built at the top
                 renderListView(allLeads);
 
                 // Rebuild the PM filter dropdown with names from the current data
@@ -831,99 +835,97 @@
         }
 
         function renderListView(leads) {
-            const container = document.getElementById('list-view-container');
-            if (!leads || leads.length === 0) {
-                container.innerHTML = `<div class="text-center py-5 text-muted"><i class="bi bi-inbox fs-1 d-block mb-2"></i>No leads found.</div>`;
-                return;
-            }
+            window.renderPagination({
+                data: leads,
+                pageSize: 10,
+                tbodyId: 'list-view-container',
+                paginationId: 'list-pagination',
+                emptyMsg: `<div class="text-center py-5 text-muted"><i class="bi bi-inbox fs-1 d-block mb-2"></i>No leads found.</div>`,
+                renderRow: (l) => {
+                    const shopName = l.name || '—';
+                    const contactName = l.contact_person || '—';
+                    const phone = l.phone || '—';
+                    const assigneeName = (l.assigned_to_user?.name) || l.assigned_to_name || l.owner_name || ((l.assigned_users && l.assigned_users.length > 0) ? l.assigned_users.map(u => u.name).join(', ') : null) || 'Unassigned';
+                    const initials = getInitials(assigneeName);
+                    const pmName = (l.project_manager_name && l.project_manager_name !== 'null') ? l.project_manager_name : 'Assigned (PM)';
+                    const hasPm = l.project_manager_id || (l.project_manager_name && l.project_manager_name !== 'null');
 
-            const stageBadge = (stage) => {
-                const map = {
-                    'LEAD': { bg: 'bg-primary-subtle', text: 'text-primary' },
-                    'PITCHING': { bg: 'bg-warning-subtle', text: 'text-warning' },
-                    'NEGOTIATION': { bg: 'bg-info-subtle', text: 'text-info' },
-                    'DELIVERY': { bg: 'bg-success-subtle', text: 'text-success' },
-                    'MAINTENANCE': { bg: 'bg-secondary-subtle', text: 'text-secondary' },
-                };
-                const s = map[stage] || map['LEAD'];
-                return `<span class="badge ${s.bg} ${s.text} rounded-pill px-3" style="font-size:0.72rem;">${(stage || 'LEAD').replace(/_/g, ' ')}</span>`;
-            };
-
-            let html = '';
-            leads.forEach(l => {
-                const contactName = l.contact_person || '—';
-                const shopName = l.name || '—';
-                const phone = l.phone || '—';
-                const assigneeName = (l.assigned_to_user?.name) || l.assigned_to_name || l.owner_name || ((l.assigned_users && l.assigned_users.length > 0) ? l.assigned_users.map(u => u.name).join(', ') : null) || 'Unassigned';
-                const initials = getInitials(assigneeName);
-                const pmName = (l.project_manager_name && l.project_manager_name !== 'null') ? l.project_manager_name : 'Assigned (PM)';
-                const hasPm = l.project_manager_id || (l.project_manager_name && l.project_manager_name !== 'null');
-
-                let sentimentBit = '';
-                if (l.last_visit_status) {
-                    let es = l.last_visit_status;
-                    if (l.project_manager_id && es !== 'ACCEPT') es = 'SATISFIED';
-                    const vsColors = {
-                        'SATISFIED': 'background:#dbeafe;color:#1d4ed8;',
-                        'ACCEPT': 'background:#dcfce7;color:#16a34a;',
-                        'DECLINE': 'background:#fee2e2;color:#dc2626;',
-                        'TAKE_TIME_TO_THINK': 'background:#fef9c3;color:#b45309;',
-                        'OTHER': 'background:#f1f5f9;color:#475569;',
+                    const stageBadge = (stage) => {
+                        const map = {
+                            'LEAD': { bg: 'bg-primary-subtle', text: 'text-primary' },
+                            'PITCHING': { bg: 'bg-warning-subtle', text: 'text-warning' },
+                            'NEGOTIATION': { bg: 'bg-info-subtle', text: 'text-info' },
+                            'DELIVERY': { bg: 'bg-success-subtle', text: 'text-success' },
+                            'MAINTENANCE': { bg: 'bg-secondary-subtle', text: 'text-secondary' },
+                        };
+                        const s = map[stage] || map['LEAD'];
+                        return `<span class="badge ${s.bg} ${s.text} rounded-pill px-3" style="font-size:0.72rem;">${(stage || 'LEAD').replace(/_/g, ' ')}</span>`;
                     };
-                    const vsLabels = { 'SATISFIED': 'Satisfied', 'ACCEPT': 'Accepted', 'DECLINE': 'Declined', 'TAKE_TIME_TO_THINK': 'Thinking', 'OTHER': 'Other' };
-                    const vstyle = vsColors[es] || 'background:#f1f5f9;color:#475569;';
-                    const vlabel = vsLabels[es] || es.replace(/_/g, ' ');
-                    sentimentBit = `<span class="badge me-1" style="${vstyle}font-size:0.62rem;">${vlabel}</span>`;
-                }
-                const pmBit = hasPm
-                    ? `<span class="badge" style="background:#dbeafe;color:#1d4ed8;font-size:0.62rem;"><i class="bi bi-person-gear me-1"></i>PM: ${pmName}</span>`
-                    : '';
 
-                const actionLabel = (l.pipeline_stage === 'PITCHING' && l.project_manager_id)
-                    ? 'Re-schedule / Re-assign PM'
-                    : getNextActionText(l.pipeline_stage);
+                    let sentimentBit = '';
+                    if (l.last_visit_status) {
+                        let es = l.last_visit_status;
+                        if (l.project_manager_id && es !== 'ACCEPT') es = 'SATISFIED';
+                        const vsColors = {
+                            'SATISFIED': 'background:#dbeafe;color:#1d4ed8;',
+                            'ACCEPT': 'background:#dcfce7;color:#16a34a;',
+                            'DECLINE': 'background:#fee2e2;color:#dc2626;',
+                            'TAKE_TIME_TO_THINK': 'background:#fef9c3;color:#b45309;',
+                            'OTHER': 'background:#f1f5f9;color:#475569;',
+                        };
+                        const vsLabels = { 'SATISFIED': 'Satisfied', 'ACCEPT': 'Accepted', 'DECLINE': 'Declined', 'TAKE_TIME_TO_THINK': 'Thinking', 'OTHER': 'Other' };
+                        const vstyle = vsColors[es] || 'background:#f1f5f9;color:#475569;';
+                        const vlabel = vsLabels[es] || es.replace(/_/g, ' ');
+                        sentimentBit = `<span class="badge me-1" style="${vstyle}font-size:0.62rem;">${vlabel}</span>`;
+                    }
+                    const pmBit = hasPm
+                        ? `<span class="badge" style="background:#dbeafe;color:#1d4ed8;font-size:0.62rem;"><i class="bi bi-person-gear me-1"></i>PM: ${pmName}</span>`
+                        : '';
 
-                html += `
-                <div class="card shadow-sm mb-3 border rounded-4">
-                    <div class="card-body p-3">
-                        <div class="d-flex justify-content-between align-items-start mb-2">
-                            <div>
-                                <h6 class="fw-bold mb-0 text-dark">${shopName}</h6>
-                                ${(sentimentBit || pmBit) ? `<div class="mt-1">${sentimentBit}${pmBit}</div>` : ''}
-                            </div>
-                            ${stageBadge(l.pipeline_stage)}
-                        </div>
-                        <div class="row g-2 align-items-center" style="font-size:0.85rem;">
-                            <div class="col-4">
-                                <div class="text-muted small">Contact</div>
-                                <div class="fw-medium text-truncate">${contactName}</div>
-                            </div>
-                            <div class="col-4">
-                                <div class="text-muted small">Phone</div>
-                                <div class="fw-medium"><i class="bi bi-telephone me-1 text-muted" style="font-size:0.75rem;"></i>${phone}</div>
-                            </div>
-                            <div class="col-4 d-flex align-items-center gap-2 border-start ps-2">
-                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                                     style="background:#eef2ff;color:#2563eb;width:28px;height:28px;font-size:0.68rem;font-weight:700;">
-                                    ${initials}
-                                </div>
+                    const actionLabel = (l.pipeline_stage === 'PITCHING' && l.project_manager_id)
+                        ? 'Re-schedule / Re-assign PM'
+                        : getNextActionText(l.pipeline_stage);
+
+                    return `
+                    <div class="card shadow-sm mb-3 border rounded-4">
+                        <div class="card-body p-3">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
                                 <div>
-                                    <div class="text-muted small">Assigned To</div>
-                                    <div class="fw-medium text-truncate" style="max-width:70px;">${assigneeName}</div>
+                                    <h6 class="fw-bold mb-0 text-dark">${shopName}</h6>
+                                    ${(sentimentBit || pmBit) ? `<div class="mt-1">${sentimentBit}${pmBit}</div>` : ''}
+                                </div>
+                                ${stageBadge(l.pipeline_stage)}
+                            </div>
+                            <div class="row g-2 align-items-center" style="font-size:0.85rem;">
+                                <div class="col-4">
+                                    <div class="text-muted small">Contact</div>
+                                    <div class="fw-medium text-truncate">${contactName}</div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="text-muted small">Phone</div>
+                                    <div class="fw-medium"><i class="bi bi-telephone me-1 text-muted" style="font-size:0.75rem;"></i>${phone}</div>
+                                </div>
+                                <div class="col-4 d-flex align-items-center gap-2 border-start ps-2">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                                         style="background:#eef2ff;color:#2563eb;width:28px;height:28px;font-size:0.68rem;font-weight:700;">
+                                        ${initials}
+                                    </div>
+                                    <div>
+                                        <div class="text-muted small">Assigned To</div>
+                                        <div class="fw-medium text-truncate" style="max-width:70px;">${assigneeName}</div>
+                                    </div>
                                 </div>
                             </div>
+                            <div class="mt-3">
+                                <button class="btn btn-outline-secondary btn-sm w-100 rounded-pill fw-medium"
+                                        onclick="event.stopPropagation(); window.openDetail('${l.id}');">
+                                    ${actionLabel} <i class="bi bi-arrow-right-short ms-1"></i>
+                                </button>
+                            </div>
                         </div>
-                        <div class="mt-3">
-                            <button class="btn btn-outline-secondary btn-sm w-100 rounded-pill fw-medium"
-                                    onclick="event.stopPropagation(); window.openDetail('${l.id}');">
-                                ${actionLabel} <i class="bi bi-arrow-right-short ms-1"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>`;
+                    </div>`;
+                }
             });
-
-            container.innerHTML = html;
         }
 
         window.openDetail = (id) => {

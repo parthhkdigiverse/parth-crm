@@ -953,10 +953,11 @@
             const panel = document.getElementById('todo-filter-panel-body');
             const btn = document.getElementById('todo-filter-toggle-btn');
             const label = document.getElementById('todo-filter-toggle-label');
-            if (!panel || !btn || !label) return;
+            if (!panel || !btn) return;
+
             const isOpen = panel.classList.toggle('open');
             btn.classList.toggle('open', isOpen);
-            label.textContent = isOpen ? 'Hide' : 'Show';
+            if (label) label.textContent = isOpen ? 'Hide' : 'Show';
         }
 
         function updateTodoFilterPills() {
@@ -1201,6 +1202,7 @@
                             <div class="filter-active-pills" id="todo-filter-pills"></div>
                             <div class="filter-panel-head-right">
                                 <span class="filter-summary-text" id="todo-filter-summary">0 results</span>
+                                <span id="todo-filter-toggle-label" class="small text-muted fw-bold ms-2" style="font-size: 0.75rem;">Show</span>
                                 <button class="filter-toggle-btn" id="todo-filter-toggle-btn" type="button" onclick="toggleTodoFilters(); event.stopPropagation();">
                                     <i class="bi bi-chevron-down"></i>
                                 </button>
