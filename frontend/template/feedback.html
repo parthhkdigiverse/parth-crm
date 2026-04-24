@@ -308,11 +308,11 @@
         }
 
         .table-premium thead th {
-            background: #f8fafc;
+            background: transparent;
             padding: 12px 24px;
             font-size: 0.72rem;
             font-weight: 700;
-            color: #64748b;
+            color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
@@ -428,14 +428,14 @@
                     </div>
                     <div class="table-responsive">
                         <table class="table table-premium align-middle mb-0">
-                            <thead>
+                            <thead class="bg-app border-bottom">
                                 <tr>
-                                    <th>Client / Product</th>
-                                    <th>Sales Agent</th>
-                                    <th>Rating</th>
-                                    <th>Score</th>
-                                    <th>Comments</th>
-                                    <th class="text-end">Date / Actions</th>
+                                    <th class="ps-4 py-3 text-muted fw-bold extra-small uppercase">Client / Product</th>
+                                    <th class="py-3 text-muted fw-bold extra-small uppercase">Sales Agent</th>
+                                    <th class="py-3 text-muted fw-bold extra-small uppercase">Rating</th>
+                                    <th class="py-3 text-muted fw-bold extra-small uppercase">Score</th>
+                                    <th class="py-3 text-muted fw-bold extra-small uppercase">Comments</th>
+                                    <th class="pe-4 py-3 text-end text-muted fw-bold extra-small uppercase">Date / Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="feedback-table">
