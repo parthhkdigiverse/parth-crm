@@ -1,5 +1,5 @@
 import typing
-from typing import Optional
+from typing import Optional, Dict, Any
 import datetime
 from pydantic import field_validator
 from app.core.base_schema import MongoBaseSchema, PydanticObjectId
@@ -20,7 +20,9 @@ class BillCreate(MongoBaseSchema):
     payment_type: typing.Literal["BUSINESS_ACCOUNT", "PERSONAL_ACCOUNT", "CASH"]
     gst_type: typing.Literal["WITH_GST", "WITHOUT_GST"]
     service_description: str | None = "Harikrushn DigiVerse LLP Software – Annual Subscription"
-    billing_month: str # e.g. "Feb 2026"
+    # CHANGE: Optional with auto-fill fallback in service.create_invoice() —
+    # was `billing_month: str` which caused silent 422 on any non-wizard path
+    billing_month: str | None = None  # e.g. "Feb 2026"
     transaction_id: str | None = None
     payment_gateway_status: str | None = None
 
@@ -84,6 +86,11 @@ class BillRead(MongoBaseSchema):
     verified_at: datetime.datetime | None = None
     created_at: datetime.datetime
 
+    # CRITICAL FIX: Without this field, Pydantic silently strips the `actions` dict
+    # from every list response, making ALL action buttons (verify/archive/unarchive/delete)
+    # invisible on the frontend. One missing line = all buttons gone.
+    actions: Optional[Dict[str, Any]] = None
+
 class BillingWorkflowResolveRequest(MongoBaseSchema):
     payment_type: typing.Literal["BUSINESS_ACCOUNT", "PERSONAL_ACCOUNT", "CASH"]
     gst_type: typing.Literal["WITH_GST", "WITHOUT_GST"]
@@ -111,4 +118,5 @@ class BillingInvoiceActionResponse(MongoBaseSchema):
     can_archive: bool = False
     can_unarchive: bool = False
     can_delete_archived: bool = False
+    can_refund: bool = False          # role-gated refund (was dropped in migration)
     allowed_verifier_roles: list[str]

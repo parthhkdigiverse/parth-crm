@@ -385,7 +385,7 @@ async def send_invoice_whatsapp(
 @router.patch("/{bill_id}/force-sent", response_model=BillRead)
 async def force_sent_invoice(
     bill_id: PydanticObjectId,
-    current_user: User = Depends(staff_access),
+    current_user: User = Depends(admin_only),  # FIX: was staff_access — any staff could bypass verification
 ) -> Any:
     return await BillingService().force_sent(bill_id, current_user)
     
@@ -408,8 +408,7 @@ async def get_invoice_html(
     bill = await svc.get_bill(bill_id, current_user=current_user)
     if not bill:
         raise HTTPException(status_code=404, detail="Invoice not found or access denied")
-    settings = await svc.get_invoice_defaults()
-    settings = await svc.get_invoice_defaults()
+    settings = await svc.get_invoice_defaults()  # FIX: was called twice (duplicate line removed)
     html = _build_invoice_html(bill, settings)
     return HTMLResponse(content=html)
 

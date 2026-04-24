@@ -220,19 +220,47 @@ class BillingService:
             "invoice_default_amount": _to_float(mapping.get("invoice_default_amount"), 12000),
             "personal_without_gst_default_amount": _to_float(mapping.get("personal_without_gst_default_amount"), 12000),
             "invoice_terms_conditions": mapping.get("invoice_terms_conditions") or "• Subject to Surat Jurisdiction",
+            # Payment — generic
             "payment_upi_id": mapping.get("payment_upi_id") or "",
             "payment_account_name": mapping.get("payment_account_name") or "Harikrushn DigiVerse LLP",
             "payment_qr_image_url": mapping.get("payment_qr_image_url") or "",
+            "payment_bank_name": mapping.get("payment_bank_name") or "",
+            "payment_account_number": mapping.get("payment_account_number") or "",
+            "payment_ifsc": mapping.get("payment_ifsc") or "",
+            "payment_branch": mapping.get("payment_branch") or "",
+            # Payment — business account
+            "business_payment_upi_id": mapping.get("business_payment_upi_id") or "",
+            "business_payment_account_name": mapping.get("business_payment_account_name") or "",
+            "business_payment_qr_image_url": mapping.get("business_payment_qr_image_url") or "",
+            "business_payment_bank_name": mapping.get("business_payment_bank_name") or "",
+            "business_payment_account_number": mapping.get("business_payment_account_number") or "",
+            "business_payment_ifsc": mapping.get("business_payment_ifsc") or "",
+            "business_payment_branch": mapping.get("business_payment_branch") or "",
+            # Payment — personal account
+            "personal_payment_upi_id": mapping.get("personal_payment_upi_id") or "",
+            "personal_payment_account_name": mapping.get("personal_payment_account_name") or "",
+            "personal_payment_qr_image_url": mapping.get("personal_payment_qr_image_url") or "",
+            "personal_payment_bank_name": mapping.get("personal_payment_bank_name") or "",
+            "personal_payment_account_number": mapping.get("personal_payment_account_number") or "",
+            "personal_payment_ifsc": mapping.get("personal_payment_ifsc") or "",
+            "personal_payment_branch": mapping.get("personal_payment_branch") or "",
+            # Company details — FIX: were fetched but never returned (used by _build_invoice_html)
             "company_name": mapping.get("company_name") or "Harikrushn DigiVerse LLP",
             "company_address": mapping.get("company_address") or "Surat, Gujarat, India",
             "company_phone": mapping.get("company_phone") or "+91 8866005029",
             "company_email": mapping.get("company_email") or "hetrmangukiya@gmail.com",
-            # Additional keys for frontend
-            "business_payment_upi_id": mapping.get("business_payment_upi_id") or "",
-            "business_payment_qr_image_url": mapping.get("business_payment_qr_image_url") or "",
-            "personal_payment_upi_id": mapping.get("personal_payment_upi_id") or "",
-            "personal_payment_qr_image_url": mapping.get("personal_payment_qr_image_url") or "",
-            # Sync keys
+            "company_gstin": mapping.get("company_gstin") or "",
+            "company_pan": mapping.get("company_pan") or "",
+            "company_cin": mapping.get("company_cin") or "",
+            "company_cst_code": mapping.get("company_cst_code") or "",
+            # Invoice appearance — FIX: invoice_header_bg was fetched but not returned
+            "invoice_header_bg": mapping.get("invoice_header_bg") or "#2E5B82",
+            # Role settings — FIX: were fetched but not returned
+            "invoice_verifier_roles": mapping.get("invoice_verifier_roles") or "ADMIN",
+            "invoice_sender_roles": mapping.get("invoice_sender_roles") or "ADMIN,SALES",
+            "invoice_creator_roles": mapping.get("invoice_creator_roles") or "ADMIN,SALES",
+            "whatsapp_invoice_caption": mapping.get("whatsapp_invoice_caption") or "",
+            # Sequence tracking
             "invoice_year": resolved_year,
             "invoice_seq_with_gst": _to_int(mapping.get("invoice_seq_with_gst"), 1),
             "invoice_seq_without_gst": _to_int(mapping.get("invoice_seq_without_gst"), 1),
@@ -331,7 +359,8 @@ class BillingService:
             invoice_sequence=invoice_sequence,
             requires_qr=bill_in.payment_type != "CASH",
             service_description=bill_in.service_description,
-            billing_month=bill_in.billing_month,
+            # FIX: auto-fill billing_month if not provided (schema now Optional)
+            billing_month=bill_in.billing_month or datetime.datetime.now(UTC).strftime("%b %Y"),
             invoice_number=invoice_number,
             invoice_status="VERIFIED" if bill_in.payment_type == "BUSINESS_ACCOUNT" else "PENDING_VERIFICATION",
             status="SUCCESS" if bill_in.payment_type == "BUSINESS_ACCOUNT" else "PENDING",
@@ -550,20 +579,32 @@ class BillingService:
             d["creator_name"] = creators_map.get(b.created_by_id, "Admin")
             
             # Embed Actions directly to eliminate frontend N+1 calls
+            # FIX: Use bool() to handle None values from migrated MongoDB records where
+            # is_archived may be null instead of False — bool(None) = False, bool(True) = True
+            can_refund_row = can_send_global and not bool(b.is_archived) and b.invoice_status in {"SENT", "CONFIRMED"}
             d["actions"] = {
                 "can_verify": can_verify_global and b.invoice_status == "PENDING_VERIFICATION",
                 "can_send_whatsapp": can_send_global and b.invoice_status in {"VERIFIED", "SENT"},
-                "can_archive": (is_admin or b.created_by_id == current_user.id) and not b.is_archived,
-                "can_unarchive": (is_admin or b.created_by_id == current_user.id) and b.is_archived,
-                "can_delete": is_admin and b.is_archived
+                "can_archive": (is_admin or b.created_by_id == current_user.id) and not bool(b.is_archived),
+                "can_unarchive": (is_admin or b.created_by_id == current_user.id) and bool(b.is_archived),
+                "can_delete": is_admin and bool(b.is_archived),
+                "can_refund": can_refund_row,  # FIX: role-gated refund (was open to all staff)
             }
             res.append(d)
         return res
 
     async def verify_invoice(self, bill_id: PydanticObjectId, current_user: User) -> Bill:
-        if not await self._can_verify(current_user): raise HTTPException(status_code=403, detail="Permission Denied")
+        if not await self._can_verify(current_user):
+            raise HTTPException(status_code=403, detail="Permission Denied")
         bill = await self.get_bill(bill_id)
-        if not bill: raise HTTPException(status_code=404, detail="Not Found")
+        if not bill:
+            raise HTTPException(status_code=404, detail="Not Found")
+        # FIX: Status transition guard — prevent re-verifying SENT/REFUNDED/ARCHIVED bills
+        if bill.invoice_status not in {"PENDING_VERIFICATION", "DRAFT"}:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Cannot verify an invoice with status: {bill.invoice_status}. Only PENDING_VERIFICATION invoices can be verified."
+            )
         bill.invoice_status = "VERIFIED"
         bill.verified_by_id = current_user.id
         bill.verified_at = datetime.datetime.now(UTC)
@@ -582,7 +623,12 @@ class BillingService:
 
     async def archive_invoice(self, bill_id: PydanticObjectId, current_user: User) -> Bill:
         bill = await self.get_bill(bill_id)
-        if not bill: raise HTTPException(status_code=404, detail="Not Found")
+        if not bill:
+            raise HTTPException(status_code=404, detail="Not Found")
+        # FIX: Permission check was present in old CRM, dropped in migration.
+        # UI hides the button correctly but API was open to all staff directly.
+        if not self._can_archive_invoice(current_user, bill):
+            raise HTTPException(status_code=403, detail="You do not have permission to archive this invoice")
         bill.is_archived = True
         await bill.save()
 
@@ -643,8 +689,18 @@ class BillingService:
         if not bill:
             raise HTTPException(status_code=404, detail="Invoice Not Found")
         
+        # FIX: Refund only allowed on SENT invoices — VERIFIED means not yet sent to client
+        if bill.invoice_status not in ("SENT", "CONFIRMED"):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Refund only allowed on SENT invoices. Current status: {bill.invoice_status}"
+            )
+        
         bill.status = "REFUNDED"
         bill.invoice_status = "REFUNDED"
+        # FIX: Auto-archive on refund — refunded bills were polluting the active invoice list
+        bill.is_archived = True
+        bill.archived_by_id = current_user.id
         
         if bill.client_id:
             from app.modules.clients.models import Client
@@ -865,18 +921,27 @@ class BillingService:
         can_verify = await self._can_verify(current_user) and bill.invoice_status == "PENDING_VERIFICATION"
         can_send = await self._can_send(current_user) and bill.invoice_status in {"VERIFIED", "SENT"}
         
-        can_archive = self._can_archive_invoice(current_user, bill) and not bill.is_archived
-        can_unarchive = self._can_archive_invoice(current_user, bill) and bill.is_archived
-        can_delete = (current_user.role == UserRole.ADMIN) and bill.is_archived
+        # FIX: Use bool() to handle None values from MongoDB migration (is_archived may be null)
+        can_archive = self._can_archive_invoice(current_user, bill) and not bool(bill.is_archived)
+        can_unarchive = self._can_archive_invoice(current_user, bill) and bool(bill.is_archived)
+        can_delete = (current_user.role == UserRole.ADMIN) and bool(bill.is_archived)
+        # FIX: Role-gated can_refund (was dropped in migration; any staff could refund)
+        can_refund = (
+            await self._can_send(current_user)
+            and not bool(bill.is_archived)
+            and bill.invoice_status in {"SENT", "CONFIRMED"}
+        )
 
         allowed_verifier_roles = list(await self._allowed_verifier_roles())
-        
+
         return {
             "can_verify": can_verify,
             "can_send_whatsapp": can_send,
             "can_archive": can_archive,
             "can_unarchive": can_unarchive,
+            "can_delete": can_delete,
             "can_delete_archived": can_delete,
+            "can_refund": can_refund,             # FIX: role-gated refund
             "allowed_verifier_roles": allowed_verifier_roles
         }
 
@@ -895,9 +960,22 @@ class BillingService:
 
     async def unarchive_invoice(self, bill_id: PydanticObjectId, current_user: User) -> Bill:
         bill = await self.get_bill(bill_id)
-        if not bill: raise HTTPException(status_code=404, detail="Not Found")
+        if not bill:
+            raise HTTPException(status_code=404, detail="Not Found")
+        # FIX: Permission check was missing (existed in old CRM, dropped in migration)
+        if not self._can_archive_invoice(current_user, bill):
+            raise HTTPException(status_code=403, detail="You do not have permission to unarchive this invoice")
         bill.is_archived = False
         await bill.save()
+        # FIX: Activity log was missing entirely — every other status change is logged
+        await ActivityLogger().log_activity(
+            user_id=current_user.id,
+            user_role=current_user.role,
+            action=ActionType.STATUS_CHANGE,
+            entity_type=EntityType.BILL,
+            entity_id=bill.id,
+            new_data={"archived": False}
+        )
         return bill
 
     async def archive_invoices_bulk(self, ids: List[PydanticObjectId], current_user: User) -> dict:
@@ -919,16 +997,7 @@ class BillingService:
         await bill.save()
         return {"status": "success"}
 
-    async def permanent_delete_invoice(self, bill_id: PydanticObjectId, current_user: User) -> dict:
-        if current_user.role != UserRole.ADMIN:
-            raise HTTPException(status_code=403, detail="Permission Denied")
-        bill = await self.get_bill(bill_id)
-        if not bill: raise HTTPException(status_code=404, detail="Not Found")
-        if not bill.is_archived:
-            raise HTTPException(status_code=400, detail="Only archived invoices can be permanently deleted")
-        
-        await bill.delete()
-        return {"status": "success"}
+    # FIX: Removed duplicate permanent_delete_invoice definition (was dead code — Python used the second one)
 
     async def permanent_delete_invoice(self, bill_id: PydanticObjectId, current_user: User) -> dict:
         if current_user.role != UserRole.ADMIN:
@@ -953,10 +1022,28 @@ class BillingService:
         return {"status": "success", "count": len(ids)}
 
     async def force_sent(self, bill_id: PydanticObjectId, current_user: User) -> Bill:
+        # FIX: Add role guard — was open to all staff_access roles
+        if current_user.role != UserRole.ADMIN:
+            raise HTTPException(status_code=403, detail="Only admins can force-mark an invoice as SENT")
         bill = await self.get_bill(bill_id)
-        if not bill: raise HTTPException(status_code=404, detail="Not Found")
+        if not bill:
+            raise HTTPException(status_code=404, detail="Not Found")
+        # FIX: Status guard — prevent marking a DRAFT/PENDING as SENT without verification
+        if bill.invoice_status != "VERIFIED":
+            raise HTTPException(
+                status_code=400,
+                detail=f"Force-sent only allowed on VERIFIED invoices. Current status: {bill.invoice_status}"
+            )
         bill.invoice_status = "SENT"
         bill.whatsapp_sent = True
         await bill.save()
+        await ActivityLogger().log_activity(
+            user_id=current_user.id,
+            user_role=current_user.role,
+            action=ActionType.STATUS_CHANGE,
+            entity_type=EntityType.BILL,
+            entity_id=bill.id,
+            new_data={"status": "SENT", "method": "FORCE_SENT_MANUAL"}
+        )
         return bill
 

@@ -566,7 +566,8 @@
                 </div>
                 <div class="field-row2 mb-3">
                     <div>
-                        <div class="field-label">Billing Month</div>
+                        <!-- FIX #2 (label): Required star + FIX #2 (input): max/min set by initBillingMonthDropdown to block future months -->
+                        <div class="field-label">Billing Month <span class="required-star">*</span></div>
                         <input type="month" id="c-billing-month" class="field-input">
                     </div>
                     <div>
@@ -770,9 +771,13 @@
                 <button class="modal-close-x" onclick="closeViewModal()"><i class="bi bi-x-lg"></i></button>
             </div>
             <div id="invoice-view-body" style="height: calc(100vh - 200px); overflow-y: auto; background: var(--bg-app); padding: 0;">
-                <!-- HTML content injected here -->
+                <!-- HTML content injected via Blob URL iframe (FIX #4: safe — no srcdoc injection) -->
             </div>
-            <div class="modal-footer px-3 py-2 border-top text-end bg-light">
+            <!-- FIX #4: Download PDF button added to preview modal footer -->
+            <div class="modal-footer px-3 py-2 border-top text-end bg-light d-flex justify-content-between align-items-center">
+                <button class="btn btn-outline-primary btn-sm" onclick="currentPreviewBillId && downloadInvoicePDF(currentPreviewBillId)">
+                    <i class="bi bi-download me-1"></i>Download PDF
+                </button>
                 <button class="btn btn-secondary btn-sm" onclick="closeViewModal()">Close Preview</button>
             </div>
         </div>
@@ -911,9 +916,7 @@
                     if (amtEl) amtEl.value = defaultAmount;
                 } catch (e) { }
 
-                const isAdmin = currentUser && (currentUser.role === 'ADMIN' || currentUser.role === 'PM');
-                const settingsBtn = document.getElementById('admin-settings-btn');
-                if (settingsBtn) settingsBtn.style.display = isAdmin ? 'flex' : 'none';
+                // Settings button removed from billing page — not needed here
 
                 try { workflowOptions = await ApiClient.getInvoiceWorkflowOptions(); } catch (e) { workflowOptions = null; }
                 const canCreateInvoice = Boolean(workflowOptions?.permissions?.can_create_invoice);
@@ -1048,6 +1051,12 @@
         function clearSelectedInvoices() { selectedBillIds.clear(); renderTable(); }
 
         function updateStats() {
+            // FIX #8: Show (filtered) suffix when non-default filter is active so stats aren't misleading
+            const isFiltered = (currentFilters['inv-status'] && currentFilters['inv-status'] !== 'ALL') ||
+                               (currentFilters['search'] && currentFilters['search'].trim()) ||
+                               (currentFilters['payment-type'] && currentFilters['payment-type'] !== 'ALL') ||
+                               (currentFilters['gst-type'] && currentFilters['gst-type'] !== 'ALL');
+            const suffix = isFiltered ? ' (filtered)' : '';
             const total = allBills.length;
             const pending = allBills.filter(b => b.invoice_status === 'PENDING_VERIFICATION').length;
             const sent = allBills.filter(b => b.invoice_status === 'SENT').length;
@@ -1056,6 +1065,9 @@
             document.getElementById('stat-pending').textContent = pending;
             document.getElementById('stat-sent').textContent = sent;
             document.getElementById('stat-revenue').textContent = '₹' + revenue.toLocaleString('en-IN', { maximumFractionDigits: 0 });
+            // Update stat labels to show filtered indicator
+            const totalLabel = document.querySelector('#stat-total')?.closest('.stat-card')?.querySelector('.stat-label');
+            if (totalLabel) totalLabel.textContent = 'Total' + suffix;
         }
 
         function renderTable() {
@@ -1096,8 +1108,9 @@
                         actions += `<button class="action-menu-btn ms-1" title="Permanent Delete (DB)" onclick="permanentDeleteInvoice('${b.id}','${b.invoice_number || ''}')" style="color:#7f1d1d;border-color:#fca5a5;background:#fee2e2;border-style:dashed;"><i class="bi bi-x-octagon"></i></button>`;
                     }
                     
-                    // Refund Action
-                    if (!b.is_archived && !b.is_deleted && st !== 'REFUNDED' && (st === 'SENT' || st === 'VERIFIED')) {
+                    // FIX: Refund button driven by server-side can_refund flag (role-gated: same roles that can send)
+                    // Replaces old hardcoded `st === 'SENT'` check — now TELESALES/PM cannot refund
+                    if (rowActions.can_refund) {
                         actions += `<button class="action-menu-btn ms-1" title="Refund" onclick="refundInvoice('${b.id}','${b.invoice_number || ''}')" style="color:#dc2626;border-color:#fecaca;background:#fef2f2;"><i class="bi bi-arrow-left-right"></i></button>`;
                     }
                     
@@ -1202,6 +1215,7 @@
         }
 
         // ── Wizard: draft persistence & resume ────────────────────────────────────────
+        // FIX #7: All localStorage calls wrapped in try/catch — protects incognito/corporate browsers
         function saveInvoiceWizardDraft() {
             const draft = {
                 name: document.getElementById('c-name').value,
@@ -1216,13 +1230,16 @@
                 qr_data: wizardQRData, // Capture payment transaction details
                 timestamp: Date.now()
             };
-            localStorage.setItem('invoice_wizard_draft', JSON.stringify(draft));
+            try { localStorage.setItem('invoice_wizard_draft', JSON.stringify(draft)); }
+            catch(e) { console.warn('Draft save failed (storage blocked):', e); }
         }
 
         async function resumeInvoiceAfterPayment(status, txnId) {
             console.log('resumeInvoiceAfterPayment: Resuming wizard...', { status, txnId });
             
-            const draftStr = localStorage.getItem('invoice_wizard_draft');
+            let draftStr = null;
+            try { draftStr = localStorage.getItem('invoice_wizard_draft'); }
+            catch(e) { console.warn('Draft read failed (storage blocked):', e); }
             if (draftStr) {
                 try {
                     const draft = JSON.parse(draftStr);
@@ -1279,14 +1296,23 @@
             return new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
         }
 
+        // FIX #2: Billing month max/min to prevent future-month selection
         function initBillingMonthDropdown() {
             const el = document.getElementById('c-billing-month');
-            if (el && !el.value) {
-                const now = new Date();
-                const yyyy = now.getFullYear();
-                const mm = String(now.getMonth() + 1).padStart(2, '0');
-                el.value = `${yyyy}-${mm}`;
-            }
+            if (!el) return;
+            const now = new Date();
+            // Last completed month (max allowed)
+            const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+            const lYyyy = lastMonth.getFullYear();
+            const lMm = String(lastMonth.getMonth() + 1).padStart(2, '0');
+            const lastMonthStr = `${lYyyy}-${lMm}`;
+            // Minimum: 12 months back
+            const minDate = new Date(now.getFullYear() - 1, now.getMonth(), 1);
+            const minYyyy = minDate.getFullYear();
+            const minMm = String(minDate.getMonth() + 1).padStart(2, '0');
+            el.min = `${minYyyy}-${minMm}`;
+            el.max = lastMonthStr;   // ← blocks current & future months
+            if (!el.value) el.value = lastMonthStr; // default to last completed month
         }
 
         function openCreateModal(isResume = false, draftData = null) {
@@ -1346,8 +1372,9 @@
         function closeCreateModal() {
             document.getElementById('createModal').classList.add('d-none');
             wizardQRData = null;
-            // Clear draft when manually closed or completed
-            localStorage.removeItem('invoice_wizard_draft');
+            // FIX #7: try/catch guard for localStorage.removeItem
+            try { localStorage.removeItem('invoice_wizard_draft'); }
+            catch(e) { console.warn('Draft clear failed (storage blocked):', e); }
         }
 
         let amountPreviewTimer = null;
@@ -2020,17 +2047,29 @@
         function closeAutofillModal() { document.getElementById('autofillModal').classList.add('d-none'); }
 
         // ── Invoice Preview ───────────────────────────────────────────────────────────
+        // FIX #4: currentPreviewBillId tracks bill for the Download PDF button in modal footer
+        let currentPreviewBillId = null;
         function previewInvoice(billId) {
-            const token = ApiClient.getAccessToken();
-            const url = `${ApiClient.API_BASE_URL}/billing/${billId}/invoice-html`;
+            currentPreviewBillId = billId;  // Track for Download PDF button
+            const token = ApiClient.getAccessToken ? ApiClient.getAccessToken() : ApiClient.getToken();
+            const url = `${ApiClient.BASE_URL}/billing/${billId}/invoice-html`;
             const previewBody = document.getElementById('invoice-view-body');
             previewBody.innerHTML = '<div class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading invoice preview...</div>';
             document.getElementById('viewModal').classList.remove('d-none');
             
             fetch(url, { headers: { 'Authorization': 'Bearer ' + token } })
-                .then(r => r.text())
+                .then(r => {
+                    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                    return r.text();
+                })
                 .then(html => {
-                    previewBody.innerHTML = `<iframe style="width: 100%; height: 100%; border: none;" srcdoc='${html.replace(/'/g, "&apos;")}'></iframe>`;
+                    // FIX #4: Use safe Blob URL instead of srcdoc injection
+                    // srcdoc with only single-quote escaping breaks on &, ", < in client data
+                    const blob = new Blob([html], { type: 'text/html' });
+                    const blobUrl = URL.createObjectURL(blob);
+                    previewBody.innerHTML = `<iframe src="${blobUrl}" style="width:100%;height:100%;border:none;"></iframe>`;
+                    // Revoke after load to free memory
+                    previewBody.querySelector('iframe').onload = () => URL.revokeObjectURL(blobUrl);
                 })
                 .catch(e => {
                     showToast('Failed to load invoice: ' + e.message, 'error');
@@ -2105,7 +2144,14 @@
             btn.disabled = true; btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verifying...';
             try {
                 await ApiClient.verifyInvoice(pendingActionBillId);
-                closeVerifyModal(); showToast('Invoice verified! Ready to send via WhatsApp.', 'success');
+                closeVerifyModal();
+                showToast('Invoice verified! Ready to send via WhatsApp.', 'success');
+                // FIX #6: Auto-switch to VERIFIED view — row disappearing from PENDING view was confusing
+                currentFilters['inv-status'] = 'VERIFIED';
+                switchView('VERIFIED');
+                // Sync the filter panel dropdown so it visually reflects the new filter
+                const statusDropdown = document.getElementById('inv-status');
+                if (statusDropdown) statusDropdown.value = 'VERIFIED';
                 await loadBills();
             } catch (e) { showToast(e.data?.detail || e.message || 'Verification failed', 'error'); }
             finally { btn.disabled = false; btn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Verify Invoice'; }

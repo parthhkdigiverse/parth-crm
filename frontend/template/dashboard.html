@@ -1072,6 +1072,7 @@
                 gap: 12px !important;
                 padding: 12px 16px !important;
             }
+
             .filter-panel-head-left {
                 grid-column: 1;
                 grid-row: 1;
@@ -1080,6 +1081,7 @@
                 align-items: center;
                 gap: 8px;
             }
+
             .filter-panel-head-right {
                 grid-column: 2;
                 grid-row: 1;
@@ -1089,6 +1091,7 @@
                 justify-content: center;
                 margin: 0;
             }
+
             .period-picker-group {
                 grid-column: 1 / -1;
                 grid-row: 2;
@@ -1101,9 +1104,11 @@
                 -ms-overflow-style: none;
                 scrollbar-width: none;
             }
+
             .period-picker-group::-webkit-scrollbar {
                 display: none;
             }
+
             .period-context-badge {
                 display: none !important;
             }
@@ -1648,11 +1653,15 @@
                         <div class="filter-grid">
                             <div class="filter-field">
                                 <label>Area</label>
-                                <select id="filter-area" class="form-select"><option value="">All Areas</option></select>
+                                <select id="filter-area" class="form-select">
+                                    <option value="">All Areas</option>
+                                </select>
                             </div>
                             <div class="filter-field">
                                 <label>User</label>
-                                <select id="filter-user" class="form-select"><option value="">All Users</option></select>
+                                <select id="filter-user" class="form-select">
+                                    <option value="">All Users</option>
+                                </select>
                             </div>
                             <div class="filter-field" style="grid-column: span 2;">
                                 <label>Date Range</label>
@@ -1664,7 +1673,8 @@
                             </div>
                         </div>
                         <div class="filter-actions">
-                            <button class="btn-filter-reset" id="reset-filters"><i class="bi bi-x-circle"></i> Clear</button>
+                            <button class="btn-filter-reset" id="reset-filters"><i class="bi bi-x-circle"></i>
+                                Clear</button>
                         </div>
                     </div>
                 </div>
@@ -1685,7 +1695,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="kpi-trend" id="kpi-leads-trend">—</div>
+                                <div class="kpi-trend" id="kpi-leads-trend"></div>
                             </div>
                         </a>
                     </div>
@@ -1703,7 +1713,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="kpi-trend" id="kpi-clients-trend">—</div>
+                                <div class="kpi-trend" id="kpi-clients-trend"></div>
                             </div>
                         </a>
                     </div>
@@ -1721,7 +1731,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="kpi-trend" id="kpi-employees-trend">—</div>
+                                <div class="kpi-trend" id="kpi-employees-trend"></div>
                             </div>
                         </a>
                     </div>
@@ -1739,7 +1749,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="kpi-trend" id="kpi-revenue-trend">—</div>
+
                             </div>
                         </a>
                     </div>
@@ -3051,10 +3061,10 @@
             var user = document.getElementById('filter-user');
             var startEl = document.getElementById('filter-start');
             var endEl = document.getElementById('filter-end');
-            
+
             var start = startEl ? startEl.value : '';
             var end = endEl ? endEl.value : '';
-            
+
             if (area && area.value) parts.push({ key: 'area', label: area.options[area.selectedIndex].text, inputId: 'filter-area' });
             if (user && user.value) parts.push({ key: 'user', label: user.options[user.selectedIndex].text, inputId: 'filter-user' });
             if (start) parts.push({ key: 'start', label: 'From: ' + start, inputId: 'filter-start' });
