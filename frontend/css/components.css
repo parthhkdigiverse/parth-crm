@@ -82,7 +82,8 @@
 
 
 .stat-card {
-    padding: 24px !important; /* USER REQUEST: More internal margin/padding */
+    padding: 24px !important;
+    /* USER REQUEST: More internal margin/padding */
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -103,13 +104,15 @@
     color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    margin-bottom: 12px; /* Add margin below label */
+    margin-bottom: 12px;
+    /* Add margin below label */
 }
 
 /* ── Premium Stat Cards (with Top Gradient) ── */
 .card-premium-stat {
     position: relative !important;
-    padding-top: 1.5rem !important; /* Space for the top bar */
+    padding-top: 1.5rem !important;
+    /* Space for the top bar */
     overflow: hidden !important;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
@@ -1106,12 +1109,14 @@ input[type="password"]::-ms-clear {
     left: 50%;
     transform: translateX(-50%);
     width: auto;
-    min-width: 340px; /* Reduced further for compact feel */
+    min-width: 340px;
+    /* Reduced further for compact feel */
     background: rgba(15, 23, 42, 0.88);
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
     color: white;
-    padding: 6px 14px; /* Balanced horizontal padding */
+    padding: 6px 14px;
+    /* Balanced horizontal padding */
     border-radius: 100px;
     z-index: 2000;
     transition: bottom 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
@@ -1119,8 +1124,10 @@ input[type="password"]::-ms-clear {
     border: 1px solid rgba(255, 255, 255, 0.14);
     display: flex;
     align-items: center;
-    justify-content: center; /* USER REQUEST: Buttons closer together */
-    gap: 8px; /* Reduced gap */
+    justify-content: center;
+    /* USER REQUEST: Buttons closer together */
+    gap: 8px;
+    /* Reduced gap */
     opacity: 0;
 }
 
@@ -1130,15 +1137,16 @@ input[type="password"]::-ms-clear {
     opacity: 1;
 }
 
-.bulk-action-bar-left, 
-.bulk-action-bar-center, 
+.bulk-action-bar-left,
+.bulk-action-bar-center,
 .bulk-action-bar-right {
     display: flex;
     align-items: center;
 }
 
 .bulk-select-badge {
-    background: linear-gradient(135deg, #059669, #10b981); /* Clean Emerald-Teal */
+    background: linear-gradient(135deg, #059669, #10b981);
+    /* Clean Emerald-Teal */
     color: white;
     padding: 5px 14px;
     border-radius: 50px;
@@ -1167,7 +1175,8 @@ input[type="password"]::-ms-clear {
 }
 
 .bulk-delete-confirm-btn {
-    background: linear-gradient(135deg, #f59e0b, #ea580c); /* Modern Amber-Orange */
+    background: linear-gradient(135deg, #ef4444, #b91c1c);
+    /* Modern Red-Danger */
     border: 1px solid rgba(255, 255, 255, 0.1);
     color: white;
     padding: 7px 20px;
@@ -1175,17 +1184,38 @@ input[type="password"]::-ms-clear {
     font-size: 0.82rem;
     font-weight: 700;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.25);
+    box-shadow: 0 4px 15px rgba(239, 68, 68, 0.25);
     cursor: pointer;
 }
 
 .bulk-delete-confirm-btn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.35);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.35);
     filter: brightness(1.1);
 }
 
-.bulk-delete-confirm-btn:active {
+.bulk-archive-btn {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    /* Premium Royal Blue */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    padding: 7px 20px;
+    border-radius: 50px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 15px rgba(37, 99, 235, 0.25);
+    cursor: pointer;
+}
+
+.bulk-archive-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+    filter: brightness(1.1);
+}
+
+.bulk-delete-confirm-btn:active,
+.bulk-archive-btn:active {
     transform: translateY(0);
 }
 
@@ -1209,7 +1239,7 @@ input[type="password"]::-ms-clear {
         font-size: 0.72rem !important;
     }
 
-    .btn-bulk-cancel, 
+    .btn-bulk-cancel,
     .bulk-delete-confirm-btn {
         padding: 5px 10px !important;
         font-size: 0.72rem !important;
@@ -1973,20 +2003,24 @@ input[type="password"]::-ms-clear {
 
 /* --- Salary Table Specific Responsive Tweaks --- */
 @media (max-width: 991.98px) {
+
     .srm-table-salary thead th:nth-child(4),
     .srm-table-salary thead th:nth-child(5),
     .srm-table-salary thead th:nth-child(6),
     .srm-table-salary tbody td:nth-child(4),
     .srm-table-salary tbody td:nth-child(5),
     .srm-table-salary tbody td:nth-child(6) {
-        display: none; /* Hide secondary columns on tablets and smaller */
+        display: none;
+        /* Hide secondary columns on tablets and smaller */
     }
 }
 
 @media (max-width: 575.98px) {
+
     .srm-table-salary thead th:nth-child(3),
     .srm-table-salary tbody td:nth-child(3) {
-        display: none; /* Hide base salary on tiny screens */
+        display: none;
+        /* Hide base salary on tiny screens */
     }
 }
 
@@ -1994,6 +2028,7 @@ input[type="password"]::-ms-clear {
 .srm-table-salary {
     min-width: 600px;
 }
+
 @media (max-width: 767.98px) {
     .srm-table-salary {
         min-width: 450px;
@@ -2777,13 +2812,15 @@ input[type="password"]::-ms-clear {
         font-size: 0.55rem;
     }
 }
+
 /* ── Modern Multi-Select (SRM) ────────────────────────── */
 .srm-multi-select-container {
     position: relative;
     width: 100%;
     min-height: 48px;
     background: var(--bg-surface);
-    border: 1.5px solid #cbd5e1; /* Darkened border for better visibility */
+    border: 1.5px solid #cbd5e1;
+    /* Darkened border for better visibility */
     border-radius: 12px;
     padding: 6px 12px;
     display: flex;
@@ -2792,7 +2829,8 @@ input[type="password"]::-ms-clear {
     gap: 6px;
     cursor: text;
     transition: all 0.2s ease;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); /* Added subtle shadow */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    /* Added subtle shadow */
 }
 
 .srm-multi-select-container:focus-within {
@@ -2841,7 +2879,8 @@ input[type="password"]::-ms-clear {
 }
 
 .srm-multi-select-input::placeholder {
-    color: #94a3b8; /* More distinct placeholder color */
+    color: #94a3b8;
+    /* More distinct placeholder color */
     opacity: 1;
 }
 
@@ -2881,7 +2920,8 @@ input[type="password"]::-ms-clear {
 .srm-multi-select-item .srm-checkbox {
     width: 18px;
     height: 18px;
-    border: 2px solid #cbd5e1; /* Darkened border for better visibility */
+    border: 2px solid #cbd5e1;
+    /* Darkened border for better visibility */
     border-radius: 4px;
     display: flex;
     align-items: center;
@@ -2895,7 +2935,8 @@ input[type="password"]::-ms-clear {
 }
 
 .srm-multi-select-item.selected .srm-checkbox::after {
-    content: '\F633'; /* bi-check */
+    content: '\F633';
+    /* bi-check */
     font-family: 'bootstrap-icons';
     color: white;
     font-size: 14px;
@@ -2924,5 +2965,6 @@ input[type="password"]::-ms-clear {
     z-index: 10;
     padding: 10px 16px;
     border-bottom: 2px solid var(--border-subtle);
-    background: #f8faff; /* Solid light background for sticky header */
+    background: #f8faff;
+    /* Solid light background for sticky header */
 }

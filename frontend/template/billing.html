@@ -981,10 +981,11 @@
                     if (isArchiveView) {
                         deleteSelectedArchivedInvoices();
                     } else {
-                        archiveSelectedInvoices();
+                        // Soft delete (hide) even from active view
+                        deleteSelectedArchivedInvoices();
                     }
                 },
-                onCancel: () => clearSelectedInvoices()
+                onArchive: isArchiveView ? null : () => archiveSelectedInvoices()
             });
         }
 
@@ -1092,7 +1093,6 @@
                     if (canSendRow && (st === 'VERIFIED' || st === 'SENT')) {
                         actions += `<button class="action-menu-btn" title="Send via WhatsApp" onclick="openWAModal('${b.id}',\`${clientDisplay}\`,\`${b.invoice_number}\`,\`${phone}\`)" style="color:#1565C0;border-color:#bfdbfe;background:#EFF6FF;"><i class="bi bi-whatsapp"></i></button>`;
                     }
-                    if (rowActions.can_archive) actions += `<button class="action-menu-btn ms-1" title="Archive" onclick="archiveInvoice('${b.id}','${b.invoice_number || ''}')" style="color:#92400e;border-color:#fde68a;background:#fffbeb;"><i class="bi bi-archive"></i></button>`;
                     if (rowActions.can_unarchive) actions += `<button class="action-menu-btn ms-1" title="Restore" onclick="unarchiveInvoice('${b.id}','${b.invoice_number || ''}')" style="color:#0369a1;border-color:#bae6fd;background:#f0f9ff;"><i class="bi bi-box-arrow-up"></i></button>`;
                     if (rowActions.can_delete) {
                         // Soft Delete (is_deleted=True)
