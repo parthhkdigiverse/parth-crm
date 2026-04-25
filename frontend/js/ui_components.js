@@ -16,16 +16,24 @@ window.updateBulkActionBar = function (options) {
     if (!bar) {
         const html = `
         <div id="bulk-action-bar" class="bulk-action-bar">
-            <div class="d-flex align-items-center gap-3">
-                <div class="bulk-select-badge"><span id="bulk-count-val">0</span> Selected</div>
-                <button class="btn btn-link p-0" id="bulk-cancel-btn">Cancel</button>
+            <div class="bulk-action-bar-left">
+                <div class="bulk-select-badge">
+                    <i class="bi bi-check2-all me-2"></i>
+                    <span id="bulk-count-val">0</span> <span class="d-none d-sm-inline">Selected</span>
+                </div>
             </div>
-            <div class="bulk-action-btn-group">
+            <div class="bulk-action-bar-center">
+                <button class="btn-bulk-cancel" id="bulk-cancel-btn">
+                    <i class="bi bi-x-lg me-1"></i> Cancel
+                </button>
+            </div>
+            <div class="bulk-action-bar-right">
                 <button class="bulk-delete-confirm-btn" id="bulk-delete-confirm-btn">
-                    <i class="bi bi-trash me-2"></i> Delete
+                    <i class="bi bi-trash3-fill me-2"></i> Delete
                 </button>
             </div>
         </div>`;
+
         document.body.insertAdjacentHTML('beforeend', html);
         bar = document.getElementById('bulk-action-bar');
     }

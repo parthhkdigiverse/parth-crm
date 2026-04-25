@@ -1099,93 +1099,124 @@ input[type="password"]::-ms-clear {
     width: 360px;
 }
 
-/* â”€â”€ Bulk Action Bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Bulk Action Bar (Glassmorphism & Modern) ── */
 .bulk-action-bar {
     position: fixed;
     bottom: -100px;
     left: 50%;
     transform: translateX(-50%);
     width: auto;
-    min-width: 300px;
-    background: rgba(13, 21, 38, 0.95);
-    /* Increased from 0.88 */
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    min-width: 340px; /* Reduced further for compact feel */
+    background: rgba(15, 23, 42, 0.88);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
     color: white;
-    padding: 11px 22px;
+    padding: 6px 14px; /* Balanced horizontal padding */
     border-radius: 100px;
     z-index: 2000;
-    transition: bottom 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.24s ease;
-    box-shadow: var(--shadow-xl);
-    border: 1px solid rgba(255, 255, 255, 0.10);
+    transition: bottom 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.14);
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 24px;
+    justify-content: center; /* USER REQUEST: Buttons closer together */
+    gap: 8px; /* Reduced gap */
     opacity: 0;
 }
 
+
 .bulk-action-bar.show {
-    bottom: 28px;
+    bottom: 24px;
     opacity: 1;
 }
 
+.bulk-action-bar-left, 
+.bulk-action-bar-center, 
+.bulk-action-bar-right {
+    display: flex;
+    align-items: center;
+}
+
 .bulk-select-badge {
-    background: var(--primary);
+    background: linear-gradient(135deg, #059669, #10b981); /* Clean Emerald-Teal */
     color: white;
-    padding: 3px 13px;
+    padding: 5px 14px;
     border-radius: 50px;
     font-weight: 700;
     font-size: 0.82rem;
+    box-shadow: 0 4px 10px rgba(16, 185, 129, 0.25);
+    white-space: nowrap;
 }
 
-.bulk-action-btn-group {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+.btn-bulk-cancel {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #e2e8f0;
+    padding: 5px 16px;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    cursor: pointer;
 }
 
-.bulk-action-bar .btn-link:hover {
-    color: #f8fafc;
-}
-
-@media (max-width: 575.98px) {
-    .bulk-action-bar {
-        width: 92% !important;
-        min-width: 0 !important;
-        gap: 12px !important;
-        padding: 8px 16px !important;
-    }
-
-    .bulk-select-badge {
-        padding: 2px 8px !important;
-        font-size: 0.7rem !important;
-    }
-
-    .bulk-action-bar .btn-link {
-        font-size: 0.7rem !important;
-    }
+.btn-bulk-cancel:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    border-color: rgba(255, 255, 255, 0.3);
 }
 
 .bulk-delete-confirm-btn {
-    background: var(--danger);
-    border: none;
+    background: linear-gradient(135deg, #f59e0b, #ea580c); /* Modern Amber-Orange */
+    border: 1px solid rgba(255, 255, 255, 0.1);
     color: white;
-    padding: 5px 18px;
+    padding: 7px 20px;
     border-radius: 50px;
     font-size: 0.82rem;
     font-weight: 700;
-    transition: all 0.18s;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.25);
+    cursor: pointer;
 }
 
 .bulk-delete-confirm-btn:hover {
-    background: #b91c1c;
-    transform: scale(1.02);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.35);
+    filter: brightness(1.1);
 }
 
 .bulk-delete-confirm-btn:active {
-    transform: scale(0.98);
+    transform: translateY(0);
 }
+
+/* ── Mobile Optimizations ── */
+@media (max-width: 575.98px) {
+    .bulk-action-bar {
+        width: 96% !important;
+        min-width: 0 !important;
+        gap: 6px !important;
+        padding: 6px !important;
+        border-radius: 16px;
+        bottom: -120px;
+    }
+
+    .bulk-action-bar.show {
+        bottom: 16px;
+    }
+
+    .bulk-select-badge {
+        padding: 5px 10px !important;
+        font-size: 0.72rem !important;
+    }
+
+    .btn-bulk-cancel, 
+    .bulk-delete-confirm-btn {
+        padding: 5px 10px !important;
+        font-size: 0.72rem !important;
+    }
+}
+
+
 
 /* â”€â”€ Global Table Responsiveness â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 .table-responsive {

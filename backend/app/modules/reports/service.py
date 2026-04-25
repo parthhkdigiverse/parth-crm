@@ -451,6 +451,19 @@ class ReportService:
                 }
             },
             {
+                "$lookup": {
+                    "from": "srm_incentive_slips",
+                    "let": { "u_id": "$_id" },
+                    "pipeline": [
+                        { "$match": { 
+                            "$expr": { "$eq": ["$user_id", "$$u_id"] },
+                            "generated_at": { "$gte": start_dt, "$lte": end_dt }
+                        }}
+                    ],
+                    "as": "incentive_slips"
+                }
+            },
+            {
                 "$project": {
                     "name": 1,
                     "email": 1,
@@ -460,6 +473,7 @@ class ReportService:
                     "total_visits": {"$size": "$visits"},
                     "total_leads": {"$size": {"$filter": {"input": "$visits", "cond": {"$eq": ["$$this.status", "COMPLETED"]}}}},
                     "revenue": {"$sum": "$payments.amount"},
+                    "incentive_amt": {"$sum": "$incentive_slips.total_incentive"},
                     "total_projects": {"$size": {"$filter": {"input": "$all_projects", "cond": {"$eq": ["$$this.is_deleted", False]}}}},
                     "total_open_issues": {"$size": {"$filter": {"input": "$all_issues", "cond": {"$and": [{"$eq": ["$$this.status", "OPEN"]}, {"$eq": ["$$this.is_deleted", False]}]}}}}
                 }
@@ -485,7 +499,7 @@ class ReportService:
                 "success_rate": round((tl / tv * 100), 1) if tv > 0 else 0.0,
                 "total_sales": rev,
                 "total_revenue": rev,
-                "total_incentive": round(rev * 0.05, 2),
+                "total_incentive": round(float(r.get("incentive_amt", 0.0)), 2),
                 "total_projects": r.get("total_projects", 0),
                 "total_open_issues": r.get("total_open_issues", 0),
                 "target": r.get("target", 0),

@@ -3,7 +3,7 @@ from beanie import PydanticObjectId
 from beanie.operators import In, Or, And
 from fastapi import HTTPException
 from datetime import datetime, UTC
-from typing import List, Optional
+from typing import List, Optional, Any
 import calendar
 import os
 import base64
@@ -19,12 +19,13 @@ class SalaryService:
         # No db session needed in Beanie!
         pass
 
-    async def _get_working_days_for_month(self, year: int, month_num: int) -> float:
+    async def _get_working_days_for_month(self, year: int, month_num: int, settings: Optional[Any] = None) -> float:
         from datetime import date, timedelta
         import calendar
         from app.modules.settings.models import SystemSettings
         
-        settings = await SystemSettings.find_one()
+        if settings is None:
+            settings = await SystemSettings.find_one()
         saturday_policy = settings.saturday_policy if settings and hasattr(settings, 'saturday_policy') else "FULL_WORKING"
         
         _, last_day = calendar.monthrange(year, month_num)
@@ -327,10 +328,32 @@ class SalaryService:
         return await self._filter_and_format_slips(slips)
 
     async def _filter_and_format_slips(self, slips: List[SalarySlip]) -> List[dict]:
+        if not slips:
+            return []
+
         from collections import defaultdict
         groups = defaultdict(list)
         for s in slips:
             groups[(str(s.user_id), s.month)].append(s)
+
+        # 1. Collect all unique user IDs
+        user_ids = {s.user_id for s in slips if s.user_id}
+        
+        # 2. Bulk fetch all users
+        users_list = await User.find(In(User.id, list(user_ids))).to_list()
+        user_map = {str(u.id): u for u in users_list}
+
+        # 3. Fetch system settings once
+        from app.modules.settings.models import SystemSettings
+        settings = await SystemSettings.find_one()
+
+        # 4. Memoize working days per month
+        wd_memo = {}
+        async def get_wd_cached(month_str):
+            if month_str not in wd_memo:
+                y, m = map(int, month_str.split('-'))
+                wd_memo[month_str] = await self._get_working_days_for_month(y, m, settings=settings)
+            return wd_memo[month_str]
 
         filtered = []
         for key, group in groups.items():
@@ -339,7 +362,7 @@ class SalaryService:
             confirmed = [s for s in group if s.status == "CONFIRMED"]
             keeper = confirmed[0] if confirmed else group[0]
             
-            user = await User.get(PydanticObjectId(str(keeper.user_id)))
+            user = user_map.get(str(keeper.user_id))
             if not user:
                 continue
                 
@@ -352,7 +375,9 @@ class SalaryService:
             if "test" in name_lower or "test" in email_lower:
                 continue
 
-            filtered.append(await self._format_slip(keeper))
+            # Optimized format call
+            wd = await get_wd_cached(keeper.month)
+            filtered.append(await self._format_slip(keeper, user=user, settings=settings, total_working_days=wd))
 
         # Re-sort descending by month since dict grouping loses original sorting
         filtered.sort(key=lambda x: x.get("month", ""), reverse=True)
@@ -501,7 +526,7 @@ class SalaryService:
         await slip.save()
         return await self._format_slip(slip)
 
-    async def _format_slip(self, slip: SalarySlip) -> dict:
+    async def _format_slip(self, slip: SalarySlip, user: Optional[User] = None, settings: Optional[Any] = None, total_working_days: Optional[float] = None) -> dict:
         """Helper to format a slip for API response with enriched data if needed."""
         data = slip.model_dump()
         # MongoDB ID mapping for consistency
@@ -512,21 +537,25 @@ class SalaryService:
         if data.get("incentive_breakdown") is None:
             data["incentive_breakdown"] = {}
             
-        from bson import ObjectId as BsonObjectId
-        user = await User.find_one({"_id": BsonObjectId(str(slip.user_id))})
+        if user is None:
+            from bson import ObjectId as BsonObjectId
+            user = await User.find_one({"_id": BsonObjectId(str(slip.user_id))})
+            
         if user:
             data["user_name"] = user.name or user.email
             data["employee_name"] = user.name or user.email
             
         try:
             year, month_num = map(int, slip.month.split('-'))
-            total_working_days = await self._get_working_days_for_month(year, month_num)
+            if total_working_days is None:
+                total_working_days = await self._get_working_days_for_month(year, month_num, settings=settings)
+            
             data["total_working_days_in_month"] = total_working_days
             daily_wage = (slip.base_salary or 0) / (total_working_days if total_working_days > 0 else 30)
             data["leave_deduction"] = round(daily_wage * (slip.unpaid_leaves or 0), 2)
         except:
-            data["total_working_days_in_month"] = 30
-            data["leave_deduction"] = 0.0
+            data["total_working_days_in_month"] = data.get("total_working_days_in_month", 30)
+            data["leave_deduction"] = data.get("leave_deduction", 0.0)
 
         return data
 
