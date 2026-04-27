@@ -10,7 +10,7 @@ window.getInitials = function (name) {
 };
 
 window.updateBulkActionBar = function (options) {
-    const { count, onDelete, onArchive, deleteText = "Delete", archiveText = "Archive" } = options || {};
+    const { count, onDelete, onArchive, deleteText = "Delete", archiveText = "Archive", compact = false } = options || {};
     let bar = document.getElementById('bulk-action-bar');
 
     if (!bar) {
@@ -46,6 +46,9 @@ window.updateBulkActionBar = function (options) {
         if (countVal) countVal.textContent = count;
         if (deleteTextEl) deleteTextEl.textContent = deleteText;
         if (archiveTextEl) archiveTextEl.textContent = archiveText;
+        
+        if (compact) bar.classList.add('bulk-bar-compact');
+        else bar.classList.remove('bulk-bar-compact');
         
         bar.classList.add('show');
 

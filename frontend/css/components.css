@@ -1131,6 +1131,12 @@ input[type="password"]::-ms-clear {
     opacity: 0;
 }
 
+.bulk-bar-compact {
+    min-width: 0 !important;
+    padding: 6px 8px !important;
+    gap: 12px !important;
+}
+
 
 .bulk-action-bar.show {
     bottom: 24px;

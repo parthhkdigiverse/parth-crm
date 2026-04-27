@@ -1345,6 +1345,7 @@
             const selected = document.querySelectorAll('.meeting-checkbox:checked').length;
             window.updateBulkActionBar({
                 count: selected,
+                compact: true,
                 onDelete: () => batchDeleteMeetings(),
                 onCancel: () => {
                     document.querySelectorAll('.meeting-checkbox').forEach(cb => cb.checked = false);
