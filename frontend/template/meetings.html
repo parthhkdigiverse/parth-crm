@@ -622,15 +622,20 @@
                     <div class="mb-0">
                         <div class="row g-2">
                             <div class="col-6">
-                                <label class="form-label fw-semibold extra-small uppercase text-muted">Start Time <span class="text-danger">*</span></label>
-                                <input type="time" id="res-start-time" class="form-control border-2 shadow-none" onchange="syncTimesToId()">
+                                <label class="form-label fw-semibold extra-small uppercase text-muted">Start Time <span
+                                        class="text-danger">*</span></label>
+                                <input type="time" id="res-start-time" class="form-control border-2 shadow-none"
+                                    onchange="syncTimesToId()">
                             </div>
                             <div class="col-6">
-                                <label class="form-label fw-semibold extra-small uppercase text-muted">End Time <span class="text-danger">*</span></label>
-                                <input type="time" id="res-end-time" class="form-control border-2 shadow-none" onchange="syncTimesToId()">
+                                <label class="form-label fw-semibold extra-small uppercase text-muted">End Time <span
+                                        class="text-danger">*</span></label>
+                                <input type="time" id="res-end-time" class="form-control border-2 shadow-none"
+                                    onchange="syncTimesToId()">
                             </div>
                         </div>
-                        <div class="text-muted extra-small mt-2">Manual time selection will override slot selection.</div>
+                        <div class="text-muted extra-small mt-2">Manual time selection will override slot selection.
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer border-0 pt-0">
@@ -718,7 +723,7 @@
                     if (modal) bootstrap.Modal.getOrCreateInstance(modal).show();
                 }
                 // Update table with names if already loaded
-                if (window.meetingsCount > 0) loadMeetings(); 
+                if (window.meetingsCount > 0) loadMeetings();
             } catch (e) {
                 console.error("Client Load Failed", e);
             }
@@ -732,7 +737,7 @@
                 sel.innerHTML = '<option value="">-- Select Project --</option>' +
                     allProjects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
                 // Update table with names if already loaded
-                if (window.meetingsCount > 0) loadMeetings(); 
+                if (window.meetingsCount > 0) loadMeetings();
             } catch (e) {
                 console.error("Projects Load Failed", e);
             }
@@ -1108,22 +1113,22 @@
                                 <div class="fw-semibold">${m.date ? new Date(m.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</div>
                                 <div class="text-muted extra-small">
                                     ${(() => {
-                                        const d = m.date ? new Date(m.date) : null;
-                                        const fmt = (ts) => {
-                                            const [h, min] = ts.split(':');
-                                            const td = new Date(); td.setHours(h, min);
-                                            return td.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }).toLowerCase();
-                                        };
-                                        let st = m.start_time;
-                                        let et = m.end_time;
-                                        if (!st && d) st = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-                                        if (!et && st) {
-                                            const [h, min] = st.split(':').map(Number);
-                                            et = `${String((h + 1) % 24).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
-                                        }
-                                        if (st && et) return `${fmt(st)} - ${fmt(et)}`;
-                                        return d ? d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }).toLowerCase() : '—';
-                                    })()}
+                                const d = m.date ? new Date(m.date) : null;
+                                const fmt = (ts) => {
+                                    const [h, min] = ts.split(':');
+                                    const td = new Date(); td.setHours(h, min);
+                                    return td.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }).toLowerCase();
+                                };
+                                let st = m.start_time;
+                                let et = m.end_time;
+                                if (!st && d) st = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+                                if (!et && st) {
+                                    const [h, min] = st.split(':').map(Number);
+                                    et = `${String((h + 1) % 24).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+                                }
+                                if (st && et) return `${fmt(st)} - ${fmt(et)}`;
+                                return d ? d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }).toLowerCase() : '—';
+                            })()}
                                 </div>
                             </td>
                             <td><span class="badge status-badge border ${statusBadge(m.status)}">${m.status || 'Scheduled'}</span></td>
@@ -1253,7 +1258,7 @@
                         const eh = String((d.getHours() + 1) % 24).padStart(2, '0');
                         existingEnd = `${eh}:${min}`;
                     }
-                } catch(e) {}
+                } catch (e) { }
             }
 
             document.getElementById('res-selected-time').value = existingStart || '';
@@ -1360,7 +1365,7 @@
             btnEl.classList.remove('btn-outline-primary');
             btnEl.classList.add('btn-primary', 'text-white', 'shadow');
             document.getElementById('res-selected-time').value = timeValue;
-            
+
             // Sync manual fields (assume 1-hour slot)
             if (timeValue) {
                 document.getElementById('res-start-time').value = timeValue;
@@ -1390,7 +1395,7 @@
 
             try {
                 const new_date = `${d}T${start}:00`;
-                await apiPost(`/meetings/${id}/reschedule`, { 
+                await apiPost(`/meetings/${id}/reschedule`, {
                     new_date: new_date,
                     start_time: start,
                     end_time: end
@@ -1490,8 +1495,8 @@
 
         // ────────── INITIALIZE ──────────
         // Start ALL fetches in parallel for "Instant" opening
-        loadMeetings(); 
-        
+        loadMeetings();
+
         Promise.allSettled([loadClients(), loadProjects(), loadAllUsers()]).then(() => {
             initFilters();
             initDatePicker();

@@ -23,29 +23,29 @@ class MeetingService:
             return None
             
         if current_user and current_user.role != UserRole.ADMIN:
-            # Check host/attendee
+            # 1. Primary Authorization: Host or Attendee
             is_authorized = (
                 meeting.host_id == current_user.id or
                 current_user.id in (meeting.attendee_ids or [])
             )
             
-            # Check client scope for PMs/Sales/Demo PMs
+            # 2. Secondary Authorization: PM/Sales Scope for the Client
             if not is_authorized:
                 if meeting.client_id:
                     from app.modules.clients.service import ClientService
                     try:
-                        # Full RBAC check including Owner, Current PM, Demo PM, and Invoice Bridge
+                        # ClientService handles PM/Sales ownership and mixed role access
                         client = await ClientService().get_client(meeting.client_id, current_user)
                         if client:
                             is_authorized = True
                     except HTTPException:
                         pass
                 
-                # Direct check if user is the PM for the specific project linked to this meeting
+                # 3. Tertiary Authorization: Project-specific PM access
                 if not is_authorized and meeting.project_id:
-                    from app.modules.shops.models import Shop
-                    shop = await Shop.get(meeting.project_id)
-                    if shop and shop.project_manager_id == current_user.id:
+                    from app.modules.projects.models import Project
+                    project = await Project.get(meeting.project_id)
+                    if project and project.pm_id == current_user.id:
                         is_authorized = True
             
             if not is_authorized:
@@ -215,7 +215,7 @@ class MeetingService:
         return db_meeting
 
     async def update_meeting(self, meeting_id: PydanticObjectId, update_in: MeetingSummaryUpdateBase, current_user: User, request: Request):
-        db_meeting = await self.get_meeting(meeting_id)
+        db_meeting = await self.get_meeting(meeting_id, current_user=current_user)
         if not db_meeting: 
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Meeting not found")
 
@@ -232,9 +232,23 @@ class MeetingService:
                 if "title" in update_dict:
                     todo.title = f"Meeting: {db_meeting.title}"
                 if "status" in update_dict:
-                    if update_dict["status"] in [GlobalTaskStatus.RESOLVED, GlobalTaskStatus.DONE]:
+                    if update_dict["status"] == GlobalTaskStatus.RESOLVED:
                         todo.status = TodoStatus.COMPLETED
                 await todo.save()
+        
+        # -- Synchronization: Update notification link status --
+        if update_dict.get("status") in [GlobalTaskStatus.RESOLVED, GlobalTaskStatus.CANCELLED]:
+            if db_meeting.meet_link:
+                try:
+                    from app.modules.notifications.models import Notification
+                    import re
+                    notifs = await Notification.find({"message": re.compile(f"LINK:{db_meeting.meet_link}")}).to_list()
+                    for notif in notifs:
+                        if "STATUS:COMPLETED" not in notif.message:
+                            notif.message += "\nSTATUS:COMPLETED"
+                            await notif.save()
+                except Exception as e:
+                    print(f"[MeetingService] Notif sync error: {e}")
         
         return db_meeting
 
@@ -296,6 +310,35 @@ class MeetingService:
             if client:
                 await notify_client_stakeholders(client, "🔁 Meeting Rescheduled", f"Meeting '{db_meeting.title}' rescheduled to {new_date.strftime('%d %b, %I:%M %p')}.", actor_id=current_user.id)
         except Exception as e: print(f"Reschedule notif error: {e}")
+
+        return db_meeting
+
+    async def cancel_meeting(self, meeting_id: PydanticObjectId, reason: Optional[str], current_user: User, request: Request):
+        db_meeting = await self.get_meeting(meeting_id, current_user=current_user)
+        if not db_meeting: 
+            raise HTTPException(status_code=404, detail="Meeting not found")
+
+        if db_meeting.status == GlobalTaskStatus.RESOLVED:
+            raise HTTPException(status_code=400, detail="Cannot cancel a completed meeting.")
+
+        db_meeting.status = GlobalTaskStatus.CANCELLED
+        db_meeting.cancellation_reason = reason
+        await db_meeting.save()
+
+        try:
+            from app.utils.notify_helpers import notify_client_stakeholders
+            from app.modules.clients.models import Client
+            client = await Client.get(db_meeting.client_id) if db_meeting.client_id else None
+            if client:
+                reason_suffix = f" Reason: {reason}" if reason else ""
+                await notify_client_stakeholders(
+                    client,
+                    "❌ Meeting Cancelled",
+                    f"Meeting '{db_meeting.title}' with {client.name} has been cancelled.{reason_suffix}",
+                    actor_id=current_user.id,
+                )
+        except Exception as e:
+            print(f"[MeetingService] Cancel notif error: {e}")
 
         return db_meeting
 

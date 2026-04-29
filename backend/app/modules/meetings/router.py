@@ -125,36 +125,9 @@ async def update_meeting_global(
     meeting_in: MeetingSummaryUpdate,
     current_user: User = Depends(staff_checker)
 ) -> Any:
-    meeting = await MeetingSummary.get(meeting_id)
-    if not meeting:
-        raise HTTPException(status_code=404, detail="Meeting not found")
+    service = MeetingService()
+    return await service.update_meeting(meeting_id, meeting_in, current_user, None)
 
-    # Scope check for PMs
-    if current_user.role in PM_SCOPED_ROLES and meeting.client_id:
-        client = await Client.get(meeting.client_id)
-        if client and client.pm_id != current_user.id:
-            raise HTTPException(status_code=403, detail="Access denied")
-
-    update_data = meeting_in.model_dump(exclude_unset=True)
-    for field, value in update_data.items():
-        setattr(meeting, field, value)
-
-    # Notify on status change to RESOLVED/CANCELLED
-    if update_data.get("status") in [GlobalTaskStatus.RESOLVED, GlobalTaskStatus.CANCELLED]:
-        if meeting.meet_link:
-            try:
-                from app.modules.notifications.models import Notification
-                import re
-                notifs = await Notification.find({"message": re.compile(f"LINK:{meeting.meet_link}")}).to_list()
-                for notif in notifs:
-                    if "STATUS:COMPLETED" not in notif.message:
-                        notif.message += "\nSTATUS:COMPLETED"
-                        await notif.save()
-            except Exception as e:
-                print(f"[Notification] Status update notification error: {e}")
-
-    await meeting.save()
-    return meeting
 
 
 @global_router.delete("/{meeting_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -264,41 +237,8 @@ async def cancel_meeting_global(
     cancel_in: MeetingCancel,
     current_user: User = Depends(pm_checker)
 ) -> Any:
-    meeting = await MeetingSummary.get(meeting_id)
-    if not meeting:
-        raise HTTPException(status_code=404, detail="Meeting not found")
+    return await MeetingService().cancel_meeting(meeting_id, cancel_in.reason, current_user, request)
 
-    # Scope check
-    if current_user.role in PM_SCOPED_ROLES and meeting.client_id:
-        client = await Client.get(meeting.client_id)
-        if client and client.pm_id != current_user.id:
-            raise HTTPException(status_code=403, detail="Access denied")
-    elif meeting.host_id != current_user.id and current_user.role != UserRole.ADMIN:
-        # If not host and not admin, and no client scope...
-        raise HTTPException(status_code=403, detail="Access denied")
-
-    if meeting.status == GlobalTaskStatus.RESOLVED:
-        raise HTTPException(status_code=400, detail="Cannot cancel a completed meeting.")
-
-    meeting.status = GlobalTaskStatus.CANCELLED
-    meeting.cancellation_reason = cancel_in.reason
-    await meeting.save()
-
-    try:
-        from app.utils.notify_helpers import notify_client_stakeholders
-        client = await Client.get(meeting.client_id) if meeting.client_id else None
-        if client:
-            reason_suffix = f" Reason: {cancel_in.reason}" if cancel_in.reason else ""
-            await notify_client_stakeholders(
-                client,
-                "❌ Meeting Cancelled",
-                f"Meeting '{meeting.title}' with {client.name} has been cancelled.{reason_suffix}",
-                actor_id=current_user.id,
-            )
-    except Exception as e:
-        print(f"Notification error: {e}")
-
-    return meeting
 
 
 # ─── CLIENT-SCOPED ENDPOINTS (/clients/{client_id}/meetings) ───────────────
