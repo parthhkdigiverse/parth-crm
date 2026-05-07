@@ -28,6 +28,9 @@
             font-weight: 600;
             margin-top: 4px;
         }
+        /* Scoped styles for bulk action bar buttons */
+        .bulk-action-bar .bulk-select-badge { padding: 4px 10px !important; }
+        .bulk-action-bar .bulk-delete-confirm-btn { padding: 6px 14px !important; }
     </style>
 </head>
 
@@ -609,6 +612,7 @@
             const selected = document.querySelectorAll('.issue-checkbox:checked').length;
             window.updateBulkActionBar({
                 count: selected,
+                compact: true,
                 onDelete: () => batchDeleteIssues(),
                 onCancel: () => {
                     document.querySelectorAll('.issue-checkbox').forEach(cb => cb.checked = false);

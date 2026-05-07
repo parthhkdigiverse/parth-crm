@@ -165,8 +165,29 @@ async def get_timetable(
         if not val:
             return default_h, 0
         if isinstance(val, str):
-            parts = val.split(':')
-            return int(parts[0]), int(parts[1]) if len(parts) > 1 else 0
+            import re
+            m = re.search(r'(\d+):(\d+)\s*(AM|PM)?', val, re.I)
+            if m:
+                try:
+                    h = int(m.group(1))
+                    m_val = int(m.group(2))
+                    ampm = m.group(3)
+                    if ampm:
+                        if ampm.upper() == 'PM' and h < 12: h += 12
+                        elif ampm.upper() == 'AM' and h == 12: h = 0
+                    return h, m_val
+                except Exception: pass
+            
+            m2 = re.search(r'(\d+)\s*(AM|PM)?', val, re.I)
+            if m2:
+                try:
+                    h = int(m2.group(1))
+                    ampm = m2.group(2)
+                    if ampm:
+                        if ampm.upper() == 'PM' and h < 12: h += 12
+                        elif ampm.upper() == 'AM' and h == 12: h = 0
+                    return h, 0
+                except Exception: pass
         try:
             return val.hour, val.minute
         except Exception:

@@ -424,14 +424,55 @@ class ReportService:
                     "from": "srm_payments",
                     "let": { "u_id": "$_id" },
                     "pipeline": [
+                        {
+                            "$lookup": {
+                                "from": "srm_clients",
+                                "localField": "client_id",
+                                "foreignField": "_id",
+                                "as": "client_info"
+                            }
+                        },
+                        { "$unwind": { "path": "$client_info", "preserveNullAndEmptyArrays": True } },
                         { "$match": { 
-                            "$expr": { "$eq": ["$generated_by_id", "$$u_id"] },
                             "verified_at": { "$gte": start_dt, "$lte": end_dt },
                             "status": "VERIFIED",
-                            "is_deleted": False
+                            "is_deleted": False,
+                            "$or": [
+                                { "$expr": { "$eq": ["$generated_by_id", "$$u_id"] } },
+                                { "$expr": { "$eq": ["$client_info.owner_id", "$$u_id"] } },
+                                { "$expr": { "$eq": ["$client_info.pm_id", "$$u_id"] } }
+                            ]
                         }}
                     ],
                     "as": "payments"
+                }
+            },
+            {
+                "$lookup": {
+                    "from": "srm_bills",
+                    "let": { "u_id": "$_id" },
+                    "pipeline": [
+                        {
+                            "$lookup": {
+                                "from": "srm_shops",
+                                "localField": "shop_id",
+                                "foreignField": "_id",
+                                "as": "shop_info"
+                            }
+                        },
+                        { "$unwind": { "path": "$shop_info", "preserveNullAndEmptyArrays": True } },
+                        { "$match": { 
+                            "verified_at": { "$gte": start_dt, "$lte": end_dt },
+                            "invoice_status": { "$in": ["VERIFIED", "SENT"] },
+                            "is_deleted": False,
+                            "$or": [
+                                { "$expr": { "$eq": ["$created_by_id", "$$u_id"] } },
+                                { "$expr": { "$eq": ["$shop_info.owner_id", "$$u_id"] } },
+                                { "$expr": { "$eq": ["$shop_info.project_manager_id", "$$u_id"] } }
+                            ]
+                        }}
+                    ],
+                    "as": "bills"
                 }
             },
             {
@@ -451,6 +492,19 @@ class ReportService:
                 }
             },
             {
+                "$lookup": {
+                    "from": "srm_incentive_slips",
+                    "let": { "u_id": "$_id" },
+                    "pipeline": [
+                        { "$match": { 
+                            "$expr": { "$eq": ["$user_id", "$$u_id"] },
+                            "generated_at": { "$gte": start_dt, "$lte": end_dt }
+                        }}
+                    ],
+                    "as": "incentive_slips"
+                }
+            },
+            {
                 "$project": {
                     "name": 1,
                     "email": 1,
@@ -459,7 +513,13 @@ class ReportService:
                     "employee_code": 1,
                     "total_visits": {"$size": "$visits"},
                     "total_leads": {"$size": {"$filter": {"input": "$visits", "cond": {"$eq": ["$$this.status", "COMPLETED"]}}}},
-                    "revenue": {"$sum": "$payments.amount"},
+                    "revenue": {
+                        "$add": [
+                            {"$sum": "$payments.amount"},
+                            {"$sum": "$bills.amount"}
+                        ]
+                    },
+                    "incentive_amt": {"$sum": "$incentive_slips.total_incentive"},
                     "total_projects": {"$size": {"$filter": {"input": "$all_projects", "cond": {"$eq": ["$$this.is_deleted", False]}}}},
                     "total_open_issues": {"$size": {"$filter": {"input": "$all_issues", "cond": {"$and": [{"$eq": ["$$this.status", "OPEN"]}, {"$eq": ["$$this.is_deleted", False]}]}}}}
                 }
@@ -485,7 +545,7 @@ class ReportService:
                 "success_rate": round((tl / tv * 100), 1) if tv > 0 else 0.0,
                 "total_sales": rev,
                 "total_revenue": rev,
-                "total_incentive": round(rev * 0.05, 2),
+                "total_incentive": round(float(r.get("incentive_amt", 0.0)), 2),
                 "total_projects": r.get("total_projects", 0),
                 "total_open_issues": r.get("total_open_issues", 0),
                 "target": r.get("target", 0),
@@ -590,7 +650,7 @@ class ReportService:
     async def get_employee_activities(user_id: str, start_date: str = None, end_date: str = None):
         """Fetches a combined log of visits and verified payments for the activity stream."""
         now = datetime.now(UTC)
-        s_dt = ReportService._parse_date(start_date) or (now - timedelta(days=30))
+        s_dt = ReportService._parse_date(start_date) or (now - timedelta(days=90))
         e_dt = ReportService._parse_date(end_date, is_end=True) or now
         
         u_id = PydanticObjectId(user_id)

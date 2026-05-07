@@ -10,42 +10,62 @@ window.getInitials = function (name) {
 };
 
 window.updateBulkActionBar = function (options) {
-    const { count, onDelete, onCancel } = options || {};
+    const { count, onDelete, onArchive, deleteText = "Delete", archiveText = "Archive", compact = false } = options || {};
     let bar = document.getElementById('bulk-action-bar');
 
     if (!bar) {
         const html = `
         <div id="bulk-action-bar" class="bulk-action-bar">
-            <div class="d-flex align-items-center gap-3">
-                <div class="bulk-select-badge"><span id="bulk-count-val">0</span> Selected</div>
-                <button class="btn btn-link p-0" id="bulk-cancel-btn">Cancel</button>
+            <div class="bulk-action-bar-left">
+                <div class="bulk-select-badge">
+                    <i class="bi bi-check2-all me-2"></i>
+                    <span id="bulk-count-val">0</span> <span class="d-none d-sm-inline">Selected</span>
+                </div>
             </div>
-            <div class="bulk-action-btn-group">
+            <div class="bulk-action-bar-right" style="gap: 10px; display: flex;">
                 <button class="bulk-delete-confirm-btn" id="bulk-delete-confirm-btn">
-                    <i class="bi bi-trash me-2"></i> Delete
+                    <i class="bi bi-trash3-fill me-1"></i> <span id="bulk-delete-text">${deleteText}</span>
+                </button>
+                <button class="bulk-archive-btn" id="bulk-archive-btn">
+                    <i class="bi bi-archive-fill me-1"></i> <span id="bulk-archive-text">${archiveText}</span>
                 </button>
             </div>
         </div>`;
+
         document.body.insertAdjacentHTML('beforeend', html);
         bar = document.getElementById('bulk-action-bar');
     }
 
     const countVal = document.getElementById('bulk-count-val');
     const deleteBtn = document.getElementById('bulk-delete-confirm-btn');
-    const cancelBtn = document.getElementById('bulk-cancel-btn');
+    const archiveBtn = document.getElementById('bulk-archive-btn');
+    const deleteTextEl = document.getElementById('bulk-delete-text');
+    const archiveTextEl = document.getElementById('bulk-archive-text');
 
     if (count > 0) {
         if (countVal) countVal.textContent = count;
+        if (deleteTextEl) deleteTextEl.textContent = deleteText;
+        if (archiveTextEl) archiveTextEl.textContent = archiveText;
+        
+        if (compact) bar.classList.add('bulk-bar-compact');
+        else bar.classList.remove('bulk-bar-compact');
+        
         bar.classList.add('show');
 
-        if (deleteBtn) deleteBtn.onclick = (e) => {
-            e.preventDefault();
-            if (onDelete) onDelete();
-        };
-        if (cancelBtn) cancelBtn.onclick = (e) => {
-            e.preventDefault();
-            if (onCancel) onCancel();
-        };
+        if (deleteBtn) {
+            deleteBtn.style.display = onDelete ? '' : 'none';
+            deleteBtn.onclick = (e) => {
+                e.preventDefault();
+                if (onDelete) onDelete();
+            };
+        }
+        if (archiveBtn) {
+            archiveBtn.style.display = onArchive ? '' : 'none';
+            archiveBtn.onclick = (e) => {
+                e.preventDefault();
+                if (onArchive) onArchive();
+            };
+        }
     } else {
         bar.classList.remove('show');
     }

@@ -71,6 +71,8 @@ class MeetingCancel(BaseModel):
 
 class MeetingReschedule(BaseModel):
     new_date: datetime.datetime
+    start_time: typing.Optional[str] = None
+    end_time: typing.Optional[str] = None
 
 
 class MeetingSummaryRead(BaseModel):
@@ -89,5 +91,7 @@ class MeetingSummaryRead(BaseModel):
     attendee_ids: typing.Optional[typing.List[PydanticObjectId]] = Field(default_factory=list)
     priority: typing.Optional[str] = None
     calendar_event_id: typing.Optional[str] = None
+    start_time: typing.Optional[str] = None
+    end_time: typing.Optional[str] = None
 
     model_config = {"from_attributes": True, "populate_by_name": True}

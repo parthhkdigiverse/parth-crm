@@ -1539,6 +1539,9 @@
                     <label class="check-item">
                         <input type="checkbox" ${selectedCalendars.has('Tasks') ? 'checked' : ''} onchange="toggleCalendar('Tasks', this.checked)" class="accent-checkbox" style="--c:#8b5cf6"> Tasks
                     </label>
+                    <label class="check-item">
+                        <input type="checkbox" ${selectedCalendars.has('Meetings') ? 'checked' : ''} onchange="toggleCalendar('Meetings', this.checked)" class="accent-checkbox" style="--c:#f59e0b"> Meetings
+                    </label>
                 </div>
             </div>`;
 
@@ -1733,6 +1736,19 @@
 
             const filteredEvents = events.filter(ev => {
                 const user = ev.user || ev.assignee_name;
+                
+                // 1. Force show for Admins to ensure visibility of employee activity
+                if (isTimetableAdmin()) {
+                    if (ev.event_type === 'MEETING' || ev.event_type === 'VISIT') return true;
+                }
+
+                // 2. Global Type Toggles
+                if (ev.event_type === 'MEETING' && selectedCalendars.has('Meetings')) return true;
+                if (ev.event_type === 'VISIT' && selectedCalendars.has('Meetings')) return true;
+                if (ev.event_type === 'TODO' && selectedCalendars.has('Tasks')) return true;
+                if (ev.event_type === 'BIRTHDAY' && selectedCalendars.has('Birthdays')) return true;
+
+                // 3. Fallback to User Column Mapping
                 if (!user) return true;
                 return selectedCalendars.has(user);
             });
@@ -3152,10 +3168,21 @@
                     }
                 }
 
+                // Migrations: Ensure mandatory defaults exist if they were added later
+                if (!selectedCalendars.has('Meetings')) {
+                    selectedCalendars.add('Meetings');
+                    saveSelectedCalendars();
+                }
+                if (!selectedCalendars.has('Tasks')) {
+                    selectedCalendars.add('Tasks');
+                    saveSelectedCalendars();
+                }
+
                 // If nothing was parsed in localStorage, apply defaults
                 if (selectedCalendars.size === 0) {
                     if (currUserName) selectedCalendars.add(currUserName);
                     selectedCalendars.add('Tasks');
+                    selectedCalendars.add('Meetings');
                     selectedCalendars.add('Birthdays');
                     saveSelectedCalendars();
                 }
@@ -3164,6 +3191,7 @@
                     selectedCalendars.clear();
                     if (currUserName) selectedCalendars.add(currUserName);
                     selectedCalendars.add('Tasks');
+                    selectedCalendars.add('Meetings');
                     selectedCalendars.add('Birthdays');
                     saveSelectedCalendars();
                 }

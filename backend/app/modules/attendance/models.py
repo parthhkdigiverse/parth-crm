@@ -13,7 +13,7 @@ class Attendance(Document):
     punch_in: Optional[dt.datetime] = None
     punch_out: Optional[dt.datetime] = None
     total_hours: float = 0.0
-
+ 
     @field_validator("total_hours", mode="before")
     @classmethod
     def coerce_total_hours(cls, v):

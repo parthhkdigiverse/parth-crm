@@ -461,8 +461,8 @@
                 <!-- Header -->
                 <div class="modal-header">
                     <div>
-                        <h5 class="modal-title fw-bold mb-0" id="addMeetingModalLabel">
-                            <i class="bi bi-calendar-plus me-2"></i>Schedule Meeting
+                        <h5 class="modal-title fw-bold mb-0 text-white" id="addMeetingModalLabel">
+                            <i class="bi bi-calendar-plus me-2 text-white"></i>Schedule Meeting
                         </h5>
                         <p class="text-white-50 small mb-0 mt-1">Set up a team, client, or project meeting</p>
                     </div>
@@ -601,7 +601,7 @@
         <div class="modal-dialog modal-dialog-sm modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
                 <div class="modal-header border-0 pb-0">
-                    <h5 class="modal-title fw-bold">Move Session</h5>
+                    <h5 class="modal-title fw-bold">Reschedule Session</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body py-4">
@@ -617,6 +617,24 @@
                         <label class="form-label fw-semibold">Available Slots</label>
                         <div id="reschedule-slots-container" class="d-flex flex-wrap gap-2">
                             <div class="text-muted small w-100 text-center py-3">Select a date to view slots</div>
+                        </div>
+                    </div>
+                    <div class="mb-0">
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label fw-semibold extra-small uppercase text-muted">Start Time <span
+                                        class="text-danger">*</span></label>
+                                <input type="time" id="res-start-time" class="form-control border-2 shadow-none"
+                                    onchange="syncTimesToId()">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-semibold extra-small uppercase text-muted">End Time <span
+                                        class="text-danger">*</span></label>
+                                <input type="time" id="res-end-time" class="form-control border-2 shadow-none"
+                                    onchange="syncTimesToId()">
+                            </div>
+                        </div>
+                        <div class="text-muted extra-small mt-2">Manual time selection will override slot selection.
                         </div>
                     </div>
                 </div>
@@ -705,7 +723,7 @@
                     if (modal) bootstrap.Modal.getOrCreateInstance(modal).show();
                 }
                 // Update table with names if already loaded
-                if (window.meetingsCount > 0) loadMeetings(); 
+                if (window.meetingsCount > 0) loadMeetings();
             } catch (e) {
                 console.error("Client Load Failed", e);
             }
@@ -719,7 +737,7 @@
                 sel.innerHTML = '<option value="">-- Select Project --</option>' +
                     allProjects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
                 // Update table with names if already loaded
-                if (window.meetingsCount > 0) loadMeetings(); 
+                if (window.meetingsCount > 0) loadMeetings();
             } catch (e) {
                 console.error("Projects Load Failed", e);
             }
@@ -1093,7 +1111,25 @@
                             </td>
                             <td>
                                 <div class="fw-semibold">${m.date ? new Date(m.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</div>
-                                <div class="text-muted extra-small">${m.date ? new Date(m.date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—'}</div>
+                                <div class="text-muted extra-small">
+                                    ${(() => {
+                                const d = m.date ? new Date(m.date) : null;
+                                const fmt = (ts) => {
+                                    const [h, min] = ts.split(':');
+                                    const td = new Date(); td.setHours(h, min);
+                                    return td.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }).toLowerCase();
+                                };
+                                let st = m.start_time;
+                                let et = m.end_time;
+                                if (!st && d) st = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+                                if (!et && st) {
+                                    const [h, min] = st.split(':').map(Number);
+                                    et = `${String((h + 1) % 24).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+                                }
+                                if (st && et) return `${fmt(st)} - ${fmt(et)}`;
+                                return d ? d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }).toLowerCase() : '—';
+                            })()}
+                                </div>
                             </td>
                             <td><span class="badge status-badge border ${statusBadge(m.status)}">${m.status || 'Scheduled'}</span></td>
                             <td>
@@ -1111,7 +1147,7 @@
                                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0">
                                         ${(!isFinished && !isCancelled) ? `
                                             <li><a class="dropdown-item" href="#" onclick="updateStatus('${m.id}', 'RESOLVED')"><i class="bi bi-check2-circle me-2 text-success"></i>Mark Done</a></li>
-                                            <li><a class="dropdown-item" href="#" onclick="openRescheduleModal('${m.id}', '${m.date}', '${m.client_id}')"><i class="bi bi-calendar2-range me-2 text-primary"></i>Reschedule</a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="openRescheduleModal('${m.id}', '${m.date}', '${m.client_id}', '${m.start_time || ''}', '${m.end_time || ''}')"><i class="bi bi-calendar2-range me-2 text-primary"></i>Reschedule</a></li>
                                             <li><a class="dropdown-item" href="#" onclick="updateStatus('${m.id}', 'CANCELLED')"><i class="bi bi-x-circle me-2 text-danger"></i>Cancel</a></li>
                                         ` : ''}
                                         ${(!m.meet_link && !isFinished && !isCancelled) ? `
@@ -1208,9 +1244,26 @@
             } catch (e) { showToast('Deletion failed', 'error'); }
         };
 
-        window.openRescheduleModal = (id, currentIso, clientId) => {
+        window.openRescheduleModal = (id, currentIso, clientId, existingStart, existingEnd) => {
             document.getElementById('reschedule-id').value = id;
-            document.getElementById('res-selected-time').value = '';
+
+            // Fallback for existing meetings without specific start/end time fields
+            if (!existingStart || existingStart === 'null' || existingStart === 'undefined' || existingStart === '') {
+                try {
+                    const d = new Date(currentIso);
+                    if (!isNaN(d.getTime())) {
+                        const h = String(d.getHours()).padStart(2, '0');
+                        const min = String(d.getMinutes()).padStart(2, '0');
+                        existingStart = `${h}:${min}`;
+                        const eh = String((d.getHours() + 1) % 24).padStart(2, '0');
+                        existingEnd = `${eh}:${min}`;
+                    }
+                } catch (e) { }
+            }
+
+            document.getElementById('res-selected-time').value = existingStart || '';
+            document.getElementById('res-start-time').value = existingStart || '';
+            document.getElementById('res-end-time').value = existingEnd || '';
 
             const client = allClients.find(c => c.id == clientId);
             document.getElementById('res-pm-id').value = client ? client.pm_id : '';
@@ -1221,7 +1274,11 @@
 
             if (currentIso && currentIso !== 'null' && currentIso !== 'undefined') {
                 const d = new Date(currentIso);
-                dateInput.value = d.toISOString().split('T')[0];
+                if (!isNaN(d.getTime())) {
+                    dateInput.value = d.toISOString().split('T')[0];
+                } else {
+                    dateInput.value = today;
+                }
             } else {
                 dateInput.value = today;
             }
@@ -1308,18 +1365,41 @@
             btnEl.classList.remove('btn-outline-primary');
             btnEl.classList.add('btn-primary', 'text-white', 'shadow');
             document.getElementById('res-selected-time').value = timeValue;
+
+            // Sync manual fields (assume 1-hour slot)
+            if (timeValue) {
+                document.getElementById('res-start-time').value = timeValue;
+                const hour = parseInt(timeValue.split(':')[0]);
+                const nextHour = String(hour + 1).padStart(2, '0');
+                document.getElementById('res-end-time').value = `${nextHour}:00`;
+            }
+        };
+
+        window.syncTimesToId = () => {
+            const start = document.getElementById('res-start-time').value;
+            // Deselect slots
+            document.querySelectorAll('.res-slot-btn').forEach(b => {
+                b.classList.remove('btn-primary', 'text-white', 'shadow');
+                b.classList.add('btn-outline-primary');
+            });
+            document.getElementById('res-selected-time').value = start;
         };
 
         window.confirmReschedule = async () => {
             const id = document.getElementById('reschedule-id').value;
             const d = document.getElementById('res-date').value;
-            const t = document.getElementById('res-selected-time').value;
+            const start = document.getElementById('res-start-time').value;
+            const end = document.getElementById('res-end-time').value;
 
-            if (!d || !t) return showToast('Please select a valid date and available time slot.', 'error');
+            if (!d || !start || !end) return showToast('Please select a valid date, start time, and end time.', 'error');
 
             try {
-                const new_date = `${d}T${t}:00`;
-                await apiPost(`/meetings/${id}/reschedule`, { new_date: new_date });
+                const new_date = `${d}T${start}:00`;
+                await apiPost(`/meetings/${id}/reschedule`, {
+                    new_date: new_date,
+                    start_time: start,
+                    end_time: end
+                });
                 showToast('Meeting rescheduled successfully', 'success');
                 bootstrap.Modal.getInstance(document.getElementById('rescheduleModal')).hide();
                 loadMeetings();
@@ -1345,6 +1425,7 @@
             const selected = document.querySelectorAll('.meeting-checkbox:checked').length;
             window.updateBulkActionBar({
                 count: selected,
+                compact: true,
                 onDelete: () => batchDeleteMeetings(),
                 onCancel: () => {
                     document.querySelectorAll('.meeting-checkbox').forEach(cb => cb.checked = false);
@@ -1414,8 +1495,8 @@
 
         // ────────── INITIALIZE ──────────
         // Start ALL fetches in parallel for "Instant" opening
-        loadMeetings(); 
-        
+        loadMeetings();
+
         Promise.allSettled([loadClients(), loadProjects(), loadAllUsers()]).then(() => {
             initFilters();
             initDatePicker();

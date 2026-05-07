@@ -513,7 +513,15 @@ async function loadVisitHistory(shopId) {
         // 1. Virtual Card for UPCOMING Demos
         if (currentProject && currentProject.demo_scheduled_at) {
             totalInteractions += 1;
-            const demoStart = new Date(currentProject.demo_scheduled_at);
+            
+            let dsTime = currentProject.demo_scheduled_at;
+            
+            // Apply UTC 'Z' timezone enforcement globally for all roles
+            if (!dsTime.endsWith('Z') && dsTime.includes('T')) {
+                dsTime += 'Z';
+            }
+            
+            const demoStart = new Date(dsTime);
             const demoEnd = new Date(demoStart.getTime() + 60 * 60 * 1000);
             const demoDateLabel = demoStart.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
             const demoTimeRange = demoStart.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) +

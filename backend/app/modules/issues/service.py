@@ -143,51 +143,40 @@ class IssueService:
                 query = query.limit(limit)
             issues = await query.to_list()
             
-            # Enrich properties: one client fetch gives us client name + client's PM
+            # Optimized enrichment with bulk fetches
+            if not issues:
+                return []
+
+            # 1. Collect unique IDs
+            client_ids = list(set(i.client_id for i in issues if i.client_id))
+            reporter_ids = list(set(i.reporter_id for i in issues if i.reporter_id))
+            user_ids = list(set(reporter_ids))
+
+            # 2. Bulk fetch
+            clients = await Client.get_pymongo_collection().find({"_id": {"$in": client_ids}}).to_list(None)
+            users = await User.get_pymongo_collection().find({"_id": {"$in": user_ids}}).to_list(None)
+
+            # 3. Create maps
+            client_map = {c["_id"]: c for c in clients}
+            user_map = {u["_id"]: u for u in users}
+
             enriched_issues = []
             for issue in issues:
-                # Convert to dict for enrichment
                 item = issue.model_dump()
                 item["id"] = str(issue.id)
-
-                # Fetch the linked client to get name and PM
-                client_obj = None
-                try:
-                    if issue.client_id:
-                        client_obj = await Client.get(issue.client_id)
-                except Exception:
-                    pass
-
+                
+                client_obj = client_map.get(issue.client_id)
                 if client_obj:
-                    item["client_name"] = client_obj.name
-                    item["project_name"] = client_obj.name  # backward compat
-                    # PM = the client's assigned PM (auto-assigned on client create/edit)
-                    try:
-                        if client_obj.pm_id:
-                            # Use cached pm_name on client first to avoid extra DB call
-                            if client_obj.pm_name:
-                                item["pm_name"] = client_obj.pm_name
-                            else:
-                                pm_user = await User.get(client_obj.pm_id)
-                                item["pm_name"] = pm_user.name if pm_user else "Unassigned"
-                        else:
-                            item["pm_name"] = "Unassigned"
-                    except Exception:
-                        item["pm_name"] = "Unassigned"
+                    item["client_name"] = client_obj.get("name") or "Unknown Client"
+                    item["project_name"] = item["client_name"]
+                    item["pm_name"] = client_obj.get("pm_name") or "Unassigned"
                 else:
                     item["client_name"] = "Unknown Client"
                     item["project_name"] = "Unknown Client"
                     item["pm_name"] = "Unassigned"
 
-                # Resolve reporter name
-                try:
-                    if issue.reporter_id:
-                        reporter = await User.get(issue.reporter_id)
-                        item["reporter_name"] = reporter.name if reporter else "System"
-                    else:
-                        item["reporter_name"] = "System"
-                except Exception:
-                    item["reporter_name"] = "System"
+                reporter_obj = user_map.get(issue.reporter_id)
+                item["reporter_name"] = reporter_obj.get("name") if reporter_obj else "System"
 
                 enriched_issues.append(item)
 
