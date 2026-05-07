@@ -2107,6 +2107,125 @@ input[type="password"]::-ms-clear {
     }
 }
 
+/* ── Custom Page Size Selector ── */
+.srm-page-size-selector {
+    position: relative;
+    display: inline-block;
+}
+
+.srm-page-size-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1.5px solid var(--primary-soft);
+    color: var(--text-main);
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    height: 30px;
+}
+
+.srm-page-size-btn:hover {
+    border-color: var(--primary);
+    background: var(--primary-soft);
+    transform: translateY(-1px);
+}
+
+.srm-page-size-btn.active {
+    border-color: var(--primary);
+    background: white;
+    box-shadow: 0 4px 12px var(--primary-shadow);
+}
+
+.srm-page-size-btn i {
+    font-size: 0.8rem;
+    transition: transform 0.2s ease;
+    color: var(--primary);
+}
+
+.srm-page-size-btn.active i {
+    transform: rotate(180deg);
+}
+
+.srm-page-size-dropdown {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 0;
+    min-width: 130px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 1050;
+    padding: 6px;
+}
+
+@keyframes srm-pagination-slide-up {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.srm-page-size-dropdown.show {
+    display: flex;
+    animation: srm-pagination-slide-up 0.2s cubic-bezier(0, 0, 0.2, 1);
+}
+
+.srm-page-size-option {
+    padding: 8px 12px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-main);
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.srm-page-size-option:hover {
+    background: var(--bg-app);
+    color: var(--primary);
+}
+
+.srm-page-size-option.active {
+    background: var(--primary-light);
+    color: var(--primary);
+}
+
+.srm-page-size-option.active::after {
+    content: '\F272'; /* Bootstrap icon check */
+    font-family: 'bootstrap-icons';
+    font-size: 0.9rem;
+}
+
+/* Dark Mode Tweaks */
+[data-theme="dark"] .srm-page-size-btn {
+    background: var(--bg-app);
+    border-color: var(--border);
+}
+
+[data-theme="dark"] .srm-page-size-btn:hover {
+    background: var(--surface);
+    border-color: var(--primary);
+}
+
+[data-theme="dark"] .srm-page-size-dropdown {
+    background: var(--surface-raised, #1e1e2d);
+    border-color: var(--border);
+}
+
+[data-theme="dark"] .srm-page-size-option:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
 /* ═══════════════════════════════════════════════════════════════
    STAT CARD SYSTEM — Top Gradient Stripe + Icon Theme
    Applied to .stat-card wrappers across projects_demo, leads,

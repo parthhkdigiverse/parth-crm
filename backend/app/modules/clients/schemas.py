@@ -70,6 +70,8 @@ class ClientRead(MongoBaseSchema):
     is_active: bool = True
     status: str = "ACTIVE"
     created_at: datetime | None = None
+    can_refund: bool = True
+    refund_message: Optional[str] = None
 
 
 class PMWorkloadRead(BaseModel):
@@ -85,3 +87,9 @@ class ClientPMHistoryRead(MongoBaseSchema):
     client_id: PydanticObjectId
     pm_id: PydanticObjectId
     assigned_at: datetime
+
+class ClientListResponse(BaseModel):
+    items: list[ClientRead]
+    total: int
+    skip: int
+    limit: int

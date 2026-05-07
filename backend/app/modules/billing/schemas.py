@@ -119,4 +119,10 @@ class BillingInvoiceActionResponse(MongoBaseSchema):
     can_unarchive: bool = False
     can_delete_archived: bool = False
     can_refund: bool = False          # role-gated refund (was dropped in migration)
+    can_cancel_refund: bool = False
     allowed_verifier_roles: list[str]
+
+class BillListResponse(MongoBaseSchema):
+    items: list[BillRead]
+    total: int
+    stats: dict[str, Any]

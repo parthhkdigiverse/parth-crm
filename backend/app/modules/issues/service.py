@@ -71,6 +71,12 @@ class IssueService:
         try:
             q = Issue.find(Issue.is_deleted == False)
             
+            # Exclude issues for Refunded clients
+            refunded_clients = await Client.get_pymongo_collection().distinct("_id", {"status": "REFUNDED", "is_deleted": False})
+            refunded_ids = [PydanticObjectId(rid) for rid in refunded_clients if rid]
+            if refunded_ids:
+                q = q.find({"client_id": {"$nin": refunded_ids}})
+
             if pm_id:
                 # Manual join replacement: fetch clients managed by this PM
                 raw_pm_clients = await Client.get_pymongo_collection().distinct("_id", {"pm_id": PydanticObjectId(pm_id)})
@@ -286,15 +292,21 @@ class IssueService:
     ) -> List[Issue]:
         """Returns issues assigned to or created by the user, with optional filters."""
         try:
-            q = Issue.find(
-                And(
-                    Issue.is_deleted == False,
-                    Or(
-                        Issue.assigned_to_id == current_user.id,
-                        Issue.reporter_id == current_user.id
-                    )
+            # Exclude issues for Refunded clients
+            refunded_clients = await Client.get_pymongo_collection().distinct("_id", {"status": "REFUNDED", "is_deleted": False})
+            refunded_ids = [PydanticObjectId(rid) for rid in refunded_clients if rid]
+
+            q_filter = And(
+                Issue.is_deleted == False,
+                Or(
+                    Issue.assigned_to_id == current_user.id,
+                    Issue.reporter_id == current_user.id
                 )
             )
+            if refunded_ids:
+                q_filter = And(q_filter, {"client_id": {"$nin": refunded_ids}})
+
+            q = Issue.find(q_filter)
             
             # Apply optional filters passed by router
             if status: q = q.find(Issue.status == status)

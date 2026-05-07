@@ -11,7 +11,7 @@ class Bill(Document):
 
     # Client detail snapshot
     invoice_client_name: str
-    invoice_client_phone: str
+    invoice_client_phone: Indexed(str)
     invoice_client_email: Optional[str] = None
     invoice_client_address: Optional[str] = None
     invoice_client_org: Optional[str] = None
@@ -38,7 +38,7 @@ class Bill(Document):
     whatsapp_sent: bool = False
 
     # Audit
-    created_by_id: Optional[PydanticObjectId] = None
+    created_by_id: Optional[Indexed(PydanticObjectId)] = None
     verified_by_id: Optional[PydanticObjectId] = None
     verified_at: Optional[datetime] = None
 

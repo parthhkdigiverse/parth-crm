@@ -19,6 +19,7 @@ from app.modules.billing.schemas import (
   BillingWorkflowResolveRequest,
   BillingWorkflowResolveResponse,
   BillingInvoiceActionResponse,
+  BillListResponse,
 )
 from app.modules.billing.service import BillingService
 from app.modules.billing.models import Bill
@@ -260,7 +261,7 @@ async def create_invoice(
 ) -> Any:
     return await BillingService().create_invoice(bill_in, current_user)
 
-@router.get("/", response_model=List[BillRead])
+@router.get("/", response_model=BillListResponse)
 async def list_invoices(
     skip: int = 0,
     limit: Optional[int] = None,
@@ -389,12 +390,6 @@ async def force_sent_invoice(
 ) -> Any:
     return await BillingService().force_sent(bill_id, current_user)
     
-@router.patch("/{bill_id}/refund", response_model=BillRead)
-async def refund_invoice(
-    bill_id: PydanticObjectId,
-    current_user: User = Depends(staff_access),
-) -> Any:
-    return await BillingService().refund_invoice(bill_id, current_user)
 
 # ──────────────────── Printable Invoice HTML ──────────────────────────────────
 

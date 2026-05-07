@@ -477,11 +477,11 @@
             <div style="position:absolute;inset:0;z-index:-1;" onclick="closeAutofillModal()"></div>
         </div>
 
-        <script src="/frontend/js/utils.js?v=20260403"></script>
-        <script src="/frontend/js/api.js?v=20260403"></script>
-        <script src="/frontend/js/auth.js?v=20260403"></script>
-        <script src="/frontend/js/ui_components.js?v=20260403"></script>
-        <script src="/frontend/js/app.js?v=20260403"></script>
+        <script src="/frontend/js/utils.js?v=20260425_v2"></script>
+        <script src="/frontend/js/api.js?v=20260425_v2"></script>
+        <script src="/frontend/js/auth.js?v=20260425_v2"></script>
+        <script src="/frontend/js/ui_components.js?v=20260425_v2"></script>
+        <script src="/frontend/js/app.js?v=20260425_v2"></script>
         <script src="/frontend/js/bootstrap.bundle.min.js"></script>
         <script>
             requireAuth();
@@ -532,8 +532,12 @@
             };
 
 
-            async function loadClients(filters = {}) {
+            async function loadClients(options = {}) {
                 const tbody = document.getElementById('clients-table');
+                const page = options.page || 1;
+                const limit = options.limit || parseInt(localStorage.getItem('srm_setting_pagination_limit')) || 10;
+                const skip = (page - 1) * limit;
+
                 tbody.innerHTML = `
                     <tr>
                         <td colspan="6" class="py-4">
@@ -552,29 +556,43 @@
                         </td>
                     </tr>`;
 
-                let clients = [];
+                let res = { items: [], total: 0 };
                 try {
-                    const params = new URLSearchParams();
-                    params.append('limit', filters.limit || '200');
-                    if (filters.skip) params.append('skip', filters.skip);
+                    const status = options.status || currentTabStatus || 'ACTIVE';
+                    const search = options.search || '';
+                    const pm = options.pm || 'ALL';
                     
-                    if (filters.status) params.append('status', filters.status);
-                    if (filters.pm) params.append('pm_id', filters.pm);
-                    if (filters.search) params.append('search', filters.search);
+                    const params = new URLSearchParams();
+                    params.append('limit', limit);
+                    params.append('skip', skip);
+                    params.append('status', status);
+                    if (pm !== 'ALL') params.append('pm_id', pm);
+                    if (search) params.append('search', search);
 
-                    clients = await apiGet(`/clients/?${params.toString()}`);
+                    res = await apiGet(`/clients/?${params.toString()}`);
                 } catch (err) {
-                    throw new Error("Failed to load clients: " + err.message);
+                    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-5 text-danger">Failed to load clients: ${err.message}</td></tr>`;
+                    return;
                 }
 
+                // Defensive check: handle both legacy array response and new paginated object
+                const clients = (res && Array.isArray(res.items)) ? res.items : (Array.isArray(res) ? res : []);
+                const total = (res && typeof res.total === 'number') ? res.total : (Array.isArray(res) ? res.length : clients.length);
+                
                 const countEl = document.getElementById('client-count');
-                if (countEl) countEl.textContent = clients.length;
+                if (countEl) countEl.textContent = total;
 
                 renderPagination({
                     data: clients,
+                    totalCount: total,
+                    currentPage: page,
+                    pageSize: limit,
                     tbodyId: 'clients-table',
                     paginationId: 'clients-pagination',
-                    emptyMsg: `<tr><td colspan="6" class="text-center py-5 text-muted">No clients found matching "${filters.search || 'your criteria'}".</td></tr>`,
+                    onPageChange: (newPage) => {
+                        loadClients({ ...options, page: newPage });
+                    },
+                    emptyMsg: `<tr><td colspan="6" class="text-center py-5 text-muted">No clients found.</td></tr>`,
                     renderRow: (c) => {
                         const pmName = c.pm_name || 'Unassigned';
                         const assignerName = c.pm_assigned_by_name;
@@ -646,9 +664,12 @@
                                                 <i class="bi bi-bootstrap-reboot"></i> Restore Client
                                             </a></li>
                                             ` : `
-                                            <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 rounded-2 text-warning" href="javascript:void(0)" onclick="refundClient('${c.id}')">
-                                                <i class="bi bi-arrow-counterclockwise"></i> Refund Client
-                                            </a></li>
+                                            <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 rounded-2 ${c.can_refund ? 'text-warning' : 'text-muted opacity-50'}" 
+                                                href="javascript:void(0)" 
+                                                onclick="refundClient('${c.id}', ${c.can_refund}, '${c.refund_message}')"
+                                                title="${c.refund_message || ''}">
+                                                 <i class="bi bi-arrow-counterclockwise"></i> Refund Client
+                                             </a></li>
                                             <li><a class="dropdown-item d-flex align-items-center gap-2 py-2 px-3 rounded-2 text-info" href="javascript:void(0)" onclick="archiveClient('${c.id}')">
                                                 <i class="bi bi-archive"></i> Archive Client
                                             </a></li>
@@ -920,7 +941,12 @@
                 }
             };
 
-            window.refundClient = async (id) => {
+            window.refundClient = async (id, canRefund, refundMsg) => {
+                if (!canRefund) {
+                    alert(`⚠️ Refund Unavailable\n\n${refundMsg || 'The 10-day refund window for this client has expired.'}\n\nClient-wide refunds are only permitted within 10 days of the latest invoice or registration.`);
+                    return;
+                }
+
                 if (!confirm('Are you sure you want to REFUND this client? \n\nThis will mark them as Inactive and deduct their revenue from stats and user incentives.')) return;
                 try {
                     await ApiClient.refundClient(id);

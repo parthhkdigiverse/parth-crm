@@ -7,7 +7,7 @@ from app.modules.users.models import User, UserRole
 from app.modules.clients.models import Client
 from app.modules.clients.schemas import (
     ClientCreate, ClientRead, ClientUpdate, ClientPMAssign,
-    PMWorkloadRead, ClientPMHistoryRead
+    PMWorkloadRead, ClientPMHistoryRead, ClientListResponse
 )
 from app.modules.clients.service import ClientService
 
@@ -42,10 +42,10 @@ async def create_client(
 
     return await service.create_client(client_in, current_user, request)
 
-@router.get("/", response_model=List[ClientRead])
+@router.get("/", response_model=ClientListResponse)
 async def read_clients(
     skip: int = 0,
-    limit: Optional[int] = None,
+    limit: Optional[int] = 10,
     search: Optional[str] = None,
     status: Optional[str] = None, 
     pm_id: Optional[str] = None,
@@ -85,7 +85,7 @@ async def read_clients(
         except Exception:
             raise HTTPException(status_code=400, detail="Invalid pm_id format")
 
-    return await service.get_clients(
+    items, total = await service.get_clients(
         skip=skip,
         limit=limit,
         search=search,
@@ -97,11 +97,18 @@ async def read_clients(
         scoped_mode=scoped_mode,
         current_user=current_user,
     )
+    
+    return {
+        "items": items,
+        "total": total,
+        "skip": skip,
+        "limit": limit or 10
+    }
 
-@router.get("/my-clients", response_model=List[ClientRead])
+@router.get("/my-clients", response_model=ClientListResponse)
 async def read_my_clients(
     skip: int = 0,
-    limit: Optional[int] = None,
+    limit: Optional[int] = 10,
     search: Optional[str] = None,
     sort_by: Optional[str] = "created_at",
     sort_order: Optional[str] = "desc",
@@ -109,7 +116,7 @@ async def read_my_clients(
 ) -> Any:
     """Retrieve only the clients assigned to current PM."""
     service = ClientService()
-    return await service.get_clients(
+    items, total = await service.get_clients(
         skip=skip,
         limit=limit,
         search=search,
@@ -117,6 +124,12 @@ async def read_my_clients(
         sort_order=sort_order,
         pm_id=current_user.id
     )
+    return {
+        "items": items,
+        "total": total,
+        "skip": skip,
+        "limit": limit or 10
+    }
 
 @router.get("/pm-workload", response_model=List[PMWorkloadRead])
 async def get_pm_workload(

@@ -22,8 +22,8 @@ class Client(Document):
     
     # Relationships (Stored as Object IDs)
     referred_by_id: Optional[PydanticObjectId] = None
-    owner_id: Optional[PydanticObjectId] = None
-    pm_id: Optional[PydanticObjectId] = None
+    owner_id: Optional[Indexed(PydanticObjectId)] = None
+    pm_id: Optional[Indexed(PydanticObjectId)] = None
     pm_assigned_by_id: Optional[PydanticObjectId] = None
     pm_name: Optional[str] = None
     

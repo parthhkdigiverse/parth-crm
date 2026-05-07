@@ -1758,6 +1758,8 @@ if (typeof window.showToast !== 'function') {
  * @param {string}   [options.emptyMsg]    - HTML for the "no data" state
  * @param {number}   [options.colSpan]     - colspan for empty/loading rows (default: 10)
  * @param {number}   [options.currentPage] - Page to jump to (1-indexed, default: 1)
+ * @param {number}   [options.totalCount]  - Optional: total count override for server-side paging
+ * @param {Function} [options.onPageChange] - Optional: callback(page) for server-side paging
  * @returns {Object} { goToPage, getCurrentPage } — controller object
  */
 window.renderPagination = function (options) {
@@ -1771,6 +1773,8 @@ window.renderPagination = function (options) {
         emptyMsg = '<tr><td colspan="10" class="text-center py-5 text-muted">No data found.</td></tr>',
         colSpan = 10,
         currentPage: startPage = 1,
+        totalCount,
+        onPageChange,
     } = options;
 
     // Prioritize explicit pageSize, then user setting, then default (10)
@@ -1780,12 +1784,23 @@ window.renderPagination = function (options) {
     const paginationContainer = document.getElementById(paginationId);
 
     let currentPage = Math.max(1, startPage);
-    const totalPages = Math.max(1, Math.ceil(data.length / pageSize));
+    const countToUse = (typeof totalCount === 'number') ? totalCount : data.length;
+    const totalPages = Math.max(1, Math.ceil(countToUse / pageSize));
 
     function renderPage(page) {
         currentPage = Math.min(Math.max(1, page), totalPages);
+        
+        // If onPageChange is provided, we assume server-side paging
+        if (onPageChange && page !== startPage) {
+            onPageChange(currentPage);
+            return;
+        }
+
         const start = (currentPage - 1) * pageSize;
-        const slice = data.slice(start, start + pageSize);
+        const dataIsArray = Array.isArray(data);
+        
+        // If data is not an array, default to empty array to prevent .map failures
+        const slice = onPageChange ? (dataIsArray ? data : []) : (dataIsArray ? data.slice(start, start + pageSize) : []);
 
         const renderToTarget = (tid, rRow, eMsg) => {
             const el = document.getElementById(tid);
@@ -1821,8 +1836,9 @@ window.renderPagination = function (options) {
     }
 
     function renderControls() {
-        const showing = data.length === 0 ? 0 : Math.min(currentPage * pageSize, data.length);
-        const from = data.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+        const totalItems = (typeof totalCount === 'number') ? totalCount : data.length;
+        const showing = totalItems === 0 ? 0 : Math.min(currentPage * pageSize, totalItems);
+        const from = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
 
         if (data.length === 0) {
             paginationContainer.innerHTML = '';
@@ -1872,24 +1888,57 @@ window.renderPagination = function (options) {
                     <span class="srm-pagination-info">
                         Showing <strong>${from}–${showing}</strong> of <strong>${data.length}</strong>
                     </span>
-                    <select class="form-select form-select-sm border-0 bg-light py-0 px-2" style="width: auto; font-size: 0.7rem; height: 24px; border-radius: 6px; cursor: pointer;" onchange="localStorage.setItem('srm_setting_pagination_limit', this.value); window.location.reload();">
-                        <option value="10" ${pageSize === 10 ? 'selected' : ''}>10 / page</option>
-                        <option value="25" ${pageSize === 25 ? 'selected' : ''}>25 / page</option>
-                        <option value="50" ${pageSize === 50 ? 'selected' : ''}>50 / page</option>
-                        <option value="100" ${pageSize === 100 ? 'selected' : ''}>100 / page</option>
-                    </select>
+                    <div class="srm-page-size-selector">
+                        <button class="srm-page-size-btn" id="pageSizeBtn">
+                            <span>${pageSize} / page</span>
+                            <i class="bi bi-chevron-up"></i>
+                        </button>
+                        <div class="srm-page-size-dropdown" id="pageSizeDropdown">
+                            <div class="srm-page-size-option ${pageSize === 10 ? 'active' : ''}" data-value="10">10 / page</div>
+                            <div class="srm-page-size-option ${pageSize === 25 ? 'active' : ''}" data-value="25">25 / page</div>
+                            <div class="srm-page-size-option ${pageSize === 50 ? 'active' : ''}" data-value="50">50 / page</div>
+                            <div class="srm-page-size-option ${pageSize === 100 ? 'active' : ''}" data-value="100">100 / page</div>
+                        </div>
+                    </div>
                 </div>
                 ${buttonsHtml}
             </div>`;
 
         // Wire up click events
+        const pageSizeBtn = paginationContainer.querySelector('#pageSizeBtn');
+        const pageSizeDropdown = paginationContainer.querySelector('#pageSizeDropdown');
+        
+        if (pageSizeBtn && pageSizeDropdown) {
+            pageSizeBtn.onclick = (e) => {
+                e.stopPropagation();
+                // Close any other open pagination dropdowns first
+                document.querySelectorAll('.srm-page-size-dropdown.show').forEach(d => {
+                    if (d !== pageSizeDropdown) {
+                        d.classList.remove('show');
+                        d.parentElement.querySelector('.srm-page-size-btn')?.classList.remove('active');
+                    }
+                });
+                pageSizeDropdown.classList.toggle('show');
+                pageSizeBtn.classList.toggle('active');
+            };
+
+            pageSizeDropdown.querySelectorAll('.srm-page-size-option').forEach(opt => {
+                opt.onclick = (e) => {
+                    e.stopPropagation();
+                    const val = opt.dataset.value;
+                    localStorage.setItem('srm_setting_pagination_limit', val);
+                    window.location.reload();
+                };
+            });
+        }
+
         paginationContainer.querySelectorAll('.srm-page-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.onclick = () => {
                 const p = parseInt(btn.dataset.page, 10);
                 if (!isNaN(p) && p >= 1 && p <= totalPages) {
                     renderPage(p);
                 }
-            });
+            };
         });
     }
 
@@ -2047,4 +2096,15 @@ window.initSrmMultiSelect = function (elementId, options = {}) {
 
     return container;
 };
+
+// Global click handler to close dropdowns
+document.addEventListener('click', (e) => {
+    // Close pagination dropdowns
+    if (!e.target.closest('.srm-page-size-selector')) {
+        document.querySelectorAll('.srm-page-size-dropdown.show').forEach(d => {
+            d.classList.remove('show');
+            d.parentElement.querySelector('.srm-page-size-btn')?.classList.remove('active');
+        });
+    }
+});
 

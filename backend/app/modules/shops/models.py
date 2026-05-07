@@ -28,7 +28,7 @@ class Shop(Document):
     owner_id: Optional[PydanticObjectId] = None
     area_id: Optional[PydanticObjectId] = None
     area_name: Optional[str] = None
-    client_id: Optional[PydanticObjectId] = None
+    client_id: Optional[Indexed(PydanticObjectId)] = None
 
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
@@ -45,7 +45,7 @@ class Shop(Document):
     created_by_id: Optional[PydanticObjectId] = None
 
     # PM Demo Pipeline
-    project_manager_id: Optional[PydanticObjectId] = None
+    project_manager_id: Optional[Indexed(PydanticObjectId)] = None
     demo_stage: int = 0
     demo_scheduled_at: Optional[datetime] = None
     demo_title: Optional[str] = None

@@ -61,65 +61,57 @@ class ClientService:
         current_user: User = None,
         scoped_user_id: PydanticObjectId = None,
         **kwargs
-    ) -> List[Client]:
+    ) -> tuple[List[Client], int]:
         try:
-            # Initial query filter
-            # REVISION: Removed redundant scoped_user_id check here because the dynamic OR block
-            # at line 58 handles ownership/pm/billing scoping more comprehensively.
-            q = Client.find(Client.is_deleted == False)
+            # 1. Base Criteria
+            criteria = [Client.is_deleted == False]
             
-            # Status and Active logic
-            # Status and Active logic
+            # 2. Status Filters
             if status == "ALL":
-                pass # No filter on status
+                pass
             elif status == "ACTIVE":
-                q = q.find(Client.status == "ACTIVE", Client.is_active == True)
+                criteria.append(Client.status == "ACTIVE")
+                # criteria.append(Client.is_active == True) # Relaxing this to see if it's the culprit
                 if current_user and current_user.role != UserRole.ADMIN:
-                    # Hide clients personally archived by this user
-                    q = q.find({"archived_by_ids": {"$ne": current_user.id}})
+                    criteria.append({"archived_by_ids": {"$ne": current_user.id}})
             elif status == "REFUNDED":
-                q = q.find(Client.status == "REFUNDED")
+                criteria.append(Client.status == "REFUNDED")
             elif status == "ARCHIVED":
                 if current_user and current_user.role != UserRole.ADMIN:
-                    # Show clients EITHER globally archived OR personally archived by this user
-                    q = q.find(Or(
+                    criteria.append(Or(
                         Client.status == "ARCHIVED",
                         {"archived_by_ids": current_user.id}
                     ))
                 else:
-                    q = q.find(Client.status == "ARCHIVED")
+                    criteria.append(Client.status == "ARCHIVED")
             else:
-                # Default behavior: show active clients (including personal archive check)
-                q = q.find(Client.is_active == True, Client.status == 'ACTIVE')
-                if current_user and current_user.role != UserRole.ADMIN:
-                    q = q.find({"archived_by_ids": {"$ne": current_user.id}})
+                criteria.append(Client.status == "ACTIVE")
 
+            # 3. Role-Based Access Control (RBAC)
             if current_user and current_user.role != UserRole.ADMIN:
                 from app.modules.shops.models import Shop
-                # 1. Invoice Bridge: find phones the user has billed
                 billed_phones = await Bill.get_pymongo_collection().distinct(
                     "invoice_client_phone", 
                     {"created_by_id": current_user.id}
                 )
-                
-                # 2. Demo PM Bridge: find clients from shops the user manages
                 demo_shop_client_ids = await Shop.get_pymongo_collection().distinct(
                     "client_id", 
                     {"project_manager_id": current_user.id, "is_deleted": False}
                 )
                 managed_client_ids = [PydanticObjectId(cid) for cid in demo_shop_client_ids if cid]
                 
-                q = q.find(Or(
+                criteria.append(Or(
                     Client.owner_id == current_user.id,
                     Client.pm_id == current_user.id,
                     In(Client.phone, billed_phones),
                     In(Client.id, managed_client_ids)
                 ))
 
+            # 4. Search & Filters
             if search:
                 import re
                 pattern = re.compile(f".*{re.escape(search.strip())}.*", re.IGNORECASE)
-                q = q.find(Or(
+                criteria.append(Or(
                     {"name": pattern},
                     {"phone": pattern},
                     {"email": pattern},
@@ -127,15 +119,21 @@ class ClientService:
                 ))
 
             if pm_id:
-                q = q.find(Client.pm_id == pm_id)
+                criteria.append(Client.pm_id == pm_id)
 
-            # Sorting
+            # 5. Execute Query
+            q = Client.find(*criteria)
+            total = await q.count()
+            
+            print(f"DEBUG [get_clients]: criteria={criteria}, skip={skip}, limit={limit}, status={status}, total_found={total}")
+            
             prefix = "-" if sort_order.lower() == "desc" else ""
-            # MongoDB uses field names for sorting
             query = q.sort(f"{prefix}{sort_by}").skip(skip)
-            if limit is not None:
+            if limit:
                 query = query.limit(limit)
+                
             clients = await query.to_list()
+            print(f"DEBUG [get_clients]: Successfully fetched {len(clients)} clients")
             
             # Enrich with PM Name in bulk for efficiency (removes N+1 query problem)
             pm_ids = {c.pm_id for c in clients if c.pm_id}
@@ -145,10 +143,34 @@ class ClientService:
                 for c in clients:
                     if c.pm_id:
                         c.pm_name = pm_map.get(c.pm_id, f"PM #{c.pm_id}")
-            return clients
+
+            # NEW: Enrich with Refund Eligibility (Bulk check latest invoices)
+            client_ids = [c.id for c in clients]
+            # Find latest invoice for each client in the current page
+            latest_bills_cursor = Bill.get_pymongo_collection().aggregate([
+                {"$match": {"client_id": {"$in": client_ids}}},
+                {"$sort": {"created_at": -1}},
+                {"$group": {"_id": "$client_id", "latest_created_at": {"$first": "$created_at"}}}
+            ])
+            latest_bills_map = {doc["_id"]: doc["latest_created_at"] async for doc in latest_bills_cursor}
+
+            now = datetime.now(UTC)
+            for c in clients:
+                latest_inv_date = latest_bills_map.get(c.id)
+                base_date = latest_inv_date or c.created_at
+                days_passed = (now - base_date).days
+                
+                if days_passed > 10:
+                    c.can_refund = False
+                    c.refund_message = f"Refund window expired ({days_passed} days ago)"
+                else:
+                    c.can_refund = True
+                    c.refund_message = f"Refund window active ({10 - days_passed} days left)"
+
+            return clients, total
         except Exception as e:
             print(f"Error fetching clients: {e}")
-            return []
+            return [], 0
 
     async def create_client(self, client_in: ClientCreate, current_user: User, request: Request) -> Client:
         # Check duplicates
@@ -290,6 +312,26 @@ class ClientService:
         # TODO: Implement MongoDB transactions for financial safety
         db_client = await self.get_client(client_id)
         if not db_client: raise HTTPException(status_code=404, detail="Not Found")
+        
+        # Enforce 10-day refund window based on latest invoice
+        from app.modules.billing.models import Bill
+        latest_bill = await Bill.find(Bill.client_id == client_id).sort("-created_at").first_or_none()
+        if latest_bill:
+            days_since_creation = (datetime.now(UTC) - latest_bill.created_at).days
+            if days_since_creation > 10:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Refund window expired. This client's latest invoice was created {days_since_creation} days ago (Max: 10 days)."
+                )
+        else:
+            # If no invoice exists, maybe check client creation?
+            days_since_client_creation = (datetime.now(UTC) - db_client.created_at).days
+            if days_since_client_creation > 10:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Refund window expired. Client was created {days_since_client_creation} days ago (Max: 10 days)."
+                )
+
         db_client.status = "REFUNDED"
         db_client.is_active = False
         
